@@ -1,0 +1,53 @@
+language: cpp
+
+dist: trusty
+
+env:
+  global:
+    - CTEST_OUTPUT_ON_FAILURE=1
+
+matrix:
+  include:
+    - name: "gcc build"
+      os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.8
+            - libboost-all-dev
+            - libeigen3-dev
+            - libnlopt-dev
+            - libalglib-dev
+      compiler: gcc
+      env:
+        - MATRIX_EVAL="CC=gcc-4.8 && CXX=g++-4.8"
+    - name: "clang build"
+      os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+          packages:
+            - clang-3.6
+            - libboost-all-dev
+            - libeigen3-dev
+            - libnlopt-dev
+            - libalglib-dev
+      env:
+        - MATRIX_EVAL="CC=clang-3.6 && CXX=clang++-3.6"
+
+before_install:
+  - eval "${MATRIX_EVAL}"
+
+script:
+  - mkdir -p build && cd build
+  - |
+    cmake -DENABLE_COMPILER_WARNINGS:BOOL=ON \
+          -DENABLE_TESTING:BOOL=ON ..
+  - make
+  - make all
+  - ../bin/unit_tests
