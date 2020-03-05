@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/PhaseTracer/PhaseTracer.svg?branch=master)](https://travis-ci.org/PhaseTracer/PhaseTracer)
+
 # PhaseTracer
 
 `PhaseTracer` is a C++ software package for mapping out cosmological phases, and potential transitions between them, for Standard Model extensions with any number of scalar fields.
