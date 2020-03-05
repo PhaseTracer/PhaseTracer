@@ -4,6 +4,7 @@ link_libraries(
   ${NLopt_LIBRARIES}
   ${Boost_LIBRARIES}
   ${EIGEN3_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
   effectivepotential
 )
 
