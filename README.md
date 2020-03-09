@@ -9,9 +9,15 @@
 If you use `PhaseTracer`, please cite the accompanying manual
 
     @article{PhaseTracer,
-        author = "Athron, Peter and Balazs, Csaba and Fowlie, Andrew and Zhang, Yang",
-        title = "{PhaseTracer: tracing cosmological phases and calculating transition properties}"
+      author         = "Athron, Peter and Balazs, Csaba and Fowlie, Andrew and Zhang, Yang",
+      title          = "{PhaseTracer: tracing cosmological phases and calculating transition properties}",
+      year           = "2020",
+      eprint         = "2003.02859",
+      archivePrefix  = "arXiv",
+      primaryClass   = "hep-ph",
+      reportNumber   = "CoEPP-MN-20-3",
     }
+    
 
 ## Quickstart
 
