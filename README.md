@@ -33,6 +33,10 @@ The following libraries are required to build `PhaseTracer`:
 On Ubuntu, the dependencies can be installed by
 
     sudo apt install libalglib-dev libnlopt-dev libeigen3-dev libboost-filesystem-dev libboost-log-dev
+    
+On Mac, they can be installed by
+    
+    brew install alglib nlopt eigen boost
 
 ### Building
 
