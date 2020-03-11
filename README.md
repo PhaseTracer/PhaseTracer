@@ -44,6 +44,8 @@ On Mac, they can be installed by
     
     brew install alglib nlopt eigen boost
 
+In case [alglib](http://www.alglib.net/) is not found in package manager, try [alglib-cmake](https://github.com/S-Dafarra/alglib-cmake).
+
 ### Building
 
 To build the shared library and the examples:
