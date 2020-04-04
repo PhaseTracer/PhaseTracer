@@ -100,7 +100,7 @@ void THDMIISNMSSMBC::set_input(std::vector<double> x) {
   // Arrange settings
   Settings settings;
   settings.set(Settings::precision, 1.e-4);
-  settings.set(Settings::calculate_sm_masses, 1.e-4);
+  settings.set(Settings::calculate_sm_masses, 0);
   SpectrumGenerator spectrum_generator;
   spectrum_generator.set_settings(settings);
 
