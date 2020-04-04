@@ -18,7 +18,8 @@ find_package(Boost 1.53.0 REQUIRED
 )
 find_package(Eigen3 3.1 REQUIRED)
 find_package(NLopt REQUIRED)
-#find_package(EffPotential REQUIRED)
+find_package(Threads REQUIRED)
+# find_package(EffPotential REQUIRED)
 add_subdirectory(EffectivePotential)
 
 # flags
@@ -29,6 +30,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # includes
+
 get_target_property(EFFPOTENTIAL_INCLUDE_DIRS effectivepotential INTERFACE_INCLUDE_DIRECTORIES)  
 include_directories(
   ${Boost_INCLUDE_DIRS}

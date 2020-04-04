@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/PhaseTracer/PhaseTracer.svg?branch=master)](https://travis-ci.org/PhaseTracer/PhaseTracer)
+
 # PhaseTracer
 
 `PhaseTracer` is a C++ software package for mapping out cosmological phases, and potential transitions between them, for Standard Model extensions with any number of scalar fields.
@@ -7,9 +9,15 @@
 If you use `PhaseTracer`, please cite the accompanying manual
 
     @article{PhaseTracer,
-        author = "Athron, Peter and Balazs, Csaba and Fowlie, Andrew and Zhang, Yang",
-        title = "{PhaseTracer: tracing cosmological phases and calculating transition properties}"
+      author         = "Athron, Peter and Balazs, Csaba and Fowlie, Andrew and Zhang, Yang",
+      title          = "{PhaseTracer: tracing cosmological phases and calculating transition properties}",
+      year           = "2020",
+      eprint         = "2003.02859",
+      archivePrefix  = "arXiv",
+      primaryClass   = "hep-ph",
+      reportNumber   = "CoEPP-MN-20-3",
     }
+    
 
 ## Quickstart
 
@@ -31,6 +39,12 @@ The following libraries are required to build `PhaseTracer`:
 On Ubuntu, the dependencies can be installed by
 
     sudo apt install libalglib-dev libnlopt-dev libeigen3-dev libboost-filesystem-dev libboost-log-dev
+    
+On Mac, they can be installed by
+    
+    brew install alglib nlopt eigen boost
+
+In case [alglib](http://www.alglib.net/) is not found in package manager, try [alglib-cmake](https://github.com/S-Dafarra/alglib-cmake).
 
 ### Building
 
