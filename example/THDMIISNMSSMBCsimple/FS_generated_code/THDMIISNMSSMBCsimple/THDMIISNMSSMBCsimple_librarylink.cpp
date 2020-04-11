@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Thu 7 Nov 2019 18:53:58
+// File generated at Sat 11 Apr 2020 12:54:09
 
 #include "config.h"
 
@@ -65,7 +65,7 @@
 namespace flexiblesusy {
 namespace THDMIISNMSSMBCsimple_librarylink {
 
-using Handle = mint;
+using Handle = long;
 
 class Redirect_output {
 public:
