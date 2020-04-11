@@ -95,14 +95,29 @@ def plane_phi_phi_one(pi, pj, phases, transitions, pdf_name="plane.pdf"):
     print "Plotting phases on (phi_{}, phi_{}) plane for {} figure".format(pi+1, pj+1, full_pdf_name)
     fig, ax = plt.subplots()
 
+    x_max = -np.inf
+    x_min = np.inf
+    y_max = -np.inf
+    y_min = np.inf
+    
     for i, p in enumerate(phases):
         t, x, y = p.T, p.phi[pi], p.phi[pj]
+        x_max = max(max(x), x_max)
+        x_min = min(min(x), x_min)
+        y_max = max(max(y), y_max)
+        y_min = min(min(y), y_min)
         label = r"Phase ${0}$ from $T = {1:.0f}$".format(i, t[0]) + GEV + " to ${0:.0f}$".format(t[-1]) + GEV
         if not constant(x, y, label=label):
             arrow_plot(t, x, y, label=label, arrow_delta_t=ARROW_DELTA_T)
 
     ax.set_xlabel(r"Field $x_{0}$ (GeV)".format(pi+1))
     ax.set_ylabel(r"Field $x_{0}$ (GeV)".format(pj+1))
+
+    x_shift = max((x_max - x_min)*0.05,5)
+    ax.set_xlim(x_min-x_shift, x_max+x_shift)
+    y_shift = max((y_max - y_min)*0.05,5)
+    ax.set_ylim(y_min-y_shift, y_max+y_shift)
+        
 
     if transitions:
         leg = add_arrow_to_leg(ax, "  FOPT(black arrow)")
@@ -113,14 +128,14 @@ def plane_phi_phi_one(pi, pj, phases, transitions, pdf_name="plane.pdf"):
 
     # Get size of legend
     plt.gcf().canvas.draw()
-    extent = leg.get_window_extent()
+    extent = leg.get_window_extent().inverse_transformed(ax.transAxes)
     dy = extent.y1 - extent.y0
 
     # Add it to axis limit
     ylim = np.array(ax.get_ylim())
-    ylim[1] += dy
-    ax.set_ylim(1.25 * ylim)
-
+    ylim[1] *= 1+dy
+    ax.set_ylim(ylim)
+    
     for t in transitions:
         if t.key >0 : continue
         false_vacuum = [t.false_vacuum[pi], t.false_vacuum[pj]]
@@ -184,8 +199,8 @@ def plane_phi_T(phases, transitions, pdf_name="plane.pdf"):
     fig, axs = plt.subplots(nrows=1, ncols=n_field)
 
     T_max = 250
-    phi_min = 0
-    phi_max = 0
+    phi_min = np.inf
+    phi_max = -np.inf
 
     if n_field == 1:
         axs = [axs]
@@ -221,6 +236,8 @@ def plane_phi_T(phases, transitions, pdf_name="plane.pdf"):
             ax.quiver(false_vacuum, t.TC, dx, dy, **QUIVER_ARROW)
 
         ax.set_ylim(0, T_max)
+        phi_shift = max((phi_max - phi_min)*0.05,5)
+        ax.set_xlim(phi_min-phi_shift, phi_max+phi_shift)
 
         if len(axs) == 1:
             ax.set_xlabel(r"Field $x$ (GeV)")
