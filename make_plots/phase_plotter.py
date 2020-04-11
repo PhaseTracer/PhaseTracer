@@ -133,7 +133,7 @@ def plane_phi_phi_one(pi, pj, phases, transitions, pdf_name="plane.pdf"):
 
     # Add it to axis limit
     ylim = np.array(ax.get_ylim())
-    ylim[1] *= 1+dy
+    ylim[1] += dy*(y_max-y_min)
     ax.set_ylim(ylim)
     
     for t in transitions:
