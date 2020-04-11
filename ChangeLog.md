@@ -6,3 +6,4 @@
  * Fix cmake building of FS example to always use tagged version v2.4.1 of the code.
 ## PhaseTracer-1.0.2 [April 11, 2020]
  * Specify axis limits for phase_plotter
+ * Update FS version used to 2.4.2, avoids compilation complaining about an unused Mathematica interafce problem on Mac OS with Mathamatica 12.
