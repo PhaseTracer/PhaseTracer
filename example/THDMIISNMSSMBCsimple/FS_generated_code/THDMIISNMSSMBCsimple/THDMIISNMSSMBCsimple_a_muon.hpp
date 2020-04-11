@@ -16,13 +16,13 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Thu 7 Nov 2019 18:53:58
+// File generated at Sat 11 Apr 2020 12:54:09
 
 /**
  * @file THDMIISNMSSMBCsimple_a_muon.hpp
  *
- * This file was generated at Thu 7 Nov 2019 18:53:58 with FlexibleSUSY
- * 2.4.1 and SARAH 4.14.2 .
+ * This file was generated at Sat 11 Apr 2020 12:54:09 with FlexibleSUSY
+ * 2.4.2 and SARAH 4.14.3 .
  */
 
 #ifndef THDMIISNMSSMBCsimple_A_MUON_H

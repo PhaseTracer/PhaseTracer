@@ -36,8 +36,8 @@ THDMIISNMSSMBCsimple_INCLUDE_MK := \
 
 THDMIISNMSSMBCsimple_SLHA_INPUT := \
 		$(DIR)/LesHouches.in.THDMIISNMSSMBCsimple_generated \
-		$(DIR)/LesHouches.in.THDMIISNMSSMBCsimple.BM1 \
-		$(DIR)/LesHouches.in.THDMII
+		$(DIR)/LesHouches.in.THDMII \
+		$(DIR)/LesHouches.in.THDMIISNMSSMBCsimple.BM1
 
 THDMIISNMSSMBCsimple_REFERENCES := \
 		$(DIR)/THDMIISNMSSMBCsimple_references.tex
