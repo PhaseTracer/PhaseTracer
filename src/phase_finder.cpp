@@ -175,6 +175,24 @@ bool PhaseFinder::belongs_known_phase(Point point) const {
   return false;
 }
 
+std::vector<Point> PhaseFinder::get_minima_at_t_low(){
+  if (minima_at_t_low.size() == 0) {
+    const std::vector<Eigen::VectorXd> test_points = generate_test_points();
+    LOG(debug) << "Check potential at T = t_low = " << t_low;
+    minima_at_t_low = find_minima_at_t(test_points, t_low);
+  }
+  return minima_at_t_low;
+}
+
+std::vector<Point> PhaseFinder::get_minima_at_t_high(){
+  if (minima_at_t_high.size() == 0) {
+    const std::vector<Eigen::VectorXd> test_points = generate_test_points();
+    LOG(debug) << "Check potential at T = t_high = " << t_high;
+    minima_at_t_high = find_minima_at_t(test_points, t_high);
+  }
+  return minima_at_t_high;
+}
+
 void PhaseFinder::find_phases() {
   LOG(debug) << "Find global minima from " << guess_points.size() << " guesses";
 
@@ -188,7 +206,7 @@ void PhaseFinder::find_phases() {
 
   LOG(debug) << "Check potential at T = t_low = " << t_low;
 
-  const std::vector<Point> minima_at_t_low = find_minima_at_t(test_points, t_low);
+  minima_at_t_low = find_minima_at_t(test_points, t_low);
 
   if (check_vacuum_at_low) {
       const minima_descriptor location = get_minima_descriptor(minima_at_t_low, t_low);
@@ -200,7 +218,7 @@ void PhaseFinder::find_phases() {
   }
   LOG(debug) << "Check potential at T = t_high = " << t_high;
 
-  const std::vector<Point> minima_at_t_high = find_minima_at_t(test_points, t_high);
+  minima_at_t_high = find_minima_at_t(test_points, t_high);
   if (check_vacuum_at_high && !origin_unique_minima(minima_at_t_high)) {
     throw std::runtime_error("Found minimum other than the origin at T = t_high");
   }
