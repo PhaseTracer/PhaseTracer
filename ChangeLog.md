@@ -7,3 +7,5 @@
 ## PhaseTracer-1.0.2 [April 11, 2020]
  * Specify axis limits for phase_plotter
  * Update FS version used to 2.4.2, avoids compilation complaining about an unused Mathematica interafce problem on Mac OS with Mathamatica 12.
+## PhaseTracer-1.0.3 [April ?, 2020]
+ * Many thanks to Jingwei Lian for pointing out a bug in THDMIISNMSSMBCsimple.hpp. get_vector_debye_sq() returns two W boson masses, instead of one W boson mass and one Z boson mass.
