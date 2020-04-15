@@ -189,11 +189,6 @@ std::vector<double> THDMIISNMSSMBC::get_scalar_debye_sq(Eigen::VectorXd phi, dou
   model_copy.set_v2(phi[1]);
   model_copy.set_vS(phi[2]);
 
-  // Calculate scalar masses
-  model_copy.calculate_Mhh();
-  model_copy.calculate_MAh();
-  model_copy.calculate_MHm();
-
   // CP-even Higgs in \xi = 1
   model_copy.calculate_Mhh();
   Eigen::Matrix<double, 3, 3> matrix_hh = model_copy.get_mass_matrix_hh();
@@ -247,7 +242,7 @@ std::vector<double> THDMIISNMSSMBC::get_vector_debye_sq(Eigen::VectorXd phi, dou
   const double Z_debye = A + B;
   const double g_debye = A - B;
 
-  return {W_debye, W_debye, g_debye};
+  return {W_debye, Z_debye, g_debye};
 }
 
 std::vector<double> THDMIISNMSSMBC::get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const {
