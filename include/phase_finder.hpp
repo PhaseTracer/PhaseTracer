@@ -141,6 +141,11 @@ class PhaseFinder {
   /** Check that two minima are identical to within a particular tolerance */
   bool identical_within_tol(const Eigen::VectorXd a, const Eigen::VectorXd b) const;
 
+  /** return minima at T_low*/
+  std::vector<Point> get_minima_at_t_low();
+  /** return minima at T_high*/
+  std::vector<Point> get_minima_at_t_high();
+
  private:
   EffectivePotential::Potential &P;
 
@@ -177,6 +182,9 @@ class PhaseFinder {
                                     double dtstart_, std::vector<Eigen::VectorXd> *X,
                                     std::vector<double> *T, std::vector<Eigen::VectorXd> *dXdT, std::vector<double> *V,
                                     Point *jumped) const;
+
+  std::vector<Point> minima_at_t_low;
+  std::vector<Point> minima_at_t_high;
 
   /** Expected change in minimum with temperature, dx/dt */
   Eigen::VectorXd dx_min_dt(Eigen::VectorXd X, double T) const;
