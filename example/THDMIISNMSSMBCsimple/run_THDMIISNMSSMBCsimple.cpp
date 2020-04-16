@@ -40,7 +40,7 @@ int main() {
 
   // Make PhaseFinder object and find the phases
   PhaseTracer::PhaseFinder pf(model);
-  pf.set_seed(1);
+  pf.set_seed(3);
   pf.find_phases();
   std::cout << pf;
 
