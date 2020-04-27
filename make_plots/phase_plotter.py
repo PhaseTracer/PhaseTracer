@@ -44,7 +44,10 @@ def annotate_arrow(a, b, text=None, offset=10., color="k", **kwargs):
     if text is not None:
         angle = np.degrees(np.arctan2(b[1] - a[1], b[0] - a[0]))
         xy = np.array([0.5 * (a[0] + b[0]), 0.5 * (a[1] + b[1])])
-        orthog = offset * np.array([1., -(b[0] - a[0]) / (b[1] - a[1])]) / (1. + ((b[0] - a[0]) / (b[1] - a[1]))**2)
+        if (b[1] - a[1]) == 0:
+            orthog = offset * np.array([0.5,0.5])
+        else:
+            orthog = offset * np.array([1., -(b[0] - a[0]) / (b[1] - a[1])]) / (1. + ((b[0] - a[0]) / (b[1] - a[1]))**2)
         ann = plt.annotate(
                 text, xy=xy, xycoords='data',
                 xytext=orthog, textcoords='offset points', fontsize=FONTSIZE)
