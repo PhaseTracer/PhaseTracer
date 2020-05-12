@@ -23,8 +23,6 @@
 
 namespace PhaseTracer {
 
-TransitionFinder::TransitionFinder(PhaseFinder &pf_) : pf(pf_) {}
-
 std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase phase2, double T1, double T2) const {
   if (T1 > T2) {
     LOG(debug) << "Phases do not overlap in temperature - no critical temperature";

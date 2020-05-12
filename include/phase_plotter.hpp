@@ -29,7 +29,7 @@
 
 namespace PhaseTracer {
 
-void phase_plotter(PhaseTracer::TransitionFinder tf, std::string prefix = "model") {
+void phase_plotter(const PhaseTracer::TransitionFinder& tf, std::string prefix = "model") {
   std::ofstream output_file;
   output_file.open(prefix + ".dat");
 

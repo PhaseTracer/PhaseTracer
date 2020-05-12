@@ -31,7 +31,7 @@
 
 namespace PhaseTracer {
 
-void potential_plotter(EffectivePotential::Potential &P,
+void potential_plotter(const EffectivePotential::Potential& P,
                        double T,
                        std::string prefix = "model",
                        double xmin = -100.,

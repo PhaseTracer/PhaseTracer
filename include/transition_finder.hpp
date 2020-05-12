@@ -71,7 +71,7 @@ struct Transition {
 
 class TransitionFinder {
  public:
-  explicit TransitionFinder(PhaseFinder &pf_);
+  explicit TransitionFinder(PhaseFinder& pf_) : pf(pf_) {}
   virtual ~TransitionFinder() = default;
 
   /** Find all transitions between all phases */
