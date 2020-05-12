@@ -52,7 +52,7 @@ struct Transition {
       if (a.key == 0) {
         o << " to phase " << a.true_phase.key << " ===" << std::endl;
       } else {
-        o << " to symmetric partner " << a.key 
+        o << " to symmetric partner " << a.key
           << " of phase " << a.true_phase.key << " ===" << std::endl;
       }
       o << "false vacuum = " << a.false_vacuum << std::endl
@@ -113,10 +113,10 @@ class TransitionFinder {
 
   /** Note which VEVs changed */
   std::vector<bool> changed(const Eigen::VectorXd true_vacuum, const Eigen::VectorXd false_vacuum) const;
-  
+
   /** Number of scalar fields that could break electroweak symmetry */
   PROPERTY(int, n_ew_scalars, -1)
-  
+
   /** Minimum separation between critical temperatures */
   PROPERTY(double, separation, 1.)
   /** Assume at most one critical temperature between two phases */

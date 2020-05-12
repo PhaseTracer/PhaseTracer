@@ -175,8 +175,8 @@ bool PhaseFinder::belongs_known_phase(Point point) const {
   return false;
 }
 
-std::vector<Point> PhaseFinder::get_minima_at_t_low(){
-  if (minima_at_t_low.size() == 0) {
+std::vector<Point> PhaseFinder::get_minima_at_t_low() {
+  if (minima_at_t_low.empty()) {
     const std::vector<Eigen::VectorXd> test_points = generate_test_points();
     LOG(debug) << "Check potential at T = t_low = " << t_low;
     minima_at_t_low = find_minima_at_t(test_points, t_low);
@@ -184,8 +184,8 @@ std::vector<Point> PhaseFinder::get_minima_at_t_low(){
   return minima_at_t_low;
 }
 
-std::vector<Point> PhaseFinder::get_minima_at_t_high(){
-  if (minima_at_t_high.size() == 0) {
+std::vector<Point> PhaseFinder::get_minima_at_t_high() {
+  if (minima_at_t_high.empty()) {
     const std::vector<Eigen::VectorXd> test_points = generate_test_points();
     LOG(debug) << "Check potential at T = t_high = " << t_high;
     minima_at_t_high = find_minima_at_t(test_points, t_high);
