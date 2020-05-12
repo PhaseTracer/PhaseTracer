@@ -16,6 +16,8 @@ find_package(Boost 1.53.0 REQUIRED
   filesystem
   log
 )
+set(Boost_USE_MULTITHREADED ON)
+
 find_package(Eigen3 3.1 REQUIRED)
 find_package(NLopt REQUIRED)
 find_package(Threads REQUIRED)
