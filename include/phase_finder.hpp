@@ -137,7 +137,7 @@ class PhaseFinder {
 
   /** Generate symmetric partner for a point */
   std::vector<Eigen::VectorXd> symmetric_partners(const Eigen::VectorXd a) const;
-  
+
   /** Check that two minima are identical to within a particular tolerance */
   bool identical_within_tol(const Eigen::VectorXd a, const Eigen::VectorXd b) const;
 

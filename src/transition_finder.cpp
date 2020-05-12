@@ -118,22 +118,22 @@ bool TransitionFinder::phases_overlaped(Phase phase1, Phase phase2, double T) co
 
 std::vector<double> TransitionFinder::get_un_overlapped_T_range(Phase phase1, Phase phase2, double T1, double T2) const {
   std::vector<double> T_range;
-  
+
   if (!(phases_overlaped(phase1, phase2, T1) || phases_overlaped(phase1, phase2, T2))) {
     T_range.push_back(T1);
     T_range.push_back(T2);
     return T_range;
   }
-  
+
   if ( phases_overlaped(phase1, phase2, T1) && phases_overlaped(phase1, phase2, T2) ) {
     LOG(fatal) << "Phases " << phase1.key << " and " << phase2.key << " are redundant";
     return T_range;
   }
-  
+
   double T_same = phases_overlaped(phase1, phase2, T1) ? T1 : T2;
   double T_diff = phases_overlaped(phase1, phase2, T2) ? T1 : T2;
   T_range.push_back(T_diff);
-  
+
   while (std::abs(T_diff-T_same) > TC_tol_rel) {
     double T_mid = 0.5*(T_same+T_diff);
     if (phases_overlaped(phase1, phase2, T_mid)) {
@@ -167,7 +167,7 @@ void TransitionFinder::find_transitions() {
       LOG(debug) << "Finding critical temperatures between phases "
                  << phase1.key << " and " << phase2.key;
 
-      
+
       double tmax = std::min(phase1.T.back(), phase2.T.back());
       double tmin = std::max(phase1.T.front(), phase2.T.front());
 
@@ -177,8 +177,8 @@ void TransitionFinder::find_transitions() {
       }
 
       auto T_range = get_un_overlapped_T_range(phase1, phase2, tmin, tmax);
-      
-      if (T_range.size() == 0) continue; 
+
+      if (T_range.size() == 0) continue;
       if (T_range.size() == 3) {
         const auto TC = T_range[2];
         LOG(debug) << "Phases " << phase1.key << " and " << phase2.key << " cross at T=" << TC;
@@ -186,13 +186,13 @@ void TransitionFinder::find_transitions() {
         const auto phase2_at_critical = pf.phase_at_T(&phase2, TC);
         const double gamma_ = 0.;
         auto changed_ = changed(phase1_at_critical.x, phase2_at_critical.x);
-        Transition f = {SUCCESS, TC, phase1, phase2, 
-                        phase1_at_critical.x, phase2_at_critical.x, 
-                        gamma_, changed_, 
+        Transition f = {SUCCESS, TC, phase1, phase2,
+                        phase1_at_critical.x, phase2_at_critical.x,
+                        gamma_, changed_,
                         phase1_at_critical.potential - phase2_at_critical.potential};
         transitions.push_back(f);
       }
-      
+
       const auto found = assume_only_one_transition ?
         find_transition(phase1, phase2, T_range[0], T_range[1]) :
         divide_and_find_transition(phase1, phase2, T_range[0], T_range[1]);
