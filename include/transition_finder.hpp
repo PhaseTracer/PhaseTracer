@@ -20,7 +20,7 @@
 
 #include <ostream>
 #include <vector>
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include <algorithm>
 #include <boost/cstdint.hpp>
 

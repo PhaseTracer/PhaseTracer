@@ -20,7 +20,7 @@
 
 #include <ostream>
 #include <vector>
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include <ctime>
 
 #include "nlopt.hpp"

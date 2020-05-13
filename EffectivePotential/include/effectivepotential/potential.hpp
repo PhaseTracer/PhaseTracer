@@ -19,7 +19,7 @@
 #define POTENTIAL_POTENTIAL_HPP_INCLUDED
 
 #include <vector>
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 
 #include "property.hpp"
 
