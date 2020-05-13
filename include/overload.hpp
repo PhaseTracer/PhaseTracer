@@ -20,7 +20,7 @@
 
 // TODO do these work for boost log?
 
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include <ostream>
 #include <iterator>
 #include <vector>

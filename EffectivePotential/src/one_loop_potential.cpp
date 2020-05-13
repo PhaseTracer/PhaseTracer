@@ -17,7 +17,7 @@
 
 #include <cmath>
 #include <algorithm>
-#include <Eigen/Eigenvalues>
+#include <eigen3/Eigen/Eigenvalues>
 
 #include "one_loop_potential.hpp"
 #include "thermal_function.hpp"
