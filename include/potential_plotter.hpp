@@ -24,7 +24,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include <iomanip>  
+#include <iomanip>
 
 #include "logger.hpp"
 #include "potential.hpp"
@@ -57,7 +57,7 @@ void potential_plotter(const EffectivePotential::Potential& P,
                   << std::endl;
       }
   }
-    
+
     output_file.close();
 
   const boost::filesystem::path this_file(__FILE__);
