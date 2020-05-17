@@ -65,7 +65,7 @@ std::vector<Eigen::VectorXd> PhaseFinder::generate_test_points() const {
   return test_points;
 }
 
-std::vector<Point> PhaseFinder::find_minima_at_t(std::vector<Eigen::VectorXd> test_points, double T) const {
+std::vector<Point> PhaseFinder::find_minima_at_t(const std::vector<Eigen::VectorXd>& test_points, double T) const {
   std::vector<Point> minima;
 
   for (const auto& p : test_points) {
@@ -86,7 +86,7 @@ std::vector<Point> PhaseFinder::find_minima_at_t(std::vector<Eigen::VectorXd> te
   return minima;
 }
 
-bool PhaseFinder::consistent_vacuum(Eigen::VectorXd x) const {
+bool PhaseFinder::consistent_vacuum(const Eigen::VectorXd& x) const {
   if (n_ew_scalars == 0) {
     return true;
   }
@@ -94,7 +94,7 @@ bool PhaseFinder::consistent_vacuum(Eigen::VectorXd x) const {
   return std::abs(found - v) < x_abs_identical;
 }
 
-std::vector<Eigen::VectorXd> PhaseFinder::symmetric_partners(const Eigen::VectorXd a) const {
+std::vector<Eigen::VectorXd> PhaseFinder::symmetric_partners(const Eigen::VectorXd& a) const {
   std::vector<Eigen::VectorXd> partners;
   partners.push_back(a);
   for (size_t i=0; i < P.apply_symmetry(a).size(); i++) {
@@ -108,7 +108,7 @@ std::vector<Eigen::VectorXd> PhaseFinder::symmetric_partners(const Eigen::Vector
   return partners;
 }
 
-bool PhaseFinder::identical_within_tol(const Eigen::VectorXd a, const Eigen::VectorXd b) const {
+bool PhaseFinder::identical_within_tol(const Eigen::VectorXd& a, const Eigen::VectorXd& b) const {
   double min_distance = (a-b).norm();
   for (const auto b_ : symmetric_partners(b)) {
     min_distance = std::min(min_distance, (a-b_).norm());
@@ -116,11 +116,11 @@ bool PhaseFinder::identical_within_tol(const Eigen::VectorXd a, const Eigen::Vec
   return min_distance < x_abs_identical + x_rel_identical * std::max(a.norm(), b.norm());
 }
 
-bool PhaseFinder::jump(const Eigen::VectorXd a, const Eigen::VectorXd b) const {
+bool PhaseFinder::jump(const Eigen::VectorXd& a, const Eigen::VectorXd& b) const {
   return (a - b).norm() > x_abs_jump + x_rel_jump * std::max(a.norm(), b.norm());
 }
 
-Point PhaseFinder::get_deepest_minima(const std::vector<Point> minima, double T) const {
+Point PhaseFinder::get_deepest_minima(const std::vector<Point>& minima, double T) const {
   std::vector<double> potential;
   for (const auto &m : minima) {
     potential.push_back(m.potential);
@@ -137,7 +137,7 @@ Point PhaseFinder::get_deepest_minima(const std::vector<Point> minima, double T)
   return deepest;
 }
 
-minima_descriptor PhaseFinder::get_minima_descriptor(const Point minima) const {
+minima_descriptor PhaseFinder::get_minima_descriptor(const Point& minima) const {
   if (identical_within_tol(minima.x, Eigen::VectorXd::Zero(n_scalars))) {
     return ORIGIN;
   }
@@ -147,12 +147,12 @@ minima_descriptor PhaseFinder::get_minima_descriptor(const Point minima) const {
   return OTHER;
 }
 
-minima_descriptor PhaseFinder::get_minima_descriptor(const std::vector<Point> minima, double T) const {
+minima_descriptor PhaseFinder::get_minima_descriptor(const std::vector<Point>& minima, double T) const {
   const Point deepest = get_deepest_minima(minima, T);
   return get_minima_descriptor(deepest);
 }
 
-bool PhaseFinder::origin_unique_minima(const std::vector<Point> minima) const {
+bool PhaseFinder::origin_unique_minima(const std::vector<Point>& minima) const {
   for (const auto &m : minima) {
     if (!identical_within_tol(m.x, Eigen::VectorXd::Zero(n_scalars))) {
       return false;
@@ -161,13 +161,13 @@ bool PhaseFinder::origin_unique_minima(const std::vector<Point> minima) const {
   return true;
 }
 
-bool PhaseFinder::belongs_known_phase(Point point) const {
+bool PhaseFinder::belongs_known_phase(const Point& point) const {
   for (const auto& phase : phases) {
     if (!phase.contains_t(point.t)) {
       continue;
     }
 
-    const Eigen::VectorXd x = phase_at_T(&phase, point.t).x;
+    const Eigen::VectorXd x = phase_at_T(phase, point.t).x;
     if (identical_within_tol(x, point.x)) {
       return true;
     }
@@ -175,8 +175,8 @@ bool PhaseFinder::belongs_known_phase(Point point) const {
   return false;
 }
 
-std::vector<Point> PhaseFinder::get_minima_at_t_low(){
-  if (minima_at_t_low.size() == 0) {
+std::vector<Point> PhaseFinder::get_minima_at_t_low() {
+  if (minima_at_t_low.empty()) {
     const std::vector<Eigen::VectorXd> test_points = generate_test_points();
     LOG(debug) << "Check potential at T = t_low = " << t_low;
     minima_at_t_low = find_minima_at_t(test_points, t_low);
@@ -184,8 +184,8 @@ std::vector<Point> PhaseFinder::get_minima_at_t_low(){
   return minima_at_t_low;
 }
 
-std::vector<Point> PhaseFinder::get_minima_at_t_high(){
-  if (minima_at_t_high.size() == 0) {
+std::vector<Point> PhaseFinder::get_minima_at_t_high() {
+  if (minima_at_t_high.empty()) {
     const std::vector<Eigen::VectorXd> test_points = generate_test_points();
     LOG(debug) << "Check potential at T = t_high = " << t_high;
     minima_at_t_high = find_minima_at_t(test_points, t_high);
@@ -515,21 +515,21 @@ phase_end_descriptor PhaseFinder::trace_minimum(Point start, double tstop,
   throw std::runtime_error("This should be unreachable");
 }
 
-bool PhaseFinder::hessian_singular(Eigen::VectorXd X, double T) const {
+bool PhaseFinder::hessian_singular(const Eigen::VectorXd& X, double T) const {
   return hessian_singular(P.d2V_dx2(X, T), X, T);
 }
 
-bool PhaseFinder::hessian_singular(Eigen::MatrixXd hessian, Eigen::VectorXd X, double T) const {
+bool PhaseFinder::hessian_singular(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const {
   const double t_min = hessian.eigenvalues().cwiseAbs().minCoeff();
   const double zero_t_min = P.d2V_dx2(X, 0.).eigenvalues().cwiseAbs().minCoeff();
   return std::abs(t_min) < hessian_singular_rel_tol * std::abs(zero_t_min);
 }
 
-bool PhaseFinder::hessian_positive_definite(Eigen::VectorXd X, double T) const {
+bool PhaseFinder::hessian_positive_definite(const Eigen::VectorXd& X, double T) const {
   return hessian_positive_definite(P.d2V_dx2(X, T), X, T);
 }
 
-bool PhaseFinder::hessian_positive_definite(Eigen::MatrixXd hessian, Eigen::VectorXd X, double T) const {
+bool PhaseFinder::hessian_positive_definite(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const {
   auto eivals = hessian.eigenvalues();
   for (int i = 0; i < eivals.size(); i++) {
     if (eivals[i].imag() != 0. || eivals[i].real() < 0.) {
@@ -539,11 +539,11 @@ bool PhaseFinder::hessian_positive_definite(Eigen::MatrixXd hessian, Eigen::Vect
   return true;
 }
 
-Eigen::VectorXd PhaseFinder::dx_min_dt(Eigen::VectorXd X, double T) const {
+Eigen::VectorXd PhaseFinder::dx_min_dt(const Eigen::VectorXd& X, double T) const {
   return dx_min_dt(P.d2V_dx2(X, T), X, T);
 }
 
-Eigen::VectorXd PhaseFinder::dx_min_dt(Eigen::MatrixXd hessian, Eigen::VectorXd X, double T) const {
+Eigen::VectorXd PhaseFinder::dx_min_dt(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const {
   const Eigen::VectorXd b = -P.d2V_dxdt(X, T);
   const Eigen::VectorXd dxdt = hessian.colPivHouseholderQr().solve(b);
   const bool check = b.isApprox(hessian * dxdt, linear_algebra_rel_tol);
@@ -555,15 +555,15 @@ Eigen::VectorXd PhaseFinder::dx_min_dt(Eigen::MatrixXd hessian, Eigen::VectorXd 
   return dxdt;
 }
 
-Point PhaseFinder::find_min(const Eigen::VectorXd guess, double T) const {
+Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T) const {
   return find_min(guess, T, Eigen::VectorXd::Constant(n_scalars, find_min_trace_abs_step));
 }
 
-Point PhaseFinder::find_min(const Eigen::VectorXd guess, double T, double abs_step) const {
+Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, double abs_step) const {
   return find_min(guess, T, Eigen::VectorXd::Constant(n_scalars, abs_step));
 }
 
-Point PhaseFinder::find_min(const Eigen::VectorXd guess, double T, Eigen::VectorXd step) const {
+Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, Eigen::VectorXd step) const {
   if (out_of_bounds(guess)) {
     LOG(fatal) << "guess = " << guess << " was out of bounds";
     throw std::runtime_error("guess for nlopt was out of bounds");
@@ -585,7 +585,7 @@ Point PhaseFinder::find_min(const Eigen::VectorXd guess, double T, Eigen::Vector
 
   opt.set_initial_step(step_vector);
 
-  std::function<double(Eigen::VectorXd)> objective = [this, T](Eigen::VectorXd x) {
+  std::function<double(const Eigen::VectorXd&)> objective = [this, T](const Eigen::VectorXd& x) {
     return this->P.V(x, T);
   };
 
@@ -632,26 +632,26 @@ Point PhaseFinder::find_min(const Eigen::VectorXd guess, double T, Eigen::Vector
   return {minima_VectorXd, potential_at_minima, T};
 }
 
-Point PhaseFinder::phase_at_T(const Phase *phase, double T) const {
-  if (T >= phase->T.back()) {
-    return {phase->X.back(), phase->V.back(), T};
+Point PhaseFinder::phase_at_T(const Phase& phase, double T) const {
+  if (T >= phase.T.back()) {
+    return {phase.X.back(), phase.V.back(), T};
   }
-  if (T <= phase->T.front()) {
-    return {phase->X.front(), phase->V.front(), T};
+  if (T <= phase.T.front()) {
+    return {phase.X.front(), phase.V.front(), T};
   }
 
-  size_t n = std::lower_bound(phase->T.begin(), phase->T.end(), T) - phase->T.begin();
+  size_t n = std::lower_bound(phase.T.begin(), phase.T.end(), T) - phase.T.begin();
   if (n > 0) {
-    n = phase->T[n] - T < T - phase->T[n - 1] ? n : n - 1;
+    n = phase.T[n] - T < T - phase.T[n - 1] ? n : n - 1;
   }
 
-  const double dt_start = T - phase->T[n];
+  const double dt_start = T - phase.T[n];
   std::vector<Eigen::VectorXd> X;
   std::vector<double> T_;
   std::vector<Eigen::VectorXd> dXdT;
   std::vector<double> V;
   Point jumped;
-  const Point start = {phase->X[n], phase->V[n], phase->T[n]};
+  const Point start = {phase.X[n], phase.V[n], phase.T[n]};
   auto end = trace_minimum(start, T, dt_start, &X, &T_, &dXdT, &V, &jumped);
   if (end != REACHED_T_STOP) {
     LOG(warning) << "Expected to reach tstop but end = " << end;
@@ -659,11 +659,11 @@ Point PhaseFinder::phase_at_T(const Phase *phase, double T) const {
   return {X.back(), V.back(), T};
 }
 
-bool PhaseFinder::redundant(const Phase *phase1, const Phase *phase2, end_descriptor end) const {
-  const double tmax_1 = phase1->T.back();
-  const double tmin_1 = phase1->T.front();
-  const double tmax_2 = phase2->T.back();
-  const double tmin_2 = phase2->T.front();
+bool PhaseFinder::redundant(const Phase& phase1, const Phase& phase2, end_descriptor end) const {
+  const double tmax_1 = phase1.T.back();
+  const double tmin_1 = phase1.T.front();
+  const double tmax_2 = phase2.T.back();
+  const double tmin_2 = phase2.T.front();
 
   const double tmax = std::min(tmax_1, tmax_2);
   const double tmin = std::max(tmin_1, tmin_2);
@@ -719,7 +719,7 @@ void PhaseFinder::remove_redundant() {
 
         LOG(debug) << "Checking redundancy between phases " << phase1.key << " and " << phase2.key;
 
-        if (redundant(&phase1, &phase2)) {
+        if (redundant(phase1, phase2)) {
           LOG(debug) << "Phases " << phase1.key << " and " << phase2.key
                      << " are redundant";
           changed = true;
@@ -759,7 +759,7 @@ void PhaseFinder::remove_redundant() {
 }
 
 
-bool PhaseFinder::out_of_bounds(Eigen::VectorXd x) const {
+bool PhaseFinder::out_of_bounds(const Eigen::VectorXd& x) const {
   std::vector<double> vector_x(x.data(), x.data() + x.rows() * x.cols());
   return (vector_x <= lower_bounds) || (vector_x >= upper_bounds);
 }

@@ -52,7 +52,7 @@ struct Transition {
       if (a.key == 0) {
         o << " to phase " << a.true_phase.key << " ===" << std::endl;
       } else {
-        o << " to symmetric partner " << a.key 
+        o << " to symmetric partner " << a.key
           << " of phase " << a.true_phase.key << " ===" << std::endl;
       }
       o << "false vacuum = " << a.false_vacuum << std::endl
@@ -71,7 +71,7 @@ struct Transition {
 
 class TransitionFinder {
  public:
-  explicit TransitionFinder(PhaseFinder &pf_);
+  explicit TransitionFinder(PhaseFinder& pf_) : pf(pf_) {}
   virtual ~TransitionFinder() = default;
 
   /** Find all transitions between all phases */
@@ -100,23 +100,23 @@ class TransitionFinder {
   std::vector<Transition> find_transition(Phase p1, Phase p2, double T1, double T2) const;
 
   /** Find many transitions between two phases at a particular resolution */
-  std::vector<Transition> divide_and_find_transition(Phase phase1, Phase phase2, double T1, double T2) const;
+  std::vector<Transition> divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2) const;
 
   /** Check whether two phase are overlapped at T*/
-  bool phases_overlaped(Phase phase1, Phase phase2, double T) const;
+  bool phases_overlaped(const Phase& phase1, const Phase& phase2, double T) const;
 
   /** Find un-overlapped temperature region between the two phases*/
-  std::vector<double> get_un_overlapped_T_range(Phase phase1, Phase phase2, double T1, double T2) const;
+  std::vector<double> get_un_overlapped_T_range(const Phase& phase1, const Phase& phase2, double T1, double T2) const;
 
   /** Strength of phase transition for first N fields */
-  double gamma(const Eigen::VectorXd true_vacuum, const Eigen::VectorXd false_vacuum, const double TC) const;
+  double gamma(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, const double TC) const;
 
   /** Note which VEVs changed */
-  std::vector<bool> changed(const Eigen::VectorXd true_vacuum, const Eigen::VectorXd false_vacuum) const;
+  std::vector<bool> changed(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum) const;
   
   /** Number of scalar fields that could break electroweak symmetry */
   PROPERTY(int, n_ew_scalars, -1)
-  
+
   /** Minimum separation between critical temperatures */
   PROPERTY(double, separation, 1.)
   /** Assume at most one critical temperature between two phases */

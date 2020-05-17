@@ -96,15 +96,15 @@ class PhaseFinder {
      over a uniform interval in field space
   */
   std::vector<Eigen::VectorXd> generate_test_points() const;
-  std::vector<Point> find_minima_at_t(std::vector<Eigen::VectorXd> test_points, double T) const;
+  std::vector<Point> find_minima_at_t(const std::vector<Eigen::VectorXd>& test_points, double T) const;
 
   void find_phases();
 
-  double delta_potential_at_T(const Phase *phase1, const Phase *phase2, double T) const {
+  double delta_potential_at_T(const Phase& phase1, const Phase& phase2, double T) const {
     return phase_at_T(phase1, T).potential - phase_at_T(phase2, T).potential;
   }
 
-  Point phase_at_T(const Phase *phase, double T) const;
+  Point phase_at_T(const Phase& phase, double T) const;
 
   /** Pretty-printer for a collection of phases */
   friend std::ostream& operator << (std::ostream& o, const PhaseFinder& pf) {
@@ -136,10 +136,10 @@ class PhaseFinder {
   }
 
   /** Generate symmetric partner for a point */
-  std::vector<Eigen::VectorXd> symmetric_partners(const Eigen::VectorXd a) const;
+  std::vector<Eigen::VectorXd> symmetric_partners(const Eigen::VectorXd& a) const;
   
   /** Check that two minima are identical to within a particular tolerance */
-  bool identical_within_tol(const Eigen::VectorXd a, const Eigen::VectorXd b) const;
+  bool identical_within_tol(const Eigen::VectorXd& a, const Eigen::VectorXd& b) const;
 
   /** return minima at T_low*/
   std::vector<Point> get_minima_at_t_low();
@@ -153,23 +153,23 @@ class PhaseFinder {
      Find local minima at a particular temperature. The overloads define
      different ways of passing an initial step.
   */
-  Point find_min(const Eigen::VectorXd X, double T, double step) const;
-  Point find_min(const Eigen::VectorXd X, double T, Eigen::VectorXd step) const;
-  Point find_min(const Eigen::VectorXd X, double T) const;
+  Point find_min(const Eigen::VectorXd& X, double T, double step) const;
+  Point find_min(const Eigen::VectorXd& X, double T, Eigen::VectorXd step) const;
+  Point find_min(const Eigen::VectorXd& X, double T) const;
 
   /** Check for a jump discontinuity between two phases*/
-  bool jump(const Eigen::VectorXd a, const Eigen::VectorXd b) const;
+  bool jump(const Eigen::VectorXd& a, const Eigen::VectorXd& b) const;
   /** Get descriptor of a particular minimum */
-  minima_descriptor get_minima_descriptor(const Point minima) const;
+  minima_descriptor get_minima_descriptor(const Point& minima) const;
   /**
     @overload
     Get descriptor of the deepest minimum of a set at a particular temperature
   */
-  minima_descriptor get_minima_descriptor(const std::vector<Point> minima, double T) const;
+  minima_descriptor get_minima_descriptor(const std::vector<Point>& minima, double T) const;
   /** Get deepest minimum of a set at a particular temperature */
-  Point get_deepest_minima(const std::vector<Point> minima, double T) const;
+  Point get_deepest_minima(const std::vector<Point>& minima, double T) const;
   /** Check whether the origin is the unique minima */
-  bool origin_unique_minima(const std::vector<Point> minima) const;
+  bool origin_unique_minima(const std::vector<Point>& minima) const;
 
   static double wrap_nlopt(const std::vector<double> &x,
                            std::vector<double> &grad, void *data) {
@@ -187,34 +187,34 @@ class PhaseFinder {
   std::vector<Point> minima_at_t_high;
 
   /** Expected change in minimum with temperature, dx/dt */
-  Eigen::VectorXd dx_min_dt(Eigen::VectorXd X, double T) const;
+  Eigen::VectorXd dx_min_dt(const Eigen::VectorXd& X, double T) const;
   /** @overload Precomputed Hessian matrix */
-  Eigen::VectorXd dx_min_dt(Eigen::MatrixXd hessian, Eigen::VectorXd X, double T) const;
+  Eigen::VectorXd dx_min_dt(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const;
 
   /** Check whether two phases are redundant */
-  bool redundant(const Phase *phase1, const Phase *phase2, end_descriptor end = BOTH) const;
+  bool redundant(const Phase& phase1, const Phase& phase2, end_descriptor end = BOTH) const;
 
   /** Check whether point belongs to a known phase */
-  bool belongs_known_phase(Point point) const;
+  bool belongs_known_phase(const Point& point) const;
 
   /** Electroweak vacuum at zero temperature */
-  bool consistent_vacuum(Eigen::VectorXd x) const;
+  bool consistent_vacuum(const Eigen::VectorXd& x) const;
 
   /** Check whether point is out of boundary */
-  bool out_of_bounds(Eigen::VectorXd x) const;
+  bool out_of_bounds(const Eigen::VectorXd& x) const;
 
   /** Remove/combine identical phases */
   void remove_redundant();
 
   /** Check whether Hessian is singular */
-  bool hessian_singular(Eigen::VectorXd X, double T) const;
+  bool hessian_singular(const Eigen::VectorXd& X, double T) const;
   /** @overload Precomputed Hessian matrix */
-  bool hessian_singular(Eigen::MatrixXd hessian, Eigen::VectorXd X, double T) const;
+  bool hessian_singular(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const;
 
   /** Check whether Hessian is positive definite  */
-  bool hessian_positive_definite(Eigen::VectorXd X, double T) const;
+  bool hessian_positive_definite(const Eigen::VectorXd& X, double T) const;
   /** @overload Precomputed Hessian matrix */
-  bool hessian_positive_definite(Eigen::MatrixXd hessian, Eigen::VectorXd X, double T) const;
+  bool hessian_positive_definite(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const;
 
   /** Default bound on fields */
   const double bound = 1600.;
