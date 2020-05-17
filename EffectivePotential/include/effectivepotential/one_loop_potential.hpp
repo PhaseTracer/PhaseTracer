@@ -50,10 +50,10 @@ class OneLoopPotential : public Potential {
   /** Finite-temperature effective potential */
   double V(Eigen::VectorXd phi, double T) const;
   /** Zero-temperature one-loop correction */
-  double V1(std::vector<double> scalar_masses_sq,
-            std::vector<double> fermion_masses_sq,
-            std::vector<double> vector_masses_sq) const;
-  double V1(Eigen::VectorXd phi) const;
+  virtual double V1(std::vector<double> scalar_masses_sq,
+                    std::vector<double> fermion_masses_sq,
+                    std::vector<double> vector_masses_sq) const;
+  virtual double V1(Eigen::VectorXd phi) const;
   /** Finite-temperature one-loop correction */
   double V1T(std::vector<double> scalar_masses_sq,
              std::vector<double> fermion_masses_sq,
