@@ -74,6 +74,10 @@ class OneLoopPotential : public Potential {
   PROPERTY(double, renormalization_scale, 246.)
   /** The gauge parameter \xi */
   PROPERTY(double, xi, 0.)
+  /** Treatment of the thermal masses **/
+  /** false: Arnold-Espinosa  method **/
+  /** true: Parwani method **/
+  PROPERTY(bool, use_Parwani_method, false)
 };
 
 }  // namespace EffectivePotential

@@ -215,9 +215,16 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
 }
 
 double OneLoopPotential::V1T(Eigen::VectorXd phi, double T) const {
-  return V1T(get_scalar_masses_sq(phi, xi),
+
+  if (use_Parwani_method){
+    return V1T(get_scalar_debye_sq(phi, xi, T),
+             get_fermion_masses_sq(phi),
+             get_vector_debye_sq(phi, T), T);
+  } else {
+    return V1T(get_scalar_masses_sq(phi, xi),
              get_fermion_masses_sq(phi),
              get_vector_masses_sq(phi), T);
+  } 
 }
 
 
@@ -257,11 +264,18 @@ double OneLoopPotential::V(Eigen::VectorXd phi, double T) const {
   if (T > 0) {
     const auto scalar_debye_sq = get_scalar_debye_sq(phi, xi, T);
     const auto vector_debye_sq = get_vector_debye_sq(phi, T);
-    return V0(phi)
-           + daisy(scalar_masses_sq, scalar_debye_sq, vector_masses_sq, vector_debye_sq, T)
-           + V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq)
-           + V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, T)
-           + counter_term(phi, T);
+    if (use_Parwani_method){
+      return V0(phi)
+             + V1(scalar_debye_sq, fermion_masses_sq, vector_debye_sq)
+             + V1T(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, T)
+             + counter_term(phi, T);
+    } else {
+      return V0(phi)
+             + daisy(scalar_masses_sq, scalar_debye_sq, vector_masses_sq, vector_debye_sq, T)
+             + V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq)
+             + V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, T)
+             + counter_term(phi, T);
+    }    
   } else {
     return V0(phi) + V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq);
   }
