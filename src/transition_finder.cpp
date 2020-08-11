@@ -23,8 +23,6 @@
 
 namespace PhaseTracer {
 
-TransitionFinder::TransitionFinder(PhaseFinder &pf_) : pf(pf_) {}
-
 std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase phase2, double T1, double T2) const {
   if (T1 > T2) {
     LOG(debug) << "Phases do not overlap in temperature - no critical temperature";
@@ -32,7 +30,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
   }
 
   try {
-    const auto f = [this, phase1, phase2](double T) {return this->pf.delta_potential_at_T(&phase1, &phase2, T);};
+    const auto f = [this, phase1, phase2](double T) {return this->pf.delta_potential_at_T(phase1, phase2, T);};
 
     const double root_bits = 1. - std::log2(TC_tol_rel);
     boost::math::tools::eps_tolerance<double> stop(root_bits);
@@ -46,8 +44,8 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
     if (!ordered) {
       std::swap(phase1, phase2);
     }
-    const auto phase1_at_critical = pf.phase_at_T(&phase1, TC);
-    const auto phase2_at_critical = pf.phase_at_T(&phase2, TC);
+    const auto phase1_at_critical = pf.phase_at_T(phase1, TC);
+    const auto phase2_at_critical = pf.phase_at_T(phase2, TC);
     const auto delta_potential = phase1_at_critical.potential - phase2_at_critical.potential;
     const auto true_vacua = pf.symmetric_partners(phase1_at_critical.x);
     const auto false_vacua =  pf.symmetric_partners(phase2_at_critical.x);
@@ -86,24 +84,24 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
   }
 }
 
-std::vector<Transition> TransitionFinder::divide_and_find_transition(Phase phase1, Phase phase2, double T1, double T2) const {
+std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2) const {
   std::vector<Transition> roots;
   for (double T = T1; T <= T2; T += separation) {
     const auto bs = find_transition(phase1, phase2, T, std::min(T + separation, T2));
-    for (auto &b : bs) {
+    for (const auto &b : bs) {
       roots.push_back(b);
     }
   }
   return roots;
 }
 
-double TransitionFinder::gamma(const Eigen::VectorXd true_vacuum, const Eigen::VectorXd false_vacuum, const double TC) const {
+double TransitionFinder::gamma(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, const double TC) const {
   const int b = true_vacuum.size() + 1;
   const int items = (b + (n_ew_scalars % b)) % b;
   return (true_vacuum-false_vacuum).head(items).norm()/TC;
 }
 
-std::vector<bool> TransitionFinder::changed(const Eigen::VectorXd true_vacuum, const Eigen::VectorXd false_vacuum) const {
+std::vector<bool> TransitionFinder::changed(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum) const {
   auto delta = true_vacuum-false_vacuum;
   std::vector<bool> changed_;
   for (unsigned int i = 0; i < delta.size(); i += 1) {
@@ -112,28 +110,28 @@ std::vector<bool> TransitionFinder::changed(const Eigen::VectorXd true_vacuum, c
   return changed_;
 }
 
-bool TransitionFinder::phases_overlaped(Phase phase1, Phase phase2, double T) const {
-  return pf.identical_within_tol(pf.phase_at_T(&phase1, T).x, pf.phase_at_T(&phase2, T).x);
+bool TransitionFinder::phases_overlaped(const Phase& phase1, const Phase& phase2, double T) const {
+  return pf.identical_within_tol(pf.phase_at_T(phase1, T).x, pf.phase_at_T(phase2, T).x);
 }
 
-std::vector<double> TransitionFinder::get_un_overlapped_T_range(Phase phase1, Phase phase2, double T1, double T2) const {
+std::vector<double> TransitionFinder::get_un_overlapped_T_range(const Phase& phase1, const Phase& phase2, double T1, double T2) const {
   std::vector<double> T_range;
-  
+
   if (!(phases_overlaped(phase1, phase2, T1) || phases_overlaped(phase1, phase2, T2))) {
     T_range.push_back(T1);
     T_range.push_back(T2);
     return T_range;
   }
-  
+
   if ( phases_overlaped(phase1, phase2, T1) && phases_overlaped(phase1, phase2, T2) ) {
     LOG(fatal) << "Phases " << phase1.key << " and " << phase2.key << " are redundant";
     return T_range;
   }
-  
+
   double T_same = phases_overlaped(phase1, phase2, T1) ? T1 : T2;
   double T_diff = phases_overlaped(phase1, phase2, T2) ? T1 : T2;
   T_range.push_back(T_diff);
-  
+
   while (std::abs(T_diff-T_same) > TC_tol_rel) {
     double T_mid = 0.5*(T_same+T_diff);
     if (phases_overlaped(phase1, phase2, T_mid)) {
@@ -157,8 +155,8 @@ void TransitionFinder::find_transitions() {
   calculated_transitions = true;
   const auto phases = pf.get_phases();
 
-  for (auto &phase1 : phases) {
-    for (auto &phase2 : phases) {
+  for (const auto &phase1 : phases) {
+    for (const auto &phase2 : phases) {
       // Don't investigate n1 -> n1 or n1 -> n2 as well as n2 -> n1
       if (phase1.key >= phase2.key) {
         continue;
@@ -167,7 +165,7 @@ void TransitionFinder::find_transitions() {
       LOG(debug) << "Finding critical temperatures between phases "
                  << phase1.key << " and " << phase2.key;
 
-      
+
       double tmax = std::min(phase1.T.back(), phase2.T.back());
       double tmin = std::max(phase1.T.front(), phase2.T.front());
 
@@ -177,27 +175,27 @@ void TransitionFinder::find_transitions() {
       }
 
       auto T_range = get_un_overlapped_T_range(phase1, phase2, tmin, tmax);
-      
-      if (T_range.size() == 0) continue; 
+
+      if (T_range.size() == 0) continue;
       if (T_range.size() == 3) {
         const auto TC = T_range[2];
         LOG(debug) << "Phases " << phase1.key << " and " << phase2.key << " cross at T=" << TC;
-        const auto phase1_at_critical = pf.phase_at_T(&phase1, TC);
-        const auto phase2_at_critical = pf.phase_at_T(&phase2, TC);
+        const auto phase1_at_critical = pf.phase_at_T(phase1, TC);
+        const auto phase2_at_critical = pf.phase_at_T(phase2, TC);
         const double gamma_ = 0.;
         auto changed_ = changed(phase1_at_critical.x, phase2_at_critical.x);
-        Transition f = {SUCCESS, TC, phase1, phase2, 
-                        phase1_at_critical.x, phase2_at_critical.x, 
-                        gamma_, changed_, 
+        Transition f = {SUCCESS, TC, phase1, phase2,
+                        phase1_at_critical.x, phase2_at_critical.x,
+                        gamma_, changed_,
                         phase1_at_critical.potential - phase2_at_critical.potential};
         transitions.push_back(f);
       }
-      
+
       const auto found = assume_only_one_transition ?
         find_transition(phase1, phase2, T_range[0], T_range[1]) :
         divide_and_find_transition(phase1, phase2, T_range[0], T_range[1]);
 
-      for (auto &f : found) {
+      for (const auto &f : found) {
         if (f.message == SUCCESS) {
             transitions.push_back(f);
         }
@@ -221,7 +219,7 @@ std::ostream& operator << (std::ostream& o, const TransitionFinder& a) {
       o << "s";
     }
     o << std::endl << std::endl;
-    for (auto &t : a.transitions) {
+    for (const auto &t : a.transitions) {
       o << t << std::endl;
     }
   }
