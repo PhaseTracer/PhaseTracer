@@ -1,6 +1,35 @@
 #include "catch/catch.hpp"
+#include "models/1D_test_model.hpp"
 #include "models/2D_test_model.hpp"
 #include "models/Z2_scalar_singlet_model.hpp"
+
+TEST_CASE("Check autodiff potential for our one-dimensional test model", "[1DTestModel]") {
+
+  // Construct our models
+  EffectivePotential::OneDimModel analytic;
+  EffectivePotential::AutoDiffOneDimModel autodiff;
+
+  // Points and temperature at which to test it
+  Eigen::VectorXd x(1);
+  x << 100.;
+
+  const double T = 100.;
+  const double rel_tol = 1.e-6;
+
+  SECTION("Check potential at tree-level")
+
+  CHECK(analytic.V(x, T) == Approx(autodiff.V(x, T)).epsilon(rel_tol));
+
+  SECTION("Check Hessian")
+
+  CHECK(analytic.d2V_dx2(x, T)(0) == Approx(autodiff.d2V_dx2(x, T)(0)).epsilon(rel_tol));
+
+  SECTION("Check gradient")
+
+  CHECK(analytic.d2V_dxdt(x, T)(0) == Approx(autodiff.d2V_dxdt(x, T)(0)).epsilon(rel_tol));
+
+}
+
 
 TEST_CASE("Check potential for our two-dimensional test model", "[2DTestModel]") {
 
