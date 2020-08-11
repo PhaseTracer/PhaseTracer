@@ -163,11 +163,13 @@ double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
 }
 
 double OneLoopPotential::V1(Eigen::VectorXd phi, double T) const {
+  if (T != 0 && daisy_method != DaisyMethod::Parwani) {
+    throw std::runtime_error("V1 dependent on T only with Parwani daisy method");
+  }
+
   switch (daisy_method) {
+    case DaisyMethod::None:
     case DaisyMethod::ArnoldEspinosa:
-      if (T != 0) {
-        throw std::runtime_error("V1 independent of T with Arnold-Espinosa method");
-      }
       return V1(get_scalar_masses_sq(phi, xi),
                 get_fermion_masses_sq(phi),
                 get_vector_masses_sq(phi));
@@ -228,14 +230,15 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
 
 double OneLoopPotential::V1T(Eigen::VectorXd phi, double T) const {
   switch (daisy_method) {
-    case DaisyMethod::Parwani:
-      return V1T(get_scalar_debye_sq(phi, xi, T),
-                 get_fermion_masses_sq(phi),
-                 get_vector_debye_sq(phi, T), T);
+    case DaisyMethod::None:
     case DaisyMethod::ArnoldEspinosa:
       return V1T(get_scalar_masses_sq(phi, xi),
                  get_fermion_masses_sq(phi),
                  get_vector_masses_sq(phi), T);
+    case DaisyMethod::Parwani:
+      return V1T(get_scalar_debye_sq(phi, xi, T),
+                 get_fermion_masses_sq(phi),
+                 get_vector_debye_sq(phi, T), T);
     default:
       throw std::runtime_error("unknown daisy method");
   }
@@ -245,6 +248,10 @@ double OneLoopPotential::daisy(std::vector<double> scalar_masses_sq,
                                std::vector<double> scalar_debye_sq,
                                std::vector<double> vector_masses_sq,
                                std::vector<double> vector_debye_sq, double T) const {
+  if (daisy_method != DaisyMethod::ArnoldEspinosa) {
+    throw std::runtime_error("Explicit daisy term only present in Arnold-Espinosa");
+  }
+
   double correction = 0.;
 
   static const auto scalar_dofs = get_scalar_dofs();
@@ -280,16 +287,21 @@ double OneLoopPotential::V(Eigen::VectorXd phi, double T) const {
     const auto scalar_debye_sq = get_scalar_debye_sq(phi, xi, T);
     const auto vector_debye_sq = get_vector_debye_sq(phi, T);
     switch (daisy_method) {
-      case DaisyMethod::Parwani:
+      case DaisyMethod::None:
         return V0(phi)
-               + V1(scalar_debye_sq, fermion_masses_sq, vector_debye_sq)
-               + V1T(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, T)
+               + V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq)
+               + V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, T)
                + counter_term(phi, T);
       case DaisyMethod::ArnoldEspinosa:
         return V0(phi)
                + daisy(scalar_masses_sq, scalar_debye_sq, vector_masses_sq, vector_debye_sq, T)
                + V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq)
                + V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, T)
+               + counter_term(phi, T);
+      case DaisyMethod::Parwani:
+        return V0(phi)
+               + V1(scalar_debye_sq, fermion_masses_sq, vector_debye_sq)
+               + V1T(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, T)
                + counter_term(phi, T);
       default:
         throw std::runtime_error("unknown daisy method");
