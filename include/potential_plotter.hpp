@@ -24,14 +24,14 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include <iomanip>  
+#include <iomanip>
 
 #include "logger.hpp"
 #include "potential.hpp"
 
 namespace PhaseTracer {
 
-void potential_plotter(EffectivePotential::Potential &P,
+void potential_plotter(const EffectivePotential::Potential& P,
                        double T,
                        std::string prefix = "model",
                        double xmin = -100.,
@@ -57,7 +57,7 @@ void potential_plotter(EffectivePotential::Potential &P,
                   << std::endl;
       }
   }
-    
+
     output_file.close();
 
   const boost::filesystem::path this_file(__FILE__);
