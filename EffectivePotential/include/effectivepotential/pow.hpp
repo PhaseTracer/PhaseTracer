@@ -19,23 +19,27 @@
 #define POTENTIAL_POW_HPP_INCLUDED
 
 /**
-   Optimized pow(double, int) etc
+   Optimized pow(T, int) etc
 */
 
-inline double square(double x) {
+template<class T>
+T square(T x) {
   return x * x;
 }
 
-inline double cube(double x) {
+template<class T>
+T cube(T x) {
   return x * x * x;
 }
 
-inline double pow_4(double x) {
+template<class T>
+T pow_4(T x) {
   x *= x;
   return x * x;
 }
 
-inline double pow_int(double x, int n) {
+template<class T>
+T pow_int(T x, int n) {
 
   if (n < 0) {
     return pow_int(1. / x, -n);

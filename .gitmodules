@@ -1,0 +1,3 @@
+[submodule "EffectivePotential/autodiff"]
+	path = EffectivePotential/autodiff
+	url = https://github.com/autodiff/autodiff
