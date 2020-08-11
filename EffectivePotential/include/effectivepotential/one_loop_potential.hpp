@@ -31,7 +31,7 @@ namespace EffectivePotential {
 double xlogx(double);
 
 /** Method for daisy corrections */
-enum class DaisyMethod { ArnoldEspinosa, Parwani };
+enum class DaisyMethod { None, ArnoldEspinosa, Parwani };
 
 class OneLoopPotential : public Potential {
  public:
