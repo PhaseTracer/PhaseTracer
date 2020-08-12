@@ -168,6 +168,8 @@ double OneLoopPotential::V1(Eigen::VectorXd phi, double T) const {
   }
 
   switch (daisy_method) {
+    // Arnold-Espinosa method does not alter one-loop zero-temperature potential
+    // hence here it is the same as no daisy corrections
     case DaisyMethod::None:
     case DaisyMethod::ArnoldEspinosa:
       return V1(get_scalar_masses_sq(phi, xi),
@@ -230,6 +232,8 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
 
 double OneLoopPotential::V1T(Eigen::VectorXd phi, double T) const {
   switch (daisy_method) {
+    // Arnold-Espinosa method does not alter one-loop finite-temperature potential
+    // hence here it is the same as no daisy corrections
     case DaisyMethod::None:
     case DaisyMethod::ArnoldEspinosa:
       return V1T(get_scalar_masses_sq(phi, xi),
