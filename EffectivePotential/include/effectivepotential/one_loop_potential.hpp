@@ -30,6 +30,8 @@ namespace EffectivePotential {
 /** x * log(x) that safely treats x = 0 */
 double xlogx(double);
 
+/** Method for daisy corrections */
+enum class DaisyMethod { None, ArnoldEspinosa, Parwani };
 
 class OneLoopPotential : public Potential {
  public:
@@ -50,10 +52,10 @@ class OneLoopPotential : public Potential {
   /** Finite-temperature effective potential */
   double V(Eigen::VectorXd phi, double T) const;
   /** Zero-temperature one-loop correction */
-  double V1(std::vector<double> scalar_masses_sq,
-            std::vector<double> fermion_masses_sq,
-            std::vector<double> vector_masses_sq) const;
-  double V1(Eigen::VectorXd phi) const;
+  virtual double V1(std::vector<double> scalar_masses_sq,
+                    std::vector<double> fermion_masses_sq,
+                    std::vector<double> vector_masses_sq) const;
+  virtual double V1(Eigen::VectorXd phi, double T = 0.) const;
   /** Finite-temperature one-loop correction */
   double V1T(std::vector<double> scalar_masses_sq,
              std::vector<double> fermion_masses_sq,
@@ -74,6 +76,8 @@ class OneLoopPotential : public Potential {
   PROPERTY(double, renormalization_scale, 246.)
   /** The gauge parameter \xi */
   PROPERTY(double, xi, 0.)
+  /** Treatment of the thermal masses */
+  PROPERTY(DaisyMethod, daisy_method, DaisyMethod::ArnoldEspinosa)
 };
 
 }  // namespace EffectivePotential
