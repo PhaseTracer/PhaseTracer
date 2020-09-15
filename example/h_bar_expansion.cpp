@@ -1,12 +1,12 @@
 /**
-  2D example program for PhaseTracer.
+  Example of h-bar expansion.
 */
 
 #include <iostream>
 
 #include "models/2D_test_model.hpp" // Located in effective-potential/include/models
 #include "transition_finder.hpp"
-#include "phase_finder.hpp"
+#include "h_bar_expansion.hpp"
 #include "phase_plotter.hpp"
 #include "potential_plotter.hpp"
 #include "potential_line_plotter.hpp"
@@ -28,12 +28,12 @@ int main(int argc, char* argv[]) {
   EffectivePotential::TwoDimModel model;
 
   // Make PhaseFinder object and find the phases
-  PhaseTracer::PhaseFinder pf(model);
-  pf.find_phases();
-  std::cout << pf;
+  PhaseTracer::HbarExpansion hb(model);
+  hb.find_phases();
+  std::cout << hb;
 
   // Make TransitionFinder object and find the transitions
-  PhaseTracer::TransitionFinder tf(pf);
+  PhaseTracer::TransitionFinder tf(hb);
   tf.find_transitions();
   std::cout << std::setprecision (15) << tf;
 
