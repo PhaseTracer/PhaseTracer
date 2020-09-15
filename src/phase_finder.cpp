@@ -563,6 +563,13 @@ Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, double abs_s
   return find_min(guess, T, Eigen::VectorXd::Constant(n_scalars, abs_step));
 }
 
+std::function<double(Eigen::VectorXd)> PhaseFinder::make_objective(double T) const {
+  std::function<double(Eigen::VectorXd)> objective = [this, T](Eigen::VectorXd x) {
+    return this->P.V(x, T);
+  };
+  return objective;
+}
+
 Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, Eigen::VectorXd step) const {
   if (out_of_bounds(guess)) {
     LOG(fatal) << "guess = " << guess << " was out of bounds";
@@ -585,10 +592,7 @@ Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, Eigen::Vecto
 
   opt.set_initial_step(step_vector);
 
-  std::function<double(const Eigen::VectorXd&)> objective = [this, T](const Eigen::VectorXd& x) {
-    return this->P.V(x, T);
-  };
-
+  auto objective = make_objective(T);
   opt.set_min_objective(wrap_nlopt, &objective);
   std::vector<double> minima(guess.data(), guess.data() + guess.rows() * guess.cols());
   double potential_at_minima;
