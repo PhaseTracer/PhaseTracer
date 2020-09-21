@@ -15,21 +15,21 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_H_BAR_EXPANSION_HPP_INCLUDED
-#define PHASETRACER_H_BAR_EXPANSION_HPP_INCLUDED
+#ifndef POTENTIAL_SM_PARAMETERS_HPP_INCLUDED
+#define POTENTIAL_SM_PARAMETERS_HPP_INCLUDED
 
-#include "phase_finder.hpp"
+namespace SM
+{
+    // SM parameters
+    const double v = 246.221;
+    const double mh = 125.2;
+    const double mtop = 173.03;
+    const double mZ = 91.1876;
+    const double mW = 80.385;
+    const double g = 0.6535366;
+    const double gp = 0.35;
+    const double yt_sq = square(0.99472);
 
-namespace PhaseTracer {
-
-class HbarExpansion : public PhaseFinder {
- using PhaseFinder::PhaseFinder;
- public:
-  std::function<double(Eigen::VectorXd)> make_objective(double T) const override;
-  void find_phases() override;
-  virtual Point phase_at_T(const Phase& phase, double T) const override;
-};
-
-}  // namespace PhaseTracer
+} // namespace SM
 
 #endif
