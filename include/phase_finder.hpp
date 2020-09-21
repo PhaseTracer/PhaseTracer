@@ -104,7 +104,7 @@ class PhaseFinder {
     return phase_at_T(phase1, T).potential - phase_at_T(phase2, T).potential;
   }
 
-  Point phase_at_T(const Phase& phase, double T) const;
+  virtual Point phase_at_T(const Phase& phase, double T) const;
 
   /** Pretty-printer for a collection of phases */
   friend std::ostream& operator << (std::ostream& o, const PhaseFinder& pf) {

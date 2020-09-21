@@ -1,10 +1,10 @@
 /**
-  Example of h-bar expansion.
+  Example of h-bar expansion using xSM model.
 */
 
 #include <iostream>
 
-#include "models/2D_test_model.hpp" // Located in effective-potential/include/models
+#include "models/xSM_MSbar.hpp"
 #include "transition_finder.hpp"
 #include "h_bar_expansion.hpp"
 #include "phase_plotter.hpp"
@@ -14,32 +14,26 @@
 
 
 int main(int argc, char* argv[]) {
+  LOGGER(debug);
 
-  const bool debug_mode = argc > 1 && strcmp(argv[1], "-d") == 0;
-
-  // Set level of screen  output
-  if (debug_mode) {
-      LOGGER(debug);
-  } else {
-      LOGGER(fatal);
-  }
+  const double lambda_hs = atof(argv[1]);
+  const double Q = atof(argv[2]);
+  std::cout << "lambda_hs = " << lambda_hs << std::endl
+            << "Q = " <<  Q << std::endl;
 
   // Construct our model
-  EffectivePotential::TwoDimModel model;
+  auto model = EffectivePotential::make_xSM(lambda_hs, Q);
+  model.set_daisy_method(EffectivePotential::DaisyMethod::None);
 
   // Make PhaseFinder object and find the phases
   PhaseTracer::HbarExpansion hb(model);
+  hb.set_seed(0);
   hb.find_phases();
   std::cout << hb;
 
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(hb);
   tf.find_transitions();
-  std::cout << std::setprecision (15) << tf;
-
-  if (debug_mode) {
-    PhaseTracer::potential_plotter(model, tf.get_transitions().front().TC, "2D_test_model", 0., 2., 0.01, -2., 0., 0.01);
-    PhaseTracer::potential_line_plotter(model, tf.get_transitions(), "2D_test_model");
-    PhaseTracer::phase_plotter(tf, "2D_test_model");
-  }
+  std::cout << std::setprecision(15) << tf;
+  return 0;
 }
