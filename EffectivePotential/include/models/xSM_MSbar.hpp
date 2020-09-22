@@ -50,7 +50,7 @@ class xSM_MSbar : public OneLoopPotential {
     muh_sq_tree_EWSB(muh_sq_tree_EWSB_), mus_sq_tree_EWSB(mus_sq_tree_EWSB_) {}
 
   double get_v_tree_s() const {
-    return std::sqrt(-mus_sq / (4. * lambda_s));
+    return std::sqrt(-mus_sq / lambda_s);
   }
 
   double V0(Eigen::VectorXd phi) const override {
