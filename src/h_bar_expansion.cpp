@@ -58,10 +58,11 @@ void HbarExpansion::find_phases() {
     phases.push_back(phase);
   }
 
-  // add symmetric phases - these may be pseudo-phases - might not
-  // correspond to a minima of the potential at tree-level
+  // add pseudo phases - might not correspond to a minima
+  // of the potential at tree-level, but used for computation
+  // for gauge invariance, should be a minima, maxima or saddle point
 
-  for (const auto& p : symmetric_phases) {
+  for (const auto& p : pseudo_phases) {
     Phase phase;
     phase.key = key++;
     phase.T = {t_low, t_high};

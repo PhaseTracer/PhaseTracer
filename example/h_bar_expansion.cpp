@@ -28,15 +28,15 @@ int main(int argc, char* argv[]) {
   // Make PhaseFinder object and find the phases
   PhaseTracer::HbarExpansion hb(model);
   hb.set_seed(0);
-  Eigen::ArrayXd symmetric(2);
-  symmetric << 0., model.get_v_tree_s();
-  std::cerr << symmetric << std::endl;
-  hb.add_symmetric_phase(symmetric);
+  Eigen::ArrayXd pseudo(2);
+  pseudo << 0., model.get_v_tree_s();
+  hb.add_pseudo_phase(pseudo);
   hb.find_phases();
   std::cout << hb;
 
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(hb);
+  tf.set_TC_tol_rel(1e-8);
   tf.find_transitions();
   std::cout << std::setprecision(15) << tf;
   return 0;
