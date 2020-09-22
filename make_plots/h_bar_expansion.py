@@ -28,7 +28,7 @@ if __name__ == "__main__":
     central = np.array([call_pt(l, mtop) for l in lambda_hs])
     upper = np.array([call_pt(l, 2. * mtop) for l in lambda_hs])
 
-    fig, ax = plt.subplots(2)
+    fig, ax = plt.subplots(1, 2)
     for i, a in enumerate(ax):
         a.plot(lambda_hs, lower[:, i], c="red", ls="--", label="$Q = 1/2 m_t$")
         a.plot(lambda_hs, central[:, i], c="red", ls="-", label="$Q = m_t$")
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     ax[0].legend()
     ax[0].set_ylim(0., 180.)
-    ax[1].set_ylim(0., 3.)
+    ax[1].set_ylim(0., 4.)
     ax[0].set_ylabel("$T_C$")
     ax[1].set_ylabel("$\gamma$")
 

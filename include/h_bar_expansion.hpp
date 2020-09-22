@@ -28,6 +28,9 @@ class HbarExpansion : public PhaseFinder {
   std::function<double(Eigen::VectorXd)> make_objective(double T) const override;
   void find_phases() override;
   virtual Point phase_at_T(const Phase& phase, double T) const override;
+  void add_symmetric_phase(Eigen::ArrayXd symmetric_phase) { symmetric_phases.push_back(symmetric_phase); };
+ private:
+  std::vector<Eigen::ArrayXd> symmetric_phases;
 };
 
 }  // namespace PhaseTracer
