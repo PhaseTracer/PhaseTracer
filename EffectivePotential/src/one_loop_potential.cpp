@@ -311,7 +311,7 @@ double OneLoopPotential::V(Eigen::VectorXd phi, double T) const {
         throw std::runtime_error("unknown daisy method");
     }
   } else {
-    return V0(phi) + V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq);
+    return V0(phi) + V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq) + counter_term(phi, T);
   }
 }
 
