@@ -22,12 +22,16 @@ int main(int argc, char* argv[]) {
             << "Q = " <<  Q << std::endl;
 
   // Construct our model
-  auto model = EffectivePotential::make_xSM(lambda_hs, Q);
+  auto model = EffectivePotential::make_xSM(lambda_hs, Q, true);
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
 
   // Make PhaseFinder object and find the phases
   PhaseTracer::HbarExpansion hb(model);
   hb.set_seed(0);
+  Eigen::ArrayXd symmetric(2);
+  symmetric << 0., model.get_v_tree_s();
+  std::cerr << symmetric << std::endl;
+  hb.add_symmetric_phase(symmetric);
   hb.find_phases();
   std::cout << hb;
 

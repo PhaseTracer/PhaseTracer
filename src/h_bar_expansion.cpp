@@ -44,7 +44,6 @@ void HbarExpansion::find_phases() {
   // this does not depend on temperature
   const std::vector<Point> minima = get_minima_at_t_low();
   int key = 0;
-  bool phase_at_origin = false;
   const auto origin = Eigen::VectorXd::Zero(n_scalars);
 
   for (const auto& m : minima) {
@@ -57,19 +56,18 @@ void HbarExpansion::find_phases() {
     phase.end_low = REACHED_T_STOP;
     phase.end_high = REACHED_T_STOP;
     phases.push_back(phase);
-    phase_at_origin = phase_at_origin || get_minima_descriptor(m) == ORIGIN;
   }
 
-  // add phase at origin if neccessary. This is a pseudo-phase - it might not
+  // add symmetric phases - these may be pseudo-phases - might not
   // correspond to a minima of the potential at tree-level
 
-  if (!phase_at_origin) {
+  for (const auto& p : symmetric_phases) {
     Phase phase;
     phase.key = key++;
     phase.T = {t_low, t_high};
-    phase.X = {origin, origin};
+    phase.X = {p, p};
     phase.dXdT = {origin, origin};
-    phase.V = {P.V(origin, t_low), P.V(origin, t_high)};
+    phase.V = {P.V(p, t_low), P.V(p, t_high)};
     phase.end_low = REACHED_T_STOP;
     phase.end_high = REACHED_T_STOP;
     phases.push_back(phase);

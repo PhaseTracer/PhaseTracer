@@ -79,6 +79,11 @@ class xSM_MSbar_parameters_solver {
 
   double get_mu_h_Sq_tree_EWSB(){return mu_h_Sq_tree_EWSB;}
   double get_mu_s_Sq_tree_EWSB(){return mu_s_Sq_tree_EWSB;}
+
+  double get_mu_h_Sq_tree(){return mu_h_Sq_tree;}
+  double get_lambda_h_tree(){return lambda_h_tree;}
+  double get_mu_s_Sq_tree(){return mu_s_Sq_tree;}
+  double get_lambda_s_tree(){return lambda_s_tree;}
   
  private:
   

@@ -49,6 +49,10 @@ class xSM_MSbar : public OneLoopPotential {
     lambda_h(lambda_h_), mus_sq(mus_sq_), lambda_s(lambda_s_),
     muh_sq_tree_EWSB(muh_sq_tree_EWSB_), mus_sq_tree_EWSB(mus_sq_tree_EWSB_) {}
 
+  double get_v_tree_s() const {
+    return std::sqrt(-mus_sq / (4. * lambda_s));
+  }
+
   double V0(Eigen::VectorXd phi) const override {
     return 0.5 * muh_sq * square(phi[0]) +
            0.25 * lambda_h * pow_4(phi[0]) +
@@ -121,7 +125,7 @@ class xSM_MSbar : public OneLoopPotential {
   double mus_sq_tree_EWSB;  
 };
 
-xSM_MSbar make_xSM(double lambda_hs, double Q) {
+xSM_MSbar make_xSM(double lambda_hs, double Q, bool tree_level=true) {
   const double ms = 0.5 * SM::mh;
 
   const double lambda_s = 2. / square(SM::mh * SM::v) * square(square(ms) 
@@ -137,15 +141,15 @@ xSM_MSbar make_xSM(double lambda_hs, double Q) {
     throw std::runtime_error("Invalid when solving parameters");
   }
 
-  double mu_h_Sq = 2. * solver.get_mu_h_Sq();
-  double lambda_h = 4. * solver.get_lambda_h();
-  double mu_s_Sq = 2. * solver.get_mu_s_Sq();
+  double mu_h_Sq = 2. * (tree_level ? solver.get_mu_h_Sq_tree() : solver.get_mu_h_Sq());
+  double lambda_h = 4. * (tree_level ? solver.get_lambda_h_tree() : solver.get_lambda_h());
+  double mu_s_Sq = 2. * (tree_level ? solver.get_mu_s_Sq_tree() : solver.get_mu_s_Sq());
 
   // Construct our model
   EffectivePotential::xSM_MSbar model(ms, lambda_hs, mu_h_Sq,
                                       lambda_h, mu_s_Sq, lambda_s,
-                                      mu_h_Sq,
-                                      mu_s_Sq);
+                                      solver.get_mu_h_Sq_tree_EWSB(),
+                                      solver.get_mu_s_Sq_tree_EWSB());
   model.set_renormalization_scale(Q);
   return model;
 }
