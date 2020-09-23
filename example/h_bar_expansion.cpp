@@ -44,9 +44,14 @@ int main(int argc, char* argv[]) {
   PhaseTracer::HTExpansion ht(model);
   ht.set_seed(0);
   const double TC = tf.get_transitions()[0].TC;
-  Eigen::ArrayXd ht_minima = ht.find_minima_at_t(TC)[0].x;
+  const auto ht_minima = ht.find_minima_at_t(TC);
 
-  const double delta = std::abs(ht_minima[0]);
+  // Use minima with greatest Higgs
+  double delta = 0.;
+  for (const auto& m : ht_minima) {
+    delta = std::max(delta, std::abs(m.x(0)));
+  }
+
   const double gamma = delta / TC;
   std::cout << "gamma_HT = " << gamma << std::endl;
 
