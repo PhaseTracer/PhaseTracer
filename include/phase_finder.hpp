@@ -96,7 +96,7 @@ class PhaseFinder {
      over a uniform interval in field space
   */
   std::vector<Eigen::VectorXd> generate_test_points() const;
-  std::vector<Point> find_minima_at_t(const std::vector<Eigen::VectorXd>& test_points, double T) const;
+  std::vector<Point> find_minima_at_t(double T) const;
 
   virtual void find_phases();
 

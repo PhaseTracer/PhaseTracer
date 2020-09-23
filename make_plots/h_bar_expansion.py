@@ -18,7 +18,7 @@ def call_pt(lambda_hs, Q):
     for line in r.stdout.split("\n"):
         if line.startswith("TC = "):
             TC = float(line.split("=")[-1].strip())
-        if line.startswith("gamma = "):
+        if line.startswith("gamma_HT = "):
             gamma = float(line.split("=")[-1].strip())
 
     return TC, gamma

@@ -30,8 +30,15 @@ class HbarExpansion : public PhaseFinder {
   void find_phases() override;
   Point phase_at_T(const Phase& phase, double T) const override;
   void add_pseudo_phase(Eigen::ArrayXd pseudo_phase) { pseudo_phases.push_back(pseudo_phase); }
+
  private:
   std::vector<Eigen::ArrayXd> pseudo_phases;
+};
+
+class HTExpansion : public PhaseFinder {
+  using PhaseFinder::PhaseFinder;
+ public:
+  std::function<double(Eigen::VectorXd)> make_objective(double T) const override;
 };
 
 }  // namespace PhaseTracer

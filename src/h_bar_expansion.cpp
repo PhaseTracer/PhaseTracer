@@ -21,6 +21,17 @@
 
 namespace PhaseTracer {
 
+std::function<double(Eigen::VectorXd)> HTExpansion::make_objective(double T) const {
+  // downcast potential to a one-loop potential
+  EffectivePotential::OneLoopPotential* P1l = (EffectivePotential::OneLoopPotential*)(&P);
+
+  std::function<double(Eigen::VectorXd)> objective = [P1l, T](Eigen::VectorXd x) {
+    return P1l->VHT(x, T);
+  };
+
+  return objective;
+}
+
 std::function<double(Eigen::VectorXd)> HbarExpansion::make_objective(double /* T */) const {
   // downcast potential to a one-loop potential
   EffectivePotential::OneLoopPotential* P1l = (EffectivePotential::OneLoopPotential*)(&P);
