@@ -39,5 +39,16 @@ int main(int argc, char* argv[]) {
   tf.set_TC_tol_rel(1e-8);
   tf.find_transitions();
   std::cout << std::setprecision(15) << tf;
+
+  // Find gamma using high-temperature expansion
+  PhaseTracer::HTExpansion ht(model);
+  ht.set_seed(0);
+  const double TC = tf.get_transitions()[0].TC;
+  Eigen::ArrayXd ht_minima = ht.find_minima_at_t(TC)[0].x;
+
+  const double delta = std::abs(ht_minima[0]);
+  const double gamma = delta / TC;
+  std::cout << "gamma_HT = " << gamma << std::endl;
+
   return 0;
 }

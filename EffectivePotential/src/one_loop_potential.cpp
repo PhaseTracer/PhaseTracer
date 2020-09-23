@@ -248,6 +248,15 @@ double OneLoopPotential::V1T(Eigen::VectorXd phi, double T) const {
   }
 }
 
+double OneLoopPotential::VHT(Eigen::VectorXd phi, double T) const {
+  const auto thermal_sq = get_scalar_thermal_sq(T);
+  double V = V0(phi);
+  for (int i = 0; i < thermal_sq.size(); i++) {
+    V += 0.5 * thermal_sq[i] * square(phi(i));
+  }
+  return V;
+}
+
 double OneLoopPotential::daisy(std::vector<double> scalar_masses_sq,
                                std::vector<double> scalar_debye_sq,
                                std::vector<double> vector_masses_sq,

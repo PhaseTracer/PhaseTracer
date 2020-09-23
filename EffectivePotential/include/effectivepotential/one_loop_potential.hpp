@@ -40,6 +40,7 @@ class OneLoopPotential : public Potential {
   virtual std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const { return {}; }
   virtual std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const { return {}; }
   virtual std::vector<double> get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const { return {}; }
+  virtual std::vector<double> get_scalar_thermal_sq(double T) const { return {}; }
   virtual std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const { return {}; }
   virtual std::vector<double> get_scalar_dofs() const;
   virtual std::vector<double> get_fermion_dofs() const { return {}; }
@@ -70,6 +71,9 @@ class OneLoopPotential : public Potential {
 
   /** Counter-term to potential */
   virtual double counter_term(Eigen::VectorXd phi, double T) const { return 0; }
+
+  /** High-temperature expansion of potential */
+  double VHT(Eigen::VectorXd phi, double T) const;
 
  private:
   /** The renormalization scale for the effective potential */
