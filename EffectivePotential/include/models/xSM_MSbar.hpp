@@ -19,14 +19,11 @@
 #define POTENTIAL_XSM_MSbar_HPP_INCLUDED
 
 /**
-   Z2 symmetric real scalar singlet extension of the Standard Model
+ * Z2 symmetric real scalar singlet extension of the Standard Model
+ *
+ * Conventions match 1808.01098.
+ */
 
-   Conventions match 1808.01098.
-*/
-
-#include <fstream>
-#include <iostream>
-#include <string>
 #include <vector>
 
 #include "xSM_MSbar_solver.hpp"
@@ -39,6 +36,9 @@ namespace EffectivePotential {
 
 class xSM_MSbar : public OneLoopPotential {
  public:
+  /**
+   * @brief Make an xSM model from Lagrangian parameters
+   */
   xSM_MSbar(double lambda_hs_,
             double muh_sq_,
             double lambda_h_,
@@ -49,6 +49,41 @@ class xSM_MSbar : public OneLoopPotential {
     lambda_hs(lambda_hs_), muh_sq(muh_sq_),
     lambda_h(lambda_h_), mus_sq(mus_sq_), lambda_s(lambda_s_),
     muh_sq_tree_EWSB(muh_sq_tree_EWSB_), mus_sq_tree_EWSB(mus_sq_tree_EWSB_) {}
+
+  /**
+   * @brief Make an xSM model using 1808.01098 conventions
+   *
+   * @param lambda_hs Quartic coupling
+   * @param Q Renormalization scale
+   * @param tree_level Whether to use tree-level tadpole conditions
+   */
+  xSM_MSbar(double lambda_hs_, double Q, bool tree_level = true) : lambda_hs(lambda_hs_) {
+    // NB factors of 2 and 4 etc due to different conventions in solver
+
+    // Match choices in 1808.01098
+    const double ms = 0.5 * SM::mh;
+    const double lambda_s_min = 2. / square(SM::mh * SM::v) *
+      square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+    lambda_s = lambda_s_min + 0.1;
+
+    // Solve constraints on Higgs, singlet masses etc
+    xSM_MSbar_parameters_solver solver(ms, 0, 0.25 * lambda_hs, 0, 0, 0.25 * lambda_s);
+    solver.set_renormalization_scale(Q);
+    const bool valid = solver.solving_parameters();
+    if (!valid) {
+      throw std::runtime_error("Invalid when solving parameters");
+    }
+
+    // Extract parameters in appropriate convention
+    muh_sq = 2. * (tree_level ? solver.get_mu_h_Sq_tree() : solver.get_mu_h_Sq());
+    lambda_h = 4. * (tree_level ? solver.get_lambda_h_tree() : solver.get_lambda_h());
+    mus_sq = 2. * (tree_level ? solver.get_mu_s_Sq_tree() : solver.get_mu_s_Sq());
+    muh_sq_tree_EWSB = 2. * solver.get_mu_h_Sq_tree_EWSB();
+    mus_sq_tree_EWSB = 2. * solver.get_mu_s_Sq_tree_EWSB();
+
+    // Set renormalization scheme consistently with tadpoles
+    set_renormalization_scale(Q);
+  }
 
   double get_v_tree_s() const {
     return std::sqrt(-mus_sq / lambda_s);
@@ -83,7 +118,9 @@ class xSM_MSbar : public OneLoopPotential {
   }
 
   // Physical Higgs bosons and Goldstone bosons
-  std::vector<double> get_scalar_dofs() const override { return {1., 1., 3.}; }
+  std::vector<double> get_scalar_dofs() const override {
+    return {1., 1., 3.};
+  }
 
   // W, Z, photon
   std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const override {
@@ -122,48 +159,16 @@ class xSM_MSbar : public OneLoopPotential {
   };
 
  private:
+  // Lagrangian parameters
   double lambda_hs;
   double muh_sq;
   double lambda_h;
   double mus_sq;
   double lambda_s;
-
+  // For consistency in one-loop potential
   double muh_sq_tree_EWSB;
   double mus_sq_tree_EWSB;
 };
-
-xSM_MSbar make_xSM(double lambda_hs, double Q, bool tree_level = true) {
-  // NB factors of 2 and 4 etc due to different conventions in solver
-
-  // Match choices in 1808.01098
-  const double ms = 0.5 * SM::mh;
-  const double lambda_s_min = 2. / square(SM::mh * SM::v) *
-    square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-  const double lambda_s = lambda_s_min + 0.1;
-
-  // Solve constraints on Higgs, singlet masses etc
-  xSM_MSbar_parameters_solver solver(ms, 0, 0.25 * lambda_hs, 0, 0, 0.25 * lambda_s);
-  solver.set_renormalization_scale(Q);
-  const bool valid = solver.solving_parameters();
-  if (!valid) {
-    throw std::runtime_error("Invalid when solving parameters");
-  }
-
-  // Extract parameters in appropriate convention
-  const double mu_h_Sq = 2. * (tree_level ? solver.get_mu_h_Sq_tree() : solver.get_mu_h_Sq());
-  const double lambda_h = 4. * (tree_level ? solver.get_lambda_h_tree() : solver.get_lambda_h());
-  const double mu_s_Sq = 2. * (tree_level ? solver.get_mu_s_Sq_tree() : solver.get_mu_s_Sq());
-  const double mu_h_Sq_tree_EWSB = 2. * solver.get_mu_h_Sq_tree_EWSB();
-  const double mu_s_Sq_tree_EWSB = 2. * solver.get_mu_s_Sq_tree_EWSB();
-
-  // Construct xSM model
-  EffectivePotential::xSM_MSbar model(lambda_hs, mu_h_Sq,
-                                      lambda_h, mu_s_Sq, lambda_s,
-                                      mu_h_Sq_tree_EWSB,
-                                      mu_s_Sq_tree_EWSB);
-  model.set_renormalization_scale(Q);
-  return model;
-}
 
 }  // namespace EffectivePotential
 
