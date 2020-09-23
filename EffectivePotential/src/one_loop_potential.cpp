@@ -86,17 +86,9 @@ Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const 
     Eigen::VectorXd phi_shifted = phi;
     for (int jj = 0; jj < n_h_xy.size(); ++jj) {
       phi_shifted(ii) = phi(ii) + n_h_xy[jj] * h;
-      const auto scalar_masses_sq = get_scalar_masses_sq(phi_shifted, xi);
-      const auto fermion_masses_sq = get_fermion_masses_sq(phi_shifted);
-      const auto vector_masses_sq = get_vector_masses_sq(phi_shifted);
       for (int kk = 0; kk < n_h_xy.size(); ++kk) {
         const double T_shifted = T + n_h_xy[kk] * h;
-        const double V1T_ = V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, T_shifted);
-        const auto scalar_debye_sq = get_scalar_debye_sq(phi_shifted, xi, T_shifted);
-        const auto vector_debye_sq = get_vector_debye_sq(phi_shifted, T_shifted);
-        const double daisy_ = daisy(scalar_masses_sq, scalar_debye_sq, vector_masses_sq, vector_debye_sq, T);
-        const double counter_term_ = counter_term(phi, T);
-        gradient(ii) += (V1T_ + daisy_ + counter_term_) * coeff_xy[jj] * coeff_xy[kk] / square(h);
+        gradient(ii) += V(phi_shifted, T_shifted) * coeff_xy[jj] * coeff_xy[kk] / square(h);
       }
     }
   }
