@@ -18,12 +18,17 @@ int main(int argc, char* argv[]) {
 
   const double lambda_hs = atof(argv[1]);
   const double Q = atof(argv[2]);
+  const double xi = atof(argv[3]);
+  const bool tree_level_tadpoles = atoi(argv[4]);
   std::cout << "lambda_hs = " << lambda_hs << std::endl
-            << "Q = " <<  Q << std::endl;
+            << "Q = " << Q << std::endl
+            << "xi = " << xi << std::endl
+            << "tree-level tadpoles = " << tree_level_tadpoles << std::endl;
 
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar(lambda_hs, Q, true);
+  auto model = EffectivePotential::xSM_MSbar(lambda_hs, Q, tree_level_tadpoles);
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
+  model.set_xi(xi);
 
   // Make PhaseFinder object and find the phases
   PhaseTracer::HbarExpansion hb(model);
@@ -52,6 +57,8 @@ int main(int argc, char* argv[]) {
     delta = std::max(delta, std::abs(m.x(0)));
   }
 
+  const auto tree_minima = hb.find_minima_at_t(0.);
+  std::cout << "V = " << model.V(tree_minima[0].x, TC) << std::endl;
   const double gamma = delta / TC;
   std::cout << "gamma_HT = " << gamma << std::endl;
 
