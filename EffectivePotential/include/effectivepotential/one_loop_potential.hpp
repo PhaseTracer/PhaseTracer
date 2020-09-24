@@ -75,6 +75,13 @@ class OneLoopPotential : public Potential {
   /** High-temperature expansion of potential */
   double VHT(Eigen::VectorXd phi, double T) const;
 
+  /** Tree-level scalar masses */
+  std::vector<double> get_tree_scalar_masses_sq(Eigen::VectorXd phi) const;
+
+
+  /** One-loop scalar masses */
+  std::vector<double> get_1l_scalar_masses_sq(Eigen::VectorXd phi, double T) const;
+
  private:
   /** The renormalization scale for the effective potential */
   PROPERTY(double, renormalization_scale, 246.)

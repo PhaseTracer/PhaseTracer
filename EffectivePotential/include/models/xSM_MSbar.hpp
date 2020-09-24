@@ -78,8 +78,8 @@ class xSM_MSbar : public OneLoopPotential {
     muh_sq = 2. * (tree_level ? solver.get_mu_h_Sq_tree() : solver.get_mu_h_Sq());
     lambda_h = 4. * (tree_level ? solver.get_lambda_h_tree() : solver.get_lambda_h());
     mus_sq = 2. * (tree_level ? solver.get_mu_s_Sq_tree() : solver.get_mu_s_Sq());
-    muh_sq_tree_EWSB = 2. * solver.get_mu_h_Sq_tree_EWSB();
-    mus_sq_tree_EWSB = 2. * solver.get_mu_s_Sq_tree_EWSB();
+    muh_sq_tree_EWSB = tree_level ? 2. * solver.get_mu_h_Sq_tree_EWSB() : muh_sq;
+    mus_sq_tree_EWSB = tree_level ? 2. * solver.get_mu_s_Sq_tree_EWSB() : mus_sq;
 
     // Set renormalization scheme consistently with tadpoles
     set_renormalization_scale(Q);
