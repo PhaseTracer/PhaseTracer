@@ -47,6 +47,23 @@ std::vector<double> OneLoopPotential::get_scalar_masses_sq(Eigen::VectorXd phi, 
   const Eigen::MatrixXd hessian = d2V0_dx2(phi);
   const Eigen::VectorXd m_sq = hessian.eigenvalues().real();
   std::vector<double> m_sq_vector(m_sq.data(), m_sq.data() + m_sq.rows() * m_sq.cols());
+  std::sort(m_sq_vector.begin(), m_sq_vector.end());
+  return m_sq_vector;
+}
+
+std::vector<double> OneLoopPotential::get_1l_scalar_masses_sq(Eigen::VectorXd phi, double T) const {
+  const Eigen::MatrixXd hessian = d2V_dx2(phi, T);
+  const Eigen::VectorXd m_sq = hessian.eigenvalues().real();
+  std::vector<double> m_sq_vector(m_sq.data(), m_sq.data() + m_sq.rows() * m_sq.cols());
+  std::sort(m_sq_vector.begin(), m_sq_vector.end());
+  return m_sq_vector;
+}
+
+std::vector<double> OneLoopPotential::get_tree_scalar_masses_sq(Eigen::VectorXd phi) const {
+  const Eigen::MatrixXd hessian = d2V0_dx2(phi);
+  const Eigen::VectorXd m_sq = hessian.eigenvalues().real();
+  std::vector<double> m_sq_vector(m_sq.data(), m_sq.data() + m_sq.rows() * m_sq.cols());
+  std::sort(m_sq_vector.begin(), m_sq_vector.end());
   return m_sq_vector;
 }
 
