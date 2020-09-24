@@ -62,21 +62,18 @@ int main(int argc, char* argv[]) {
   std::cout << "gamma_HT = " << gamma << std::endl;
 
   // Get Higgs mass
-  // const auto minima_tree = hb.find_minima_at_t(0.);
-  // const auto vacuum_tree = minima_tree[0].x;
-  // PhaseTracer::PhaseFinder pf(model);
-  // const auto minima_1l = pf.find_minima_at_t(0.);
-  // const auto vacuum_1l = minima_1l[0].x;
-  
-  Eigen::ArrayXd vacuum_1l(2);
-  Eigen::ArrayXd vacuum_tree(2);
-  vacuum_1l << SM::v, 0.;
-  vacuum_tree = vacuum_1l;
+  const auto minima_tree = hb.find_minima_at_t(0.);
+  PhaseTracer::PhaseFinder pf(model);
+  const auto minima_1l = pf.find_minima_at_t(0.);
+  std::cout << "v_tree = " << std::abs(minima_tree[0].x[0]) << std::endl;
+  std::cout << "v_1l = " << std::abs(minima_1l[0].x[0]) << std::endl;  
 
-  const auto mass_sq_1l = model.get_1l_scalar_masses_sq(vacuum_1l, 0.);
-  const auto mass_sq_tree = model.get_tree_scalar_masses_sq(vacuum_tree);
-
+  Eigen::ArrayXd physical(2);
+  physical << SM::v, 0.;
+  const auto mass_sq_1l = model.get_1l_scalar_masses_sq(physical, 0.);
+  const auto mass_sq_tree = model.get_tree_scalar_masses_sq(physical);
   std::cout << "mh_tree = " << std::sqrt(mass_sq_tree[1]) << std::endl;
   std::cout << "mh_1l = " << std::sqrt(mass_sq_1l[1]) << std::endl;
+
   return 0;
 }
