@@ -14,12 +14,13 @@ def getter(lines, name):
         if line.startswith("{} = ".format(name)):
             return float(line.split("=")[-1].strip())
 
-def call_pt(lambda_hs, Q, xi, tree_level_tadpoles):
+def call_pt(lambda_hs, Q, xi, tree_level_tadpoles, tree_ewsb):
     r = subprocess.run(["../bin/h_bar_expansion",
                         str(lambda_hs),
                         str(Q),
                         str(xi),
-                        str(int(tree_level_tadpoles))],
+                        str(int(tree_level_tadpoles)),
+                        str(int(tree_ewsb))],
                         stdout=subprocess.PIPE, encoding='utf8')
 
     lines = r.stdout.split("\n")
@@ -33,11 +34,12 @@ if __name__ == "__main__":
     lambda_hs = np.linspace(0.2, 0.4)
     mtop = 173.03
     xi = 0.
-    tree_level_tadpoles = False
+    tree_level_tadpoles = True
+    tree_ewsb = False
 
-    lower = np.array([call_pt(l, 0.5 * mtop, xi, tree_level_tadpoles) for l in lambda_hs])
-    central = np.array([call_pt(l, mtop, xi, tree_level_tadpoles) for l in lambda_hs])
-    upper = np.array([call_pt(l, 2. * mtop, xi, tree_level_tadpoles) for l in lambda_hs])
+    lower = np.array([call_pt(l, 0.5 * mtop, xi, tree_level_tadpoles, tree_ewsb) for l in lambda_hs])
+    central = np.array([call_pt(l, mtop, xi, tree_level_tadpoles, tree_ewsb) for l in lambda_hs])
+    upper = np.array([call_pt(l, 2. * mtop, xi, tree_level_tadpoles, tree_ewsb) for l in lambda_hs])
 
     # TC and gamma
 
