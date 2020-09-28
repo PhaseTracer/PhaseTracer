@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
     # xi-dependence
 
-    tree_ewsb = True
+    tree_ewsb = False
     tree_level_tadpoles = True
     lambda_hs = 0.2
     mtop = 173.03
