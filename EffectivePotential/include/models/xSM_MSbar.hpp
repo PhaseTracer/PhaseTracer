@@ -25,6 +25,7 @@
  */
 
 #include <vector>
+#include <Eigen/Eigenvalues>
 
 #include "xSM_MSbar_solver.hpp"
 #include "one_loop_potential.hpp"
@@ -108,26 +109,34 @@ class xSM_MSbar : public OneLoopPotential {
   std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const override {
     const double h = phi[0];
     const double s = phi[1];
+    Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(5, 5);
 
-    // Higgs and singlet. Construct elements of mass matrix
-    const double Mhh = muh_sq_tree_EWSB + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
-    const double Mss = mus_sq_tree_EWSB + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
-    const double Mhs = lambda_hs * h * s;
-    // diagonalize mass matrix
-    const double A = 0.5 * (Mhh+Mss);
-    const double B = std::sqrt(0.25 * square(Mhh - Mss) + square(Mhs));
-    const double mH1 = A - B;
-    const double mH2 = A + B;
+    // Higgs and Goldstone diagonals
+    M2(0, 0) = (tree_ewsb ? muh_sq_tree_EWSB : muh_sq) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    M2(1, 1) = M2(0, 0);
+    M2(2, 2) = (tree_ewsb ? muh_sq_tree_EWSB : muh_sq) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    M2(3, 3) = M2(0, 0);
 
-    // Goldstone bosons
-    const double mg = muh_sq_tree_EWSB + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    // Singlet mass diagonal
+    M2(4, 4) = (tree_ewsb ? mus_sq_tree_EWSB : mus_sq) + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
 
-    return {mH1, mH2, mg};
+    // Mixing between Higgs and singlet
+    M2(2, 4) = M2(4, 2) = lambda_hs * h * s; 
+
+    // xi-dependence
+    M2(0, 0) += 0.25 * xi * square(SM::g * h);
+    M2(1, 1) += 0.25 * xi * square(SM::g * h);
+    M2(3, 3) += 0.25 * xi * (square(SM::g * h) + square(SM::gp * h));
+
+    const Eigen::VectorXd m_sq = M2.eigenvalues().real();
+    std::vector<double> m_sq_vector(m_sq.data(), m_sq.data() + m_sq.rows() * m_sq.cols());
+    std::sort(m_sq_vector.begin(), m_sq_vector.end());
+    return m_sq_vector;
   }
 
   // Physical Higgs bosons and Goldstone bosons
   std::vector<double> get_scalar_dofs() const override {
-    return {1., 1., 3.};
+    return {1., 1., 1., 1., 1};
   }
 
   // W, Z, photon
@@ -166,6 +175,8 @@ class xSM_MSbar : public OneLoopPotential {
     return {phi1, phi2};
   };
 
+ void set_tree_ewsb(bool tree_ewsb_) { tree_ewsb = tree_ewsb_; }
+
  private:
   // Lagrangian parameters
   double lambda_hs;
@@ -176,6 +187,7 @@ class xSM_MSbar : public OneLoopPotential {
   // For consistency in one-loop potential
   double muh_sq_tree_EWSB;
   double mus_sq_tree_EWSB;
+  bool tree_ewsb{false};
 };
 
 }  // namespace EffectivePotential

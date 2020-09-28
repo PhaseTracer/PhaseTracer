@@ -21,15 +21,18 @@ int main(int argc, char* argv[]) {
   const double Q = atof(argv[2]);
   const double xi = atof(argv[3]);
   const bool tree_level_tadpoles = atoi(argv[4]);
+  const bool tree_ewsb = atoi(argv[5]);
   std::cout << "lambda_hs = " << lambda_hs << std::endl
             << "Q = " << Q << std::endl
             << "xi = " << xi << std::endl
-            << "tree-level tadpoles = " << tree_level_tadpoles << std::endl;
+            << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
+            << "tree-level tadpoles = " << tree_ewsb << std::endl;
 
   // Construct our model
   auto model = EffectivePotential::xSM_MSbar(lambda_hs, Q, tree_level_tadpoles);
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
   model.set_xi(xi);
+  model.set_tree_ewsb(tree_ewsb);
 
   // Make PhaseFinder object and find the phases
   PhaseTracer::HbarExpansion hb(model);
@@ -42,7 +45,7 @@ int main(int argc, char* argv[]) {
 
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(hb);
-  tf.set_TC_tol_rel(1e-8);
+  tf.set_TC_tol_rel(1e-12);
   tf.find_transitions();
   std::cout << std::setprecision(15) << tf;
 
