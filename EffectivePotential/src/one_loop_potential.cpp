@@ -38,8 +38,8 @@ std::vector<double> OneLoopPotential::get_scalar_masses_sq(Eigen::VectorXd phi, 
   if (xi != 0.) {
     throw std::runtime_error("Default implementation of scalar masses assumes xi = 0.");
   }
-  static const auto scalar_dofs = get_scalar_dofs();
-  static const bool identical = std::all_of(scalar_dofs.begin(), scalar_dofs.end(),
+  const auto scalar_dofs = get_scalar_dofs();
+  const bool identical = std::all_of(scalar_dofs.begin(), scalar_dofs.end(),
     [](double e){ return e == scalar_dofs.front(); });
   if (!identical) {
     throw std::runtime_error("Default implementation of scalar masses assumes scalar dof are equal.");
@@ -121,7 +121,7 @@ Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const 
 }
 
 std::vector<double> OneLoopPotential::get_scalar_dofs() const {
-  static const std::vector<double> dof(get_n_scalars(), 1.);
+  const std::vector<double> dof(get_n_scalars(), 1.);
   return dof;
 }
 
@@ -130,9 +130,9 @@ double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
                             std::vector<double> vector_masses_sq) const {
   double correction = 0;
 
-  static const auto scalar_dofs = get_scalar_dofs();
-  static const auto fermion_dofs = get_fermion_dofs();
-  static const auto vector_dofs = get_vector_dofs();
+  const auto scalar_dofs = get_scalar_dofs();
+  const auto fermion_dofs = get_fermion_dofs();
+  const auto vector_dofs = get_vector_dofs();
 
   if (scalar_dofs.size() != scalar_masses_sq.size()) {
     throw std::runtime_error("Scalar dofs and masses do not match");
@@ -206,9 +206,9 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
                              std::vector<double> vector_masses_sq, double T) const {
   double correction = 0;
 
-  static const auto scalar_dofs = get_scalar_dofs();
-  static const auto fermion_dofs = get_fermion_dofs();
-  static const auto vector_dofs = get_vector_dofs();
+  const auto scalar_dofs = get_scalar_dofs();
+  const auto fermion_dofs = get_fermion_dofs();
+  const auto vector_dofs = get_vector_dofs();
 
   if (scalar_dofs.size() != scalar_masses_sq.size()) {
     throw std::runtime_error("Scalar dofs and masses do not match");
@@ -284,8 +284,8 @@ double OneLoopPotential::daisy(std::vector<double> scalar_masses_sq,
 
   double correction = 0.;
 
-  static const auto scalar_dofs = get_scalar_dofs();
-  static const auto vector_dofs = get_vector_dofs();
+  const auto scalar_dofs = get_scalar_dofs();
+  const auto vector_dofs = get_vector_dofs();
 
   for (size_t i = 0; i < scalar_debye_sq.size(); ++i) {
     correction += scalar_dofs[i] * (std::pow(std::max(0., scalar_debye_sq[i]), 1.5)
