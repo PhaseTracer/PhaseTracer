@@ -22,6 +22,8 @@ int main(int argc, char* argv[]) {
   const double xi = atof(argv[3]);
   const bool tree_level_tadpoles = atoi(argv[4]);
   const bool tree_ewsb = atoi(argv[5]);
+  const bool physical_vacuum = true;
+
   std::cout << "lambda_hs = " << lambda_hs << std::endl
             << "Q = " << Q << std::endl
             << "xi = " << xi << std::endl
@@ -73,8 +75,10 @@ int main(int argc, char* argv[]) {
 
   Eigen::ArrayXd physical(2);
   physical << SM::v, 0.;
-  const auto mass_sq_1l = model.get_1l_scalar_masses_sq(physical, 0.);
-  const auto mass_sq_tree = model.get_tree_scalar_masses_sq(physical);
+  const auto mass_sq_1l = physical_vacuum ? model.get_1l_scalar_masses_sq(physical, 0.) :
+                                            model.get_1l_scalar_masses_sq(minima_1l[0].x, 0.);
+  const auto mass_sq_tree = physical_vacuum ? model.get_tree_scalar_masses_sq(physical):
+                                              model.get_tree_scalar_masses_sq(minima_tree[0].x);
   std::cout << "mh_tree = " << std::sqrt(mass_sq_tree[1]) << std::endl;
   std::cout << "mh_1l = " << std::sqrt(mass_sq_1l[1]) << std::endl;
 
