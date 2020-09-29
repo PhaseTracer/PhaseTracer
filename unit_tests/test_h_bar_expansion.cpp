@@ -32,5 +32,25 @@ TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
   std::cerr << "find phases" << std::endl;
   hb.find_phases();
 
-  
+  // Make TransitionFinder object and find the transitions
+  PhaseTracer::TransitionFinder tf(hb);
+  tf.set_TC_tol_rel(1e-12);
+  tf.find_transitions();
+
+  // Find gamma using high-temperature expansion
+  PhaseTracer::HTExpansion ht(model);
+  ht.set_seed(0);
+  const double TC = tf.get_transitions()[0].TC;
+  const auto ht_minima = ht.find_minima_at_t(TC);
+
+  // Use minima with greatest Higgs
+  double delta = 0.;
+  for (const auto& m : ht_minima) {
+    delta = std::max(delta, std::abs(m.x(0)));
+  }
+
+  const double gamma = delta / TC;
+
+  CHECK(gamma == Approx(2.0593571423));
+  CHECK(TC == Approx(90.3312027115));
 }

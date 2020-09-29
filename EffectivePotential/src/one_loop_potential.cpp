@@ -40,7 +40,7 @@ std::vector<double> OneLoopPotential::get_scalar_masses_sq(Eigen::VectorXd phi, 
   }
   const auto scalar_dofs = get_scalar_dofs();
   const bool identical = std::all_of(scalar_dofs.begin(), scalar_dofs.end(),
-    [](double e){ return e == scalar_dofs.front(); });
+    [scalar_dofs](double e){ return e == scalar_dofs.front(); });
   if (!identical) {
     throw std::runtime_error("Default implementation of scalar masses assumes scalar dof are equal.");
   }
