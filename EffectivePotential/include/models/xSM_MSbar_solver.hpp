@@ -105,6 +105,8 @@ class xSM_MSbar_parameters_solver {
   bool Z2_symmetry = false;
   
   // input parameters
+  // TODO PA: we shoudl really chnage the names of these paremeters
+  // to either something more intuitive or something widely used in literature 
   double ms;
   double c1;
   double c2;
@@ -206,7 +208,7 @@ class xSM_MSbar_parameters_solver {
         std::cout << "d_ls:" << dls << std::endl;
       }
       
-      hasConverged = dmuh < tol and dlh< tol and dmus < tol and dls< tol;
+      hasConverged = (dmuh < tol) and (dlh < tol) and (dmus < tol) and (dls < tol);
     }
     if (print_level >= 1 ){
       std::cout << "Converged at"<< std::endl;
