@@ -1,1 +1,2 @@
 add_executable(run_xSM_HT run_xSM_HT.cpp)
+add_executable(run_xSM_OSlike run_xSM_OSlike.cpp)

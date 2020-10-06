@@ -35,11 +35,11 @@ int main(int argc, char* argv[]) {
     output_file.open(output_file_name);
   }
 
+  model.set_m_s(SM::mh/2.);
   for (double ii = 0; ii < bins_lambda_hs; ii++) {
     if (not debug_mode){
       lambda_hs = 0.2 / bins_lambda_hs * ii+0.2;
     }
-    model.set_m_s(SM::mh/2.);
     model.set_lambda_hs(lambda_hs);
     if (debug_mode)
       std::cout << model.check() << std::endl;
