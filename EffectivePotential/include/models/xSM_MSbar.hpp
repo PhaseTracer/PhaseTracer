@@ -24,10 +24,11 @@
  * Conventions match 1808.01098.
  */
 
+#include <algorithm>
+#include <utility>
 #include <vector>
 #include <Eigen/Eigenvalues>
 
-#include "xSM_MSbar_solver.hpp"
 #include "one_loop_potential.hpp"
 #include "pow.hpp"
 #include "SM_parameters.hpp"
@@ -45,45 +46,166 @@ class xSM_MSbar : public OneLoopPotential {
             double lambda_h_,
             double mus_sq_,
             double lambda_s_,
-            double muh_sq_tree_EWSB_,
-            double mus_sq_tree_EWSB_):
+            double muh_sq_tree_ewsb_,
+            double mus_sq_tree_ewsb_):
     lambda_hs(lambda_hs_), muh_sq(muh_sq_),
     lambda_h(lambda_h_), mus_sq(mus_sq_), lambda_s(lambda_s_),
-    muh_sq_tree_EWSB(muh_sq_tree_EWSB_), mus_sq_tree_EWSB(mus_sq_tree_EWSB_) {}
+    muh_sq_tree_ewsb(muh_sq_tree_ewsb_), mus_sq_tree_ewsb(mus_sq_tree_ewsb_) {}
 
   /**
-   * @brief Make an xSM model using 1808.01098 conventions
-   *
-   * @param lambda_hs Quartic coupling
-   * @param Q Renormalization scale
-   * @param tree_level Whether to use tree-level tadpole conditions
+   * @brief Make an xSM model using tree or one-loop tadpole constraints
    */
-  xSM_MSbar(double lambda_hs_, double Q, bool tree_level = true) : lambda_hs(lambda_hs_) {
-    // NB factors of 2 and 4 etc due to different conventions in solver
+  static xSM_MSbar from_tadpoles(double lambda_hs, double Q, double xi, bool tree_level) {
+    xSM_MSbar model(lambda_hs, 0., 0., 0., 0., 0., 0.);
+    model.set_renormalization_scale(Q);
+    model.set_xi(xi);
+    if (tree_level) {
+      model.apply_tree_level();
+    } else {
+      model.apply_one_loop();
+    }
+    return model;
+  }
 
+  /**
+   * Apply tree-level Higgs VEV, and Higgs and singlet mass to fix
+   * three Lagrangian parameters.
+   *
+   * The singlet mass and quartic are fixed following 1808.01098.
+   */
+  void apply_tree_level() {
     // Match choices in 1808.01098
     const double ms = 0.5 * SM::mh;
     const double lambda_s_min = 2. / square(SM::mh * SM::v) *
       square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-    lambda_s = lambda_s_min + 0.1;
 
-    // Solve constraints on Higgs, singlet masses etc
-    xSM_MSbar_parameters_solver solver(ms, 0, 0.25 * lambda_hs, 0, 0, 0.25 * lambda_s);
-    solver.set_renormalization_scale(Q);
-    const bool valid = solver.solving_parameters();
-    if (!valid) {
-      throw std::runtime_error("Invalid when solving parameters");
+    double mhh = square(SM::mh);
+    double mss = square(ms);
+    if (mss > mhh) {
+      std::swap(mhh, mss);
     }
 
-    // Extract parameters in appropriate convention
-    muh_sq = 2. * (tree_level ? solver.get_mu_h_Sq_tree() : solver.get_mu_h_Sq());
-    lambda_h = 4. * (tree_level ? solver.get_lambda_h_tree() : solver.get_lambda_h());
-    mus_sq = 2. * (tree_level ? solver.get_mu_s_Sq_tree() : solver.get_mu_s_Sq());
-    muh_sq_tree_EWSB = tree_level ? 2. * solver.get_mu_h_Sq_tree_EWSB() : muh_sq;
-    mus_sq_tree_EWSB = tree_level ? 2. * solver.get_mu_s_Sq_tree_EWSB() : mus_sq;
+    // Apply SM vacuum and Higgs and singlet masses to constraint three parameters
 
-    // Set renormalization scheme consistently with tadpoles
-    set_renormalization_scale(Q);
+    lambda_s = lambda_s_min + 0.1;
+    lambda_h = mhh / (2. * square(SM::v));
+    muh_sq = -lambda_h * square(SM::v);
+    mus_sq = mss - 0.5 * lambda_hs * square(SM::v);
+  }
+
+  /**
+   * Apply one-level Higgs VEV, and Higgs and singlet mass to fix
+   * three Lagrangian parameters.
+   *
+   * The singlet mass and quartic are fixed following 1808.01098.
+   *
+   * This is an iterative solver that stops once the absolute change in
+   * Lagrangian parameters is small.
+   */
+  void apply_one_loop(double tol = 0.1) {
+    apply_tree_level();
+
+    while (true) {
+      double lambda_h_prev = lambda_h;
+      double lambda_s_prev = lambda_s;
+      double muh_sq_prev = muh_sq;
+      double mus_sq_prev = mus_sq;
+
+      iterate_one_loop();
+
+      const double dmuh = std::abs(muh_sq - muh_sq_prev);
+      const double dmus = std::abs(mus_sq - mus_sq_prev);
+      const double dlambda_h = std::abs(lambda_h - lambda_h_prev);
+      const double dlambda_s = std::abs(lambda_s - lambda_s_prev);
+
+      const bool converged = (dmuh < tol) && (dlambda_h < tol) && (dmus < tol) && (dlambda_s < tol);
+      if (converged) {
+        break;
+      }
+    }
+  }
+
+  Eigen::MatrixXd d2V1_dx2(Eigen::VectorXd phi) const {
+    Eigen::MatrixXd hessian = Eigen::MatrixXd::Zero(phi.size(), phi.size());
+
+    // diagonal elements
+    for (int ii = 0; ii < phi.size(); ++ii) {
+      Eigen::VectorXd phi_shifted = phi;
+      for (int jj = 0; jj < n_h_xx.size(); ++jj) {
+        phi_shifted(ii) = phi(ii) + n_h_xx[jj] * h;
+        hessian(ii, ii) += V1(phi_shifted) * coeff_xx[jj] / square(h);
+      }
+    }
+
+    // off-diagonal elements
+    for (int ii = 0; ii < phi.size(); ++ii) {
+      for (int jj = 0; jj < ii; ++jj) {
+        Eigen::VectorXd phi_shifted = phi;
+        for (int kk = 0; kk < n_h_xy.size(); ++kk) {
+          phi_shifted(ii) = phi(ii) + n_h_xy[kk] * h;
+          for (int ll = 0; ll < n_h_xy.size(); ++ll) {
+            phi_shifted(jj) = phi(jj) + n_h_xy[ll] * h;
+            hessian(ii, jj) += V1(phi_shifted) * coeff_xy[kk] * coeff_xy[ll] / square(h);
+          }
+        }
+        hessian(jj, ii) = hessian(ii, jj);
+      }
+    }
+    return hessian;
+  }
+
+  Eigen::VectorXd dV1_dx(Eigen::VectorXd phi) const {
+    Eigen::VectorXd jacobian = Eigen::VectorXd::Zero(phi.size());
+
+    for (int ii = 0; ii < phi.size(); ++ii) {
+      Eigen::VectorXd f = phi;
+      Eigen::VectorXd b = phi;
+      f(ii) = phi(ii) + 0.5 * h;
+      b(ii) = phi(ii) - 0.5 * h;
+      jacobian(ii) = (V1(f) - V1(b)) / h;
+    }
+
+    return jacobian;
+  }
+
+  /**
+   * Single iteration of one-loop tadpole solver.
+   *
+   * Uses numerical derivatives of Coleman-Weinberg potential.
+   */
+  void iterate_one_loop() {
+    Eigen::Vector2d vacuum;
+    vacuum << SM::v, 0.;
+    const auto jacobian = dV1_dx(vacuum);
+    const auto hessian = d2V1_dx2(vacuum);
+
+    // Match choices in 1808.01098
+    const double ms = 0.5 * SM::mh;
+    const double mh_sq = square(SM::mh);
+    const double ms_sq = square(ms);
+
+    const double a = mh_sq + ms_sq;
+    const double discriminant = square(mh_sq - ms_sq) - 4. * square(hessian(1, 0));
+
+    if (discriminant < 0) {
+      throw std::runtime_error("Could not solve 1l tadpoles");
+    }
+
+    const double b = discriminant < 0 ? 0 : sqrt(discriminant);
+    double mhh = 0.5 * (a + b);
+    double mss = 0.5 * (a - b);
+    if (mh_sq < ms_sq) {
+      std::swap(mhh, mss);
+    }
+
+    // Apply SM vacuum and Higgs and singlet masses to constraint three parameters
+
+    lambda_h = (mhh + jacobian(0) / SM::v - hessian(0, 0)) / (2. * square(SM::v));
+    muh_sq = -0.5 * mhh - 1.5 *jacobian(0) / SM::v + 0.5 * hessian(0, 0);
+    mus_sq = mss - 0.5 * lambda_hs * square(SM::v) - hessian(1, 1);
+
+    muh_sq_tree_ewsb = - lambda_h * square(SM::v);
+    mus_sq_tree_ewsb = mss - 0.5 * lambda_hs * square(SM::v);
   }
 
   double get_v_tree_s() const {
@@ -98,6 +220,9 @@ class xSM_MSbar : public OneLoopPotential {
            0.25 * lambda_s * pow_4(phi[1]);
   }
 
+  /**
+   * Thermal scalar masses of form c * T^2 etc for high-temperature expansion of potential
+   */
   std::vector<double> get_scalar_thermal_sq(double T) const override {
     const double c_h = (9. * square(SM::g) +
                         3. * square(SM::gp) +
@@ -106,22 +231,27 @@ class xSM_MSbar : public OneLoopPotential {
     return {c_h * square(T), c_s * square(T)};
   }
 
+  /**
+   * Tree-level scalar masses including xi-dependence.
+   *
+   * These masses enter the Coleman-Weinberg potential.
+   */
   std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const override {
     const double h = phi[0];
     const double s = phi[1];
     Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(5, 5);
 
     // Higgs and Goldstone diagonals
-    M2(0, 0) = (tree_ewsb ? muh_sq_tree_EWSB : muh_sq) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    M2(0, 0) = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     M2(1, 1) = M2(0, 0);
-    M2(2, 2) = (tree_ewsb ? muh_sq_tree_EWSB : muh_sq) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    M2(2, 2) = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     M2(3, 3) = M2(0, 0);
 
     // Singlet mass diagonal
-    M2(4, 4) = (tree_ewsb ? mus_sq_tree_EWSB : mus_sq) + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
+    M2(4, 4) = (tree_ewsb ? mus_sq_tree_ewsb : mus_sq) + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
 
     // Mixing between Higgs and singlet
-    M2(2, 4) = M2(4, 2) = lambda_hs * h * s; 
+    M2(2, 4) = M2(4, 2) = lambda_hs * h * s;
 
     // xi-dependence
     M2(0, 0) += 0.25 * xi * square(SM::g * h);
@@ -175,7 +305,8 @@ class xSM_MSbar : public OneLoopPotential {
     return {phi1, phi2};
   };
 
- void set_tree_ewsb(bool tree_ewsb_) { tree_ewsb = tree_ewsb_; }
+  /** Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential */
+  void set_tree_ewsb(bool tree_ewsb_) { tree_ewsb = tree_ewsb_; }
 
  private:
   // Lagrangian parameters
@@ -185,8 +316,8 @@ class xSM_MSbar : public OneLoopPotential {
   double mus_sq;
   double lambda_s;
   // For consistency in one-loop potential
-  double muh_sq_tree_EWSB;
-  double mus_sq_tree_EWSB;
+  double muh_sq_tree_ewsb;
+  double mus_sq_tree_ewsb;
   bool tree_ewsb{false};
 };
 

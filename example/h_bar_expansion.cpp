@@ -28,12 +28,12 @@ int main(int argc, char* argv[]) {
             << "Q = " << Q << std::endl
             << "xi = " << xi << std::endl
             << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
-            << "tree-level tadpoles = " << tree_ewsb << std::endl;
+            << "tree-level ewsb parameters = " << tree_ewsb << std::endl;
 
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar(lambda_hs, Q, tree_level_tadpoles);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, Q, xi, tree_level_tadpoles);
+
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-  model.set_xi(xi);
   model.set_tree_ewsb(tree_ewsb);
 
   // Make PhaseFinder object and find the phases
