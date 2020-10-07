@@ -18,9 +18,8 @@ TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
   const bool tree_ewsb = false;
 
   // Construct our model
-  EffectivePotential::xSM_MSbar model(lambda_hs, Q, tree_level_tadpoles);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, Q, xi, tree_level_tadpoles);
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-  model.set_xi(xi);
   model.set_tree_ewsb(tree_ewsb);
 
   // Make HBarExpansion object and find the phases
@@ -29,7 +28,6 @@ TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
   Eigen::ArrayXd pseudo(2);
   pseudo << 0., model.get_v_tree_s();
   hb.add_pseudo_phase(pseudo);
-  std::cerr << "find phases" << std::endl;
   hb.find_phases();
 
   // Make TransitionFinder object and find the transitions
