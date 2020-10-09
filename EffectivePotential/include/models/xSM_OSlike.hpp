@@ -264,12 +264,12 @@ class xSM_OSlike : public OneLoopPotential {
     const double W_debye = g_sq * (0.25 * h_sq + 11./6. * square(T));
     const double Z_debye = A + B;
     const double g_debye = A - B;
-    return {W_debye, Z_debye, g_debye};
+    return {W_debye, Z_debye};
   }
   std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const override{
     return get_vector_debye_sq(phi, 0.);
   }
-  std::vector<double> get_vector_dofs() const override { return {6., 3., 3.}; }
+  std::vector<double> get_vector_dofs() const override { return {6., 3.}; }
   
   // top
   std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const override{
@@ -311,7 +311,7 @@ class xSM_OSlike : public OneLoopPotential {
   const double lambda_h = -muh_sq / square(v);
 
   std::vector<double> scalar_masses_sq_EW = {mh*mh/4., mh*mh, 0.0};
-  const std::vector<double> vector_masses_sq_EW = {mW*mW, mZ*mZ};
+  const std::vector<double> vector_masses_sq_EW = {mW*mW, mZ*mZ, 0};
   const std::vector<double> fermion_masses_sq_EW = {mtop*mtop};
   
   double lambda_hs = 0.25;
