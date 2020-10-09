@@ -23,12 +23,12 @@ namespace SM
     // SM parameters
     const double v = 246.221;
     const double mh = 125.2;
-    const double mtop = 173.03;
+    const double mtop = 173.2;
     const double mZ = 91.1876;
     const double mW = 80.385;
-    const double g = 0.6535366;
-    const double gp = 0.35;
-    const double yt_sq = square(0.99472);
+    const double g = 2.*mW/v;
+    const double gp = std::sqrt(square(2.*mZ/v)-square(g));
+    const double yt_sq = 2.*square(mtop/v);
 
 } // namespace SM
 
