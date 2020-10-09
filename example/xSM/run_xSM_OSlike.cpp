@@ -37,6 +37,7 @@ int main(int argc, char* argv[]) {
   std::ofstream output_file;
   bool debug_mode=false;
   bool Parwani=true;
+  std::string plotname = "OSlike_Parwani";
   switch (atoi(argv[1])) {
     case 1:
       debug_mode=true;
@@ -47,6 +48,7 @@ int main(int argc, char* argv[]) {
     case 3:
       debug_mode=true;
       Parwani=false;
+      plotname="OSlike_ArnoldEspinosa";
       break;
     case 4:
       Parwani=false;
@@ -62,7 +64,7 @@ int main(int argc, char* argv[]) {
   if (debug_mode){
     LOGGER(debug);
     bins_lambda_hs = 1;
-    lambda_hs = 0.31;
+    lambda_hs = 0.28;
   }else {
     bins_lambda_hs = 50;
     LOGGER(fatal);
@@ -133,7 +135,7 @@ int main(int argc, char* argv[]) {
       output_file << std::endl;
     }
     // Print the data in a particular format for plotting
-    if (debug_mode) PhaseTracer::phase_plotter(tf, "xSM_OSlike");
+    if (debug_mode) PhaseTracer::phase_plotter(tf, plotname);
   }
   output_file.close();
   return 0;
