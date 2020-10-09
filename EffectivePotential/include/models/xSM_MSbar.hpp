@@ -46,17 +46,16 @@ class xSM_MSbar : public OneLoopPotential {
             double lambda_h_,
             double mus_sq_,
             double lambda_s_,
-            double muh_sq_tree_ewsb_,
-            double mus_sq_tree_ewsb_):
+            double muh_sq_tree_ewsb_):
     lambda_hs(lambda_hs_), muh_sq(muh_sq_),
     lambda_h(lambda_h_), mus_sq(mus_sq_), lambda_s(lambda_s_),
-    muh_sq_tree_ewsb(muh_sq_tree_ewsb_), mus_sq_tree_ewsb(mus_sq_tree_ewsb_) {}
+    muh_sq_tree_ewsb(muh_sq_tree_ewsb_) {}
 
   /**
    * @brief Make an xSM model using tree or one-loop tadpole constraints
    */
   static xSM_MSbar from_tadpoles(double lambda_hs, double Q, double xi, bool tree_level) {
-    xSM_MSbar model(lambda_hs, 0., 0., 0., 0., 0., 0.);
+    xSM_MSbar model(lambda_hs, 0., 0., 0., 0., 0.);
     model.set_renormalization_scale(Q);
     model.set_xi(xi);
     if (tree_level) {
@@ -205,7 +204,6 @@ class xSM_MSbar : public OneLoopPotential {
     mus_sq = mss - 0.5 * lambda_hs * square(SM::v) - hessian(1, 1);
 
     muh_sq_tree_ewsb = - lambda_h * square(SM::v);
-    mus_sq_tree_ewsb = mss - 0.5 * lambda_hs * square(SM::v);
   }
 
   double get_v_tree_s() const {
@@ -248,7 +246,7 @@ class xSM_MSbar : public OneLoopPotential {
     M2(3, 3) = M2(0, 0);
 
     // Singlet mass diagonal
-    M2(4, 4) = (tree_ewsb ? mus_sq_tree_ewsb : mus_sq) + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
+    M2(4, 4) = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
 
     // Mixing between Higgs and singlet
     M2(2, 4) = M2(4, 2) = lambda_hs * h * s;
@@ -317,7 +315,6 @@ class xSM_MSbar : public OneLoopPotential {
   double lambda_s;
   // For consistency in one-loop potential
   double muh_sq_tree_ewsb;
-  double mus_sq_tree_ewsb;
   bool tree_ewsb{false};
 };
 
