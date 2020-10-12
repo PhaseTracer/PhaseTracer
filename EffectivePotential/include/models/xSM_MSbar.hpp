@@ -54,8 +54,9 @@ class xSM_MSbar : public OneLoopPotential {
   /**
    * @brief Make an xSM model using tree or one-loop tadpole constraints
    */
-  static xSM_MSbar from_tadpoles(double lambda_hs, double Q, double xi, bool tree_level) {
+  static xSM_MSbar from_tadpoles(double lambda_hs, double Q, double xi, bool tree_level, bool tree_ewsb = false) {
     xSM_MSbar model(lambda_hs, 0., 0., 0., 0., 0.);
+    model.set_tree_ewsb(tree_ewsb);
     model.set_renormalization_scale(Q);
     model.set_xi(xi);
     if (tree_level) {
