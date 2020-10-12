@@ -49,6 +49,6 @@ TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
 
   const double gamma = delta / TC;
 
-  CHECK(gamma == Approx(2.0593571423));
-  CHECK(TC == Approx(90.3312027115));
+  CHECK(gamma == Approx(2.059489504));
+  CHECK(TC == Approx(90.3332920749));
 }
