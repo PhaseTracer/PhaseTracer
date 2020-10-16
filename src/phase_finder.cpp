@@ -193,6 +193,28 @@ std::vector<Point> PhaseFinder::get_minima_at_t_high() {
   return minima_at_t_high;
 }
 
+std::vector<Phase> PhaseFinder::get_phases_at_T(double T) {
+  if (phases.size() == 0) find_phases();
+  std::vector<Phase> phases_at_T;
+  for (const auto& pi: phases){
+    if (T >= pi.T.front() and T <= pi.T.back()) phases_at_T.push_back(pi);
+  }
+  return phases_at_T;
+}
+
+Phase PhaseFinder::get_deepest_phase_at_T(double T) {
+  const auto phases_at_T = get_phases_at_T(T);
+  if (phases_at_T.size()==0)
+    throw std::runtime_error("There is no phase at T = "+std::to_string(T));
+
+  size_t i_deepest = 0 ;
+  for (size_t i = 0; i<phases_at_T.size(); i++){
+    if (phase_at_T(phases_at_T[i],T).potential < phase_at_T(phases_at_T[i_deepest],T).potential)
+      i_deepest = i;
+  }
+  return phases_at_T.at(i_deepest);
+}
+
 void PhaseFinder::find_phases() {
   LOG(debug) << "Find global minima from " << guess_points.size() << " guesses";
 

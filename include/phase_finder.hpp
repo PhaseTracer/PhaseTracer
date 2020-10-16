@@ -146,6 +146,12 @@ class PhaseFinder {
   /** return minima at T_high*/
   std::vector<Point> get_minima_at_t_high();
 
+  /** return phases at T */
+  std::vector<Phase> get_phases_at_T(double T);
+  
+  /** return the deepest phase at T */
+  Phase get_deepest_phase_at_T(double T);
+
  private:
   EffectivePotential::Potential &P;
 
