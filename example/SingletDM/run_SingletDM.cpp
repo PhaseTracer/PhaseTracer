@@ -21,24 +21,31 @@ int main() {
 
   // Construct our model
   EffectivePotential::SingletDM model;
-
+  // Comment out the parameter's yang was setting for this model just now
+  // As it doens't seem to fit the FS model actually used.
   // Set the input parameters for SingletDM
-  const double mhiggs = 125.2;
+  // const double mhiggs = 125.2;
+  // const double mtop = 173.0;
+  // const double VEV = 246.221;
+  // double ms = mhiggs*0.5;
+  // double lambda_hs = 0.01;
+  // double muS = square(ms) - lambda_hs * square(VEV) / 2.;
+  // double lambda_s = 2./square(mhiggs*VEV)*square(square(ms)-0.5*lambda_hs*square(VEV))+0.1;
+
+  //PA: use example SKHA values for now
   const double mtop = 173.0;
-  const double VEV = 246.221;
-  double ms = mhiggs*0.5;
-  double lambda_hs = 0.31;
-  double muS = square(ms) - lambda_hs * square(VEV) / 2.;
-  double lambda_s = 2./square(mhiggs*VEV)*square(square(ms)-0.5*lambda_hs*square(VEV))+0.1;
-  std::cout << "muS = " << muS << std::endl;
+  double muH2 = -8000;
+  double lambda_hs = 0.1;
+  double lambda_s =  0.1;
+  double mus2 = 1000;
   
   std::vector<double> x(9);
   x[0] = mtop; // Qin = 173.0
   x[1] = mtop; // QEWSB = 173.0
-  x[2] = mhiggs;  // HiggsIN = 125.2
-  x[3] = muS; // muSInput = -5478.08
-  x[4] = lambda_s; // LamSInput = 0.163158
-  x[5] = lambda_hs;  // LamSHInput = 0.31
+  x[2] = muH2;  // HiggsIN
+  x[3] = mus2; // muSInput
+  x[4] = lambda_s; // LamSInput
+  x[5] = lambda_hs;  // LamSHInput
   
   model.set_input(x);
 
