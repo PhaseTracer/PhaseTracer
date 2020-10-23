@@ -121,6 +121,7 @@ Eigen::MatrixXd OneLoopPotential::d2V0_dx2(Eigen::VectorXd phi) const {
   return gradient;
 }*/
 
+/** Now handles all supported DaisyMethods. */
 Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const
 {
     Eigen::VectorXd gradient = Eigen::VectorXd::Zero(phi.size());
