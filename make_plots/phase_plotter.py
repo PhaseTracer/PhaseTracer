@@ -201,7 +201,7 @@ def plane_phi_T(phases, transitions, pdf_name="plane.pdf"):
     n_field = phases[0].n_field
     fig, axs = plt.subplots(nrows=1, ncols=n_field)
 
-    T_max = 250
+    T_max = 2.045 #TODO: removed 250
     phi_min = np.inf
     phi_max = -np.inf
 
