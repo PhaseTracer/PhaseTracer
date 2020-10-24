@@ -42,23 +42,20 @@ int main() {
   // Print masses of CP-even Higgs
   std::cout << "mhh = " << model.get_mh()[0] << std::endl;
   std::cout << "mss = " << model.get_mh()[1] << std::endl;
-  
-  return 0;
 
+  // Make PhaseFinder object and find the phases
+  PhaseTracer::PhaseFinder pf(model);
+  pf.set_seed(3);
+  pf.find_phases();
+  std::cout << pf;
 
-//  // Make PhaseFinder object and find the phases
-//  PhaseTracer::PhaseFinder pf(model);
-//  pf.set_seed(3);
-//  pf.find_phases();
-//  std::cout << pf;
+  // Make TransitionFinder object and find the transitions
+  // This takes the phase finder object as an argument. We must have already
+  // populated the phases by e.g. the find_phases method, as above
+  PhaseTracer::TransitionFinder tf(pf);
+  tf.find_transitions();
+  std::cout << tf;
 
-//  // Make TransitionFinder object and find the transitions
-//  // This takes the phase finder object as an argument. We must have already
-//  // populated the phases by e.g. the find_phases method, as above
-//  PhaseTracer::TransitionFinder tf(pf);
-//  tf.find_transitions();
-//  std::cout << tf;
-
-//  // Print the data in a particular format for plotting
-//  PhaseTracer::phase_plotter(tf, "ScalarSingletZ2DM");
+  // Print the data in a particular format for plotting
+  PhaseTracer::phase_plotter(tf, "ScalarSingletZ2DM");
 }
