@@ -10,6 +10,7 @@ add_executable(run_2D_test_model run_2D_test_model.cpp)
 add_executable(scan_Z2_scalar_singlet_model scan_Z2_scalar_singlet_model.cpp)
 add_executable(time time.cpp)
 add_executable(h_bar_expansion h_bar_expansion.cpp)
+add_executable(covariant_gauge covariant_gauge.cpp)
 
 # add any subdirs that might contain programs
 

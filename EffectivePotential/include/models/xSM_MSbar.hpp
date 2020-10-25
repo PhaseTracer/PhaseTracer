@@ -307,7 +307,7 @@ class xSM_MSbar : public OneLoopPotential {
   /** Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential */
   void set_tree_ewsb(bool tree_ewsb_) { tree_ewsb = tree_ewsb_; }
 
- private:
+ protected:
   // Lagrangian parameters
   double lambda_hs;
   double muh_sq;
