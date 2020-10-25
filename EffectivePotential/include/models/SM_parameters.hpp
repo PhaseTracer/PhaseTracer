@@ -18,6 +18,10 @@
 #ifndef POTENTIAL_SM_PARAMETERS_HPP_INCLUDED
 #define POTENTIAL_SM_PARAMETERS_HPP_INCLUDED
 
+#include <cmath>
+#include "pow.hpp"
+
+
 namespace SM
 {
     // SM parameters
@@ -26,9 +30,10 @@ namespace SM
     const double mtop = 173.2;
     const double mZ = 91.1876;
     const double mW = 80.385;
-    const double g = 2.*mW/v;
-    const double gp = std::sqrt(square(2.*mZ/v)-square(g));
-    const double yt_sq = 2.*square(mtop/v);
+    const double g = 2. * mW / v;
+    const double gp = std::sqrt(square(2.* mZ / v) - square(g));
+    const double yt = std::sqrt(2.) * mtop / v;
+    const double yt_sq = square(yt);
 
 } // namespace SM
 
