@@ -85,11 +85,11 @@ class xSM_MSbar_covariant : public xSM_MSbar {
 
   // W, Z but not photon
   std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override {
-    const double mw_sq = 11. / 6. * square(SM::g) * square(T)
+    const double MW_sq = 11. / 6. * square(SM::g) * square(T)
                          + 0.25 * square(SM::g) * square(phi[0]);
-    const double mz_sq = 11. / 6. * (pow_4(SM::g) + pow_4(SM::gp)) / (square(SM::g) + square(SM::gp)) * square(T)
+    const double MZ_sq = 11. / 6. * (pow_4(SM::g) + pow_4(SM::gp)) / (square(SM::g) + square(SM::gp)) * square(T)
                          + 0.25 * (square(SM::g) + square(SM::gp)) * square(phi[0]);
-    return {mw_sq, mz_sq};
+    return {MW_sq, MZ_sq};
   }
 
   std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const override {
