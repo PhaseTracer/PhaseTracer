@@ -247,14 +247,14 @@ class xSM_MSbar : public OneLoopPotential {
 
     // Higgs and Goldstone diagonals
     M2(0, 0) = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + lambda_h * square(h) + 0.5 * lambda_hs * square(s)
-               + thermal_sq(0);
+               + thermal_sq[0];
     M2(1, 1) = M2(0, 0);
     M2(2, 2) = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s)
-               + thermal_sq(0);
+               + thermal_sq[0];
     M2(3, 3) = M2(0, 0);
 
     // Singlet mass diagonal
-    M2(4, 4) = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h) + thermal_sq(1);
+    M2(4, 4) = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h) + thermal_sq[1];
 
     // Mixing between Higgs and singlet
     M2(2, 4) = M2(4, 2) = lambda_hs * h * s;
@@ -284,15 +284,16 @@ class xSM_MSbar : public OneLoopPotential {
   std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override {
     const double h_sq = square(phi[0]);
     const double T_sq = square(T);
-    const double MW_sq = 0.25 * square(SM::g) * h_sq + 11. / 6. * g2 * T_sq;
+    const double MW_sq = 0.25 * square(SM::g) * h_sq + 11. / 6. * square(SM::g) * T_sq;
 
-		const double a = (square(g) + square(gp)) * (3. * h_sq + 22. * T_sq);
-		const double b = std::sqrt(9. * square(square(g) + square(gp)) * square(h_sq) 
-                     + 132. * square(square(g) - square(gp)) * h_sq * T_sq
-                     + 484. * square(square(g) - square(gp)) * pow_4(T));
+		const double a = (square(SM::g) + square(SM::gp)) * (3. * h_sq + 22. * T_sq);
+		const double b = std::sqrt(9. * square(square(SM::g) + square(SM::gp)) * square(h_sq) 
+                     + 132. * square(square(SM::g) - square(SM::gp)) * h_sq * T_sq
+                     + 484. * square(square(SM::g) - square(SM::gp)) * pow_4(T));
 
 		const double MZ_sq = (a + b) / 24.;
 		const double MG_sq = (a - b) / 24.;
+
 
     return {MW_sq, MZ_sq, MG_sq};
   }
