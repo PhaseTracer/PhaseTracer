@@ -77,24 +77,6 @@ class xSM_MSbar_covariant : public xSM_MSbar {
   // Pseudo-scalar Goldsotne and plus-minus mode (1, 1)
   // Higgs and scalar singlet (1, 1,)
   std::vector<double> get_scalar_dofs() const override { return {2., 2., 1., 1., 1., 1.}; }
-
-  // W, Z but not photon
-  std::vector<double> get_vector_dofs() const override {
-    return {6., 3.};
-  }
-
-  // W, Z but not photon
-  std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override {
-    const double MW_sq = 11. / 6. * square(SM::g) * square(T)
-                         + 0.25 * square(SM::g) * square(phi[0]);
-    const double MZ_sq = 11. / 6. * (pow_4(SM::g) + pow_4(SM::gp)) / (square(SM::g) + square(SM::gp)) * square(T)
-                         + 0.25 * (square(SM::g) + square(SM::gp)) * square(phi[0]);
-    return {MW_sq, MZ_sq};
-  }
-
-  std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const override {
-    return get_vector_debye_sq(phi, 0.);
-  }
 };
 
 }  // namespace EffectivePotential

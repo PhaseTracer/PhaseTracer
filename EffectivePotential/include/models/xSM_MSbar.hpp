@@ -299,8 +299,18 @@ class xSM_MSbar : public OneLoopPotential {
   }
 
   // W, Z, photon
+  std::vector<double> get_vector_debye_sq_post_diag(Eigen::VectorXd phi, double T) const {
+    const double MW_sq = 11. / 6. * square(SM::g) * square(T)
+                         + 0.25 * square(SM::g) * square(phi[0]);
+    const double MZ_sq = 11. / 6. * (pow_4(SM::g) + pow_4(SM::gp)) / (square(SM::g) + square(SM::gp)) * square(T)
+                         + 0.25 * (square(SM::g) + square(SM::gp)) * square(phi[0]);
+    const double MG_sq = 0.; // TODO: photon debye mass
+    return {MW_sq, MZ_sq, MG_sq};
+  }
+
+  // W, Z, photon
   std::vector<double> get_vector_dofs() const override {
-    return {6., 3., 2.};
+    return {6., 3., 2.}; // TODO: check photon dof
   }
 
   // top quark
