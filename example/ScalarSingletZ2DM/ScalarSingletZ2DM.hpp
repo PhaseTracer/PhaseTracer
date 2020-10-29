@@ -113,6 +113,12 @@ void ScalarSingletZ2DM::set_input(std::vector<double> x) {
   gp = model.get_g1() * sqrt(3. / 5.);
   g = model.get_g2();
   
+  std::cout << "muH2=" << muH2 << std::endl;
+  std::cout << "lambda_h=" << lambda_h << std::endl;
+  std::cout << "muS2=" << muS2 << std::endl;
+  std::cout << "lambda_s=" << lambda_s << std::endl;
+  std::cout << "lambda_hs=" << lambda_hs << std::endl;
+  
   set_renormalization_scale(model.get_scale());
   
   
@@ -141,7 +147,7 @@ double ScalarSingletZ2DM::V0(Eigen::VectorXd phi) const {
   const double V0 =
     0.5 * muH2 * square(h) + 0.25 * lambda_h * pow_4(h) +
     0.25 * lambda_hs * square(h) * square (s) +
-    0.5 * muS2 * square(s) + 0.25 * lambda_s;
+    0.5 * muS2 * square(s) + 0.25 * lambda_s * pow_4(s);
   return V0;
 }
 
