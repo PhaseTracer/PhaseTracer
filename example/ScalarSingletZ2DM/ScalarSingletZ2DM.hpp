@@ -113,6 +113,12 @@ void ScalarSingletZ2DM::set_input(std::vector<double> x) {
   gp = model.get_g1() * sqrt(3. / 5.);
   g = model.get_g2();
   
+  muH2 = model.get_muH2();
+  muS2 = model.get_muS2();
+  lambda_h = model.get_LamH();
+  lambda_s = model.get_LamS();
+  lambda_hs = model.get_LamSH();
+  
   std::cout << "muH2=" << muH2 << std::endl;
   std::cout << "lambda_h=" << lambda_h << std::endl;
   std::cout << "muS2=" << muS2 << std::endl;
