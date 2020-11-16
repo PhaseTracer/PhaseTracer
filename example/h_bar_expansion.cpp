@@ -31,10 +31,9 @@ int main(int argc, char* argv[]) {
             << "tree-level ewsb parameters = " << tree_ewsb << std::endl;
 
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, Q, xi, tree_level_tadpoles);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, Q, xi, tree_level_tadpoles, tree_ewsb);
 
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-  model.set_tree_ewsb(tree_ewsb);
 
   // Make PhaseFinder object and find the phases
   PhaseTracer::HbarExpansion hb(model);
