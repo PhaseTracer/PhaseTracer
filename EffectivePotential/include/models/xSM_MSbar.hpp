@@ -244,17 +244,33 @@ class xSM_MSbar : public OneLoopPotential {
     const double s = phi[1];
     Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(5, 5);
     const auto thermal_sq = get_scalar_thermal_sq(T);
-
+    
+    // TODO: add thermal_sq here and use get_vector_debye_sq?
+    const double mhh = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mgg = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mss = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
+    
+    
+    // resummed Goldstone contributions
+    const auto fm2 = get_fermion_masses_sq(phi);
+    const auto vm2 = get_vector_masses_sq(phi);
+    const double Qsq = square(get_renormalization_scale());
+    const double sum = 1. / (16. * M_PI * M_PI) * (
+                       3.  * lambda_h * (Qsq*xlogx(mhh/Qsq) - mhh)
+                      +0.5 * lambda_hs * (Qsq*xlogx(mss/Qsq) - mss)
+                      -6.  * SM::yt_sq * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
+                      +1.5 * square(SM::g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
+                      +0.75* (square(SM::g)+square(SM::gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
+                      );
+                      
     // Higgs and Goldstone diagonals
-    M2(0, 0) = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + lambda_h * square(h) + 0.5 * lambda_hs * square(s)
-               + thermal_sq[0];
+    M2(0, 0) = mgg + thermal_sq[0] + (tree_ewsb ? sum : 0);
     M2(1, 1) = M2(0, 0);
-    M2(2, 2) = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s)
-               + thermal_sq[0];
+    M2(2, 2) = mhh + thermal_sq[0];
     M2(3, 3) = M2(0, 0);
 
     // Singlet mass diagonal
-    M2(4, 4) = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h) + thermal_sq[1];
+    M2(4, 4) = mss + thermal_sq[1];
 
     // Mixing between Higgs and singlet
     M2(2, 4) = M2(4, 2) = lambda_hs * h * s;
