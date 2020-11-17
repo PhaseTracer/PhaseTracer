@@ -1,4 +1,4 @@
-if(BUILD_WITH_FS)
+if(BUILD_WITH_FS_ScalarSingletZ2DM)
   set(FS_version "v2.4.2")
   set(FS_model_name "ScalarSingletZ2DM")
   set(SARAH_model_name "ScalarSingletZ2DM")
@@ -28,4 +28,4 @@ if(BUILD_WITH_FS)
     RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin"
   )
 
-endif(BUILD_WITH_FS)
+endif(BUILD_WITH_FS_ScalarSingletZ2DM)
