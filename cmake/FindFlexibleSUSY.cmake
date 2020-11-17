@@ -16,7 +16,7 @@ endif()
 if(NOT EXISTS ${FS}/models/${FS_model_name}/lib${FS_model_name}.a)
   if(NOT EXISTS ${FS}/models/${FS_model_name})
     message(STATUS "Creating ${FS_model_name} model files")
-    execute_process(COMMAND git checkout tags/v2.4.2
+    execute_process(COMMAND git checkout tags/${FS_version}
                     WORKING_DIRECTORY ${FS}
                    )
     execute_process(COMMAND cp -r ${FS_model_name} ${FS}/models/

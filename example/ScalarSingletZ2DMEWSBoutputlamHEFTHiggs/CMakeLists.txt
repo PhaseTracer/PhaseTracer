@@ -1,7 +1,7 @@
 if(BUILD_WITH_FS)
   set(FS_version "v2.4.2")
-  set(FS_model_name "THDMIISNMSSMBCsimple")
-  set(SARAH_model_name "THDMS")
+  set(FS_model_name "ScalarSingletZ2DMEWSBoutputlamHEFTHiggs")
+  set(SARAH_model_name "ScalarSingletZ2DM")
 
   find_package(FlexibleSUSY REQUIRED)
   find_package(GSL REQUIRED)
