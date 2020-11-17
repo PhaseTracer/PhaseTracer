@@ -4,7 +4,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 enable_language(CXX)
 
 # option for building models with FlexibleSUSY
-option(BUILD_WITH_FS "Build FlexibleSUSY example programs" OFF)
+option(BUILD_WITH_FS "Build FlexibleSUSY example program (THDMS with NMSSM BCs) " OFF)
+
+option(BUILD_WITH_FS_ScalarSingletZ2DM "Build FlexibleSUSY ScalarSingletZ2DM program" OFF)
+
+option(BUILD_WITH_FS_ScalarSingletZ2DMEWSBoutputlamHEFTHiggs "Build FlexibleSUSY_ScalarSingletZ2DMEWSBoutputlamHEFTHiggs program" OFF)
 
 # option for building models with BSMPT
 option(BUILD_WITH_BSMPT "Build BSMPT example programs" OFF)
