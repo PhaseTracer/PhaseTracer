@@ -16,16 +16,16 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:54
+// File generated at Tue 17 Nov 2020 15:32:57
 
-#include "ScalarSingletZ2DM_standard_model_matching.hpp"
+#include "ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching.hpp"
 #include "wrappers.hpp"
 #include "single_scale_matching.hpp"
 #include "linalg2.hpp"
 #include "loop_corrections.hpp"
 #include "standard_model.hpp"
-#include "ScalarSingletZ2DM_mass_eigenstates.hpp"
-#include "ScalarSingletZ2DM_info.hpp"
+#include "ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates.hpp"
+#include "ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_info.hpp"
 #include "config.h"
 #ifdef ENABLE_THREADS
 #include "global_thread_pool.hpp"
@@ -35,7 +35,7 @@
 using namespace flexiblesusy::standard_model;
 
 namespace flexiblesusy {
-namespace ScalarSingletZ2DM_standard_model_matching {
+namespace ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching {
 
 #define MODELPARAMETER(p) model.get_##p()
 #define EXTRAPARAMETER(parameter) model.get_##parameter()
@@ -50,17 +50,17 @@ namespace {
 
 /**
  * Returns SM parameters with tree-level lambda.  The tree-level
- * lambda is calculated from the tree-level ScalarSingletZ2DM parameters.
+ * lambda is calculated from the tree-level ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters.
  *
  * @param sm SM parameters
- * @param model_0l ScalarSingletZ2DM tree-level parameters
+ * @param model_0l ScalarSingletZ2DMEWSBoutputlamHEFTHiggs tree-level parameters
  * @param idx Index of SM-like Higgs in the Higgs multiplet
  *
  * @return SM tree-level parameters
  */
 Standard_model calculate_SM_tree_level(
    const Standard_model& sm,
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l,
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l,
    int idx)
 {
    auto sm_0l = sm;
@@ -75,17 +75,17 @@ Standard_model calculate_SM_tree_level(
 }
 
 /**
- * Calculates ScalarSingletZ2DM tree-level parameters (g1, g2, g3, Yu, Yd,
+ * Calculates ScalarSingletZ2DMEWSBoutputlamHEFTHiggs tree-level parameters (g1, g2, g3, Yu, Yd,
  * Ye, v) by performing a tree-level matching from the SM to the
- * ScalarSingletZ2DM.
+ * ScalarSingletZ2DMEWSBoutputlamHEFTHiggs.
  *
- * @param model ScalarSingletZ2DM parameters
+ * @param model ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters
  * @param sm SM parameters
  *
- * @return ScalarSingletZ2DM with tree-level parameters
+ * @return ScalarSingletZ2DMEWSBoutputlamHEFTHiggs with tree-level parameters
  */
-ScalarSingletZ2DM_mass_eigenstates calculate_ScalarSingletZ2DM_tree_level(
-   const ScalarSingletZ2DM_mass_eigenstates& model,
+ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates calculate_ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_tree_level(
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model,
    const Standard_model& sm)
 {
    auto model_0l = model;
@@ -128,7 +128,7 @@ double calculate_Mh2_pole(const Standard_model& sm_0l)
  * @return tadpole at loop order
  */
 Eigen::Matrix<double,1,1> calculate_tadpole_over_vevs(
-   ScalarSingletZ2DM_mass_eigenstates model, int loop_order)
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates model, int loop_order)
 {
    if (loop_order == 0) {
       model.set_ewsb_loop_order(loop_order);
@@ -145,33 +145,33 @@ Eigen::Matrix<double,1,1> calculate_tadpole_over_vevs(
 }
 
 /**
- * Calculates tree-level Higgs mass matrix in the ScalarSingletZ2DM without
+ * Calculates tree-level Higgs mass matrix in the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs without
  * including tadpoles implicitly.  This is achieved by solving the
  * EWSB equations at tree-level in order to avoid the inclusion of
  * loop tadpoles.
  *
- * @param model ScalarSingletZ2DM parameters
- * @return tree-level Higgs mass matrix in the ScalarSingletZ2DM w/o tadpoles
+ * @param model ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters
+ * @return tree-level Higgs mass matrix in the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs w/o tadpoles
  */
-auto calculate_mh2_tree_level(ScalarSingletZ2DM_mass_eigenstates model) -> decltype(model.get_mass_matrix_hh())
+auto calculate_mh2_tree_level(ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates model) -> decltype(model.get_mass_matrix_hh())
 {
    model.solve_ewsb_tree_level();
    return model.get_mass_matrix_hh();
 }
 
 /**
- * Calculates squared Higgs pole mass in the ScalarSingletZ2DM,
- * \f$(M_h^{\text{ScalarSingletZ2DM}})^2\f$.
+ * Calculates squared Higgs pole mass in the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs,
+ * \f$(M_h^{\text{ScalarSingletZ2DMEWSBoutputlamHEFTHiggs}})^2\f$.
  *
- * @param model_0l tree-level ScalarSingletZ2DM parameters
- * @param model_1l 1-loop ScalarSingletZ2DM parameters
+ * @param model_0l tree-level ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters
+ * @param model_1l 1-loop ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters
  * @param idx Higgs index (in mass ordered Higgs multiplet)
  *
- * @return squared Higgs pole mass in the ScalarSingletZ2DM
+ * @return squared Higgs pole mass in the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs
  */
 double calculate_Mh2_pole(
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l,
-   const ScalarSingletZ2DM_mass_eigenstates& model_1l,
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l,
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_1l,
    int idx)
 {
    // calculate tree-level mass matrix
@@ -193,20 +193,20 @@ double calculate_Mh2_pole(
 
 /**
  * Calculates \f$\lambda(Q)\f$ at the current loop level from the
- * lightest CP-even Higgs boson mass of the ScalarSingletZ2DM by requiring
+ * lightest CP-even Higgs boson mass of the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs by requiring
  * that the Higgs pole masses are equal in both models.
  *
  * @param sm Standard Model
- * @param model_1l ScalarSingletZ2DM parameters
+ * @param model_1l ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters
  * @param idx Higgs index (in mass ordered Higgs multiplet)
  */
 void match_high_to_low_scale_model_1loop(
    Standard_model& sm,
-   const ScalarSingletZ2DM_mass_eigenstates& model_1l,
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_1l,
    int idx)
 {
-   // tree-level ScalarSingletZ2DM parameters
-   const auto model_0l = calculate_ScalarSingletZ2DM_tree_level(model_1l, sm);
+   // tree-level ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters
+   const auto model_0l = calculate_ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_tree_level(model_1l, sm);
    const auto sm_0l = calculate_SM_tree_level(sm, model_0l, idx);
 
    const double mh2_sm = Sqr(sm_0l.get_Mhh());
@@ -218,7 +218,7 @@ void match_high_to_low_scale_model_1loop(
    sm.get_problems().add(sm_0l.get_problems());
 }
 
-double calculate_delta_alpha_em(double alpha_em, const ScalarSingletZ2DM_mass_eigenstates& model)
+double calculate_delta_alpha_em(double alpha_em, const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model)
 {
    const double currentScale = model.get_scale();
    double delta_alpha_em = 0.;
@@ -230,7 +230,7 @@ double calculate_delta_alpha_em(double alpha_em, const ScalarSingletZ2DM_mass_ei
    return delta_alpha_em;
 }
 
-double calculate_delta_alpha_s(double alpha_s, const ScalarSingletZ2DM_mass_eigenstates& model)
+double calculate_delta_alpha_s(double alpha_s, const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model)
 {
    const double currentScale = model.get_scale();
    double delta_alpha_s = 0.;
@@ -242,7 +242,7 @@ double calculate_delta_alpha_s(double alpha_s, const ScalarSingletZ2DM_mass_eige
    return delta_alpha_s;
 }
 
-Eigen::Matrix<double,3,3> calculate_MFu_DRbar_tree_level(const ScalarSingletZ2DM_mass_eigenstates& model)
+Eigen::Matrix<double,3,3> calculate_MFu_DRbar_tree_level(const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model)
 {
    Eigen::Matrix<double,3,3> mf = ZEROMATRIX(3,3);
 
@@ -254,7 +254,7 @@ Eigen::Matrix<double,3,3> calculate_MFu_DRbar_tree_level(const ScalarSingletZ2DM
    return mf;
 }
 
-Eigen::Matrix<double,3,3> calculate_MFd_DRbar_tree_level(const ScalarSingletZ2DM_mass_eigenstates& model)
+Eigen::Matrix<double,3,3> calculate_MFd_DRbar_tree_level(const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model)
 {
    Eigen::Matrix<double,3,3> mf = ZEROMATRIX(3,3);
 
@@ -266,7 +266,7 @@ Eigen::Matrix<double,3,3> calculate_MFd_DRbar_tree_level(const ScalarSingletZ2DM
    return mf;
 }
 
-Eigen::Matrix<double,3,3> calculate_MFe_DRbar_tree_level(const ScalarSingletZ2DM_mass_eigenstates& model)
+Eigen::Matrix<double,3,3> calculate_MFe_DRbar_tree_level(const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model)
 {
    Eigen::Matrix<double,3,3> mf = ZEROMATRIX(3,3);
 
@@ -334,7 +334,7 @@ double calculate_MFe_pole_1loop(
 
 double calculate_MFu_pole_1loop(
    int i,
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    double m_pole = 0.;
 
@@ -356,7 +356,7 @@ double calculate_MFu_pole_1loop(
 
 double calculate_MFd_pole_1loop(
    int i,
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    double m_pole = 0.;
 
@@ -378,7 +378,7 @@ double calculate_MFd_pole_1loop(
 
 double calculate_MFe_pole_1loop(
    int i,
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    double m_pole = 0.;
 
@@ -453,7 +453,7 @@ Eigen::Matrix<double,3,3> calculate_MFe_pole_1loop(const Standard_model& sm_0l)
 }
 
 Eigen::Matrix<double,3,3> calculate_MFu_pole_1loop(
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    Eigen::Matrix<double,3,1> M_pole;
 
@@ -472,7 +472,7 @@ Eigen::Matrix<double,3,3> calculate_MFu_pole_1loop(
 }
 
 Eigen::Matrix<double,3,3> calculate_MFd_pole_1loop(
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    Eigen::Matrix<double,3,1> M_pole;
 
@@ -491,7 +491,7 @@ Eigen::Matrix<double,3,3> calculate_MFd_pole_1loop(
 }
 
 Eigen::Matrix<double,3,3> calculate_MFe_pole_1loop(
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    Eigen::Matrix<double,3,1> M_pole;
 
@@ -511,7 +511,7 @@ Eigen::Matrix<double,3,3> calculate_MFe_pole_1loop(
 
 Eigen::Matrix<double,3,3> calculate_MFu_DRbar_1loop(
    const Standard_model& sm_0l,
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    Eigen::Matrix<double,3,3> mf_sm = ZEROMATRIX(3,3);
 
@@ -526,7 +526,7 @@ Eigen::Matrix<double,3,3> calculate_MFu_DRbar_1loop(
 
 Eigen::Matrix<double,3,3> calculate_MFd_DRbar_1loop(
    const Standard_model& sm_0l,
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    Eigen::Matrix<double,3,3> mf_sm = ZEROMATRIX(3,3);
 
@@ -541,7 +541,7 @@ Eigen::Matrix<double,3,3> calculate_MFd_DRbar_1loop(
 
 Eigen::Matrix<double,3,3> calculate_MFe_DRbar_1loop(
    const Standard_model& sm_0l,
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    Eigen::Matrix<double,3,3> mf_sm = ZEROMATRIX(3,3);
 
@@ -564,7 +564,7 @@ double calculate_MW_pole_1loop(const Standard_model& sm_0l)
    return SignedAbsSqrt(M_loop);
 }
 
-double calculate_MW_pole_1loop(const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+double calculate_MW_pole_1loop(const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    const double mw = model_0l.get_MVWp();
    const double p = model_0l.get_MVWp();
@@ -584,7 +584,7 @@ double calculate_MZ_pole_1loop(const Standard_model& sm_0l)
    return SignedAbsSqrt(M_loop);
 }
 
-double calculate_MZ_pole_1loop(const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+double calculate_MZ_pole_1loop(const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    const double mz = model_0l.get_MVZ();
    const double p = model_0l.get_MVZ();
@@ -596,7 +596,7 @@ double calculate_MZ_pole_1loop(const ScalarSingletZ2DM_mass_eigenstates& model_0
 
 double calculate_MW_DRbar_1loop(
    const Standard_model& sm_0l,
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    const double MW_sm = calculate_MW_pole_1loop(sm_0l);
    const double MW_bsm = calculate_MW_pole_1loop(model_0l);
@@ -607,7 +607,7 @@ double calculate_MW_DRbar_1loop(
 
 double calculate_MZ_DRbar_1loop(
    const Standard_model& sm_0l,
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l)
 {
    const double MZ_sm = calculate_MZ_pole_1loop(sm_0l);
    const double MZ_bsm = calculate_MZ_pole_1loop(model_0l);
@@ -617,21 +617,21 @@ double calculate_MZ_DRbar_1loop(
 }
 
 /**
- * Calculates ScalarSingletZ2DM parameters at 1-loop level by performing a
+ * Calculates ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters at 1-loop level by performing a
  * 1-loop matching.
  *
  * @param sm_0l SM parameters (lambda is at tree-level)
  * @param sm_1l SM parameters (level is at 1-loop level)
- * @param model_0l ScalarSingletZ2DM parameters at tree-level
- * @param model_1l ScalarSingletZ2DM parameters at 1-loop level
+ * @param model_0l ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters at tree-level
+ * @param model_1l ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters at 1-loop level
  *
- * @return ScalarSingletZ2DM 1-loop parameters
+ * @return ScalarSingletZ2DMEWSBoutputlamHEFTHiggs 1-loop parameters
  */
-ScalarSingletZ2DM_mass_eigenstates calculate_ScalarSingletZ2DM_1loop(
+ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates calculate_ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_1loop(
    const Standard_model& sm_0l,
    const Standard_model& sm_1l,
-   const ScalarSingletZ2DM_mass_eigenstates& model_0l,
-   const ScalarSingletZ2DM_mass_eigenstates& model_1l)
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_0l,
+   const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model_1l)
 {
    auto model = model_1l;
    auto sm = sm_1l;
@@ -648,19 +648,19 @@ ScalarSingletZ2DM_mass_eigenstates calculate_ScalarSingletZ2DM_1loop(
    const double delta_alpha_em = calculate_delta_alpha_em(alpha_em, model_0l);
    const double delta_alpha_s = calculate_delta_alpha_s(alpha_s, model_0l);
 
-   // running ScalarSingletZ2DM W, Z masses (via 1L matching)
+   // running ScalarSingletZ2DMEWSBoutputlamHEFTHiggs W, Z masses (via 1L matching)
    const double mW2_1L = Sqr(calculate_MW_DRbar_1loop(sm_0l, model_0l));
    const double mZ2_1L = Sqr(calculate_MZ_DRbar_1loop(sm_0l, model_0l));
 
-   // running ScalarSingletZ2DM quark and lepton masses (via 1L matching)
+   // running ScalarSingletZ2DMEWSBoutputlamHEFTHiggs quark and lepton masses (via 1L matching)
    const Eigen::Matrix<double, 3, 3> upQuarksDRbar    = calculate_MFu_DRbar_1loop(sm_0l, model_0l);
    const Eigen::Matrix<double, 3, 3> downQuarksDRbar  = calculate_MFd_DRbar_1loop(sm_0l, model_0l);
    const Eigen::Matrix<double, 3, 3> downLeptonsDRbar = calculate_MFe_DRbar_1loop(sm_0l, model_0l);
 
-   // running ScalarSingletZ2DM gauge couplings (via 1L matching)
-   const double g1_1L = AbsSqrt(4. * Pi * alpha_em * (1. + delta_alpha_em) * mZ2_1L / mW2_1L) / ScalarSingletZ2DM_info::normalization_g1;
-   const double g2_1L = AbsSqrt(4. * Pi * alpha_em * (1. + delta_alpha_em) / (1. - mW2_1L/mZ2_1L)) / ScalarSingletZ2DM_info::normalization_g2;
-   const double g3_1L = AbsSqrt(4. * Pi * alpha_s * (1. + delta_alpha_s)) / ScalarSingletZ2DM_info::normalization_g3;
+   // running ScalarSingletZ2DMEWSBoutputlamHEFTHiggs gauge couplings (via 1L matching)
+   const double g1_1L = AbsSqrt(4. * Pi * alpha_em * (1. + delta_alpha_em) * mZ2_1L / mW2_1L) / ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_info::normalization_g1;
+   const double g2_1L = AbsSqrt(4. * Pi * alpha_em * (1. + delta_alpha_em) / (1. - mW2_1L/mZ2_1L)) / ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_info::normalization_g2;
+   const double g3_1L = AbsSqrt(4. * Pi * alpha_s * (1. + delta_alpha_s)) / ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_info::normalization_g3;
 
    model.set_g1(g1_1L);
    model.set_g2(g2_1L);
@@ -668,9 +668,10 @@ ScalarSingletZ2DM_mass_eigenstates calculate_ScalarSingletZ2DM_1loop(
 
    {
       auto MODEL = &model;
-      const double VEV = 2. * AbsSqrt(mZ2_1L/(Sqr(g1_1L*ScalarSingletZ2DM_info::normalization_g1) + Sqr(g2_1L*ScalarSingletZ2DM_info::normalization_g2)));
+      const double VEV = 2. * AbsSqrt(mZ2_1L/(Sqr(g1_1L*ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_info::normalization_g1) + Sqr(g2_1L*ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_info::normalization_g2)));
 
       
+      MODEL->set_v(Re(VEV));
 
    }
 
@@ -685,28 +686,29 @@ ScalarSingletZ2DM_mass_eigenstates calculate_ScalarSingletZ2DM_1loop(
 
 /**
  * Calculates the gauge and Yukawa couplings and the SM-like VEV in
- * the ScalarSingletZ2DM at the necessary loop level from the known Standard
+ * the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs at the necessary loop level from the known Standard
  * Model couplings and the SM vev.
  *
- * @param model ScalarSingletZ2DM parameters (to be set)
+ * @param model ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters (to be set)
  * @param sm SM parameters
  * @param idx Higgs index (in mass ordered Higgs multiplet)
  */
 void match_low_to_high_scale_model_1loop(
-   ScalarSingletZ2DM_mass_eigenstates& model,
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model,
    const Standard_model& sm,
    int idx)
 {
-   // tree-level ScalarSingletZ2DM parameters
-   const auto model_0l = calculate_ScalarSingletZ2DM_tree_level(model, sm);
+   // tree-level ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters
+   const auto model_0l = calculate_ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_tree_level(model, sm);
    const auto sm_0l = calculate_SM_tree_level(sm, model_0l, idx);
 
    // 1-loop parameters
-   const auto model_1l = calculate_ScalarSingletZ2DM_1loop(sm_0l, sm, model_0l, model);
+   const auto model_1l = calculate_ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_1loop(sm_0l, sm, model_0l, model);
 
    model.set_g1(model_0l.get_g1());
    model.set_g2(model_0l.get_g2());
    model.set_g3(model_0l.get_g3());
+   model.set_v(model_1l.get_v());
    model.set_Yd(model_0l.get_Yd());
    model.set_Ye(model_0l.get_Ye());
    model.set_Yu(model_0l.get_Yu());
@@ -720,14 +722,14 @@ void match_low_to_high_scale_model_1loop(
 
 /**
  * Calculates \f$\lambda(Q)\f$ at the tree level from the lightest
- * CP-even Higgs boson mass of the ScalarSingletZ2DM.
+ * CP-even Higgs boson mass of the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs.
  *
  * @param sm Standard Model parameters
- * @param model ScalarSingletZ2DM parameters
+ * @param model ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters
  * @param idx Higgs index (in mass ordered Higgs multiplet)
  */
 void match_high_to_low_scale_model_tree_level(
-   Standard_model& sm, const ScalarSingletZ2DM_mass_eigenstates& model, int idx)
+   Standard_model& sm, const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model, int idx)
 {
    auto model_tmp = model;
    model_tmp.calculate_DRbar_masses();
@@ -737,24 +739,25 @@ void match_high_to_low_scale_model_tree_level(
 
 /**
  * Calculates the gauge and Yukawa couplings and the SM-like VEV in
- * the ScalarSingletZ2DM at the tree level from the known Standard Model
+ * the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs at the tree level from the known Standard Model
  * couplings and the SM vev.
  */
 void match_low_to_high_scale_model_tree_level(
-   ScalarSingletZ2DM_mass_eigenstates& model, const Standard_model& sm_input)
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model, const Standard_model& sm_input)
 {
    auto sm = sm_input;
    sm.calculate_DRbar_masses();
 
-   model.set_g1(sm.get_g1()*standard_model_info::normalization_g1/ScalarSingletZ2DM_info::normalization_g1);
-   model.set_g2(sm.get_g2()*standard_model_info::normalization_g2/ScalarSingletZ2DM_info::normalization_g2);
-   model.set_g3(sm.get_g3()*standard_model_info::normalization_g3/ScalarSingletZ2DM_info::normalization_g3);
+   model.set_g1(sm.get_g1()*standard_model_info::normalization_g1/ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_info::normalization_g1);
+   model.set_g2(sm.get_g2()*standard_model_info::normalization_g2/ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_info::normalization_g2);
+   model.set_g3(sm.get_g3()*standard_model_info::normalization_g3/ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_info::normalization_g3);
 
    {
       auto MODEL = &model;
       const double VEV = sm.get_v();
 
       
+      MODEL->set_v(Re(VEV));
 
    }
 
@@ -777,22 +780,22 @@ void match_low_to_high_scale_model_tree_level(
 
 /**
  * Calculates the gauge and Yukawa couplings and the SM-like VEV in
- * the ScalarSingletZ2DM at the 1-loop level from the known Standard Model
+ * the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs at the 1-loop level from the known Standard Model
  * couplings and the SM vev.
  *
  * @note The \a loop_order argument is interpreted to be the loop
  * order of the "downwards matching".  The functions responsible for
  * the upwards matching will use the downwards matching loop order to
- * determine the ScalarSingletZ2DM at the right loop order to avoid the
+ * determine the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs at the right loop order to avoid the
  * appearence of large logarithms.
  *
- * @param model ScalarSingletZ2DM parameters
+ * @param model ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters
  * @param sm Standard Model
  * @param loop_order downwards matching loop order
  * @param idx Higgs index (in mass ordered Higgs multiplet)
  */
 void match_low_to_high_scale_model(
-   ScalarSingletZ2DM_mass_eigenstates& model, const Standard_model& sm, int loop_order, int idx)
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model, const Standard_model& sm, int loop_order, int idx)
 {
    if (loop_order == 0) {
       match_low_to_high_scale_model_tree_level(model, sm);
@@ -804,16 +807,16 @@ void match_low_to_high_scale_model(
 
 /**
  * Calculates \f$\lambda(Q)\f$ at the 1-loop level from the lightest
- * CP-even Higgs boson mass of the ScalarSingletZ2DM by requiring that the
+ * CP-even Higgs boson mass of the ScalarSingletZ2DMEWSBoutputlamHEFTHiggs by requiring that the
  * 1-loop Higgs pole masses are equal in both models.
  *
  * @param sm Standard Model
- * @param model ScalarSingletZ2DM parameters
+ * @param model ScalarSingletZ2DMEWSBoutputlamHEFTHiggs parameters
  * @param loop_order downwards matching loop order
  * @param idx Higgs index (in mass ordered Higgs multiplet)
  */
 void match_high_to_low_scale_model(
-   Standard_model& sm, const ScalarSingletZ2DM_mass_eigenstates& model, int loop_order, int idx)
+   Standard_model& sm, const ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_mass_eigenstates& model, int loop_order, int idx)
 {
    if (loop_order == 0) {
       match_high_to_low_scale_model_tree_level(sm, model, idx);
@@ -823,5 +826,5 @@ void match_high_to_low_scale_model(
    match_high_to_low_scale_model_1loop(sm, model, idx);
 }
 
-} // namespace ScalarSingletZ2DM_standard_model_matching
+} // namespace ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching
 } // namespace flexiblesusy

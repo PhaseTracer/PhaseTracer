@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:54
+// File generated at Tue 17 Nov 2020 16:11:26
 
 #ifndef ScalarSingletZ2DM_INFO_H
 #define ScalarSingletZ2DM_INFO_H
@@ -58,7 +58,7 @@ namespace ScalarSingletZ2DM_info {
       ReUe2_0, ImUe2_0, ReUe2_1, ImUe2_1, ReUe2_2, ImUe2_2, ZZ0_0, ZZ0_1, ZZ1_0,
       ZZ1_1, NUMBER_OF_MIXINGS };
 
-   enum Input_parameters : int { muH2Input, LamSHInput, LamSInput, muS2Input,
+   enum Input_parameters : int { LamHInput, LamSHInput, LamSInput, muS2Input,
       QEWSB, Qin, NUMBER_OF_INPUT_PARAMETERS };
 
    enum Extra_parameters : int { NUMBER_OF_EXTRA_PARAMETERS };
@@ -77,7 +77,7 @@ namespace ScalarSingletZ2DM_info {
    extern const std::string model_name;
    constexpr bool is_low_energy_model = false;
    constexpr bool is_supersymmetric_model = false;
-   constexpr bool is_FlexibleEFTHiggs = true;
+   constexpr bool is_FlexibleEFTHiggs = false;
 
    void print(std::ostream&);
 

@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:57
+// File generated at Tue 17 Nov 2020 16:11:28
 
 #include "config.h"
 
@@ -45,7 +45,7 @@ void print_usage()
    std::cout <<
       "Usage: scan_ScalarSingletZ2DM.x [options]\n"
       "Options:\n"
-      "  --muH2Input=<value>\n"
+      "  --LamHInput=<value>\n"
       "  --LamSHInput=<value>\n"
       "  --LamSInput=<value>\n"
       "  --muS2Input=<value>\n"
@@ -65,7 +65,7 @@ void set_command_line_parameters(const Dynamic_array_view<char*>& args,
    for (int i = 1; i < args.size(); ++i) {
       const auto option = args[i];
 
-      if(Command_line_options::get_parameter_value(option, "--muH2Input=", input.muH2Input))
+      if(Command_line_options::get_parameter_value(option, "--LamHInput=", input.LamHInput))
          continue;
 
       if(Command_line_options::get_parameter_value(option, "--LamSHInput=", input.LamSHInput))
@@ -130,7 +130,7 @@ void scan(int solver_type, ScalarSingletZ2DM_input_parameters& input,
    softsusy::QedQcd qedqcd;
 
    for (const auto p: range) {
-      INPUTPARAMETER(muH2Input) = p;
+      INPUTPARAMETER(LamHInput) = p;
 
       ScalarSingletZ2DM_scan_result result;
       switch (solver_type) {
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
                                solver_type);
 
    std::cout << "# "
-             << std::setw(12) << std::left << "muH2Input" << ' '
+             << std::setw(12) << std::left << "LamHInput" << ' '
              << std::setw(12) << std::left << "Mhh/GeV" << ' '
              << std::setw(12) << std::left << "error"
              << '\n';

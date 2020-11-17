@@ -16,22 +16,22 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:56
+// File generated at Tue 17 Nov 2020 15:32:58
 
-#include "ScalarSingletZ2DM_standard_model_two_scale_matching.hpp"
-#include "ScalarSingletZ2DM_standard_model_matching.hpp"
-#include "ScalarSingletZ2DM_two_scale_model.hpp"
+#include "ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_two_scale_matching.hpp"
+#include "ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching.hpp"
+#include "ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_two_scale_model.hpp"
 #include "standard_model_two_scale_model.hpp"
 #include "error.hpp"
 #include "single_scale_constraint.hpp"
 
 namespace flexiblesusy {
 
-#define CLASSNAME ScalarSingletZ2DM_standard_model_matching_up<Two_scale>
+#define CLASSNAME ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_up<Two_scale>
 
-CLASSNAME::ScalarSingletZ2DM_standard_model_matching_up(
+CLASSNAME::ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_up(
    standard_model::StandardModel<Two_scale>* low_,
-   ScalarSingletZ2DM<Two_scale>* high_,
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs<Two_scale>* high_,
    const Scale_getter& scale_getter_,
    int loop_order_,
    int higgs_idx_)
@@ -58,7 +58,7 @@ double CLASSNAME::get_scale() const
 void CLASSNAME::set_models(Model* low, Model* high)
 {
    eft = cast_model<standard_model::StandardModel<Two_scale>*>(low);
-   model = cast_model<ScalarSingletZ2DM<Two_scale>*>(high);
+   model = cast_model<ScalarSingletZ2DMEWSBoutputlamHEFTHiggs<Two_scale>*>(high);
 }
 
 void CLASSNAME::match()
@@ -70,9 +70,9 @@ void CLASSNAME::match()
    model->run_to(get_scale());
 
    if (model->get_thresholds() && loop_order)
-      ScalarSingletZ2DM_standard_model_matching::match_low_to_high_scale_model(*model, *eft, loop_order, higgs_idx);
+      ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching::match_low_to_high_scale_model(*model, *eft, loop_order, higgs_idx);
    else
-      ScalarSingletZ2DM_standard_model_matching::match_low_to_high_scale_model_tree_level(*model, *eft);
+      ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching::match_low_to_high_scale_model_tree_level(*model, *eft);
 }
 
 void CLASSNAME::match_tree_level()
@@ -83,7 +83,7 @@ void CLASSNAME::match_tree_level()
    eft->run_to(get_scale());
    model->run_to(get_scale());
 
-   ScalarSingletZ2DM_standard_model_matching::match_low_to_high_scale_model_tree_level(*model, *eft);
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching::match_low_to_high_scale_model_tree_level(*model, *eft);
 }
 
 int CLASSNAME::get_higgs_index() const
@@ -125,11 +125,11 @@ void CLASSNAME::set_scale(double scale_)
 #undef CLASSNAME
 #endif
 
-#define CLASSNAME ScalarSingletZ2DM_standard_model_matching_down<Two_scale>
+#define CLASSNAME ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_down<Two_scale>
 
-CLASSNAME::ScalarSingletZ2DM_standard_model_matching_down(
+CLASSNAME::ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_down(
    standard_model::StandardModel<Two_scale>* low_,
-   ScalarSingletZ2DM<Two_scale>* high_,
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs<Two_scale>* high_,
    const Scale_getter& scale_getter_,
    int loop_order_,
    int higgs_idx_)
@@ -156,7 +156,7 @@ double CLASSNAME::get_scale() const
 void CLASSNAME::set_models(Model* high, Model* low)
 {
    eft = cast_model<standard_model::StandardModel<Two_scale>*>(low);
-   model = cast_model<ScalarSingletZ2DM<Two_scale>*>(high);
+   model = cast_model<ScalarSingletZ2DMEWSBoutputlamHEFTHiggs<Two_scale>*>(high);
 }
 
 void CLASSNAME::match()
@@ -168,9 +168,9 @@ void CLASSNAME::match()
    model->run_to(get_scale());
 
    if (model->get_thresholds() && loop_order)
-      ScalarSingletZ2DM_standard_model_matching::match_high_to_low_scale_model(*eft, *model, loop_order, higgs_idx);
+      ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching::match_high_to_low_scale_model(*eft, *model, loop_order, higgs_idx);
    else
-      ScalarSingletZ2DM_standard_model_matching::match_high_to_low_scale_model_tree_level(*eft, *model, higgs_idx);
+      ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching::match_high_to_low_scale_model_tree_level(*eft, *model, higgs_idx);
 }
 
 void CLASSNAME::match_tree_level()
@@ -181,7 +181,7 @@ void CLASSNAME::match_tree_level()
    eft->run_to(get_scale());
    model->run_to(get_scale());
 
-   ScalarSingletZ2DM_standard_model_matching::match_high_to_low_scale_model_tree_level(*eft, *model, higgs_idx);
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching::match_high_to_low_scale_model_tree_level(*eft, *model, higgs_idx);
 }
 
 int CLASSNAME::get_higgs_index() const

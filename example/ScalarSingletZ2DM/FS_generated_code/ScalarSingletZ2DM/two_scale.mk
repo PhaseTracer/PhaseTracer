@@ -38,7 +38,7 @@ LIBScalarSingletZ2DM_HDR += \
 		$(DIR)/ScalarSingletZ2DM_two_scale_susy_scale_constraint.hpp
 
 LIBScalarSingletZ2DM_SRC += \
-		models/ScalarSingletZ2DM/ScalarSingletZ2DM_standard_model_two_scale_matching.cpp
+
 
 LIBScalarSingletZ2DM_HDR += \
-		models/ScalarSingletZ2DM/ScalarSingletZ2DM_standard_model_two_scale_matching.hpp
+

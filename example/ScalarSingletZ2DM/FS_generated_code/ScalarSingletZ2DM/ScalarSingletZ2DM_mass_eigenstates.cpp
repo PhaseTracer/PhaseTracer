@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:53
+// File generated at Tue 17 Nov 2020 16:11:25
 
 /**
  * @file ScalarSingletZ2DM_mass_eigenstates.cpp
@@ -26,7 +26,7 @@
  * which solve EWSB and calculate pole masses and mixings from MSbar
  * parameters.
  *
- * This file was generated at Sat 24 Oct 2020 17:07:53 with FlexibleSUSY
+ * This file was generated at Tue 17 Nov 2020 16:11:25 with FlexibleSUSY
  * 2.4.2 (git commit: a94199e5620b8684f5d30d0eece5757a5a72c4a4) and SARAH 4.14.3 .
  */
 
@@ -481,7 +481,7 @@ double CLASSNAME::G0(double p, double m1, double m2) const noexcept
  */
 void CLASSNAME::calculate_DRbar_masses()
 {
-   const auto save_LamH_raii = make_raii_save(LamH);
+   const auto save_muH2_raii = make_raii_save(muH2);
 
    const bool has_no_ewsb_flag = problems.no_ewsb();
    const auto save_ewsb_flag = make_raii_guard(

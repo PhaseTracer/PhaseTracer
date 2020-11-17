@@ -1,5 +1,5 @@
 if(BUILD_WITH_FS)
-
+  set(FS_version "v2.4.2")
   set(FS_model_name "THDMIISNMSSMBCsimple")
   set(SARAH_model_name "THDMS")
 

@@ -24,7 +24,7 @@ int main() {
   
   //PA: use example SLHA values for now
   const double mtop = 173.0;
-  double muH2 = -8000;
+  double lambda_h = 0.234528;
   double lambda_hs = 0.1;
   double lambda_s =  0.1;
   double mus2 = 1000;
@@ -32,7 +32,7 @@ int main() {
   std::vector<double> x(9);
   x[0] = mtop; // Qin = 173.0
   x[1] = mtop; // QEWSB = 173.0
-  x[2] = muH2;  // HiggsIN
+  x[2] = lambda_h;  // LamHInput
   x[3] = mus2; // muSInput
   x[4] = lambda_s; // LamSInput
   x[5] = lambda_hs;  // LamSHInput

@@ -16,8 +16,8 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef ScalarSingletZ2DM_TWO_SCALE_MATCHING_H
-#define ScalarSingletZ2DM_TWO_SCALE_MATCHING_H
+#ifndef ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_TWO_SCALE_MATCHING_H
+#define ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_TWO_SCALE_MATCHING_H
 
 #include "single_scale_matching.hpp"
 #include <functional>
@@ -27,28 +27,28 @@ namespace flexiblesusy {
 class Model;
 class Two_scale;
 
-template <class T> class ScalarSingletZ2DM;
-template <class T> class ScalarSingletZ2DM_standard_model_matching_up;
-template <class T> class ScalarSingletZ2DM_standard_model_matching_down;
+template <class T> class ScalarSingletZ2DMEWSBoutputlamHEFTHiggs;
+template <class T> class ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_up;
+template <class T> class ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_down;
 
 namespace standard_model {
 template <class T> class StandardModel;
 }
 
 template<>
-class ScalarSingletZ2DM_standard_model_matching_up<Two_scale> : public Single_scale_matching
+class ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_up<Two_scale> : public Single_scale_matching
 {
 public:
    using Scale_getter = std::function<double()>;
 
-   ScalarSingletZ2DM_standard_model_matching_up() = default;
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_up() = default;
 
-   ScalarSingletZ2DM_standard_model_matching_up(standard_model::StandardModel<Two_scale>*,
-                                          ScalarSingletZ2DM<Two_scale>*,
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_up(standard_model::StandardModel<Two_scale>*,
+                                          ScalarSingletZ2DMEWSBoutputlamHEFTHiggs<Two_scale>*,
                                           const Scale_getter&,
                                           int, int);
 
-   virtual ~ScalarSingletZ2DM_standard_model_matching_up() = default;
+   virtual ~ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_up() = default;
 
    virtual double get_scale() const override;
    virtual void set_models(Model*, Model*) override;
@@ -64,7 +64,7 @@ public:
    void match_tree_level();
 
 private:
-   ScalarSingletZ2DM<Two_scale>* model{nullptr};
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs<Two_scale>* model{nullptr};
    standard_model::StandardModel<Two_scale>* eft{nullptr};
    Scale_getter scale_getter{};
    double scale{0.};
@@ -73,19 +73,19 @@ private:
 };
 
 template<>
-class ScalarSingletZ2DM_standard_model_matching_down<Two_scale> : public Single_scale_matching
+class ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_down<Two_scale> : public Single_scale_matching
 {
 public:
    using Scale_getter = std::function<double()>;
 
-   ScalarSingletZ2DM_standard_model_matching_down() = default;
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_down() = default;
 
-   ScalarSingletZ2DM_standard_model_matching_down(standard_model::StandardModel<Two_scale>*,
-                                            ScalarSingletZ2DM<Two_scale>*,
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_down(standard_model::StandardModel<Two_scale>*,
+                                            ScalarSingletZ2DMEWSBoutputlamHEFTHiggs<Two_scale>*,
                                             const Scale_getter&,
                                             int, int);
 
-   virtual ~ScalarSingletZ2DM_standard_model_matching_down() = default;
+   virtual ~ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_standard_model_matching_down() = default;
 
    virtual double get_scale() const override;
    virtual void set_models(Model*, Model*) override;
@@ -101,7 +101,7 @@ public:
    void match_tree_level();
 
 private:
-   ScalarSingletZ2DM<Two_scale>* model{nullptr};
+   ScalarSingletZ2DMEWSBoutputlamHEFTHiggs<Two_scale>* model{nullptr};
    standard_model::StandardModel<Two_scale>* eft{nullptr};
    Scale_getter scale_getter{};
    double scale{0.};

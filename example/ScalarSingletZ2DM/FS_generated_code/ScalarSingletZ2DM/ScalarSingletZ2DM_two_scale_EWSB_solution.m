@@ -1,1 +1,1 @@
-{{LamH -> (-2*(muH2*v - tadpole[1]))/v^3}}
+{{muH2 -> (-(LamH*v^3) + 2*tadpole[1])/(2*v)}}

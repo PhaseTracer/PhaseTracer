@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:54
+// File generated at Tue 17 Nov 2020 16:11:26
 
 #ifndef ScalarSingletZ2DM_SPECTRUM_GENERATOR_INTERFACE_H
 #define ScalarSingletZ2DM_SPECTRUM_GENERATOR_INTERFACE_H
@@ -32,7 +32,6 @@
 #include "lowe.h"
 #include "spectrum_generator_problems.hpp"
 #include "spectrum_generator_settings.hpp"
-#include "standard_model.hpp"
 #include "loop_corrections.hpp"
 
 #include <string>
@@ -47,10 +46,10 @@ class ScalarSingletZ2DM_spectrum_generator_interface {
 public:
    virtual ~ScalarSingletZ2DM_spectrum_generator_interface() = default;
 
-   std::tuple<ScalarSingletZ2DM<T>, standard_model::StandardModel<T>> get_models() const
-   { return std::make_tuple(model, eft); }
-   std::tuple<ScalarSingletZ2DM_slha<ScalarSingletZ2DM<T>>, standard_model::StandardModel<T>> get_models_slha() const
-   { return std::make_tuple(ScalarSingletZ2DM_slha<ScalarSingletZ2DM<T>>(model, settings.get(Spectrum_generator_settings::force_positive_masses) == 0.), eft); }
+   std::tuple<ScalarSingletZ2DM<T>> get_models() const
+   { return std::make_tuple(model); }
+   std::tuple<ScalarSingletZ2DM_slha<ScalarSingletZ2DM<T>>> get_models_slha() const
+   { return std::make_tuple(ScalarSingletZ2DM_slha<ScalarSingletZ2DM<T> >(model, settings.get(Spectrum_generator_settings::force_positive_masses) == 0.)); }
 
    const ScalarSingletZ2DM<T>& get_model() const
    { return model; }
@@ -58,11 +57,6 @@ public:
    { return model; }
    ScalarSingletZ2DM_slha<ScalarSingletZ2DM<T>> get_model_slha() const
    { return ScalarSingletZ2DM_slha<ScalarSingletZ2DM<T>>(model, settings.get(Spectrum_generator_settings::force_positive_masses) == 0.); }
-
-   const standard_model::StandardModel<T>& get_sm() const
-   { return eft; }
-   standard_model::StandardModel<T>& get_sm()
-   { return eft; }
 
    Spectrum_generator_problems get_problems() const { return problems; }
    int get_exit_code() const { return problems.have_problem(); }
@@ -77,7 +71,6 @@ public:
 
 protected:
    ScalarSingletZ2DM<T> model;
-   standard_model::StandardModel<T> eft{};
    Spectrum_generator_problems problems;
    Spectrum_generator_settings settings;
    double parameter_output_scale{0.}; ///< output scale for running parameters
@@ -101,10 +94,6 @@ void ScalarSingletZ2DM_spectrum_generator_interface<T>::set_settings(
    model.set_ewsb_loop_order(settings.get(Spectrum_generator_settings::ewsb_loop_order));
    model.set_loop_corrections(settings.get_loop_corrections());
    model.set_threshold_corrections(settings.get_threshold_corrections());
-   eft.set_pole_mass_loop_order(settings.get(Spectrum_generator_settings::pole_mass_loop_order));
-   eft.set_ewsb_loop_order(settings.get(Spectrum_generator_settings::ewsb_loop_order));
-   eft.set_loop_corrections(settings.get_loop_corrections());
-   eft.set_threshold_corrections(settings.get_threshold_corrections());
 }
 
 /**
@@ -129,7 +118,7 @@ void ScalarSingletZ2DM_spectrum_generator_interface<T>::run(
       this->translate_exception_to_problem(model);
    }
 
-   problems.set_model_problems({ model.get_problems(), eft.get_problems() });
+   problems.set_model_problems({ model.get_problems() });
 }
 
 /**
@@ -192,24 +181,18 @@ void ScalarSingletZ2DM_spectrum_generator_interface<T>::translate_exception_to_p
       problems.flag_no_convergence();
    } catch (const NonPerturbativeRunningError& error) {
       model.get_problems().flag_no_perturbative();
-      eft.get_problems().flag_no_perturbative();
       model.get_problems().flag_non_perturbative_parameter(
          error.get_parameter_index(), error.get_parameter_value(),
          error.get_scale());
    } catch (const NonPerturbativeRunningQedQcdError& error) {
       model.get_problems().flag_no_perturbative();
       model.get_problems().flag_thrown(error.what_detailed());
-      eft.get_problems().flag_no_perturbative();
-      eft.get_problems().flag_thrown(error.what_detailed());
    } catch (const NoSinThetaWConvergenceError&) {
       model.get_problems().flag_no_sinThetaW_convergence();
-      eft.get_problems().flag_no_sinThetaW_convergence();
    } catch (const Error& error) {
       model.get_problems().flag_thrown(error.what_detailed());
-      eft.get_problems().flag_thrown(error.what_detailed());
    } catch (const std::exception& error) {
       model.get_problems().flag_thrown(error.what());
-      eft.get_problems().flag_thrown(error.what());
    }
 }
 

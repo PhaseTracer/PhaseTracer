@@ -16,57 +16,49 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:56
+// File generated at Tue 17 Nov 2020 16:11:27
 
-#ifndef ScalarSingletZ2DM_STANDARD_MODEL_TWO_SCALE_INITIAL_GUESSER_H
-#define ScalarSingletZ2DM_STANDARD_MODEL_TWO_SCALE_INITIAL_GUESSER_H
+#ifndef ScalarSingletZ2DM_TWO_SCALE_INITIAL_GUESSER_H
+#define ScalarSingletZ2DM_TWO_SCALE_INITIAL_GUESSER_H
 
 #include "ScalarSingletZ2DM_initial_guesser.hpp"
+#include "ScalarSingletZ2DM_two_scale_low_scale_constraint.hpp"
 #include "ScalarSingletZ2DM_two_scale_susy_scale_constraint.hpp"
 #include "ScalarSingletZ2DM_two_scale_high_scale_constraint.hpp"
-#include "standard_model_two_scale_low_scale_constraint.hpp"
 #include "initial_guesser.hpp"
-#include "lowe.h"
 
 #include <sstream>
 #include <Eigen/Core>
 
 namespace flexiblesusy {
 
-class Two_scale;
-
 template <class T>
 class ScalarSingletZ2DM;
 
-template <class T>
-class StandardModel;
-
-template <class T>
-class ScalarSingletZ2DM_standard_model_initial_guesser;
+class Two_scale;
 
 /**
- * @class ScalarSingletZ2DM_standard_model_initial_guesser<Two_scale>
- * @brief initial guesser for the ScalarSingletZ2DM tower
+ * @class ScalarSingletZ2DM_initial_guesser<Two_scale>
+ * @brief initial guesser for the ScalarSingletZ2DM
  */
 
 template<>
-class ScalarSingletZ2DM_standard_model_initial_guesser<Two_scale> : public Initial_guesser {
+class ScalarSingletZ2DM_initial_guesser<Two_scale> : public Initial_guesser {
 public:
-   ScalarSingletZ2DM_standard_model_initial_guesser(ScalarSingletZ2DM<Two_scale>*,
-                               standard_model::StandardModel<Two_scale>*,
+   ScalarSingletZ2DM_initial_guesser(ScalarSingletZ2DM<Two_scale>*,
                                const softsusy::QedQcd&,
-                               const standard_model::Standard_model_low_scale_constraint<Two_scale>&,
+                               const ScalarSingletZ2DM_low_scale_constraint<Two_scale>&,
                                const ScalarSingletZ2DM_susy_scale_constraint<Two_scale>&,
                                const ScalarSingletZ2DM_high_scale_constraint<Two_scale>&);
-   virtual ~ScalarSingletZ2DM_standard_model_initial_guesser();
-   virtual void guess(); ///< initial guess
+   virtual ~ScalarSingletZ2DM_initial_guesser() = default;
+
+   virtual void guess() override; ///< initial guess
 
    void set_running_precision(double p) { running_precision = p; }
 
 private:
    ScalarSingletZ2DM<Two_scale>* model{nullptr}; ///< pointer to model class
-   standard_model::StandardModel<Two_scale>* eft{nullptr}; ///< pointer to effective low energy model
-   softsusy::QedQcd qedqcd{}; ///< Standard Model low-energy data
+   softsusy::QedQcd qedqcd{};       ///< Standard Model low-energy data
    double mu_guess{0.}; ///< guessed DR-bar mass of up-quark
    double mc_guess{0.}; ///< guessed DR-bar mass of charm-quark
    double mt_guess{0.}; ///< guessed DR-bar mass of top-quark
@@ -77,15 +69,15 @@ private:
    double mm_guess{0.}; ///< guessed DR-bar mass of muon
    double mtau_guess{0.}; ///< guessed DR-bar mass of tau
    double running_precision{1.0e-3}; ///< Runge-Kutta RG running precision
-   standard_model::Standard_model_low_scale_constraint<Two_scale> low_constraint{};
+   ScalarSingletZ2DM_low_scale_constraint<Two_scale> low_constraint{};
    ScalarSingletZ2DM_susy_scale_constraint<Two_scale> susy_constraint{};
    ScalarSingletZ2DM_high_scale_constraint<Two_scale> high_constraint{};
    Eigen::Matrix<std::complex<double>,3,3> upQuarksDRbar{Eigen::Matrix<std::complex<double>,3,3>::Zero()};
    Eigen::Matrix<std::complex<double>,3,3> downQuarksDRbar{Eigen::Matrix<std::complex<double>,3,3>::Zero()};
    Eigen::Matrix<std::complex<double>,3,3> downLeptonsDRbar{Eigen::Matrix<std::complex<double>,3,3>::Zero()};
 
-   void guess_eft_parameters();
-   void guess_model_parameters();
+   void guess_susy_parameters();
+   void guess_soft_parameters();
    void calculate_DRbar_yukawa_couplings();
    void calculate_Yu_DRbar();
    void calculate_Yd_DRbar();

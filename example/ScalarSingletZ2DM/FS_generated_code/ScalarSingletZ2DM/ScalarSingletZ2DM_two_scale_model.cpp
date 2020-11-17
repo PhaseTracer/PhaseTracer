@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:56
+// File generated at Tue 17 Nov 2020 16:11:27
 
 /**
  * @file ScalarSingletZ2DM_two_scale_model.cpp
@@ -26,7 +26,7 @@
  * which solve EWSB and calculate pole masses and mixings from MSbar
  * parameters.
  *
- * This file was generated at Sat 24 Oct 2020 17:07:56 with FlexibleSUSY
+ * This file was generated at Tue 17 Nov 2020 16:11:27 with FlexibleSUSY
  * 2.4.2 (git commit: a94199e5620b8684f5d30d0eece5757a5a72c4a4) and SARAH 4.14.3 .
  */
 

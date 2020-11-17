@@ -16,14 +16,14 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:54
+// File generated at Tue 17 Nov 2020 16:11:26
 
 /**
  * @file ScalarSingletZ2DM_ewsb_solver_interface.hpp
  *
  * @brief contains interface for EWSB solver
  *
- * This file was generated at Sat 24 Oct 2020 17:07:54 with FlexibleSUSY
+ * This file was generated at Tue 17 Nov 2020 16:11:26 with FlexibleSUSY
  * 2.4.2 (git commit: a94199e5620b8684f5d30d0eece5757a5a72c4a4) and SARAH 4.14.3 .
  */
 
