@@ -84,7 +84,7 @@ void ScalarSingletZ2DM::set_input(std::vector<double> x) {
   Input input;
   input.Qin = x[0];
   input.QEWSB = x[1];
-  input.muH2Input = x[2];
+  input.LamHInput = x[2];
   input.muS2Input = x[3];
   input.LamSInput = x[4];
   input.LamSHInput = x[5];
@@ -92,7 +92,7 @@ void ScalarSingletZ2DM::set_input(std::vector<double> x) {
   // Arrange settings
   Settings settings;
   settings.set(Settings::precision, 1.e-4);
-  settings.set(Settings::calculate_sm_masses, 0);
+  settings.set(Settings::calculate_sm_masses, 1);
   SpectrumGenerator spectrum_generator;
   spectrum_generator.set_settings(settings);
 
@@ -124,7 +124,10 @@ void ScalarSingletZ2DM::set_input(std::vector<double> x) {
   std::cout << "muS2=" << muS2 << std::endl;
   std::cout << "lambda_s=" << lambda_s << std::endl;
   std::cout << "lambda_hs=" << lambda_hs << std::endl;
-  
+  std::cout << "pole mass Mh = "  << model.get_Mhh_pole_slha() << std::endl;
+  std::cout << "running mass mh = "  << model.get_Mhh() << std::endl;
+  std::cout << "pole mass Ms = "  << model.get_Mss_pole_slha() << std::endl;
+  std::cout << "running mass ms = "  << model.get_Mss() << std::endl;
   set_renormalization_scale(model.get_scale());
   
   

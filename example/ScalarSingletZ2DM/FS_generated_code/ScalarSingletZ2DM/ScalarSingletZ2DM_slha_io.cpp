@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:54
+// File generated at Tue 17 Nov 2020 16:11:26
 
 #include "ScalarSingletZ2DM_slha_io.hpp"
 #include "ScalarSingletZ2DM_input_parameters.hpp"
@@ -115,7 +115,7 @@ void ScalarSingletZ2DM_slha_io::set_minpar(const ScalarSingletZ2DM_input_paramet
    std::ostringstream minpar;
 
    minpar << "Block MINPAR\n";
-   minpar << FORMAT_ELEMENT(1, input.muH2Input, "muH2Input");
+   minpar << FORMAT_ELEMENT(1, input.LamHInput, "LamHInput");
    minpar << FORMAT_ELEMENT(2, input.LamSHInput, "LamSHInput");
    minpar << FORMAT_ELEMENT(3, input.LamSInput, "LamSInput");
    minpar << FORMAT_ELEMENT(4, input.muS2Input, "muS2Input");
@@ -546,7 +546,7 @@ void ScalarSingletZ2DM_slha_io::fill_minpar_tuple(ScalarSingletZ2DM_input_parame
                                                 int key, double value)
 {
    switch (key) {
-   case 1: input.muH2Input = value; break;
+   case 1: input.LamHInput = value; break;
    case 2: input.LamSHInput = value; break;
    case 3: input.LamSInput = value; break;
    case 4: input.muS2Input = value; break;

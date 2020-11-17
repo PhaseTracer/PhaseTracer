@@ -16,14 +16,14 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:56
+// File generated at Tue 17 Nov 2020 16:11:27
 
 /**
  * @file ScalarSingletZ2DM_two_scale_ewsb_solver.cpp
  *
  * @brief implementation of EWSB solver for two-scale iteration
  *
- * This file was generated at Sat 24 Oct 2020 17:07:56 with FlexibleSUSY
+ * This file was generated at Tue 17 Nov 2020 16:11:27 with FlexibleSUSY
  * 2.4.2 (git commit: a94199e5620b8684f5d30d0eece5757a5a72c4a4) and SARAH 4.14.3 .
  */
 
@@ -58,9 +58,9 @@ int CLASSNAME::solve_iteratively(ScalarSingletZ2DM_mass_eigenstates& model_to_so
    model.set_ewsb_loop_order(loop_order);
 
    auto ewsb_stepper = [this, model](const EWSB_vector_t& ewsb_pars) mutable -> EWSB_vector_t {
-      const double LamH = ewsb_pars(0);
+      const double muH2 = ewsb_pars(0);
 
-      model.set_LamH(LamH);
+      model.set_muH2(muH2);
 
 
       if (this->loop_order > 0)
@@ -70,9 +70,9 @@ int CLASSNAME::solve_iteratively(ScalarSingletZ2DM_mass_eigenstates& model_to_so
    };
 
    auto tadpole_stepper = [this, model](const EWSB_vector_t& ewsb_pars) mutable -> EWSB_vector_t {
-      const double LamH = ewsb_pars(0);
+      const double muH2 = ewsb_pars(0);
 
-      model.set_LamH(LamH);
+      model.set_muH2(muH2);
 
 
       if (this->loop_order > 0)
@@ -152,8 +152,8 @@ void CLASSNAME::set_ewsb_solution(ScalarSingletZ2DM_mass_eigenstates& model, con
 {
    const auto solution = solver->get_solution();
 
-   const double LamH = solution(0);
-   model.set_LamH(LamH);
+   const double muH2 = solution(0);
+   model.set_muH2(muH2);
 
 
    model.calculate_DRbar_masses();
@@ -207,18 +207,18 @@ int CLASSNAME::solve_tree_level(ScalarSingletZ2DM_mass_eigenstates& model)
 {
    int error = EWSB_solver::SUCCESS;
 
-   const auto muH2 = MODELPARAMETER(muH2);
+   const auto LamH = MODELPARAMETER(LamH);
    const auto v = MODELPARAMETER(v);
 
-   double LamH;
+   double muH2;
 
-   LamH = Re((-2*muH2)/Sqr(v));
+   muH2 = Re(-0.5*LamH*Sqr(v));
 
    
-   const bool is_finite = IsFinite(LamH);
+   const bool is_finite = IsFinite(muH2);
 
    if (is_finite) {
-      model.set_LamH(LamH);
+      model.set_muH2(muH2);
       model.get_problems().unflag_no_ewsb_tree_level();
    } else {
       error = EWSB_solver::FAIL;
@@ -231,8 +231,8 @@ CLASSNAME::EWSB_vector_t CLASSNAME::initial_guess(const ScalarSingletZ2DM_mass_e
 {
    EWSB_vector_t x_init(EWSB_vector_t::Zero());
 
-   const auto LamH = MODELPARAMETER(LamH);
-   x_init[0] = LamH;
+   const auto muH2 = MODELPARAMETER(muH2);
+   x_init[0] = muH2;
 
 
    return x_init;
@@ -267,18 +267,18 @@ CLASSNAME::EWSB_vector_t CLASSNAME::ewsb_step(const ScalarSingletZ2DM_mass_eigen
    }
 
    const auto v = MODELPARAMETER(v);
-   const auto muH2 = MODELPARAMETER(muH2);
-   double LamH;
+   const auto LamH = MODELPARAMETER(LamH);
+   double muH2;
 
-   LamH = Re((-2*(muH2*v - tadpole[0]))/Cube(v));
+   muH2 = Re((0.5*(-(LamH*Cube(v)) + 2*tadpole[0]))/v);
 
-   const bool is_finite = IsFinite(LamH);
+   const bool is_finite = IsFinite(muH2);
 
 
    if (!is_finite)
       throw EEWSBStepFailed();
 
-   ewsb_parameters[0] = LamH;
+   ewsb_parameters[0] = muH2;
 
 
    return ewsb_parameters;

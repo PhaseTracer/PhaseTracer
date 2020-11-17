@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:54
+// File generated at Tue 17 Nov 2020 16:11:26
 
 #include "ScalarSingletZ2DM_info.hpp"
 
@@ -71,7 +71,7 @@ namespace ScalarSingletZ2DM_info {
       , "ZZ(1,1)"};
 
    const std::array<std::string, NUMBER_OF_INPUT_PARAMETERS> input_parameter_names
-       = {"muH2Input", "LamSHInput", "LamSInput", "muS2Input", "QEWSB", "Qin"};
+       = {"LamHInput", "LamSHInput", "LamSInput", "muS2Input", "QEWSB", "Qin"};
 
    const std::array<std::string, NUMBER_OF_EXTRA_PARAMETERS> extra_parameter_names
        = {};

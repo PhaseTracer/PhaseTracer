@@ -36,7 +36,7 @@ ScalarSingletZ2DM_INCLUDE_MK := \
 
 ScalarSingletZ2DM_SLHA_INPUT := \
 		$(DIR)/LesHouches.in.ScalarSingletZ2DM_generated \
-		$(DIR)/LesHouches.in.SingletDM
+		$(DIR)/LesHouches.in.ScalarSingletZ2DM
 
 ScalarSingletZ2DM_REFERENCES := \
 		$(DIR)/ScalarSingletZ2DM_references.tex

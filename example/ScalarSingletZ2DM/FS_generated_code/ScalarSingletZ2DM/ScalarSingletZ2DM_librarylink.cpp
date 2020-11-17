@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:57
+// File generated at Tue 17 Nov 2020 16:11:28
 
 #include "config.h"
 
@@ -176,7 +176,7 @@ public:
    virtual void calculate_model_observables(const softsusy::QedQcd&, const Physical_input&) override;
 
 private:
-   std::tuple<ScalarSingletZ2DM_slha<ScalarSingletZ2DM<Solver_type>>, standard_model::StandardModel<Two_scale>> models{};        ///< running parameters and pole masses
+   std::tuple<ScalarSingletZ2DM_slha<ScalarSingletZ2DM<Solver_type>>> models{};        ///< running parameters and pole masses
    Spectrum_generator_problems problems{};   ///< spectrum generator problems
    ScalarSingletZ2DM_scales scales{};              ///< scale information
    ScalarSingletZ2DM_observables observables{};    ///< observables
@@ -442,7 +442,7 @@ void Model_data::put_input_parameters(MLINK link) const
 {
    MLPutFunction(link, "List", 6);
 
-   MLPutRuleTo(link, INPUTPARAMETER(muH2Input), "muH2Input");
+   MLPutRuleTo(link, INPUTPARAMETER(LamHInput), "LamHInput");
    MLPutRuleTo(link, INPUTPARAMETER(LamSHInput), "LamSHInput");
    MLPutRuleTo(link, INPUTPARAMETER(LamSInput), "LamSInput");
    MLPutRuleTo(link, INPUTPARAMETER(muS2Input), "muS2Input");
@@ -1044,7 +1044,7 @@ Model_data make_data(const Dynamic_array_view<Element_t>& pars)
    physical_input.set(Physical_input::mh_pole, pars[c++]);
 
    ScalarSingletZ2DM_input_parameters input;
-   INPUTPARAMETER(muH2Input) = pars[c++];
+   INPUTPARAMETER(LamHInput) = pars[c++];
    INPUTPARAMETER(LamSHInput) = pars[c++];
    INPUTPARAMETER(LamSInput) = pars[c++];
    INPUTPARAMETER(muS2Input) = pars[c++];

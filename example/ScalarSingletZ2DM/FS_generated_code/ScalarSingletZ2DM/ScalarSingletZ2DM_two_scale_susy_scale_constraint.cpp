@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:55
+// File generated at Tue 17 Nov 2020 16:11:27
 
 #include "ScalarSingletZ2DM_two_scale_susy_scale_constraint.hpp"
 #include "ScalarSingletZ2DM_two_scale_model.hpp"
@@ -72,15 +72,7 @@ void ScalarSingletZ2DM_susy_scale_constraint<Two_scale>::apply()
    update_scale();
 
    // apply user-defined susy scale constraints
-   const auto muH2Input = INPUTPARAMETER(muH2Input);
-   const auto LamSHInput = INPUTPARAMETER(LamSHInput);
-   const auto LamSInput = INPUTPARAMETER(LamSInput);
-   const auto muS2Input = INPUTPARAMETER(muS2Input);
-
-   MODEL->set_muH2(Re(muH2Input));
-   MODEL->set_LamSH(Re(LamSHInput));
-   MODEL->set_LamS(Re(LamSInput));
-   MODEL->set_muS2(Re(muS2Input));
+   
    MODEL->solve_ewsb();
 
 }

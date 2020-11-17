@@ -101,7 +101,7 @@ fsDefaultSMParameters = {
 };
 
 fsScalarSingletZ2DMDefaultInputParameters = {
-   muH2Input -> 0,
+   LamHInput -> 0,
    LamSHInput -> 0,
    LamSInput -> 0,
    muS2Input -> 0,
@@ -187,7 +187,7 @@ FSScalarSingletZ2DMOpenHandle[OptionsPattern[]] :=
 
             (* ScalarSingletZ2DM input parameters *)
             ,
-            OptionValue[muH2Input],
+            OptionValue[LamHInput],
             OptionValue[LamSHInput],
             OptionValue[LamSInput],
             OptionValue[muS2Input],
@@ -271,7 +271,7 @@ FSScalarSingletZ2DMSet[handle_Integer, p:OptionsPattern[]] :=
 
             (* ScalarSingletZ2DM input parameters *)
             ,
-            OptionValue[muH2Input],
+            OptionValue[LamHInput],
             OptionValue[LamSHInput],
             OptionValue[LamSInput],
             OptionValue[muS2Input],

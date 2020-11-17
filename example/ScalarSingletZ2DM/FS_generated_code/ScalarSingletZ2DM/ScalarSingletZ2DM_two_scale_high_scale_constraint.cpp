@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:55
+// File generated at Tue 17 Nov 2020 16:11:27
 
 #include "ScalarSingletZ2DM_two_scale_high_scale_constraint.hpp"
 #include "ScalarSingletZ2DM_two_scale_model.hpp"
@@ -161,7 +161,15 @@ void ScalarSingletZ2DM_high_scale_constraint<Two_scale>::apply()
 
    update_scale();
 
-   
+   const auto LamHInput = INPUTPARAMETER(LamHInput);
+   const auto LamSHInput = INPUTPARAMETER(LamSHInput);
+   const auto LamSInput = INPUTPARAMETER(LamSInput);
+   const auto muS2Input = INPUTPARAMETER(muS2Input);
+
+   MODEL->set_LamH(Re(LamHInput));
+   MODEL->set_LamSH(Re(LamSHInput));
+   MODEL->set_LamS(Re(LamSInput));
+   MODEL->set_muS2(Re(muS2Input));
 
 
    check_non_perturbative();

@@ -19,7 +19,7 @@
 ScalarSingletZ2DM_INCLUDE_MK += $(DIR)/FlexibleEFTHiggs.mk
 
 LIBScalarSingletZ2DM_SRC += \
-		models/ScalarSingletZ2DM/ScalarSingletZ2DM_standard_model_matching.cpp
+
 
 LIBScalarSingletZ2DM_HDR += \
-		models/ScalarSingletZ2DM/ScalarSingletZ2DM_standard_model_matching.hpp
+

@@ -66,7 +66,7 @@ handle = FSScalarSingletZ2DMOpenHandle[
         Mh -> 125.09
     },
     fsModelParameters -> {
-        muH2Input -> 0,
+        LamHInput -> 0,
         LamSHInput -> 0,
         LamSInput -> 0,
         muS2Input -> 0,

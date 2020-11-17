@@ -16,24 +16,16 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:54
+// File generated at Tue 17 Nov 2020 15:32:57
 
-#ifndef ScalarSingletZ2DM_STANDARD_MODEL_MATCHING_H
-#define ScalarSingletZ2DM_STANDARD_MODEL_MATCHING_H
-
-#include "ScalarSingletZ2DM_mass_eigenstates.hpp"
-#include "standard_model.hpp"
+#ifndef ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_HIGH_SCALE_CONSTRAINT_H
+#define ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_HIGH_SCALE_CONSTRAINT_H
 
 namespace flexiblesusy {
-namespace ScalarSingletZ2DM_standard_model_matching {
 
-void match_high_to_low_scale_model_tree_level(standard_model::Standard_model&, const ScalarSingletZ2DM_mass_eigenstates&, int);
-void match_high_to_low_scale_model(standard_model::Standard_model&, const ScalarSingletZ2DM_mass_eigenstates&, int, int);
+template <class T>
+class ScalarSingletZ2DMEWSBoutputlamHEFTHiggs_high_scale_constraint;
 
-void match_low_to_high_scale_model_tree_level(ScalarSingletZ2DM_mass_eigenstates&, const standard_model::Standard_model&);
-void match_low_to_high_scale_model(ScalarSingletZ2DM_mass_eigenstates&, const standard_model::Standard_model&, int, int);
-
-} // namespace ScalarSingletZ2DM_standard_model_matching
 } // namespace flexiblesusy
 
 #endif

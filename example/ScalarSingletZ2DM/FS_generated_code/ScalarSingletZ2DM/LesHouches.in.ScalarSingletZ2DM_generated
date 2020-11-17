@@ -57,7 +57,7 @@ Block SMINPUTS               # Standard Model inputs
    23   1.040000000e-01      # ms(2 GeV) MS-bar
    24   1.270000000e+00      # mc(mc) MS-bar
 Block MINPAR
-   1   0   # muH2Input
+   1   0   # LamHInput
    2   0   # LamSHInput
    3   0   # LamSInput
    4   0   # muS2Input

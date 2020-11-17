@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:57
+// File generated at Tue 17 Nov 2020 16:11:28
 
 #include "config.h"
 
@@ -44,7 +44,7 @@ void print_usage()
    std::cout <<
       "Usage: run_cmd_line_ScalarSingletZ2DM.x [options]\n"
       "Options:\n"
-      "  --muH2Input=<value>\n"
+      "  --LamHInput=<value>\n"
       "  --LamSHInput=<value>\n"
       "  --LamSInput=<value>\n"
       "  --muS2Input=<value>\n"
@@ -64,7 +64,7 @@ void set_command_line_parameters(const Dynamic_array_view<char*>& args,
    for (int i = 1; i < args.size(); ++i) {
       const auto option = args[i];
 
-      if(Command_line_options::get_parameter_value(option, "--muH2Input=", input.muH2Input))
+      if(Command_line_options::get_parameter_value(option, "--LamHInput=", input.LamHInput))
          continue;
 
       if(Command_line_options::get_parameter_value(option, "--LamSHInput=", input.LamSHInput))

@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-// File generated at Sat 24 Oct 2020 17:07:49
+// File generated at Tue 17 Nov 2020 16:11:20
 
 #ifndef ScalarSingletZ2DM_INPUT_PARAMETERS_H
 #define ScalarSingletZ2DM_INPUT_PARAMETERS_H
@@ -27,7 +27,7 @@
 namespace flexiblesusy {
 
 struct ScalarSingletZ2DM_input_parameters {
-   double muH2Input{};
+   double LamHInput{};
    double LamSHInput{};
    double LamSInput{};
    double muS2Input{};

@@ -1,12 +1,12 @@
 FSModelName = "ScalarSingletZ2DM";
 FSEigenstates = SARAH`EWSB;
 FSDefaultSARAHModel = ScalarSingletZ2DM;
-FlexibleEFTHiggs = True;
+FlexibleEFTHiggs = False;
 
 (* input parameters *)
 
 MINPAR = {
-    {1, muH2Input},
+    {1, LamHInput},
     {2, LamSHInput},
     {3, LamSInput},
     {4, muS2Input}
@@ -17,45 +17,46 @@ EXTPAR = {
     {1, Qin}
 };    
 
-EWSBOutputParameters = {LamH};
+HighScaleFirstGuess=Qin;
 
-SUSYScale = QEWSB;
+HighScale=Qin;
 
-SUSYScaleFirstGuess = QEWSB;
-
-
-LowScale = LowEnergyConstant[MZ];
-
-LowScaleFirstGuess = LowEnergyConstant[MZ];
-
-
-SUSYScaleMatching = {
-    {v, VEV}
-    };
-
-
-SUSYScaleInput = {
-   {muH2, muH2Input},
+HighScaleInput = {
+   {LamH, LamHInput},
    {LamSH, LamSHInput},
    {LamS, LamSInput},
    {muS2, muS2Input}
 };
 
-InitialGuessAtSUSYScale = {
+SUSYScale = QEWSB;
+
+SUSYScaleFirstGuess = QEWSB;
+
+EWSBOutputParameters = {muH2};
+
+SUSYScaleInput = {};
+
+InitialGuessAtSUSYScale = {};
+
+LowScale = LowEnergyConstant[MZ];
+
+LowScaleFirstGuess = LowEnergyConstant[MZ];
+
+LowScaleInput = {
+   {v, 2 MZMSbar / Sqrt[GUTNormalization[g1]^2 g1^2 + g2^2]},
+   {Yu, Automatic},
+   {Yd, Automatic},
+   {Ye, Automatic}
+};
+
+InitialGuessAtLowScale = {
    {v, LowEnergyConstant[vev]},
-   {LamSH, LamSHInput},
-   {LamS, LamSInput},
-   {muS2, muS2Input},
-   {muH2, muH2Input}
+   {Yu, Automatic},
+   {Yd, Automatic},
+   {Ye, Automatic}
 };
 
 EffectiveMu = muH;
-
-
-
-HighScaleFirstGuess=Qin;
-
-HighScale=Qin;
 
 SMParticles = {
     Electron, TopQuark, BottomQuark,
