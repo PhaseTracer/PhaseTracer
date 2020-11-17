@@ -108,8 +108,7 @@ int main(int argc, char* argv[]) {
       lambda_hs = 0.2 / bins_lambda_hs * ii+0.2;
     }
     // Construct our model
-    auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, Q, xi, tree_level_tadpoles);
-    model.set_tree_ewsb(tree_ewsb);
+    auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, Q, xi, tree_level_tadpoles, tree_ewsb);
     
     model.set_daisy_method(EffectivePotential::DaisyMethod::None);
 //  if (Parwani){
