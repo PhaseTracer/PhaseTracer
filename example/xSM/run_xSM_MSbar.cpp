@@ -123,6 +123,7 @@ int main(int argc, char* argv[]) {
       x <<  SM::v, 0;
       std::cout << "Numerically derivatives of the full potential at EW VEV:" << std::endl;
       auto d2Vdh2 = model.d2V_dx2(x,0);
+      std::cout << std::setprecision(16);
       std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
       std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
     }
