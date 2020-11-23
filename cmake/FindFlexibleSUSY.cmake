@@ -12,6 +12,10 @@ if(NOT EXISTS ${FS})
 		  )
 endif()
 
+if(NOT DEFINED FS_PARALLEL_MAKE)
+  set(FS_PARALLEL_MAKE "1")
+endif()
+
 # Compile model
 if(NOT EXISTS ${FS}/models/${FS_model_name}/lib${FS_model_name}.a)
   if(NOT EXISTS ${FS}/models/${FS_model_name})
@@ -28,9 +32,11 @@ if(NOT EXISTS ${FS}/models/${FS_model_name}/lib${FS_model_name}.a)
   execute_process(COMMAND ./configure --with-models=${FS_model_name} --disable-threads --disable-meta
                   WORKING_DIRECTORY ${FS}
   )
-  execute_process(COMMAND ${CMAKE_MAKE_PROGRAM}
-                  WORKING_DIRECTORY ${FS}
+  	
+  execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} -j${FS_PARALLEL_MAKE}
+                    WORKING_DIRECTORY ${FS}
   )
+ 
 endif()
 
 # find includes
