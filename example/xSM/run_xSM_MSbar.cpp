@@ -20,55 +20,42 @@
 #include "thermal_function.hpp"
 
 void help_info(){
-  std::cout << "Wrong command! Please run 'run_xSM_MSbar X Q' "<< std::endl;
-  std::cout << "  X=1:  Parwani method, lambda_hs = 0.31 "<< std::endl;
-  std::cout << "  X=2:  Parwani method, lambda_hs = 0.2 ~ 0.4 "<< std::endl;
-  std::cout << "  X=3:  ArnoldEspinosa method, lambda_hs = 0.31 "<< std::endl;
-  std::cout << "  X=4:  ArnoldEspinosa method, lambda_hs = 0.2 ~ 0.4 "<< std::endl;
+  std::cout << "Wrong command! Please run 'run_xSM_MSbar x1 x2 x3 x4' "<< std::endl;
   
-  std::cout << "  Q=0:  renormalization scale = 0.5*m_top "<< std::endl;
-  std::cout << "  Q=1:  renormalization scale = 1.0*m_top "<< std::endl;
-  std::cout << "  Q=2:  renormalization scale = 2.0*m_top "<< std::endl;
   
+  std::cout << "  x1=0: lambda_hs = 0.31"<< std::endl;
+  std::cout << "  x1=1: lambda_hs = 0.2 ~ 0.4"<< std::endl;
+  
+  std::cout << "  x2=0: Parwani method"<< std::endl;
+  std::cout << "  x2=1: ArnoldEspinosa method"<< std::endl;
+  
+  std::cout << "  x3=0:  renormalization scale = 0.5*m_top "<< std::endl;
+  std::cout << "  x3=1:  renormalization scale = 1.0*m_top "<< std::endl;
+  std::cout << "  x3=2:  renormalization scale = 2.0*m_top "<< std::endl;
+  
+  std::cout << "  x4=0:  tree_ewsb = false "<< std::endl;
+  std::cout << "  x4=1:  tree_ewsb = true "<< std::endl;
 }
 
 int main(int argc, char* argv[]) {
 
-  if (argc < 3){
+  if (argc < 5){
     help_info();
     return 0;
   }
 
   std::ofstream output_file;
-  bool debug_mode=false;
-  bool Parwani=true;
   std::string out_name = "MSbar_";
-  switch (atoi(argv[1])) {
-    case 1:
-      debug_mode=true;
-      break;
-    case 2:
-      break;
-    case 3:
-      debug_mode=true;
-      Parwani=false;
-      break;
-    case 4:
-      Parwani=false;
-      break;
-    default:
-      help_info();
-      return 0;
-  }
-  
+    
+  bool debug_mode = atoi(argv[1]) == 0;
+  bool Parwani = atoi(argv[2]) == 0;
   if (Parwani) {
     out_name += "Parwani";
   } else {
     out_name += "ArnoldEspinosa";
   }
-  
   double Q = SM::mtop;
-  switch (atoi(argv[2])) {
+  switch (atoi(argv[3])) {
     case 0:
       Q = 0.5*SM::mtop;
       out_name += "_0.5mt";
@@ -84,10 +71,22 @@ int main(int argc, char* argv[]) {
     default:
       help_info();
       return 0;
+  } 
+
+  const bool tree_ewsb = atoi(argv[4]) == 1;
+  if (tree_ewsb) {
+    out_name += "_TreeEWSB";
+  } else {
+    out_name += "_NoTreeEWSB";
   }
   
   output_file.open(out_name+".txt");
   
+  std::cout << "lambda_hs  = " << (debug_mode ? "0.31" : "0.2 ~ 0.4") << std::endl;
+  std::cout << "renormal Q = " << Q/SM::mtop << "*m_top" << std::endl;
+  std::cout << "daisy_term = " << (Parwani  ? "Parwani" : "ArnoldEspinosa") << std::endl;
+  std::cout << "tree_ewsb  = " << (tree_ewsb  ? "true" : "false") << std::endl;
+
   double bins_lambda_hs;
   double lambda_hs;
   if (debug_mode){
@@ -101,7 +100,6 @@ int main(int argc, char* argv[]) {
 
   const double xi = 0;
   const bool tree_level_tadpoles = false;
-  const bool tree_ewsb = false;
   
   for (double ii = 0; ii < bins_lambda_hs; ii++) {
     if (not debug_mode){
