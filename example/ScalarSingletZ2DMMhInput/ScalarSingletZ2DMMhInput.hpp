@@ -68,6 +68,16 @@ class ScalarSingletZ2DMMhInput : public OneLoopPotential {
     
   Eigen::Array<double, 2, 1> get_mh() { return {model.get_Mhh_pole_slha(), model.get_Mss_pole_slha()}; }
 
+  // Allows running to a different scale, for checking scale dependence
+  // TODO;  do we leave this as a public method, this chnages the
+  // renormalsiation scale premenanetly
+  // Could instead make a copy then run and return that
+  // and/or only have a public methiod that doe sthe whole thing of
+  // varying the scale and recaculating the effective piotential 
+  void Run_pars_to(double scale, double tol) {
+    model.run_to(scale,tol);
+  }
+  
  private:
   Model model;
   //PA: do we really want mt to be const?  why?
