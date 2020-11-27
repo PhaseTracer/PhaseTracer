@@ -24,8 +24,9 @@ void help_info(){
   std::cout << "Wrong command! Please run 'run_xSM_MSbar x1 x2 x3 x4' "<< std::endl;
   
   
-  std::cout << "  x1=0: lambda_hs = 0.31"<< std::endl;
-  std::cout << "  x1=1: lambda_hs = 0.2 ~ 0.4"<< std::endl;
+  std::cout << "  x1=0: lambda_hs = 0.31, lambda_s = lambda_s^{min}+0.1, m_s=m_h/2"<< std::endl;
+  std::cout << "  x1=1: lambda_hs = 0.2 ~ 0.4, lambda_s = lambda_s^{min}+0.1, m_s=m_h/2"<< std::endl;
+  std::cout << "  x1=2: lambda_hs = 0.2 ~ 0.4, lambda_s = 0.1~0.4, m_s=m_h/2"<< std::endl;
   
   std::cout << "  x2=0: Parwani method"<< std::endl;
   std::cout << "  x2=1: ArnoldEspinosa method"<< std::endl;
@@ -49,6 +50,8 @@ int main(int argc, char* argv[]) {
   std::string out_name = "MSbar_";
     
   bool debug_mode = atoi(argv[1]) == 0;
+  bool scan_lambda_hs_s = atoi(argv[1]) == 2;
+  
   bool Parwani = atoi(argv[2]) == 0;
   if (Parwani) {
     out_name += "Parwani";
@@ -85,10 +88,12 @@ int main(int argc, char* argv[]) {
   
   double bins_lambda_hs;
   double lambda_hs;
+  double lambda_s;
+  double ms;
   if (debug_mode){
     LOGGER(debug);
     bins_lambda_hs = 0;
-    lambda_hs = 0.2;
+    lambda_hs = 0.24;
   }else {
     bins_lambda_hs = 50;
     LOGGER(fatal);
@@ -110,7 +115,20 @@ int main(int argc, char* argv[]) {
 //    std::cout << "Runing lambda_hs  = " << lambda_hs << " ... "<< std::endl;
     
     // Construct our model
-    auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, Q, xi, tree_level_tadpoles, tree_ewsb);
+    
+//    const double lambda_s = lambda_s_min + 0.1;
+//    const double M_s = ;
+    
+    ms = 0.5 * SM::mh;
+    
+    if (debug_mode){
+      // Match choices in 1808.01098
+      double lambda_s_min = 2. / square(SM::mh * SM::v) *
+      square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+      lambda_s =  0.1;
+    }
+    
+    auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, tree_ewsb);
     
 //    model.set_daisy_method(EffectivePotential::DaisyMethod::None);
     if (Parwani){
@@ -129,7 +147,8 @@ int main(int argc, char* argv[]) {
       std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
       std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
       
-//      PhaseTracer::potential_plotter(model, 151.347, "potential", 0., 80, 0.1, -2., 80., 0.1);
+//      PhaseTracer::potential_plotter(model, 254, "potential", -5., 5, 0.01, -5., 40., 0.1);
+//      PhaseTracer::potential_plotter(model, 142.35, "potential", 0., 160, 0.2, -2., 160., 0.2);
 //      return 0;
     }
       
@@ -139,6 +158,7 @@ int main(int argc, char* argv[]) {
     pf.set_check_vacuum_at_high(false);
     pf.set_seed(1);
 //    pf.set_check_hessian_singular(false);
+//    pf.set_hessian_singular_rel_tol(1.e-6);
     
     try {
       pf.find_phases();
