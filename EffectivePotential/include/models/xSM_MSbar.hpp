@@ -42,20 +42,16 @@ class xSM_MSbar : public OneLoopPotential {
    * @brief Make an xSM model from Lagrangian parameters
    */
   xSM_MSbar(double lambda_hs_,
-            double muh_sq_,
-            double lambda_h_,
-            double mus_sq_,
             double lambda_s_,
-            double muh_sq_tree_ewsb_):
-    lambda_hs(lambda_hs_), muh_sq(muh_sq_),
-    lambda_h(lambda_h_), mus_sq(mus_sq_), lambda_s(lambda_s_),
-    muh_sq_tree_ewsb(muh_sq_tree_ewsb_) {}
+            double ms_):
+    lambda_hs(lambda_hs_), lambda_s(lambda_s_), ms(ms_) {}
 
   /**
    * @brief Make an xSM model using tree or one-loop tadpole constraints
    */
-  static xSM_MSbar from_tadpoles(double lambda_hs, double Q, double xi, bool tree_level, bool tree_ewsb = false) {
-    xSM_MSbar model(lambda_hs, 0., 0., 0., 0., 0.);
+  static xSM_MSbar from_tadpoles(double lambda_hs, double lambda_s, double ms, 
+                                 double Q, double xi, bool tree_level, bool tree_ewsb = false) {
+    xSM_MSbar model(lambda_hs, lambda_s, ms);
     model.set_tree_ewsb(tree_ewsb);
     model.set_renormalization_scale(Q);
     model.set_xi(xi);
@@ -74,20 +70,15 @@ class xSM_MSbar : public OneLoopPotential {
    * The singlet mass and quartic are fixed following 1808.01098.
    */
   void apply_tree_level() {
-    // Match choices in 1808.01098
-    const double ms = 0.5 * SM::mh;
-    const double lambda_s_min = 2. / square(SM::mh * SM::v) *
-      square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-
     double mhh = square(SM::mh);
     double mss = square(ms);
+    
+    // TODO: will this affect calculation of lambda_h?
     if (mss > mhh) {
       std::swap(mhh, mss);
     }
 
     // Apply SM vacuum and Higgs and singlet masses to constraint three parameters
-
-    lambda_s = lambda_s_min + 0.1;
     lambda_h = mhh / (2. * square(SM::v));
     muh_sq = -lambda_h * square(SM::v);
     mus_sq = mss - 0.5 * lambda_hs * square(SM::v);
@@ -355,6 +346,7 @@ class xSM_MSbar : public OneLoopPotential {
   void set_tree_ewsb(bool tree_ewsb_) { tree_ewsb = tree_ewsb_; }
 
  protected:
+  double ms;
   // Lagrangian parameters
   double lambda_hs;
   double muh_sq;

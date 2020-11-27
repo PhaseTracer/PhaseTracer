@@ -15,9 +15,14 @@ TEST_CASE("Z2 scalar singlet massses from tadpoles", "[TadpoleSolver]") {
   Eigen::ArrayXd physical(2);
   physical << SM::v, 0.;
 
+  double ms = 0.5 * SM::mh;
+  double lambda_s_min = 2. / square(SM::mh * SM::v) *
+      square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+  double lambda_s = lambda_s_min + 0.1;
+  
   // Construct models with tree-level and one-loop tadpoles
-  auto tree = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, Q, xi, true);
-  auto one_loop = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, Q, xi, false);
+  auto tree = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, true);
+  auto one_loop = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, false);
 
   // Find singlet masses
   const auto mass_sq_1l = one_loop.get_1l_scalar_masses_sq(physical, 0.);

@@ -30,8 +30,13 @@ int main(int argc, char* argv[]) {
             << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
             << "tree-level ewsb parameters = " << tree_ewsb << std::endl;
 
+  double ms = 0.5 * SM::mh;
+  double lambda_s_min = 2. / square(SM::mh * SM::v) *
+      square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+  double lambda_s = lambda_s_min + 0.1;
+
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar_covariant::from_tadpoles(lambda_hs, Q, xi, tree_level_tadpoles);
+  auto model = EffectivePotential::xSM_MSbar_covariant::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles);
 
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
   model.set_tree_ewsb(tree_ewsb);
