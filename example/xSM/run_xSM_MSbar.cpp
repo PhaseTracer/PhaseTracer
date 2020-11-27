@@ -18,6 +18,7 @@
 #include "logger.hpp"
 #include "phase_plotter.hpp"
 #include "thermal_function.hpp"
+#include "potential_plotter.hpp"
 
 void help_info(){
   std::cout << "Wrong command! Please run 'run_xSM_MSbar x1 x2 x3 x4' "<< std::endl;
@@ -82,38 +83,41 @@ int main(int argc, char* argv[]) {
   
   output_file.open(out_name+".txt");
   
-  std::cout << "lambda_hs  = " << (debug_mode ? "0.31" : "0.2 ~ 0.4") << std::endl;
-  std::cout << "renormal Q = " << Q/SM::mtop << "*m_top" << std::endl;
-  std::cout << "daisy_term = " << (Parwani  ? "Parwani" : "ArnoldEspinosa") << std::endl;
-  std::cout << "tree_ewsb  = " << (tree_ewsb  ? "true" : "false") << std::endl;
-
   double bins_lambda_hs;
   double lambda_hs;
   if (debug_mode){
     LOGGER(debug);
-    bins_lambda_hs = 1;
-    lambda_hs = 0.31;
+    bins_lambda_hs = 0;
+    lambda_hs = 0.2;
   }else {
     bins_lambda_hs = 50;
     LOGGER(fatal);
   }
 
+  std::cout << "lambda_hs  = " << (debug_mode ? std::to_string(lambda_hs) : "0.2 ~ 0.4") << std::endl;
+  std::cout << "renormal Q = " << Q/SM::mtop << "*m_top" << std::endl;
+  std::cout << "daisy_term = " << (Parwani  ? "Parwani" : "ArnoldEspinosa") << std::endl;
+  std::cout << "tree_ewsb  = " << (tree_ewsb  ? "true" : "false") << std::endl;
+
   const double xi = 0;
   const bool tree_level_tadpoles = false;
   
-  for (double ii = 0; ii < bins_lambda_hs; ii++) {
+  for (double ii = 0; ii <= bins_lambda_hs; ii++) {
     if (not debug_mode){
       lambda_hs = 0.2 / bins_lambda_hs * ii+0.2;
     }
+    
+//    std::cout << "Runing lambda_hs  = " << lambda_hs << " ... "<< std::endl;
+    
     // Construct our model
     auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, Q, xi, tree_level_tadpoles, tree_ewsb);
     
-    model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-//  if (Parwani){
-//    model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
-//  } else {
-//    model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
-//  }
+//    model.set_daisy_method(EffectivePotential::DaisyMethod::None);
+    if (Parwani){
+      model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
+    } else {
+      model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
+    }
 
 
     if (debug_mode) {
@@ -124,14 +128,17 @@ int main(int argc, char* argv[]) {
       std::cout << std::setprecision(16);
       std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
       std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
+      
+//      PhaseTracer::potential_plotter(model, 151.347, "potential", 0., 80, 0.1, -2., 80., 0.1);
+//      return 0;
     }
       
     // Make PhaseFinder object and find the phases
     PhaseTracer::PhaseFinder pf(model);
       
     pf.set_check_vacuum_at_high(false);
-    pf.set_seed(0);
-    pf.set_check_hessian_singular(false);
+    pf.set_seed(1);
+//    pf.set_check_hessian_singular(false);
     
     try {
       pf.find_phases();
@@ -146,9 +153,13 @@ int main(int argc, char* argv[]) {
     PhaseTracer::TransitionFinder tf(pf);
     tf.find_transitions();
     if (debug_mode) std::cout << tf;
-
+    
     if (not debug_mode) {
       auto t = tf.get_transitions();
+      if (t.size()==0){
+        std::cout << "lambda_hs = " << lambda_hs << " found 0 transition!" << std::endl;
+        continue;
+      }
       int jj=0;
       double gamme_max=0;
       for (int i=0; i<t.size(); i++) {
