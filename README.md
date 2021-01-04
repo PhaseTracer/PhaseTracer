@@ -38,7 +38,7 @@ The following libraries are required to build `PhaseTracer`:
 
 On Ubuntu, the dependencies can be installed by
 
-    sudo apt install libalglib-dev libnlopt-dev libeigen3-dev libboost-filesystem-dev libboost-log-dev
+    sudo apt install libalglib-dev libnlopt-cxx-dev libeigen3-dev libboost-filesystem-dev libboost-log-dev
     
 On Mac, they can be installed by
     
@@ -92,4 +92,5 @@ Then run the examples with:
     ./bin/run_C2HDM
     ./bin/run_N2HDM
 
+Please note that the BSMPT examples in PhaseTacer are just for checking that PhaseTacer and BSMPT can give consistent results.  Unsuccessful compilation of BSMPT will not affect other examples and BSMPT is not neccessary for PhaseTracer users unless they wish to use potentials from BSMPT.
 
