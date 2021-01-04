@@ -17,4 +17,4 @@
  * Add function, 'get_deepest_phase_at_T', to get the deepest phase at T.
  * Change 'V1' function in 'one_loop_potential' class to virtual function
  * Fix a bug that counter_term is not added to zero-temperature potential
- * Fix a cmake error with nlopt on Ubuntu 20.04LTS.
+ * Fix a cmake error with nlopt on Ubuntu 20.04LTS, thanks for Philipp Basler's help
