@@ -14,8 +14,8 @@ endif()
 # Build BSMPT if required
 if(NOT EXISTS ${BSMPT}/src/models/libModels.a)
   message(STATUS "Making BSMPT")
-#  execute_process(COMMAND git checkout tags/v2.0.1
-#                  WORKING_DIRECTORY ${BSMPT})
+  execute_process(COMMAND git checkout tags/v2.1
+                  WORKING_DIRECTORY ${BSMPT})
   execute_process(COMMAND cmake -DUseLibCMAES=OFF .
                   WORKING_DIRECTORY ${BSMPT})
   execute_process(COMMAND ${CMAKE_MAKE_PROGRAM}
