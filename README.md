@@ -38,7 +38,10 @@ The following libraries are required to build `PhaseTracer`:
 
 On Ubuntu, the dependencies can be installed by
 
-    sudo apt install libalglib-dev libnlopt-cxx-dev libeigen3-dev libboost-filesystem-dev libboost-log-dev
+    sudo apt install libalglib-dev libnlopt-dev libeigen3-dev libboost-filesystem-dev libboost-log-dev
+
+On Ubuntu 20.04.1 LTS, nlopt for C++ needs to be installed by
+    sudo apt install libnlopt-cxx-dev
     
 On Mac, they can be installed by
     
