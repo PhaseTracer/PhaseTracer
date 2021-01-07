@@ -10,7 +10,7 @@
 ## PhaseTracer-1.0.3 [April 15, 2020]
  * Many thanks to Jingwei Lian for pointing out a bug in THDMIISNMSSMBCsimple.hpp. get_vector_debye_sq() returns two W boson masses, instead of one W boson mass and one Z boson mass.
 ## PhaseTracer-1.1.0 [January 4, 2021]
- * Update BSMPT used in  PhaseTracer to version 2
+ * Update BSMPT used in PhaseTracer to version 2
  * Add requirement on cmake version, >=3.9, because of OpenMP support
  * Add a setting about BOOST in cmake to fix compiling problem with BOOST.1.72
  * Add functions, 'get_minima_at_t_low' and 'get_minima_at_t_high', to get minima at lowest and highest temperature. 
