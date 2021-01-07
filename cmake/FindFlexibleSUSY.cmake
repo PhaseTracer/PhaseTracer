@@ -3,6 +3,12 @@
 
 set(FS "${PROJECT_SOURCE_DIR}/FlexibleSUSY")
 
+if(Git_FOUND)
+  message("Git found: ${GIT_EXECUTABLE}")
+elseif (NOT EXISTS ${FS} OR NOT EXISTS ${FS}/models/${FS_model_name}/lib${FS_model_name}.a)
+  message(FATAL_ERROR "Git not found.")
+endif()
+
 # Download FlexibleSUSY if required
 if(NOT EXISTS ${FS})
   message(STATUS "Downloading FlexibleSUSY")
