@@ -26,7 +26,8 @@ void help_info(){
   
   std::cout << "  x1=0: lambda_hs = 0.31, lambda_s = lambda_s^{min}+0.1, m_s=m_h/2"<< std::endl;
   std::cout << "  x1=1: lambda_hs = 0.2 ~ 0.4, lambda_s = lambda_s^{min}+0.1, m_s=m_h/2"<< std::endl;
-  std::cout << "  x1=2: lambda_hs = 0.2 ~ 0.4, lambda_s = 0.1~0.4, m_s=m_h/2"<< std::endl;
+  std::cout << "  x1=2: lambda_hs = 0.2 ~ 0.4, lambda_s = 0.01~0.2, m_s=m_h/2"<< std::endl;
+  std::cout << "  x1=3: lambda_hs = 0.2 ~ 0.4, lambda_s = 0.1, m_s= 10~100 GeV"<< std::endl;
   
   std::cout << "  x2=0: Parwani method"<< std::endl;
   std::cout << "  x2=1: ArnoldEspinosa method"<< std::endl;
@@ -51,6 +52,7 @@ int main(int argc, char* argv[]) {
     
   bool debug_mode = atoi(argv[1]) == 0;
   bool scan_lambda_hs_s = atoi(argv[1]) == 2;
+  bool scan_lambda_hs_ms = atoi(argv[1]) == 3;
   
   bool Parwani = atoi(argv[2]) == 0;
   if (Parwani) {
@@ -82,6 +84,13 @@ int main(int argc, char* argv[]) {
     out_name += "_TreeEWSB";
   } else {
     out_name += "_NoTreeEWSB";
+  }
+  
+  if (scan_lambda_hs_s) {
+    out_name += "_lhs_ls";
+  }
+  if (scan_lambda_hs_ms) {
+    out_name += "_lhs_ms";  
   }
   
   output_file.open(out_name+".txt");
@@ -121,12 +130,16 @@ int main(int argc, char* argv[]) {
       if (not debug_mode){
         lambda_hs = 0.2 / n_bin_lambda_hs * ii+0.2;
         if (scan_lambda_hs_s) {
-          lambda_s = 0.2 / n_bin_y * jj +0.05;
+          lambda_s = 0.2 / n_bin_y * jj +0.01;
           ms = 0.5 * SM::mh;
+        }
+        if (scan_lambda_hs_ms) {
+          lambda_s = 0.1;
+          ms = 90 / n_bin_lambda_hs * jj + 10;
         }
       }
     
-      std::cout << "Runing lambda_hs  = " << lambda_hs << ", lambda_s  = " << lambda_s << std::endl;
+      std::cout << "Runing lambda_hs  = " << lambda_hs << ", lambda_s  = " << lambda_s << ", m_s  = " << ms << std::endl;
     
       // Construct our model
     
@@ -166,6 +179,12 @@ int main(int argc, char* argv[]) {
         pf.find_phases();
       } catch (...) {
         std::cout << "lambda_hs = " << lambda_hs << " encounters bug!" << std::endl;
+        output_file << lambda_hs << "\t" << 0 << "\t";
+        output_file << -1 << "\t" << 0 << "\t"
+                    << 0 << "\t" << 0 << "\t"
+                    << 0 << "\t";
+        output_file << lambda_s << "\t" << ms;
+        output_file << std::endl;
         continue;
       }
     
@@ -180,6 +199,12 @@ int main(int argc, char* argv[]) {
         auto t = tf.get_transitions();
         if (t.size()==0){
           std::cout << "lambda_hs = " << lambda_hs << " found 0 transition!" << std::endl;
+          output_file << lambda_hs << "\t" << 0 << "\t";
+          output_file << -1 << "\t" << 0 << "\t"
+                      << 0 << "\t" << 0 << "\t"
+                      << 0 << "\t";
+          output_file << lambda_s << "\t" << ms;
+          output_file << std::endl;
           continue;
         }
         int jj=0;
