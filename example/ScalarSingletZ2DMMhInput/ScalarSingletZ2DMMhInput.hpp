@@ -179,7 +179,7 @@ std::vector<double> ScalarSingletZ2DMMhInput::get_scalar_debye_sq(Eigen::VectorX
   model_copy.set_v(phi[0]);
 
   // CP-even Higgs in \xi = 1
-  //PA:  I don't see the need fpor calculating the mass at this step.
+  //PA:  I don't see the need for calculating the mass at this step.
   model_copy.calculate_Mhh();
   // get mass matrix for Higgs - in this case it is just the tree mass^2
   double matrix_hh = model_copy.get_mass_matrix_hh();
