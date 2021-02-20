@@ -70,18 +70,18 @@ class xSM_MSbar : public OneLoopPotential {
    * The singlet mass and quartic are fixed following 1808.01098.
    */
   void apply_tree_level() {
-    double mhh = square(SM::mh);
-    double mss = square(ms);
+    double mhh2 = square(SM::mh);
+    double mss2 = square(ms);
     
     // TODO: will this affect calculation of lambda_h?
-    if (mss > mhh) {
-      std::swap(mhh, mss);
+    if (mss2 > mhh2) {
+      std::swap(mhh2, mss2);
     }
 
     // Apply SM vacuum and Higgs and singlet masses to constraint three parameters
-    lambda_h = mhh / (2. * square(SM::v));
+    lambda_h = mhh2 / (2. * square(SM::v));
     muh_sq = -lambda_h * square(SM::v);
-    mus_sq = mss - 0.5 * lambda_hs * square(SM::v);
+    mus_sq = mss2 - 0.5 * lambda_hs * square(SM::v);
   }
 
   /**
@@ -183,17 +183,17 @@ class xSM_MSbar : public OneLoopPotential {
     }
 
     const double b = discriminant < 0 ? 0 : sqrt(discriminant);
-    double mhh = 0.5 * (a + b);
-    double mss = 0.5 * (a - b);
+    double mhh2 = 0.5 * (a + b);
+    double mss2 = 0.5 * (a - b);
     if (mh_sq < ms_sq) {
-      std::swap(mhh, mss);
+      std::swap(mhh2, mss2);
     }
 
     // Apply SM vacuum and Higgs and singlet masses to constraint three parameters
 
-    lambda_h = (mhh + jacobian(0) / SM::v - hessian(0, 0)) / (2. * square(SM::v));
-    muh_sq = -0.5 * mhh - 1.5 *jacobian(0) / SM::v + 0.5 * hessian(0, 0);
-    mus_sq = mss - 0.5 * lambda_hs * square(SM::v) - hessian(1, 1);
+    lambda_h = (mhh2 + jacobian(0) / SM::v - hessian(0, 0)) / (2. * square(SM::v));
+    muh_sq = -0.5 * mhh2 - 1.5 *jacobian(0) / SM::v + 0.5 * hessian(0, 0);
+    mus_sq = mss2 - 0.5 * lambda_hs * square(SM::v) - hessian(1, 1);
 
     muh_sq_tree_ewsb = - lambda_h * square(SM::v);
   }
@@ -237,9 +237,9 @@ class xSM_MSbar : public OneLoopPotential {
     const auto thermal_sq = get_scalar_thermal_sq(T);
     
     // TODO: add thermal_sq here and use get_vector_debye_sq?
-    const double mhh = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
-    const double mgg = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
-    const double mss = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
+    const double mhh2 = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mgg2 = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mss2 = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
     
     
     // resummed Goldstone contributions
@@ -247,21 +247,21 @@ class xSM_MSbar : public OneLoopPotential {
     const auto vm2 = get_vector_masses_sq(phi);
     const double Qsq = square(get_renormalization_scale());
     const double sum = 1. / (16. * M_PI * M_PI) * (
-                       3.  * lambda_h * (Qsq*xlogx(mhh/Qsq) - mhh)
-                      +0.5 * lambda_hs * (Qsq*xlogx(mss/Qsq) - mss)
+                       3.  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
+                      +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
                       -6.  * SM::yt_sq * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
                       +1.5 * square(SM::g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
                       +0.75* (square(SM::g)+square(SM::gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
                       );
                       
     // Higgs and Goldstone diagonals
-    M2(0, 0) = mgg + thermal_sq[0] + (tree_ewsb ? sum : 0);
+    M2(0, 0) = mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
     M2(1, 1) = M2(0, 0);
-    M2(2, 2) = mhh + thermal_sq[0];
+    M2(2, 2) = mhh2 + thermal_sq[0];
     M2(3, 3) = M2(0, 0);
 
     // Singlet mass diagonal
-    M2(4, 4) = mss + thermal_sq[1];
+    M2(4, 4) = mss2 + thermal_sq[1];
 
     // Mixing between Higgs and singlet
     M2(2, 4) = M2(4, 2) = lambda_hs * h * s;
@@ -299,12 +299,13 @@ class xSM_MSbar : public OneLoopPotential {
                      + 484. * square(square(SM::g) - square(SM::gp)) * pow_4(T));
 
 		const double MZ_sq = (a + b) / 24.;
+		//PA: why is this written as MG?  This is the photon mass right?
 		const double MG_sq = (a - b) / 24.;
-
 
     return {MW_sq, MZ_sq, MG_sq};
   }
 
+  //PA: what is this version for?
   // W, Z, photon
   std::vector<double> get_vector_debye_sq_post_diag(Eigen::VectorXd phi, double T) const {
     const double MW_sq = 11. / 6. * square(SM::g) * square(T)
