@@ -21,7 +21,7 @@
 #include "potential_plotter.hpp"
 
 void help_info(){
-  std::cout << "Wrong command! Please run 'run_xSM_MSbar x1 x2 x3 x4' "<< std::endl;
+  std::cout << "Wrong command! Please run 'run_xSM_MSbar x1 x2 x3 x4 x5' "<< std::endl;
   
   
   std::cout << "  x1=0: lambda_hs = 0.31, lambda_s = lambda_s^{min}+0.1, m_s=m_h/2"<< std::endl;
@@ -38,19 +38,25 @@ void help_info(){
   
   std::cout << "  x4=0:  tree_ewsb = false "<< std::endl;
   std::cout << "  x4=1:  tree_ewsb = true "<< std::endl;
+  
+  std::cout << "  x5:  xi "<< std::endl;
 }
 
 int main(int argc, char* argv[]) {
 
+  double xi = 0;
   if (argc < 5){
     help_info();
     return 0;
+  } else if (argc > 5 ){
+    xi = atof(argv[5]);
   }
-
+  
   std::ofstream output_file;
   std::string out_name = "MSbar_";
     
   bool debug_mode = atoi(argv[1]) == 0;
+  bool scan_lambda_hs = atoi(argv[1]) == 1;
   bool scan_lambda_hs_s = atoi(argv[1]) == 2;
   bool scan_lambda_hs_ms = atoi(argv[1]) == 3;
   
@@ -93,17 +99,20 @@ int main(int argc, char* argv[]) {
     out_name += "_lhs_ms";  
   }
   
+  if (xi > 0){
+    out_name += "_xi";
+  }
+  
   output_file.open(out_name+".txt");
   
   double n_bin_lambda_hs;
-  double n_bin_y;
+  double n_bin_y=0;
   double lambda_hs;
   double lambda_s;
   double ms;
   if (debug_mode){
     LOGGER(debug);
     n_bin_lambda_hs = 0;
-    n_bin_y = 0;
     lambda_hs = 0.24;
     // Match choices in 1808.01098
     ms = 0.5 * SM::mh;
@@ -112,8 +121,10 @@ int main(int argc, char* argv[]) {
     lambda_s =  lambda_s_min + 0.1;
     
   }else {
-    n_bin_lambda_hs = 50;
-    n_bin_y = 50;
+    n_bin_lambda_hs = 100;
+    if (not scan_lambda_hs){
+      n_bin_y = 50;
+    }
     LOGGER(fatal);
   }
 
@@ -121,14 +132,14 @@ int main(int argc, char* argv[]) {
   std::cout << "renormal Q = " << Q/SM::mtop << "*m_top" << std::endl;
   std::cout << "daisy_term = " << (Parwani  ? "Parwani" : "ArnoldEspinosa") << std::endl;
   std::cout << "tree_ewsb  = " << (tree_ewsb  ? "true" : "false") << std::endl;
-
-  const double xi = 0;
+  std::cout << "xi  = " << xi << std::endl;
+  
   const bool tree_level_tadpoles = false;
   
   for (double ii = 0; ii <= n_bin_lambda_hs; ii++) {
     for (double jj = 0; jj <= n_bin_y; jj++) {
       if (not debug_mode){
-        lambda_hs = 0.2 / n_bin_lambda_hs * ii+0.2;
+        lambda_hs = 0.4 / n_bin_lambda_hs * ii+0.2;
         if (scan_lambda_hs_s) {
           lambda_s = 0.2 / n_bin_y * jj +0.01;
           ms = 0.5 * SM::mh;
@@ -137,6 +148,11 @@ int main(int argc, char* argv[]) {
           lambda_s = 0.1;
           ms = 90 / n_bin_lambda_hs * jj + 10;
         }
+        if (scan_lambda_hs){
+          double lambda_s_min = 2. / square(SM::mh * SM::v) *
+          square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+          lambda_s =  lambda_s_min + 0.1;
+        }
       }
     
       std::cout << "Runing lambda_hs  = " << lambda_hs << ", lambda_s  = " << lambda_s << ", m_s  = " << ms << std::endl;
@@ -144,7 +160,9 @@ int main(int argc, char* argv[]) {
       // Construct our model
     
       auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, tree_ewsb);
-    
+      std::cout << "iteration converged = " << model.iteration_converged << std::endl;
+
+      
 //    model.set_daisy_method(EffectivePotential::DaisyMethod::None);
       if (Parwani){
         model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
