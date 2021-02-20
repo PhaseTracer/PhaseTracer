@@ -177,22 +177,23 @@ class xSM_MSbar : public OneLoopPotential {
     const auto jacobian = dV1_dx(vacuum);
     const auto hessian = d2V1_dx2(vacuum);
 
-    // Match choices in 1808.01098
-    const double ms = 0.5 * SM::mh;
     const double mh_sq = square(SM::mh);
     const double ms_sq = square(ms);
-
-    const double a = mh_sq + ms_sq;
-    const double discriminant = square(mh_sq - ms_sq) - 4. * square(hessian(1, 0));
-
-    if (discriminant < 0) {
-      throw std::runtime_error("Could not solve 1l tadpoles");
-    }
-
-    const double b = discriminant < 0 ? 0 : sqrt(discriminant);
-    double mhh2 = 0.5 * (a + b);
-    double mss2 = 0.5 * (a - b);
-    if (mh_sq < ms_sq) {
+    
+//    const double a = mh_sq + ms_sq;
+//    const double discriminant = square(mh_sq - ms_sq) - 4. * square(hessian(1, 0));
+//    if (discriminant < 0) {
+//      throw std::runtime_error("Could not solve 1l tadpoles");
+//    }
+//    const double b = sqrt(discriminant);
+//    double mhh2 = 0.5 * (a + b);
+//    double mss2 = 0.5 * (a - b);
+    
+    double mhh2 = mh_sq;
+    double mss2 = ms_sq;
+    
+    // TODO: will this affect calculation of lambda_h?
+    if (mhh2 < mss2) {
       std::swap(mhh2, mss2);
     }
 
@@ -366,6 +367,7 @@ class xSM_MSbar : public OneLoopPotential {
   // For consistency in one-loop potential
   double muh_sq_tree_ewsb;
   bool tree_ewsb{false};
+
 };
 
 }  // namespace EffectivePotential
