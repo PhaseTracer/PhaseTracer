@@ -24,7 +24,7 @@ int main() {
   // Construct our model - for BSMPT models, we provide a string containing
   // parameter values
   std::string parameters = "1	3.29771	0.274365	4.71019	-2.23056	-2.43487	0.124948	2706.86	4.64487";
-  EffectivePotential::BSMPTPotential<Class_Potential_C2HDM> model(parameters);
+  EffectivePotential::BSMPTPotential<BSMPT::Models::Class_Potential_C2HDM> model(parameters);
 
   // Make PhaseFinder object and find the phases
   PhaseTracer::PhaseFinder pf(model);
