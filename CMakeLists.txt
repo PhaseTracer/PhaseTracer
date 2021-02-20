@@ -25,6 +25,7 @@ set(Boost_USE_MULTITHREADED ON)
 find_package(Eigen3 3.1 REQUIRED)
 find_package(NLopt REQUIRED)
 find_package(Threads REQUIRED)
+find_package(Git)
 # find_package(EffPotential REQUIRED)
 add_subdirectory(EffectivePotential)
 

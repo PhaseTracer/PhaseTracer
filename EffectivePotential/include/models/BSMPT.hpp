@@ -37,12 +37,11 @@ class BSMPTPotential : public Potential {
   double V(Eigen::VectorXd phi, double T) const override {
     auto model_copy = model;
     const std::vector<double> vMin(phi.data(), phi.data() + phi.rows() * phi.cols());
-    std::vector<double> vIn;
-    model_copy.MinimizeOrderVEV(vMin, vIn);
+    auto vIn = model_copy.MinimizeOrderVEV(vMin);    
     return model_copy.VEff(vIn, std::max(0., T), 0);
   }
 
-  size_t get_n_scalars() const override { return model.nVEV; }
+  size_t get_n_scalars() const override { return model.get_nVEV(); }
 
   std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const override {
     auto phi1 = phi;

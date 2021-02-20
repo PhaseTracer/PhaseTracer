@@ -39,6 +39,10 @@ The following libraries are required to build `PhaseTracer`:
 On Ubuntu, the dependencies can be installed by
 
     sudo apt install libalglib-dev libnlopt-dev libeigen3-dev libboost-filesystem-dev libboost-log-dev
+
+With Ubuntu after 19.04, nlopt for C++ needs to be installed by
+
+    sudo apt install libnlopt-cxx-dev
     
 On Mac, they can be installed by
     
@@ -92,24 +96,5 @@ Then run the examples with:
     ./bin/run_C2HDM
     ./bin/run_N2HDM
 
-Note that BSMPT has some additional dependencies that may need to be
-installed. We have found that the libmaes package often needs to be
-installed manually as BSMPT's cmake system often fails to install
-this.  If you get an error like this we recommend installing libcmaes
-manually, e.g.
-
-    git clone https://github.com/beniz/libcmaes
-    cd libmaes
-    mkdir build
-    cd build
-    cmake .. -DCMAKE_INSTALL_PREFIX=<path>
-    make -j2
-    make install
-
-Where <path> indicates the install location which should be somwehere
-that BSMPT can easily find it.  We have found that using /usr/local for
-the <path> works on Ubuntu 18.04.
-
-If you have further problems we suggest trying to install [BSMPT](https://github.com/phbasler/BSMPT) standalone and consulting the BSMPT authors for further support if you problems persist.
-
 Please note that the BSMPT examples in PhaseTacer are just for checking that PhaseTacer and BSMPT can give consistent results.  Unsuccessful compilation of BSMPT will not affect other examples and BSMPT is not neccessary for PhaseTracer users unless they wish to use potentials from BSMPT.
+
