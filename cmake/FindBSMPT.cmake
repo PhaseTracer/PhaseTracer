@@ -2,6 +2,12 @@
 
 set(BSMPT "${PROJECT_SOURCE_DIR}/BSMPT")
 
+if(Git_FOUND)
+  message("Git found: ${GIT_EXECUTABLE}")
+elseif (NOT EXISTS ${BSMPT} OR NOT EXISTS ${BSMPT}/src/models/libModels.a)
+  message(FATAL_ERROR "Git not found.")
+endif()
+
 # Download BSMPT if required
 if(NOT EXISTS ${BSMPT})
   message(STATUS "Downloading BSMPT")
