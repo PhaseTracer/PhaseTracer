@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 #include <Eigen/Eigenvalues>
+#include <iostream>
 
 #include "one_loop_potential.hpp"
 #include "pow.hpp"
@@ -58,7 +59,7 @@ class xSM_MSbar : public OneLoopPotential {
     if (tree_level) {
       model.apply_tree_level();
     } else {
-      model.apply_one_loop();
+      model.iteration_converged = model.apply_one_loop();
     }
     return model;
   }
@@ -93,10 +94,12 @@ class xSM_MSbar : public OneLoopPotential {
    * This is an iterative solver that stops once the absolute change in
    * Lagrangian parameters is small.
    */
-  void apply_one_loop(double tol = 0.1) {
+  bool apply_one_loop(double tol = 0.1) {
     apply_tree_level();
 
+    size_t ii = 0;
     while (true) {
+      ++ii;
       double lambda_h_prev = lambda_h;
       double lambda_s_prev = lambda_s;
       double muh_sq_prev = muh_sq;
@@ -110,8 +113,12 @@ class xSM_MSbar : public OneLoopPotential {
       const double dlambda_s = std::abs(lambda_s - lambda_s_prev);
 
       const bool converged = (dmuh < tol) && (dlambda_h < tol) && (dmus < tol) && (dlambda_s < tol);
+//      std::cout << "converged = " << converged << std::endl;
       if (converged) {
-        break;
+        return true;
+      }
+      if (ii > 1000){
+        return false;
       }
     }
   }
@@ -345,6 +352,8 @@ class xSM_MSbar : public OneLoopPotential {
   /** Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential */
   void set_tree_ewsb(bool tree_ewsb_) { tree_ewsb = tree_ewsb_; }
 
+  bool iteration_converged = false;
+  
  protected:
   double ms;
   // Lagrangian parameters
