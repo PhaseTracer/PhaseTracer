@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
     bins_lambda_hs = 1;
     lambda_hs = 0.28;
   }else {
-    bins_lambda_hs = 50;
+    bins_lambda_hs = 100;
     LOGGER(fatal);
   }
   
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
   
   for (double ii = 0; ii < bins_lambda_hs; ii++) {
     if (not debug_mode){
-      lambda_hs = 0.2 / bins_lambda_hs * ii+0.2;
+      lambda_hs = 0.4 / bins_lambda_hs * ii+0.2;
     }
     model.set_lambda_hs(lambda_hs);
     model.solve_Q();
