@@ -156,12 +156,16 @@ int main(int argc, char* argv[]) {
   for (double ii = 0; ii <= n_bin_x; ii++) {
     for (double jj = 0; jj <= n_bin_y; jj++) {
       if (debug_mode){
-        lambda_hs = 0.24;
-        // Match choices in 1808.01098
-        ms = 0.8 * SM::mh;
-        double lambda_s_min = 2. / square(SM::mh * SM::v) *
-        square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-        lambda_s =  lambda_s_min + 0.1;
+//        lambda_hs = 0.24;
+//        // Match choices in 1808.01098
+//        ms = 0.8 * SM::mh;
+//        double lambda_s_min = 2. / square(SM::mh * SM::v) *
+//        square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+//        lambda_s =  lambda_s_min + 0.1;
+        // BK point
+        lambda_hs = 0.4;
+        ms = 60;
+        lambda_s =  0.15;
       } else {
         if (scan_lhs){
           lambda_hs = 0.4 / n_bin_x * ii+0.2;

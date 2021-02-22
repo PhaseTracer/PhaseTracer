@@ -33,13 +33,14 @@ namespace EffectivePotential {
 
 class xSM_HT : public Potential {
  public:
-  void set_m_s(double m_s_) {m_s = m_s_;}
-  void set_lambda_hs(double lambda_hs_) {lambda_hs = lambda_hs_;}
+
+  xSM_HT(double lambda_hs_,
+            double lambda_s_,
+            double m_s_):
+    lambda_hs(lambda_hs_), lambda_s(lambda_s_), m_s(m_s_) {}
 
   double V(Eigen::VectorXd phi, double T) const override {
     const double mus_sq = square(m_s) - lambda_hs * square(v) / 2.;
-
-    const double lambda_s = lambda_h*square(mus_sq)/square(muh_sq) +0.1;
     const double muh_sq_T = muh_sq + square(T) / 48. *
         (9. * g_sq + 3. * gp_sq + 12. * yt_sq + 24. * lambda_h + 2. * lambda_hs);
     const double mus_sq_T = mus_sq + square(T) / 12. * (2. * lambda_hs + 3. * lambda_s);
@@ -56,7 +57,6 @@ class xSM_HT : public Potential {
   // Using expressions in arXiv:1611.02073
   double get_TC_from_expression() const {
     const double mus_sq = square(m_s) - lambda_hs * square(v) / 2.;
-    const double lambda_s = lambda_h*square(mus_sq)/square(muh_sq) +0.1;
     const double cs = 1. / 12. * (2. * lambda_hs + 3. * lambda_s);
     const double ch = 1. / 48. *
         (9. * g_sq + 3. * gp_sq + 12. * yt_sq + 24. * lambda_h + 2. * lambda_hs);
@@ -69,7 +69,6 @@ class xSM_HT : public Potential {
   double get_vs_from_expression() const {
     const double TC = get_TC_from_expression();
     const double mus_sq = square(m_s) - lambda_hs * square(v) / 2.;
-    const double lambda_s = lambda_h*square(mus_sq)/square(muh_sq) +0.1;
     const double mus_sq_T = mus_sq + square(TC) / 12. * (2. * lambda_hs + 3. * lambda_s);
     return std::sqrt(-mus_sq_T / lambda_s);
   }
@@ -83,7 +82,6 @@ class xSM_HT : public Potential {
 
   bool check() const {
     const double mus_sq = square(m_s) - lambda_hs * square(v) / 2.;
-    const double lambda_s = lambda_h*square(mus_sq)/square(muh_sq) +0.1;
     if (lambda_hs < 2. * std::sqrt(lambda_s * lambda_h)) {
         std::cout << "1111" << std::endl;
         return false;
@@ -137,6 +135,7 @@ class xSM_HT : public Potential {
 
   double lambda_hs = 0.25;
   double m_s = 27;
+  double lambda_s = 0.1;
 };
 
 }  // namespace EffectivePotential

@@ -307,21 +307,9 @@ class xSM_MSbar : public OneLoopPotential {
                      + 484. * square(square(SM::g) - square(SM::gp)) * pow_4(T));
 
 		const double MZ_sq = (a + b) / 24.;
-		//PA: why is this written as MG?  This is the photon mass right?
-		const double MG_sq = (a - b) / 24.;
+		const double Mphoton_sq = (a - b) / 24.;
 
-    return {MW_sq, MZ_sq, MG_sq};
-  }
-
-  //PA: what is this version for?
-  // W, Z, photon
-  std::vector<double> get_vector_debye_sq_post_diag(Eigen::VectorXd phi, double T) const {
-    const double MW_sq = 11. / 6. * square(SM::g) * square(T)
-                         + 0.25 * square(SM::g) * square(phi[0]);
-    const double MZ_sq = 11. / 6. * (pow_4(SM::g) + pow_4(SM::gp)) / (square(SM::g) + square(SM::gp)) * square(T)
-                         + 0.25 * (square(SM::g) + square(SM::gp)) * square(phi[0]);
-    const double MG_sq = 0.; // TODO: photon debye mass
-    return {MW_sq, MZ_sq, MG_sq};
+    return {MW_sq, MZ_sq, Mphoton_sq};
   }
 
   // W, Z, photon
