@@ -110,7 +110,8 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     phi[1] = - phi[1];
     return {phi};
   };
-    
+
+  //PA: check what this is used for, do we really want the pole masses here?
   Eigen::Array<double, 2, 1> get_mh() { return {model.get_Mhh_pole_slha(), model.get_Mss_pole_slha()}; }
 
   // Allows running to a different scale, for checking scale dependence
@@ -143,7 +144,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
 
   //PA: copying Yang's bad way fo doing this for now ;)
   // flag for using tree-level or one=-loop EWSB conditions in tree-level masses
-  bool tree_ewsb{false};
+  bool tree_ewsb{true};
   
 };
 
