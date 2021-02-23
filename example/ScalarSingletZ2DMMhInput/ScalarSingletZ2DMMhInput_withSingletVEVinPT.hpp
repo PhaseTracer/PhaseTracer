@@ -133,10 +133,12 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   Model model;
   //PA: do we really want mt to be const?  why?
   const double mt = 173.1;
+  // PA: An alternative design plan would be todirectly get all plans from the modle object
+  // Here instead wwe explicty create versions in this model and get them from the mode object
+  // has the downside of allowing mistakes if we e.g. run the model and don't update parameters
   // Higss potential parameters
   double lambda_h, lambda_s, lambda_hs, muH2, muS2;
   // PA: what about the Higgs VEV do we need that here?
-  // PA: seems odd to have gauge couplings here, but not Yukawas
   // other parameters that enter at the loop level 
   double gp, g, yt, ytau, yb;
 
