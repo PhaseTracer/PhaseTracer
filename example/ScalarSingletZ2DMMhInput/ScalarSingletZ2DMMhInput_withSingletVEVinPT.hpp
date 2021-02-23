@@ -56,6 +56,9 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     std::cout << "running mass mh = "  << model.get_Mhh() << std::endl;
     std::cout << "pole mass Ms = "  << model.get_Mss_pole_slha() << std::endl;
     std::cout << "running mass ms = "  << model.get_Mss() << std::endl;
+    std::cout << "running mass for MZ = " << model.get_MVZ() << std::endl;
+    std::cout << "running mass for MW = " << model.get_MVWp() << std::endl;
+								
     set_renormalization_scale(model.get_scale());
     
   
@@ -187,6 +190,8 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
   phi[0] = hvev;
   phi[1] = 0;
   std::vector<double> mhsq_check =  get_scalar_masses_sq(phi,1);
+  std::vector<double> mVsq_check =  get_vector_masses_sq(phi);
+
   
   std::cout << "mhsq_check[0] = "  << mhsq_check[0] << std::endl 
 	    << "mhsq_check[1] = "  << mhsq_check[1] << std::endl
@@ -201,6 +206,17 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
             << "mh_check[3] = "  << sqrt(mhsq_check[3]) << std::endl
             << "mh_check[4] = "  << sqrt(mhsq_check[4]) << std::endl
 	    << std::endl;
+
+ std::cout << "mVsq_check[0] = "  << mVsq_check[0] << std::endl 
+	    << "mVsq_check[1] = "  << mVsq_check[1] << std::endl
+            << "mVsq_check[2] = "  << mVsq_check[2] << std::endl
+	    << std::endl;
+
+  std::cout << "mV_check[0] = "  << sqrt(mVsq_check[0]) << std::endl
+	    << "mV_check[1] = "  << sqrt(mVsq_check[1]) << std::endl
+            << "mV_check[2] = "  << sqrt(mVsq_check[2]) << std::endl
+	    << std::endl;
+  
 }
 
 double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) const {
