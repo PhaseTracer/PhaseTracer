@@ -362,10 +362,10 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_vector_deby
   //squared gauge couplings
   const double g_sq = square(g);
   const double gp_sq = square(gp); 
-  const double MW_sq = 0.25 * square(g) * h_sq;
+  const double MW_sq = 0.25 * g_sq * h_sq;
   // Use Debeye coefficients fromlachlan for now, these are different to thdm,
   // TODO: cross check literature and understand difference.
-  const double MW_sq_T = MW_sq + 11.0/6.0 * square(g) * T2;
+  const double MW_sq_T = MW_sq + 11.0/6.0 * g_sq * T2;
   /// Z and photon thermal corrections come from diagonalsing 2 by 2 
   const double a = ( g_sq + gp_sq ) * ( 3 * h_sq + 22 * T2 );
   const double b = std::sqrt( 9.0 * square(g_sq + gp_sq) * square(h_sq)
