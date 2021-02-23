@@ -128,7 +128,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   }
 
 /** Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential */
-  void set_tree_ewsb(bool tree_ewsb_) { tree_ewsb = tree_ewsb_; } 
+  void set_Use_1L_ewsb_in_0L_masses(bool Use_1L_ewsb_in_0L_masses_) { Use_1L_ewsb_in_0L_masses = Use_1L_ewsb_in_0L_masses_; } 
  private:
   Model model;
   //PA: do we really want mt to be const?  why?
@@ -144,7 +144,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
 
   //PA: copying Yang's bad way fo doing this for now ;)
   // flag for using tree-level or one=-loop EWSB conditions in tree-level masses
-  bool tree_ewsb{true};
+  bool Use_1L_ewsb_in_0L_masses{false};
   
 };
 
@@ -286,10 +286,9 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
 	      << - 0.5 * lambda_h * square(model.get_v()) << std::endl;
     std::cout << " lambda_h = "  << lambda_h << std::endl;
     std::cout << "model.get_v() = " << model.get_v() << std::endl;
-    //const double muh_sq_tree_ewsb = - lambda_h * square(SM::v);
      // TODO: add thermal_sq here and use get_vector_debye_sq?
-    const double mhh2 = (tree_ewsb ? muh_sq_tree_ewsb : muH2) + 1.5 * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
-    const double mgg2 = (tree_ewsb ? muh_sq_tree_ewsb : muH2) + 0.5 * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mhh2 = (Use_1L_ewsb_in_0L_masses ? muH2 : muh_sq_tree_ewsb) + 1.5 * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mgg2 = (Use_1L_ewsb_in_0L_masses ? muH2 : muh_sq_tree_ewsb ) + 0.5 * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = muS2 + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
     std::cout << "In get_scalar_debeye_masses mhh2 = " << mhh2 << std::endl;
     std::cout << "In get_scalar_debeye_masses mgg2 = " << mgg2 << std::endl;
@@ -312,7 +311,7 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
                       );
              
     // Goldstone finite temperature masses
-    double mTG02 =   mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
+    double mTG02 =   mgg2 + thermal_sq[0] + (Use_1L_ewsb_in_0L_masses ? 0 : sum );
     double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
     // xi-dependence
     mTG02 += 0.25 * xi * (square(g * h) + square(gp * h));
