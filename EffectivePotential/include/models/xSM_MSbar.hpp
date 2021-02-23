@@ -260,24 +260,7 @@ class xSM_MSbar : public OneLoopPotential {
                       +1.5 * square(SM::g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
                       +0.75* (square(SM::g)+square(SM::gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
                       );
-                      
-    // Higgs and Goldstone diagonals
-    // Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(5, 5);
-    // M2(0, 0) = mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
-    // M2(1, 1) = M2(0, 0);
-    // M2(2, 2) = mhh2 + thermal_sq[0];
-    // M2(3, 3) = M2(0, 0);
 
-    // // Singlet mass diagonal
-    // M2(4, 4) = mss2 + thermal_sq[1];
-
-    // // Mixing between Higgs and singlet
-    // M2(2, 4) = M2(4, 2) = lambda_hs * h * s;
-
-    // // xi-dependence
-    // M2(0, 0) += 0.25 * xi * square(SM::g * h);
-    // M2(1, 1) += 0.25 * xi * square(SM::g * h);
-    // M2(3, 3) += 0.25 * xi * (square(SM::g * h) + square(SM::gp * h));
     // Goldstone finite temperature masses
     double mTG02 =   mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
     double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
