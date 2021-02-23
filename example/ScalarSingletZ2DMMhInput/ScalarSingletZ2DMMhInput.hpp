@@ -33,7 +33,8 @@ class ScalarSingletZ2DMMhInput : public OneLoopPotential {
   }
 
   void set_input(std::vector<double> x);
-  void set_data_members(const Model& model) {
+  
+  void set_data_members() {
     // Fetch parameters from FS model
     gp = model.get_g1() * sqrt(3. / 5.);
     g = model.get_g2();
@@ -106,7 +107,7 @@ class ScalarSingletZ2DMMhInput : public OneLoopPotential {
   // varying the scale and recaculating the effective piotential 
   void Run_pars_to(double scale, double tol) {
     model.run_to(scale,tol);
-    set_data_members(model); // includes setting renormalisation scale
+    set_data_members(); // includes setting renormalisation scale
   }
   
  private:
@@ -151,7 +152,7 @@ void ScalarSingletZ2DMMhInput::set_input(std::vector<double> x) {
   }
 
   // set relevant parameters from FS model
-  set_data_members(model); // includes setting renormalisation scale
+  set_data_members(); // includes setting renormalisation scale
   
   
   // Calculate Debye coefficients
@@ -161,19 +162,19 @@ void ScalarSingletZ2DMMhInput::set_input(std::vector<double> x) {
   // PA: but i should independently check them. 
   c_h = 1. / 48. *  ( 9. * square(g) + 3. * square(gp)
 		      + 12. * square(yt) + 4. * square(yb) + 4. * square(ytau)
-		      + 24. * lambda_h + 2. * lambda_hs );
+		      + 12. * lambda_h + 2. * lambda_hs );
 
   c_s =  (2. * lambda_hs + 3. * lambda_s) / 12.;
 }
 
 double ScalarSingletZ2DMMhInput::V0(Eigen::VectorXd phi) const {
   //PA: Do we need  * M_SQRT1_2 for the H field like in THDMIISNMSSMBC?
-  //PA: I guess it depends how I write the poetntial 
+  //PA: I guess it depends how I write the potential 
   const double h = phi[0] ;
   const double s = phi[1] ;
 
   const double V0 =
-    0.5 * muH2 * square(h) + 0.25 * lambda_h * pow_4(h) +
+    0.5 * muH2 * square(h) + 0.125 * lambda_h * pow_4(h) +
     0.25 * lambda_hs * square(h) * square (s) +
     0.5 * muS2 * square(s) + 0.25 * lambda_s * pow_4(s);
   return V0;

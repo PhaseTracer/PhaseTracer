@@ -36,8 +36,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   void set_input(std::vector<double> x);
 
   // set data members of this class from FS Model object
-  /// pass by const ref or have no model passsed (use data member model)
-  void set_data_members(const Model& model) {
+  void set_data_members() {
     // Fetch parameters from FS model
     gp = model.get_g1() * sqrt(3. / 5.);
     g = model.get_g2();
@@ -74,7 +73,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     // PA: but i should independently check them. 
     const double c_h = 1. / 48. *  ( 9. * square(g) + 3. * square(gp)
 			+ 12. * square(yt) + 4. * square(yb) + 4. * square(ytau)
-			+ 24. * lambda_h + 2. * lambda_hs );
+			+ 12. * lambda_h + 2. * lambda_hs );
      
     const double c_s =  (2. * lambda_hs + 3. * lambda_s) / 12.;
     return {c_h * square(T), c_s * square(T)};
@@ -124,7 +123,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     model.run_to(scale,tol);
     // PA: I think I need to now reset all the parameters stored as data members of this class
     // PA: This feels like bad code design though
-    set_data_members(model); // includes setting renormalisation scale
+    set_data_members(); // includes setting renormalisation scale
   }
 
 /** Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential */
@@ -180,7 +179,7 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
 
   
   // Fetch parameters from FS model anduse them to  set data members for this class
-  set_data_members(model); // includes setting renormalisation scale
+  set_data_members(); // includes setting renormalisation scale
 }
 
 double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) const {
@@ -191,7 +190,7 @@ double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) cons
 
   const double V0 =
     0.5 * muH2 * square(h) +
-    0.25 * lambda_h * pow_4(h) +
+    0.125 * lambda_h * pow_4(h) +
     0.25 * lambda_hs * square(h) * square (s) +
     0.5 * muS2 * square(s) +
     0.25 * lambda_s * pow_4(s);
@@ -262,14 +261,14 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     ///sanity check with couts before committing
     std::cout << "Getting from model object after tree-level EWSB muh_sq_tree_ewsb = "
 	      <<  muh_sq_tree_ewsb << std::endl;
-    std::cout << " should equal - lambda_h *  square(model.get_v()) = "
-	      << - lambda_h * square(model.get_v()) << std::endl;
+    std::cout << " should equal - 0.5 * lambda_h *  square(model.get_v()) = "
+	      << - 0.5 * lambda_h * square(model.get_v()) << std::endl;
     std::cout << " lambda_h = "  << lambda_h << std::endl;
     std::cout << "model.get_v() = " << model.get_v() << std::endl;
     //const double muh_sq_tree_ewsb = - lambda_h * square(SM::v);
      // TODO: add thermal_sq here and use get_vector_debye_sq?
-    const double mhh2 = (tree_ewsb ? muh_sq_tree_ewsb : muH2) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
-    const double mgg2 = (tree_ewsb ? muh_sq_tree_ewsb : muH2) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mhh2 = (tree_ewsb ? muh_sq_tree_ewsb : muH2) + 1.5 * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mgg2 = (tree_ewsb ? muh_sq_tree_ewsb : muH2) + 0.5 * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = muS2 + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
 
 
@@ -281,7 +280,7 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     const double Qsq = square( get_renormalization_scale() );
     // PA: do we add bottom and tau contributions here? 
     const double sum = 1. / (16. * M_PI * M_PI) * (
-                       3.  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
+                       1.5  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
                       +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
 		      -6.  * square(yt) * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
                       +1.5 * square(g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
