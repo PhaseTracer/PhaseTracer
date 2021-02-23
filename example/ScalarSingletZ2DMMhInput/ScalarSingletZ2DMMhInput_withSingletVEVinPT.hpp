@@ -147,7 +147,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
 
   //PA: copying Yang's bad way fo doing this for now ;)
   // flag for using tree-level or one=-loop EWSB conditions in tree-level masses
-  bool Use_1L_ewsb_in_0L_masses{false};
+  bool Use_1L_ewsb_in_0L_masses{true};
   
 };
 
@@ -185,6 +185,8 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
   // Fetch parameters from FS model anduse them to  set data members for this class
   set_VH_pars_from_FS(); // includes setting renormalisation scale
 
+  /// this code is just for testing masses delete and replace with proper
+  /// tests if possible when done
   double hvev = model.get_v();
   Eigen::VectorXd phi(2);
   phi[0] = hvev;
