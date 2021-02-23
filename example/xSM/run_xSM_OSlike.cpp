@@ -65,27 +65,30 @@ int main(int argc, char* argv[]) {
     LOGGER(debug);
     bins_lambda_hs = 1;
     lambda_hs = 0.28;
+    
   }else {
     bins_lambda_hs = 100;
     LOGGER(fatal);
   }
   
-
+  lambda_hs = 0.4;
+  double ms = 60;
+  double lambda_s =  0.16;
+  
   // Construct our model
-  EffectivePotential::xSM_OSlike model;
+  EffectivePotential::xSM_OSlike model(lambda_hs, lambda_s, ms);
+  model.solve_Q();
+  
   if (Parwani){
     model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
   } else {
     model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
   }
-  model.set_m_s(SM::mh/2.);
   
   for (double ii = 0; ii < bins_lambda_hs; ii++) {
     if (not debug_mode){
       lambda_hs = 0.4 / bins_lambda_hs * ii+0.2;
     }
-    model.set_lambda_hs(lambda_hs);
-    model.solve_Q();
   
     if (debug_mode) {
       Eigen::VectorXd x(2);

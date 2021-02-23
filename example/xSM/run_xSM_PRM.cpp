@@ -54,6 +54,10 @@ int main(int argc, char* argv[]) {
         square(square(ms) - 0.5 * lambda_hs * square(SM::v));
     double lambda_s = lambda_s_min + 0.1;
     
+    lambda_hs = 0.4;
+    ms = 60;
+    lambda_s =  0.16;
+    
     // Construct our model
     auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, tree_ewsb);
 

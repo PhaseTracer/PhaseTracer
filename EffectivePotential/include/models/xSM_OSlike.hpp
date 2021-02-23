@@ -42,13 +42,13 @@ struct TerminationCondition  {
 
 class xSM_OSlike : public OneLoopPotential {
  public:
-  void set_m_s(double m_s_) {
-    m_s = m_s_;
-    set_mus_and_lambdas();
-  }
-  void set_lambda_hs(double lambda_hs_) {
-    lambda_hs = lambda_hs_;
-    set_mus_and_lambdas();
+  
+  xSM_OSlike(double lambda_hs_,
+            double lambda_s_,
+            double m_s_):
+    lambda_hs(lambda_hs_), lambda_s(lambda_s_), m_s(m_s_) {
+      
+    mus_sq = square(m_s) - lambda_hs * square(v) / 2.;
   }
 
   double VCW(Eigen::VectorXd phi, double mu){
@@ -316,15 +316,9 @@ class xSM_OSlike : public OneLoopPotential {
   
   double lambda_hs = 0.25;
   double m_s = 65;
-  
+  double lambda_s = 0.1;
   double mus_sq = square(m_s) - lambda_hs * square(v) / 2.;
-  double lambda_s = lambda_h*square(mus_sq)/square(muh_sq) +0.1;
-  
-  void set_mus_and_lambdas(){
-    mus_sq = square(m_s) - lambda_hs * square(v) / 2.;
-    lambda_s = lambda_h*square(mus_sq)/square(muh_sq) +0.1;
-  }
-  
+
 };
 
 }  // namespace EffectivePotential
