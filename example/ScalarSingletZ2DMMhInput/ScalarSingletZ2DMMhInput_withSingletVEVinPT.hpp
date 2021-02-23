@@ -330,8 +330,9 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     
     // get eigenvalues
     const Eigen::VectorXd mH_sq = MTH2.eigenvalues().real();
+    
     // vector for all scalars, including two mass degenerate charged goldstones
-    std::vector<double> m_sq_vector{MTH2(0), MTH2(1), mTG02, mTGpm2, mTGpm2};
+    std::vector<double> m_sq_vector{mH_sq(0), mH_sq(1), mTG02, mTGpm2, mTGpm2};
     // mass order
     std::sort(m_sq_vector.begin(), m_sq_vector.end());
     return m_sq_vector;
