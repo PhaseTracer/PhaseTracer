@@ -271,6 +271,8 @@ class xSM_MSbar : public OneLoopPotential {
     Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2); 
     MTH2(0,0) = mhh2 + thermal_sq[0];
     MTH2(1,1) = mss2 + thermal_sq[1];
+    // Mixing between Higgs and singlet
+    MTH2(0, 1) = MTH2(1, 0) = lambda_hs * h * s;
     // get eigenvalues
     const Eigen::VectorXd mH_sq = MTH2.eigenvalues().real();
     // vector for all scalars, including two mass degenerate charged goldstones
