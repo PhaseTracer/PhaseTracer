@@ -248,7 +248,6 @@ double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) cons
 std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const {
     const double h = phi[0];
     const double s = phi[1];
-    Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(5, 5);
     const auto thermal_sq = get_scalar_thermal_sq(T);
     
     //PA: needed for setting mhh and mgg below. Yang sets it elsewhere.
@@ -288,26 +287,41 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
                       +1.5 * square(g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
                       +0.75* (square(g)+square(gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
                       );
-                      
+    //Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(5, 5);                  
     // Higgs and Goldstone diagonals
-    M2(0, 0) = mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
-    M2(1, 1) = M2(0, 0);
-    M2(2, 2) = mhh2 + thermal_sq[0];
-    M2(3, 3) = M2(0, 0);
+    //M2(0, 0) = mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
+    double mTG02 =   mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
+    double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
+    // xi-dependence
+    mTG02 += 0.25 * xi * (square(g * h) + square(gp * h));
+    mTGpm2 += 0.25 * xi * square(g * h);
+    //M2(1, 1) = M2(0, 0);
+    //M2(2, 2) = mhh2 + thermal_sq[0];
+    // 2 by 2 CP even Higgs mass matrix
+    Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2); 
+    MTH2(0,0) = mhh2 + thermal_sq[0];
+    MTH2(1,1) = mss2 + thermal_sq[1];
+    //M2(3, 3) = M2(0, 0);
 
     // Singlet mass diagonal
-    M2(4, 4) = mss2 + thermal_sq[1];
+    //M2(4, 4) = mss2 + thermal_sq[1];
 
     // Mixing between Higgs and singlet
-    M2(2, 4) = M2(4, 2) = lambda_hs * h * s;
+    //M2(2, 4) = M2(4, 2) = lambda_hs * h * s;
 
-    // xi-dependence
-    M2(0, 0) += 0.25 * xi * square(g * h);
-    M2(1, 1) += 0.25 * xi * square(g * h);
-    M2(3, 3) += 0.25 * xi * (square(g * h) + square(gp * h));
+    
+    // M2(0, 0) += 0.25 * xi * square(g * h);
+    // M2(1, 1) += 0.25 * xi * square(g * h);
+    // M2(3, 3) += 0.25 * xi * (square(g * h) + square(gp * h));
 
-    const Eigen::VectorXd m_sq = M2.eigenvalues().real();
-    std::vector<double> m_sq_vector(m_sq.data(), m_sq.data() + m_sq.rows() * m_sq.cols());
+    // const Eigen::VectorXd m_sq = M2.eigenvalues().real();
+    // std::vector<double> m_sq_vector(m_sq.data(), m_sq.data() + m_sq.rows() * m_sq.cols());
+    // std::sort(m_sq_vector.begin(), m_sq_vector.end());
+    // get eigenvalues
+    const Eigen::VectorXd mH_sq = MTH2.eigenvalues().real();
+    // vector for all scalars, including two mass degenerate charged goldstones
+    std::vector<double> m_sq_vector{MTH2(0), MTH2(1), mTG02, mTGpm2, mTGpm2};
+    // mass order
     std::sort(m_sq_vector.begin(), m_sq_vector.end());
     return m_sq_vector;
   } 
