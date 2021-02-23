@@ -62,9 +62,9 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   
     // Calculate Debye coefficients
     //PA: Do we include all 3 3rd gen fermions /  xSM_MSbar does not 
-     yt = model.get_Yu(2, 2);
-     yb = model.get_Yd(2, 2);
-     ytau = model.get_Ye(2, 2);
+    yt = model.get_Yu(2, 2);
+    yb = model.get_Yd(2, 2);
+    ytau = model.get_Ye(2, 2);
     
   }
  
