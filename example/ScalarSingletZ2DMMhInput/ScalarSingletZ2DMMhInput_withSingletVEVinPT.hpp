@@ -36,7 +36,8 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   void set_input(std::vector<double> x);
 
   // set data members of this class from FS Model object
-  void set_data_members(Model model) {
+  /// pass by const ref or have no model passsed (use data member model)
+  void set_data_members(const Model& model) {
     // Fetch parameters from FS model
     gp = model.get_g1() * sqrt(3. / 5.);
     g = model.get_g2();
@@ -61,22 +62,22 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   
     // Calculate Debye coefficients
     //PA: Do we include all 3 3rd gen fermions /  xSM_MSbar does not 
-    const double yt = model.get_Yu(2, 2);
-    const double yb = model.get_Yd(2, 2);
-    const double ytau = model.get_Ye(2, 2);
+     yt = model.get_Yu(2, 2);
+     yb = model.get_Yd(2, 2);
+     ytau = model.get_Ye(2, 2);
     
-    // PA: I took these from Yang's code already and they match Lachlan's
-    // PA: up to factor 4 differences for quartics presumably from coupling defs
-    // PA: but i should independently check them. 
-    c_h = 1. / 48. *  ( 9. * square(g) + 3. * square(gp)
-			+ 12. * square(yt) + 4. * square(yb) + 4. * square(ytau)
-			+ 24. * lambda_h + 2. * lambda_hs );
-     
-    c_s =  (2. * lambda_hs + 3. * lambda_s) / 12.;
   }
  
   std::vector<double> get_scalar_thermal_sq(double T) const override {
-  return {c_h * square(T), c_s * square(T)};
+    // PA: I took these from Yang's code already and they match Lachlan's
+    // PA: up to factor 4 differences for quartics presumably from coupling defs
+    // PA: but i should independently check them. 
+    const double c_h = 1. / 48. *  ( 9. * square(g) + 3. * square(gp)
+			+ 12. * square(yt) + 4. * square(yb) + 4. * square(ytau)
+			+ 24. * lambda_h + 2. * lambda_hs );
+     
+    const double c_s =  (2. * lambda_hs + 3. * lambda_s) / 12.;
+    return {c_h * square(T), c_s * square(T)};
   }
   
   double V0(Eigen::VectorXd phi) const override;
@@ -136,8 +137,8 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   double lambda_h, lambda_s, lambda_hs, muH2, muS2;
   // PA: what about the Higgs VEV do we need that here?
   // PA: seems odd to have gauge couplings here, but not Yukawas
-  double gp, g;
-  double c_h, c_s;
+  // other parameters that enter at the loop level 
+  double gp, g, yt, ytau, yb;
 
   //PA: copying Yang's bad way fo doing this for now ;)
   // flag for using tree-level or one=-loop EWSB conditions in tree-level masses
@@ -270,15 +271,11 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     const double mgg2 = (tree_ewsb ? muh_sq_tree_ewsb : muH2) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = muS2 + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
 
+
+    
  // resummed Goldstone contributions
     const auto fm2 = get_fermion_masses_sq(phi);
     const auto vm2 = get_vector_masses_sq(phi);
-    // PA: Do we include all 3 3rd gen fermions /  xSM_MSbar does not
-    // PA: Again I note its odd that we have g and gp as member varibales but not the Yukawas
-    // PA: This came from copying THDMIISNMSSMBC structure and should probably be chnaged 
-    const double yt = model.get_Yu(2, 2);
-    const double yb = model.get_Yd(2, 2);
-    const double ytau = model.get_Ye(2, 2);
     
     const double Qsq = square( get_renormalization_scale() );
     // PA: do we add bottom and tau contributions here? 
