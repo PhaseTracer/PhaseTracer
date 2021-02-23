@@ -180,6 +180,26 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
   
   // Fetch parameters from FS model anduse them to  set data members for this class
   set_VH_pars_from_FS(); // includes setting renormalisation scale
+
+  double hvev = model.get_v();
+  Eigen::VectorXd phi(2);
+  phi[0] = hvev;
+  phi[1] = 0;
+  std::vector<double> mhsq_check =  get_scalar_masses_sq(phi,1);
+  
+  std::cout << "mhsq_check[0] = "  << mhsq_check[0] << std::endl 
+	    << "mhsq_check[1] = "  << mhsq_check[1] << std::endl
+            << "mhsq_check[2] = "  << mhsq_check[2] << std::endl
+            << "mhsq_check[3] = "  << mhsq_check[3] << std::endl
+            << "mhsq_check[4] = "  << mhsq_check[4] << std::endl
+	    << std::endl;
+
+  std::cout << "mh_check[0] = "  << sqrt(mhsq_check[0]) << std::endl
+	    << "mh_check[1] = "  << sqrt(mhsq_check[1]) << std::endl
+            << "mh_check[2] = "  << sqrt(mhsq_check[2]) << std::endl
+            << "mh_check[3] = "  << sqrt(mhsq_check[3]) << std::endl
+            << "mh_check[4] = "  << sqrt(mhsq_check[4]) << std::endl
+	    << std::endl;
 }
 
 double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) const {
@@ -270,8 +290,11 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     const double mhh2 = (tree_ewsb ? muh_sq_tree_ewsb : muH2) + 1.5 * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mgg2 = (tree_ewsb ? muh_sq_tree_ewsb : muH2) + 0.5 * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = muS2 + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
-
-
+    std::cout << "In get_scalar_debeye_masses mhh2 = " << mhh2 << std::endl;
+    std::cout << "In get_scalar_debeye_masses mgg2 = " << mgg2 << std::endl;
+    std::cout << "In get_scalar_debeye_masses mss2 = " << mss2 << std::endl;
+    std::cout << "In get_scalar_debeye_masses s = " << s << std::endl;
+    std::cout << "In get_scalar_debeye_masses h = " << h << std::endl;  
     
  // resummed Goldstone contributions
     const auto fm2 = get_fermion_masses_sq(phi);
@@ -297,7 +320,14 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2); 
     MTH2(0,0) = mhh2 + thermal_sq[0];
     MTH2(1,1) = mss2 + thermal_sq[1];
-   
+    // Mixing between Higgs and singlet
+    MTH2(0, 1) = MTH2(1, 0) = lambda_hs * h * s;
+
+
+    std::cout << "mTG02 = "  << mTG02 << std::endl;
+    std::cout << "mTGpm2 = " << mTGpm2 << std::endl;
+    
+    
     // get eigenvalues
     const Eigen::VectorXd mH_sq = MTH2.eigenvalues().real();
     // vector for all scalars, including two mass degenerate charged goldstones
