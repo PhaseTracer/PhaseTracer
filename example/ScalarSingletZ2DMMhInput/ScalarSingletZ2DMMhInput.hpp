@@ -33,6 +33,36 @@ class ScalarSingletZ2DMMhInput : public OneLoopPotential {
   }
 
   void set_input(std::vector<double> x);
+  void set_data_members(const Model& model) {
+    // Fetch parameters from FS model
+    gp = model.get_g1() * sqrt(3. / 5.);
+    g = model.get_g2();
+  
+    muH2 = model.get_muH2();
+    muS2 = model.get_muS2();
+    lambda_h = model.get_LamH();
+    lambda_s = model.get_LamS();
+    lambda_hs = model.get_LamSH();
+    
+    std::cout << "muH2=" << muH2 << std::endl;
+    std::cout << "lambda_h=" << lambda_h << std::endl;
+    std::cout << "muS2=" << muS2 << std::endl;
+    std::cout << "lambda_s=" << lambda_s << std::endl;
+    std::cout << "lambda_hs=" << lambda_hs << std::endl;
+    std::cout << "pole mass Mh = "  << model.get_Mhh_pole_slha() << std::endl;
+    std::cout << "running mass mh = "  << model.get_Mhh() << std::endl;
+    std::cout << "pole mass Ms = "  << model.get_Mss_pole_slha() << std::endl;
+    std::cout << "running mass ms = "  << model.get_Mss() << std::endl;
+    set_renormalization_scale(model.get_scale());
+    
+  
+    // Calculate Debye coefficients
+    //PA: Do we include all 3rd gen fermions /  xSM_MSbar does not 
+    yt = model.get_Yu(2, 2);
+    yb = model.get_Yd(2, 2);
+    ytau = model.get_Ye(2, 2);
+    
+  }
 
   double V0(Eigen::VectorXd phi) const override;
   std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const override;
@@ -76,6 +106,7 @@ class ScalarSingletZ2DMMhInput : public OneLoopPotential {
   // varying the scale and recaculating the effective piotential 
   void Run_pars_to(double scale, double tol) {
     model.run_to(scale,tol);
+    set_data_members(model); // includes setting renormalisation scale
   }
   
  private:
@@ -85,8 +116,8 @@ class ScalarSingletZ2DMMhInput : public OneLoopPotential {
   // Higss potential parameters
   double lambda_h, lambda_s, lambda_hs, muH2, muS2;
   // PA: what about the Higgs VEV do we need that here?
-  // PA: seems odd to have gauge couplings here, but not Yukawas
-  double gp, g;
+  // other parameters that enter at the loop level 
+  double gp, g, yt, ytau, yb;
   double c_h, c_s;
 };
 
@@ -119,34 +150,12 @@ void ScalarSingletZ2DMMhInput::set_input(std::vector<double> x) {
     throw std::runtime_error("Unphysical spectrum");
   }
 
-  // Fetch parameters from FS model
-  gp = model.get_g1() * sqrt(3. / 5.);
-  g = model.get_g2();
-  
-  muH2 = model.get_muH2();
-  muS2 = model.get_muS2();
-  lambda_h = model.get_LamH();
-  lambda_s = model.get_LamS();
-  lambda_hs = model.get_LamSH();
-  
-  std::cout << "muH2=" << muH2 << std::endl;
-  std::cout << "lambda_h=" << lambda_h << std::endl;
-  std::cout << "muS2=" << muS2 << std::endl;
-  std::cout << "lambda_s=" << lambda_s << std::endl;
-  std::cout << "lambda_hs=" << lambda_hs << std::endl;
-  std::cout << "pole mass Mh = "  << model.get_Mhh_pole_slha() << std::endl;
-  std::cout << "running mass mh = "  << model.get_Mhh() << std::endl;
-  std::cout << "pole mass Ms = "  << model.get_Mss_pole_slha() << std::endl;
-  std::cout << "running mass ms = "  << model.get_Mss() << std::endl;
-  set_renormalization_scale(model.get_scale());
+  // set relevant parameters from FS model
+  set_data_members(model); // includes setting renormalisation scale
   
   
   // Calculate Debye coefficients
-  //PA: Do we include all 3 3rd gen fermions /  xSM_MSbar does not 
-  const double yt = model.get_Yu(2, 2);
-  const double yb = model.get_Yd(2, 2);
-  const double ytau = model.get_Ye(2, 2);
-
+  
   // PA: I took these from Yang's code already and they match Lachlan's
   // PA: up to factor 4 differences for quartics presumably from coupling defs
   // PA: but i should independently check them. 
