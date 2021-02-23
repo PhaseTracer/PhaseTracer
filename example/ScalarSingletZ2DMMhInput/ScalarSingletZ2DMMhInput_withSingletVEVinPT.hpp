@@ -36,7 +36,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   void set_input(std::vector<double> x);
 
   // set data members of this class from FS Model object
-  void set_data_members() {
+  void set_VH_pars_from_FS() {
     // Fetch parameters from FS model
     gp = model.get_g1() * sqrt(3. / 5.);
     g = model.get_g2();
@@ -123,7 +123,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     model.run_to(scale,tol);
     // PA: I think I need to now reset all the parameters stored as data members of this class
     // PA: This feels like bad code design though
-    set_data_members(); // includes setting renormalisation scale
+    set_VH_pars_from_FS(); // includes setting renormalisation scale
   }
 
 /** Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential */
@@ -179,7 +179,7 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
 
   
   // Fetch parameters from FS model anduse them to  set data members for this class
-  set_data_members(); // includes setting renormalisation scale
+  set_VH_pars_from_FS(); // includes setting renormalisation scale
 }
 
 double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) const {
