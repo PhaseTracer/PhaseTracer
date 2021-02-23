@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+#include <random>
 
 #include "models/xSM_MSbar.hpp"
 #include "phase_finder.hpp"
@@ -26,9 +27,11 @@ void help_info(){
   
   std::cout << "  x1=0: lambda_hs = 0.31, lambda_s = lambda_s^{min}+0.1, m_s=m_h/2"<< std::endl;
   std::cout << "  x1=1: lambda_hs = 0.2 ~ 0.4, lambda_s = lambda_s^{min}+0.1, m_s=m_h/2"<< std::endl;
-  std::cout << "  x1=2: lambda_hs = 0.2 ~ 0.4, lambda_s = 0.01~0.2, m_s=m_h/2"<< std::endl;
-  std::cout << "  x1=3: lambda_hs = 0.2 ~ 0.4, lambda_s = 0.1, m_s= 10~100 GeV"<< std::endl;
-  
+  std::cout << "  x1=2: lambda_hs = 0.1 ~ 0.4, lambda_s = 0.01~0.2, m_s=m_h/2"<< std::endl;
+  std::cout << "  x1=3: lambda_hs = 0.1 ~ 0.4, lambda_s = 0.1, m_s= 10~100 GeV"<< std::endl;
+  std::cout << "  x1=4: lambda_hs = 0.3, lambda_s = 0.01~0.2, m_s= 10~100 GeV"<< std::endl;
+  std::cout << "  x1=5: lambda_hs = 0.1 ~ 0.4, lambda_s = 0.01~0.2, m_s= 10~100 GeV"<< std::endl;
+      
   std::cout << "  x2=0: Parwani method"<< std::endl;
   std::cout << "  x2=1: ArnoldEspinosa method"<< std::endl;
   
@@ -56,9 +59,11 @@ int main(int argc, char* argv[]) {
   std::string out_name = "MSbar_";
     
   bool debug_mode = atoi(argv[1]) == 0;
-  bool scan_lambda_hs = atoi(argv[1]) == 1;
-  bool scan_lambda_hs_s = atoi(argv[1]) == 2;
-  bool scan_lambda_hs_ms = atoi(argv[1]) == 3;
+  bool scan_lhs = atoi(argv[1]) == 1;
+  bool scan_lhs_ls = atoi(argv[1]) == 2;
+  bool scan_lhs_ms = atoi(argv[1]) == 3;
+  bool scan_ls_ms = atoi(argv[1]) == 4;
+  bool scan_lhs_ls_ms = atoi(argv[1]) == 5;
   
   bool Parwani = atoi(argv[2]) == 0;
   if (Parwani) {
@@ -92,11 +97,14 @@ int main(int argc, char* argv[]) {
     out_name += "_NoTreeEWSB";
   }
   
-  if (scan_lambda_hs_s) {
+  if (scan_lhs_ls) {
     out_name += "_lhs_ls";
-  }
-  if (scan_lambda_hs_ms) {
+  } else if (scan_lhs_ms) {
     out_name += "_lhs_ms";  
+  } else if (scan_ls_ms) {
+    out_name += "_ls_ms";  
+  } else if (scan_lhs_ls_ms) {
+    out_name += "_lhs_ls_ms";  
   }
   
   if (xi > 0){
@@ -105,56 +113,85 @@ int main(int argc, char* argv[]) {
   
   output_file.open(out_name+".txt");
   
-  double n_bin_lambda_hs;
-  double n_bin_y=0;
-  double lambda_hs;
-  double lambda_s;
-  double ms;
+  double n_bin_x;
+  double n_bin_y;
   if (debug_mode){
     LOGGER(debug);
-    n_bin_lambda_hs = 0;
-    lambda_hs = 0.24;
-    // Match choices in 1808.01098
-    ms = 0.5 * SM::mh;
-    double lambda_s_min = 2. / square(SM::mh * SM::v) *
-    square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-    lambda_s =  lambda_s_min + 0.1;
-    
+    n_bin_x = 0;
+    n_bin_y = 0;
   }else {
-    n_bin_lambda_hs = 100;
-    if (not scan_lambda_hs){
+    n_bin_x = 50;
+    if (scan_lhs){
+      n_bin_y = 0;
+    } else if (scan_lhs_ms or scan_lhs_ls or scan_ls_ms) {
       n_bin_y = 50;
+    } else if (scan_lhs_ls_ms){
+      n_bin_x = 5000;
+      n_bin_y = 0;
     }
     LOGGER(fatal);
   }
 
-  std::cout << "lambda_hs  = " << (debug_mode ? std::to_string(lambda_hs) : "0.2 ~ 0.4") << std::endl;
   std::cout << "renormal Q = " << Q/SM::mtop << "*m_top" << std::endl;
   std::cout << "daisy_term = " << (Parwani  ? "Parwani" : "ArnoldEspinosa") << std::endl;
   std::cout << "tree_ewsb  = " << (tree_ewsb  ? "true" : "false") << std::endl;
   std::cout << "xi  = " << xi << std::endl;
   
   const bool tree_level_tadpoles = false;
+  double lambda_hs;
+  double lambda_s;
+  double ms;
+  double lhs_min = 0.1;
+  double lhs_del = 0.4;
+  double ls_min = 0.01;
+  double ls_del = 0.2;
+  double ms_min = 10;
+  double ms_del = 110;
   
-  for (double ii = 0; ii <= n_bin_lambda_hs; ii++) {
+  std::default_random_engine random(1);
+  std::uniform_real_distribution<double> rand_lhs(lhs_min, lhs_min+lhs_del);
+  std::uniform_real_distribution<double> rand_ls(ls_min, ls_min+ls_del);
+  std::uniform_real_distribution<double> rand_ms(ms_min, ms_min+ms_del);
+  
+  for (double ii = 0; ii <= n_bin_x; ii++) {
     for (double jj = 0; jj <= n_bin_y; jj++) {
-      if (not debug_mode){
-        lambda_hs = 0.4 / n_bin_lambda_hs * ii+0.2;
-        if (scan_lambda_hs_s) {
-          lambda_s = 0.2 / n_bin_y * jj +0.01;
+      if (debug_mode){
+//        lambda_hs = 0.24;
+//        // Match choices in 1808.01098
+//        ms = 0.8 * SM::mh;
+//        double lambda_s_min = 2. / square(SM::mh * SM::v) *
+//        square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+//        lambda_s =  lambda_s_min + 0.1;
+        // BK point
+        lambda_hs = 0.4;
+        ms = 60;
+        lambda_s =  0.15;
+      } else {
+        if (scan_lhs){
+          lambda_hs = 0.4 / n_bin_x * ii+0.2;
+          // Match choices in 1808.01098
           ms = 0.5 * SM::mh;
-        }
-        if (scan_lambda_hs_ms) {
-          lambda_s = 0.1;
-          ms = 90 / n_bin_lambda_hs * jj + 10;
-        }
-        if (scan_lambda_hs){
           double lambda_s_min = 2. / square(SM::mh * SM::v) *
           square(square(ms) - 0.5 * lambda_hs * square(SM::v));
           lambda_s =  lambda_s_min + 0.1;
+        } else if (scan_lhs_ls) {
+          lambda_hs = lhs_del / n_bin_x * ii + lhs_min;
+          lambda_s = ls_del / n_bin_y * jj + ls_min;
+          ms = 0.5 * SM::mh;
+        } else if (scan_lhs_ms) {
+          lambda_hs = lhs_del / n_bin_x * ii + lhs_min;
+          lambda_s = 0.1;
+          ms = ms_del / n_bin_x * jj + ms_min;
+        } else if (scan_ls_ms) {
+          lambda_hs = 0.3;
+          lambda_s = ls_del / n_bin_y * ii + ls_min;
+          ms = ms_del / n_bin_x * jj + ms_min;
+        } else if (scan_lhs_ls_ms){
+          lambda_hs = rand_lhs(random);
+          lambda_s = rand_ls(random);
+          ms = rand_ms(random);
         }
       }
-    
       std::cout << "Runing lambda_hs  = " << lambda_hs << ", lambda_s  = " << lambda_s << ", m_s  = " << ms << std::endl;
     
       // Construct our model

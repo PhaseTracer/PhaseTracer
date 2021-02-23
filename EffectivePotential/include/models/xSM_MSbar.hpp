@@ -177,22 +177,23 @@ class xSM_MSbar : public OneLoopPotential {
     const auto jacobian = dV1_dx(vacuum);
     const auto hessian = d2V1_dx2(vacuum);
 
-    // Match choices in 1808.01098
-    const double ms = 0.5 * SM::mh;
     const double mh_sq = square(SM::mh);
     const double ms_sq = square(ms);
-
-    const double a = mh_sq + ms_sq;
-    const double discriminant = square(mh_sq - ms_sq) - 4. * square(hessian(1, 0));
-
-    if (discriminant < 0) {
-      throw std::runtime_error("Could not solve 1l tadpoles");
-    }
-
-    const double b = discriminant < 0 ? 0 : sqrt(discriminant);
-    double mhh2 = 0.5 * (a + b);
-    double mss2 = 0.5 * (a - b);
-    if (mh_sq < ms_sq) {
+    
+//    const double a = mh_sq + ms_sq;
+//    const double discriminant = square(mh_sq - ms_sq) - 4. * square(hessian(1, 0));
+//    if (discriminant < 0) {
+//      throw std::runtime_error("Could not solve 1l tadpoles");
+//    }
+//    const double b = sqrt(discriminant);
+//    double mhh2 = 0.5 * (a + b);
+//    double mss2 = 0.5 * (a - b);
+    
+    double mhh2 = mh_sq;
+    double mss2 = ms_sq;
+    
+    // TODO: will this affect calculation of lambda_h?
+    if (mhh2 < mss2) {
       std::swap(mhh2, mss2);
     }
 
@@ -306,21 +307,9 @@ class xSM_MSbar : public OneLoopPotential {
                      + 484. * square(square(SM::g) - square(SM::gp)) * pow_4(T));
 
 		const double MZ_sq = (a + b) / 24.;
-		//PA: why is this written as MG?  This is the photon mass right?
-		const double MG_sq = (a - b) / 24.;
+		const double Mphoton_sq = (a - b) / 24.;
 
-    return {MW_sq, MZ_sq, MG_sq};
-  }
-
-  //PA: what is this version for?
-  // W, Z, photon
-  std::vector<double> get_vector_debye_sq_post_diag(Eigen::VectorXd phi, double T) const {
-    const double MW_sq = 11. / 6. * square(SM::g) * square(T)
-                         + 0.25 * square(SM::g) * square(phi[0]);
-    const double MZ_sq = 11. / 6. * (pow_4(SM::g) + pow_4(SM::gp)) / (square(SM::g) + square(SM::gp)) * square(T)
-                         + 0.25 * (square(SM::g) + square(SM::gp)) * square(phi[0]);
-    const double MG_sq = 0.; // TODO: photon debye mass
-    return {MW_sq, MZ_sq, MG_sq};
+    return {MW_sq, MZ_sq, Mphoton_sq};
   }
 
   // W, Z, photon
@@ -366,6 +355,7 @@ class xSM_MSbar : public OneLoopPotential {
   // For consistency in one-loop potential
   double muh_sq_tree_ewsb;
   bool tree_ewsb{false};
+
 };
 
 }  // namespace EffectivePotential

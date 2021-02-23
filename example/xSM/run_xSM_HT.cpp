@@ -19,8 +19,6 @@ const std::string output_file_name = "xSM_HT_Results.txt";
 int main(int argc, char* argv[]) {
 
   const bool debug_mode = argc == 1;
-  // Construct our model
-  EffectivePotential::xSM_HT model;
   std::ofstream output_file;
   
   double bins_lambda_hs;
@@ -38,12 +36,18 @@ int main(int argc, char* argv[]) {
   double lambda_s = 0.0;
   double ms = SM::mh/2.;
   
-  model.set_m_s(SM::mh/2.);
+  
+  lambda_hs = 0.4;
+  ms = 60;
+  lambda_s =  0.16;
+  
   for (double ii = 0; ii < bins_lambda_hs; ii++) {
     if (not debug_mode){
       lambda_hs = 0.4 / bins_lambda_hs * ii+0.2;
     }
-    model.set_lambda_hs(lambda_hs);
+    
+    // Construct our model
+    EffectivePotential::xSM_HT model(lambda_hs, lambda_s, ms);
     if (debug_mode)
       std::cout << model.check() << std::endl;
       
