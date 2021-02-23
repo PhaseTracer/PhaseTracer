@@ -241,7 +241,6 @@ class xSM_MSbar : public OneLoopPotential {
   std::vector<double> get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const override {
     const double h = phi[0];
     const double s = phi[1];
-    Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(5, 5);
     const auto thermal_sq = get_scalar_thermal_sq(T);
     
     // TODO: add thermal_sq here and use get_vector_debye_sq?
@@ -263,24 +262,37 @@ class xSM_MSbar : public OneLoopPotential {
                       );
                       
     // Higgs and Goldstone diagonals
-    M2(0, 0) = mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
-    M2(1, 1) = M2(0, 0);
-    M2(2, 2) = mhh2 + thermal_sq[0];
-    M2(3, 3) = M2(0, 0);
+    // Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(5, 5);
+    // M2(0, 0) = mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
+    // M2(1, 1) = M2(0, 0);
+    // M2(2, 2) = mhh2 + thermal_sq[0];
+    // M2(3, 3) = M2(0, 0);
 
-    // Singlet mass diagonal
-    M2(4, 4) = mss2 + thermal_sq[1];
+    // // Singlet mass diagonal
+    // M2(4, 4) = mss2 + thermal_sq[1];
 
-    // Mixing between Higgs and singlet
-    M2(2, 4) = M2(4, 2) = lambda_hs * h * s;
+    // // Mixing between Higgs and singlet
+    // M2(2, 4) = M2(4, 2) = lambda_hs * h * s;
 
+    // // xi-dependence
+    // M2(0, 0) += 0.25 * xi * square(SM::g * h);
+    // M2(1, 1) += 0.25 * xi * square(SM::g * h);
+    // M2(3, 3) += 0.25 * xi * (square(SM::g * h) + square(SM::gp * h));
+    // Goldstone finite temperature masses
+    double mTG02 =   mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
+    double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
     // xi-dependence
-    M2(0, 0) += 0.25 * xi * square(SM::g * h);
-    M2(1, 1) += 0.25 * xi * square(SM::g * h);
-    M2(3, 3) += 0.25 * xi * (square(SM::g * h) + square(SM::gp * h));
-
-    const Eigen::VectorXd m_sq = M2.eigenvalues().real();
-    std::vector<double> m_sq_vector(m_sq.data(), m_sq.data() + m_sq.rows() * m_sq.cols());
+    mTG02 += 0.25 * xi * (square(SM::g * h) + square(SM::gp * h));
+    mTGpm2 += 0.25 * xi * square(SM::g * h);
+    // CP even Higgs thermal temperature masses
+    Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2); 
+    MTH2(0,0) = mhh2 + thermal_sq[0];
+    MTH2(1,1) = mss2 + thermal_sq[1];
+    // get eigenvalues
+    const Eigen::VectorXd mH_sq = MTH2.eigenvalues().real();
+    // vector for all scalars, including two mass degenerate charged goldstones
+    std::vector<double> m_sq_vector{MTH2(0), MTH2(1), mTG02, mTGpm2, mTGpm2};
+    // mass order
     std::sort(m_sq_vector.begin(), m_sq_vector.end());
     return m_sq_vector;
   }
