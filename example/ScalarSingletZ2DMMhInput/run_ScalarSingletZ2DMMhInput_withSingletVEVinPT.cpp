@@ -14,6 +14,7 @@
 #include "phase_finder.hpp"
 #include "logger.hpp"
 #include "phase_plotter.hpp"
+#include "potential_plotter.hpp"
 
 int main() {
 
@@ -25,9 +26,9 @@ int main() {
   //PA: use example SLHA values for now
   const double mtop = 173.0;
   double MhInput = 125;
-  double lambda_hs = 0.1;
+  double lambda_hs = 0.25;
   double lambda_s =  0.1;
-  double mus2 = 1000;
+  double mus2 = -3000;
   
   std::vector<double> x(9);
   x[0] = mtop; // Qin = 173.0
@@ -42,6 +43,21 @@ int main() {
   // Print masses of CP-even Higgs
   std::cout << "mhh = " << model.get_mh()[0] << std::endl;
   std::cout << "mss = " << model.get_mh()[1] << std::endl;
+
+
+  if (true) {
+//        Eigen::VectorXd x(2);
+//        x <<  SM::v, 0;
+//        std::cout << "Numerically derivatives of the full potential at EW VEV:" << std::endl;
+//        auto d2Vdh2 = model.d2V_dx2(x,0);
+//        std::cout << std::setprecision(16);
+//        std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
+//        std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
+      
+//      PhaseTracer::potential_plotter(model, 0, "potential", -10., 300, 1, -5., 200., 1);
+//      PhaseTracer::potential_plotter(model, 142.35, "potential", 0., 160, 0.2, -2., 160., 0.2);
+//      return 0;
+  }
 
   // Make PhaseFinder object and find the phases
   PhaseTracer::PhaseFinder pf(model);
