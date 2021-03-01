@@ -98,7 +98,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   // 1 complex doublet plus 1 real scalar singlet = 5
   // --> Physical Higgs, Singlet, G^0, G^\pm 
   std::vector<double> get_scalar_dofs() const override {
-    return {1., 1., 1., 2.};
+    return {1., 1., 1., 1., 1.};
   }
 
   // top, bottom and tau
