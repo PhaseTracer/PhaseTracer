@@ -3,7 +3,23 @@
 
 /**
   ScalarSingletZ2DMMhInput_withSingletVEVinPT
-*/
+
+ * FS has p^2 parts for higgs masses
+
+ * FS has different extractuiions of parameters
+
+ * FS has yb and ytau as well in some places (needs to be added in other places)
+
+ * degress of freedom for photon
+
+ * xi = 1 gauge is fixed in FS
+
+ * Goldstone diverngence fixes not needed in xi = 1 but should check
+   impact of these higher order corrections in FS and in MSbar.
+ 
+ * FS has yb and ytau as well in some places (needs to be added in other places).  We should make this consistent and probably make it optional tio check impact.
+ 
+ */
 
 #include <cmath>
 #include <vector>
