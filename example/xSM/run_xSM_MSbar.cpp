@@ -163,9 +163,14 @@ int main(int argc, char* argv[]) {
 //        square(square(ms) - 0.5 * lambda_hs * square(SM::v));
 //        lambda_s =  lambda_s_min + 0.1;
         // BK point
-        lambda_hs = 0.4;
-        ms = 60;
-        lambda_s =  0.15;
+//        lambda_hs = 0.4;
+//        ms = 60;
+//        lambda_s =  0.15;
+        // test point for FS
+        lambda_hs = 0.25;
+        ms = 67.3656;
+        lambda_s =  0.1;
+        
       } else {
         if (scan_lhs){
           lambda_hs = 0.4 / n_bin_x * ii+0.2;
