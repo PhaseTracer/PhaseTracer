@@ -1,16 +1,15 @@
 /**
-  Example of covariant gauge using xSM model.
+  Example of MS-bar using xSM model.
 */
 
 #include <iostream>
 #include <iomanip>
 
-#include "models/xSM_MSbar_covariant.hpp"
+#include "models/xSM_MSbar.hpp"
 #include "models/SM_parameters.hpp"
 #include "transition_finder.hpp"
 #include "phase_finder.hpp"
 #include "logger.hpp"
-
 
 int main(int argc, char* argv[]) {
   LOGGER(debug);
@@ -32,15 +31,15 @@ int main(int argc, char* argv[]) {
   double lambda_s_min = 2. / square(SM::mh * SM::v) *
       square(square(ms) - 0.5 * lambda_hs * square(SM::v));
   double lambda_s = lambda_s_min + 0.1;
-
+  
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar_covariant::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, tree_ewsb);
 
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-  model.set_tree_ewsb(tree_ewsb);
 
   // Make PhaseFinder object and find the phases
   PhaseTracer::PhaseFinder hb(model);
+  hb.set_seed(0);
   hb.find_phases();
   std::cout << hb;
 
