@@ -42,11 +42,7 @@ int main(int argc, char* argv[]) {
   model.set_tree_ewsb(tree_ewsb);
 
   // Make PhaseFinder object and find the phases
-  PhaseTracer::HbarExpansion hb(model);
-  hb.set_seed(0);
-  Eigen::ArrayXd pseudo(2);
-  pseudo << 0., model.get_v_tree_s();
-  hb.add_pseudo_phase(pseudo);
+  PhaseTracer::PhaseFinder hb(model);
   hb.find_phases();
   std::cout << hb;
 
@@ -55,37 +51,6 @@ int main(int argc, char* argv[]) {
   tf.set_TC_tol_rel(1e-12);
   tf.find_transitions();
   std::cout << std::setprecision(15) << tf;
-
-  // Find gamma using high-temperature expansion
-  PhaseTracer::HTExpansion ht(model);
-  ht.set_seed(0);
-  const double TC = tf.get_transitions()[0].TC;
-  const auto ht_minima = ht.find_minima_at_t(TC);
-
-  // Use minima with greatest Higgs
-  double delta = 0.;
-  for (const auto& m : ht_minima) {
-    delta = std::max(delta, std::abs(m.x(0)));
-  }
-
-  const double gamma = delta / TC;
-  std::cout << "gamma_HT = " << gamma << std::endl;
-
-  // Get Higgs mass
-  const auto minima_tree = hb.find_minima_at_t(0.);
-  PhaseTracer::PhaseFinder pf(model);
-  const auto minima_1l = pf.find_minima_at_t(0.);
-  std::cout << "v_tree = " << std::abs(minima_tree[0].x[0]) << std::endl;
-  std::cout << "v_1l = " << std::abs(minima_1l[0].x[0]) << std::endl;  
-
-  Eigen::ArrayXd physical(2);
-  physical << SM::v, 0.;
-  const auto mass_sq_1l = physical_vacuum ? model.get_1l_scalar_masses_sq(physical, 0.) :
-                                            model.get_1l_scalar_masses_sq(minima_1l[0].x, 0.);
-  const auto mass_sq_tree = physical_vacuum ? model.get_tree_scalar_masses_sq(physical):
-                                              model.get_tree_scalar_masses_sq(minima_tree[0].x);
-  std::cout << "mh_tree = " << std::sqrt(mass_sq_tree[1]) << std::endl;
-  std::cout << "mh_1l = " << std::sqrt(mass_sq_1l[1]) << std::endl;
 
   return 0;
 }
