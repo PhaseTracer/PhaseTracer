@@ -48,7 +48,11 @@ int main(int argc, char* argv[]) {
   PhaseTracer::TransitionFinder tf(hb);
   tf.set_TC_tol_rel(1e-12);
   tf.find_transitions();
-  std::cout << std::setprecision(15) << tf.get_transitions()[0];
+  auto t = tf.get_transitions();
+  std::sort(t.begin(), t.end(), [](const PhaseTracer::Transition& a, const PhaseTracer::Transition& b) {
+    return a.gamma < b.gamma;
+  });
+  std::cout << std::setprecision(15) << t.back();
 
   return 0;
 }
