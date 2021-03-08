@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
       return 0;
   } 
 
-  const bool tree_ewsb = atoi(argv[4]) == 1;
+  bool tree_ewsb = atoi(argv[4]) == 1;
   if (tree_ewsb) {
     out_name += "_TreeEWSB";
   } else {
@@ -168,8 +168,10 @@ int main(int argc, char* argv[]) {
 //        lambda_s =  0.15;
         // test point for FS
         lambda_hs = 0.25;
-        ms = 67.3656;
+        ms = 67.3632;
         lambda_s =  0.1;
+        xi = 1;
+        tree_ewsb = true;
         
       } else {
         if (scan_lhs){
@@ -224,7 +226,11 @@ int main(int argc, char* argv[]) {
       
 //      PhaseTracer::potential_plotter(model, 254, "potential", -5., 5, 0.01, -5., 40., 0.1);
 //      PhaseTracer::potential_plotter(model, 142.35, "potential", 0., 160, 0.2, -2., 160., 0.2);
-//      return 0;
+
+        std::cout << std::endl;
+        double Vtree = model.V0(x);
+        std::cout << "Vtree = "<< Vtree << std::endl;
+        return 0;
       }
       
       // Make PhaseFinder object and find the phases
