@@ -211,6 +211,17 @@ class xSM_MSbar : public OneLoopPotential {
   }
 
   double V0(Eigen::VectorXd phi) const override {
+    
+    
+    std::cout << "mZ = "  << SM::mZ << std::endl;
+    
+    std::cout << "muH2 = "  << muh_sq << std::endl
+              << "muS2 = "  << mus_sq << std::endl
+              << "lambda_h = "  << lambda_h << std::endl
+              << "lambda_s = "  << lambda_s << std::endl
+              << "lambda_hs = "  << lambda_hs << std::endl
+        << std::endl;
+    
     return 0.5 * muh_sq * square(phi[0]) +
            0.25 * lambda_h * pow_4(phi[0]) +
            0.25 * lambda_hs * square(phi[0]) * square(phi[1]) +
@@ -262,7 +273,7 @@ class xSM_MSbar : public OneLoopPotential {
                       );
 
     // Goldstone finite temperature masses
-    double mTG02 =   mgg2 + thermal_sq[0] + (tree_ewsb ? sum : 0);
+    double mTG02 =   mgg2 + thermal_sq[0] + ( (tree_ewsb and Goldstone_resum ) ? sum : 0);
     double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
     // xi-dependence
     mTG02 += 0.25 * xi * (square(SM::g * h) + square(SM::gp * h));
@@ -311,17 +322,17 @@ class xSM_MSbar : public OneLoopPotential {
 
   // W, Z, photon
   std::vector<double> get_vector_dofs() const override {
-    return {6., 3., 2.}; // TODO: check photon dof
+    return {6., 3., 3.}; // TODO: check photon dof
   }
 
   // top quark
   std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const override {
-    return {0.5 * SM::yt_sq * square(phi[0])};
+    return {0.5 * SM::yt_sq * square(phi[0]), 0.5 * SM::yb_sq * square(phi[0]), 0.5 * SM::ytau_sq * square(phi[0])};
   }
 
   // top quark
   std::vector<double> get_fermion_dofs() const override {
-    return {12.};
+    return {12., 12., 4.};
   }
 
   size_t get_n_scalars() const override {
@@ -352,6 +363,8 @@ class xSM_MSbar : public OneLoopPotential {
   // For consistency in one-loop potential
   double muh_sq_tree_ewsb;
   bool tree_ewsb{false};
+  
+  bool Goldstone_resum{false};
 
 };
 

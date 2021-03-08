@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include <vector>
+#include <iomanip>
 #include <Eigen/Eigenvalues>
 
 #include "one_loop_potential.hpp"
@@ -180,6 +181,13 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
   Settings settings;
   settings.set(Settings::precision, 1.e-4);
   settings.set(Settings::calculate_sm_masses, 1);
+
+  // TODO: only for comparison of one point
+  settings.set(Settings::thresholdCorrectionsLoopOrder,0);
+  settings.set(Settings::betaFunctionLoopOrder,0);
+  
+  
+  
   SpectrumGenerator spectrum_generator;
   spectrum_generator.set_settings(settings);
 
@@ -243,6 +251,25 @@ double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) cons
   const double h = phi[0] ;
   const double s = phi[1] ;
 
+  std::cout << std::setprecision(16);
+  std::cout << "VEV = " << model.get_v() << std::endl;
+  std::cout << "gp = " << gp << std::endl;
+  std::cout << "g = " << g << std::endl;
+  std::cout << "yt = " << yt << std::endl;
+  std::cout << "ytau = " << ytau << std::endl;
+  std::cout << "yb = " << yb << std::endl;
+  
+  std::cout << std::endl;
+  
+  std::cout << "muH2 = "  << muH2 << std::endl
+            << "muS2 = "  << muS2 << std::endl
+            << "lambda_h = "  << lambda_h << std::endl
+            << "lambda_s = "  << lambda_s << std::endl
+            << "lambda_hs = "  << lambda_hs << std::endl
+      << std::endl;
+  
+  lambda_h = 2 * lambda_h_FS;
+  
   const double V0 =
     0.5 * muH2 * square(h) +
     0.125 * lambda_h * pow_4(h) +
@@ -340,6 +367,8 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
                        1.5  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
                       +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
 		      -6.  * square(yt) * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
+          -6.  * square(yb) * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1]) // TODO: Need check
+          -2.  * square(ytau) * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2]) // TODO: Need check
                       +1.5 * square(g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
                       +0.75* (square(g)+square(gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
                       );

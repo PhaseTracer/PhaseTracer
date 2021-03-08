@@ -16,6 +16,8 @@
 #include "phase_plotter.hpp"
 #include "potential_plotter.hpp"
 
+#include "SM_parameters.hpp"
+
 int main() {
 
   LOGGER(debug);
@@ -24,8 +26,8 @@ int main() {
   EffectivePotential::ScalarSingletZ2DMMhInput_withSingletVEVinPT model;
   
   //PA: use example SLHA values for now
-  const double mtop = 173.0;
-  double MhInput = 125;
+  const double mtop =  SM::mtop;
+  double MhInput = SM::mh;
   double lambda_hs = 0.25;
   double lambda_s =  0.1;
   double mus2 = -3000;
@@ -43,11 +45,11 @@ int main() {
   // Print masses of CP-even Higgs
   std::cout << "mhh = " << model.get_mh()[0] << std::endl;
   std::cout << "mss = " << model.get_mh()[1] << std::endl;
-
+  std::cout << std::endl;
 
   if (true) {
-//        Eigen::VectorXd x(2);
-//        x <<  SM::v, 0;
+        Eigen::VectorXd x(2);
+        x <<  SM::v, 0;
 //        std::cout << "Numerically derivatives of the full potential at EW VEV:" << std::endl;
 //        auto d2Vdh2 = model.d2V_dx2(x,0);
 //        std::cout << std::setprecision(16);
@@ -56,7 +58,9 @@ int main() {
       
 //      PhaseTracer::potential_plotter(model, 0, "potential", -10., 300, 1, -5., 200., 1);
 //      PhaseTracer::potential_plotter(model, 142.35, "potential", 0., 160, 0.2, -2., 160., 0.2);
-//      return 0;
+    double Vtree = model.V0(x);
+    std::cout << "Vtree = "<< Vtree << std::endl;
+    return 0;
   }
 
   // Make PhaseFinder object and find the phases
