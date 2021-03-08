@@ -3,14 +3,12 @@
 */
 
 #include <iostream>
+#include <iomanip>
 
 #include "models/xSM_MSbar.hpp"
 #include "models/SM_parameters.hpp"
 #include "transition_finder.hpp"
 #include "h_bar_expansion.hpp"
-#include "phase_plotter.hpp"
-#include "potential_plotter.hpp"
-#include "potential_line_plotter.hpp"
 #include "logger.hpp"
 
 
