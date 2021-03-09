@@ -22,47 +22,45 @@
 namespace PhaseTracer {
 
 std::function<double(Eigen::VectorXd)> HTExpansion::make_objective(double T) const {
-  // downcast potential to a one-loop potential
-  EffectivePotential::OneLoopPotential* P1l = (EffectivePotential::OneLoopPotential*)(&P);
-
-  std::function<double(Eigen::VectorXd)> objective = [P1l, T](Eigen::VectorXd x) {
-    return P1l->VHT(x, T);
+  // make objective tracing high-temperature expansion of potential
+  std::function<double(Eigen::VectorXd)> objective = [this, T](Eigen::VectorXd x) {
+    return P1l.VHT(x, T);
   };
 
   return objective;
 }
 
 std::function<double(Eigen::VectorXd)> HbarExpansion::make_objective(double /* T */) const {
-  // downcast potential to a one-loop potential
-  EffectivePotential::OneLoopPotential* P1l = (EffectivePotential::OneLoopPotential*)(&P);
-
-  std::function<double(Eigen::VectorXd)> objective = [P1l](Eigen::VectorXd x) {
-    return P1l->V0(x);
+  // make objective tracing tree-level part of potential
+  std::function<double(Eigen::VectorXd)> objective = [this](Eigen::VectorXd x) {
+    return P1l.V0(x);
   };
 
   return objective;
 }
 
 Point HbarExpansion::phase_at_T(const Phase& phase, double T) const {
+  // ensure that we see full potential rather than tree-level part that
+  // was traced
   Point new_;
   new_.x = phase.X.back();
   new_.t = T;
-  new_.potential = P(new_.x, new_.t);
+  new_.potential = P(new_.x, new_.t);  // full potential
   return new_;
 }
 
 void HbarExpansion::find_phases() {
-  // this does not depend on temperature
+  // tree-level minima - this does not depend on temperature
   const std::vector<Point> minima = get_minima_at_t_low();
   int key = 0;
-  const auto origin = Eigen::VectorXd::Zero(n_scalars);
+  const auto zero = Eigen::VectorXd::Zero(n_scalars);
 
   for (const auto& m : minima) {
     Phase phase;
     phase.key = key++;
     phase.T = {t_low, t_high};
     phase.X = {m.x, m.x};
-    phase.dXdT = {origin, origin};
+    phase.dXdT = {zero, zero};
     phase.V = {P.V(m.x, t_low), P.V(m.x, t_high)};
     phase.end_low = REACHED_T_STOP;
     phase.end_high = REACHED_T_STOP;
@@ -78,7 +76,7 @@ void HbarExpansion::find_phases() {
     phase.key = key++;
     phase.T = {t_low, t_high};
     phase.X = {p, p};
-    phase.dXdT = {origin, origin};
+    phase.dXdT = {zero, zero};
     phase.V = {P.V(p, t_low), P.V(p, t_high)};
     phase.end_low = REACHED_T_STOP;
     phase.end_high = REACHED_T_STOP;
