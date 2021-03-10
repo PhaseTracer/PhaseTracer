@@ -181,12 +181,9 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
   Settings settings;
   settings.set(Settings::precision, 1.e-4);
   settings.set(Settings::calculate_sm_masses, 1);
-
   // TODO: only for comparison of one point
-  settings.set(Settings::thresholdCorrectionsLoopOrder,0);
-  settings.set(Settings::betaFunctionLoopOrder,0);
-  
-  
+  settings.set(Settings::threshold_corrections_loop_order,0);
+  settings.set(Settings::beta_loop_order, 0);
   
   SpectrumGenerator spectrum_generator;
   spectrum_generator.set_settings(settings);
@@ -267,9 +264,7 @@ double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) cons
             << "lambda_s = "  << lambda_s << std::endl
             << "lambda_hs = "  << lambda_hs << std::endl
       << std::endl;
-  
-  lambda_h = 2 * lambda_h_FS;
-  
+
   const double V0 =
     0.5 * muH2 * square(h) +
     0.125 * lambda_h * pow_4(h) +
