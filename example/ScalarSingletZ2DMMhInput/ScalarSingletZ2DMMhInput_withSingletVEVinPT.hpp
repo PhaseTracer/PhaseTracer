@@ -60,7 +60,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   
     muH2 = model.get_muH2();
     muS2 = model.get_muS2();
-    lambda_h = model.get_LamH();
+    lambda_h = model.get_LamH() *0.5;
     lambda_s = model.get_LamS();
     lambda_hs = model.get_LamSH();
     
@@ -267,7 +267,7 @@ double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) cons
 
   const double V0 =
     0.5 * muH2 * square(h) +
-    0.125 * lambda_h * pow_4(h) +
+    0.25 * lambda_h * pow_4(h) +
     0.25 * lambda_hs * square(h) * square (s) +
     0.5 * muS2 * square(s) +
     0.25 * lambda_s * pow_4(s);
@@ -339,12 +339,12 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     std::cout << "Getting from model object after tree-level EWSB muh_sq_tree_ewsb = "
 	      <<  muh_sq_tree_ewsb << std::endl;
     std::cout << " should equal - 0.5 * lambda_h *  square(model.get_v()) = "
-	      << - 0.5 * lambda_h * square(model.get_v()) << std::endl;
+	      << - lambda_h * square(model.get_v()) << std::endl;
     std::cout << " lambda_h = "  << lambda_h << std::endl;
     std::cout << "model.get_v() = " << model.get_v() << std::endl;
      // TODO: add thermal_sq here and use get_vector_debye_sq?
-    const double mhh2 = (Use_1L_ewsb_in_0L_masses ? muH2 : muh_sq_tree_ewsb) + 1.5 * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
-    const double mgg2 = (Use_1L_ewsb_in_0L_masses ? muH2 : muh_sq_tree_ewsb ) + 0.5 * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mhh2 = (Use_1L_ewsb_in_0L_masses ? muH2 : muh_sq_tree_ewsb) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mgg2 = (Use_1L_ewsb_in_0L_masses ? muH2 : muh_sq_tree_ewsb ) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = muS2 + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
     std::cout << "In get_scalar_debeye_masses mhh2 = " << mhh2 << std::endl;
     std::cout << "In get_scalar_debeye_masses mgg2 = " << mgg2 << std::endl;
@@ -359,7 +359,7 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     const double Qsq = square( get_renormalization_scale() );
     // PA: do we add bottom and tau contributions here? 
     const double sum = 1. / (16. * M_PI * M_PI) * (
-                       1.5  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
+                       3.  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
                       +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
 		      -6.  * square(yt) * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
           -6.  * square(yb) * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1]) // TODO: Need check
