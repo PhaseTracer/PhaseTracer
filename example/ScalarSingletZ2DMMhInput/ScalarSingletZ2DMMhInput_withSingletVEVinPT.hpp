@@ -4,20 +4,10 @@
 /**
   ScalarSingletZ2DMMhInput_withSingletVEVinPT
 
- * FS has p^2 parts for higgs masses
-
- * FS has different extractuiions of parameters
-
- * FS has yb and ytau as well in some places (needs to be added in other places)
-
- * degress of freedom for photon
-
- * xi = 1 gauge is fixed in FS
-
- * Goldstone diverngence fixes not needed in xi = 1 but should check
-   impact of these higher order corrections in FS and in MSbar.
- 
- * FS has yb and ytau as well in some places (needs to be added in other places).  We should make this consistent and probably make it optional tio check impact.
+ * Disscuss TODOs in codes
+ * Delete comments
+ * Delete other FS models 
+ *
  
  */
 
@@ -64,23 +54,23 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     lambda_s = model.get_LamS();
     lambda_hs = model.get_LamSH();
     
-    std::cout << "muH2=" << muH2 << std::endl;
-    std::cout << "lambda_h=" << lambda_h << std::endl;
-    std::cout << "muS2=" << muS2 << std::endl;
-    std::cout << "lambda_s=" << lambda_s << std::endl;
-    std::cout << "lambda_hs=" << lambda_hs << std::endl;
-    std::cout << "pole mass Mh = "  << model.get_Mhh_pole_slha() << std::endl;
-    std::cout << "running mass mh = "  << model.get_Mhh() << std::endl;
-    std::cout << "pole mass Ms = "  << model.get_Mss_pole_slha() << std::endl;
-    std::cout << "running mass ms = "  << model.get_Mss() << std::endl;
-    std::cout << "running mass for MZ = " << model.get_MVZ() << std::endl;
-    std::cout << "running mass for MW = " << model.get_MVWp() << std::endl;
+    if (debug){
+      std::cout << "muH2=" << muH2 << std::endl;
+      std::cout << "lambda_h=" << lambda_h << std::endl;
+      std::cout << "muS2=" << muS2 << std::endl;
+      std::cout << "lambda_s=" << lambda_s << std::endl;
+      std::cout << "lambda_hs=" << lambda_hs << std::endl;
+      std::cout << "pole mass Mh = "  << model.get_Mhh_pole_slha() << std::endl;
+      std::cout << "running mass mh = "  << model.get_Mhh() << std::endl;
+      std::cout << "pole mass Ms = "  << model.get_Mss_pole_slha() << std::endl;
+      std::cout << "running mass ms = "  << model.get_Mss() << std::endl;
+      std::cout << "running mass for MZ = " << model.get_MVZ() << std::endl;
+      std::cout << "running mass for MW = " << model.get_MVWp() << std::endl;
+    }
 								
     set_renormalization_scale(model.get_scale());
     
-  
     // Calculate Debye coefficients
-    //PA: Do we include all 3 3rd gen fermions /  xSM_MSbar does not 
     yt = model.get_Yu(2, 2);
     yb = model.get_Yd(2, 2);
     ytau = model.get_Ye(2, 2);
@@ -107,7 +97,6 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override;
 
   // W, Z and photon
-  // should the photon (3rd entry be 3 or 2?
   std::vector<double> get_vector_dofs() const override {
     return {6., 3., 3.};
   }
@@ -132,6 +121,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   };
 
   //PA: check what this is used for, do we really want the pole masses here?
+  //YZ: This is coming from NMSSM example, so no.
   Eigen::Array<double, 2, 1> get_mh() { return {model.get_Mhh_pole_slha(), model.get_Mss_pole_slha()}; }
 
   // Allows running to a different scale, for checking scale dependence
@@ -147,9 +137,23 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     set_VH_pars_from_FS(); // includes setting renormalisation scale
   }
 
-/** Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential */
+  // Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential 
   void set_use_1L_EWSB_in_0L_mass(bool use_1L_EWSB_in_0L_mass_) { use_1L_EWSB_in_0L_mass = use_1L_EWSB_in_0L_mass_; } 
   void set_use_Goldstone_resum(bool use_Goldstone_resum_) { use_Goldstone_resum = use_Goldstone_resum_; } 
+  
+  // For debuging
+  void set_debug(bool debug_) { debug=debug_; }
+  
+    /// this code is just for testing masses delete and replace with proper
+  /// tests if possible when done
+  double get_EW_VEV() {return model.get_v();}
+  
+  double get_ms() {return model.get_Mss();}
+  double get_muh_sq() {return muH2;}
+  double get_mus_sq() {return muS2;}
+  double get_lambda_h() {return lambda_h;}
+  double get_lambda_s() {return lambda_s;}
+  double get_lambda_hs() {return lambda_hs;}
   
  private:
   Model model;
@@ -168,6 +172,9 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   // flag for using tree-level or one=-loop EWSB conditions in tree-level masses
   bool use_1L_EWSB_in_0L_mass{false};
   bool use_Goldstone_resum{false};
+
+  // For debuging
+  bool debug = false;
 };
 
 void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> x) {
@@ -183,9 +190,10 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
   Settings settings;
   settings.set(Settings::precision, 1.e-8);
   settings.set(Settings::calculate_sm_masses, 1);
-  // TODO: only for comparison of one point
-  settings.set(Settings::threshold_corrections_loop_order,0);
-  settings.set(Settings::beta_loop_order, 0);
+  if (debug) {
+    settings.set(Settings::threshold_corrections_loop_order,0);
+    settings.set(Settings::beta_loop_order, 0);
+  }
   
   SpectrumGenerator spectrum_generator;
   spectrum_generator.set_settings(settings);
@@ -196,7 +204,6 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
   spectrum_generator.run(qedqcd, input);
 
   // Fetch model from FS
-
   model = std::get<0>(spectrum_generator.get_models_slha());
 
   // Check that model is physical
@@ -204,44 +211,8 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
     throw std::runtime_error("Unphysical spectrum");
   }
 
-  
   // Fetch parameters from FS model anduse them to  set data members for this class
   set_VH_pars_from_FS(); // includes setting renormalisation scale
-
-  /// this code is just for testing masses delete and replace with proper
-  /// tests if possible when done
-  double hvev = model.get_v();
-  Eigen::VectorXd phi(2);
-  phi[0] = hvev;
-  phi[1] = 0;
-  std::vector<double> mhsq_check =  get_scalar_masses_sq(phi,1);
-  std::vector<double> mVsq_check =  get_vector_masses_sq(phi);
-
-  
-  std::cout << "mhsq_check[0] = "  << mhsq_check[0] << std::endl 
-	    << "mhsq_check[1] = "  << mhsq_check[1] << std::endl
-            << "mhsq_check[2] = "  << mhsq_check[2] << std::endl
-            << "mhsq_check[3] = "  << mhsq_check[3] << std::endl
-            << "mhsq_check[4] = "  << mhsq_check[4] << std::endl
-	    << std::endl;
-
-  std::cout << "mh_check[0] = "  << sqrt(mhsq_check[0]) << std::endl
-	    << "mh_check[1] = "  << sqrt(mhsq_check[1]) << std::endl
-            << "mh_check[2] = "  << sqrt(mhsq_check[2]) << std::endl
-            << "mh_check[3] = "  << sqrt(mhsq_check[3]) << std::endl
-            << "mh_check[4] = "  << sqrt(mhsq_check[4]) << std::endl
-	    << std::endl;
-
- std::cout << "mVsq_check[0] = "  << mVsq_check[0] << std::endl 
-	    << "mVsq_check[1] = "  << mVsq_check[1] << std::endl
-            << "mVsq_check[2] = "  << mVsq_check[2] << std::endl
-	    << std::endl;
-
-  std::cout << "mV_check[0] = "  << sqrt(mVsq_check[0]) << std::endl
-	    << "mV_check[1] = "  << sqrt(mVsq_check[1]) << std::endl
-            << "mV_check[2] = "  << sqrt(mVsq_check[2]) << std::endl
-	    << std::endl;
-  
 }
 
 double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) const {
@@ -249,24 +220,6 @@ double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) cons
   //PA: I guess it depends how I write the poetntial 
   const double h = phi[0] ;
   const double s = phi[1] ;
-
-  std::cout << std::setprecision(16);
-  std::cout << "VEV = " << model.get_v() << std::endl;
-  std::cout << "gp = " << gp << std::endl;
-  std::cout << "g = " << g << std::endl;
-  std::cout << "yt = " << yt << std::endl;
-  std::cout << "ytau = " << ytau << std::endl;
-  std::cout << "yb = " << yb << std::endl;
-  
-  std::cout << std::endl;
-  
-  std::cout << "muH2 = "  << muH2 << std::endl
-            << "muS2 = "  << muS2 << std::endl
-            << "lambda_h = "  << lambda_h << std::endl
-            << "lambda_s = "  << lambda_s << std::endl
-            << "lambda_hs = "  << lambda_hs << std::endl
-      << std::endl;
-
   const double V0 =
     0.5 * muH2 * square(h) +
     0.25 * lambda_h * pow_4(h) +
@@ -337,24 +290,27 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     model_copy.solve_ewsb_tree_level();
     //model_copy.solve_ewsb_tree_level_custom();
     const double muh_sq_use_0L_EWSB = model_copy.get_muH2();
-    ///sanity check with couts before committing
-    std::cout << "Getting from model object after tree-level EWSB muh_sq_use_0L_EWSB = "
-	      <<  muh_sq_use_0L_EWSB << std::endl;
-    std::cout << " should equal - 0.5 * lambda_h *  square(model.get_v()) = "
-	      << - lambda_h * square(model.get_v()) << std::endl;
-    std::cout << " lambda_h = "  << lambda_h << std::endl;
-    std::cout << "model.get_v() = " << model.get_v() << std::endl;
+    
+//    ///sanity check with couts before committing
+//    std::cout << "Getting from model object after tree-level EWSB muh_sq_use_0L_EWSB = "
+//	      <<  muh_sq_use_0L_EWSB << std::endl;
+//    std::cout << " should equal - 0.5 * lambda_h *  square(model.get_v()) = "
+//	      << - lambda_h * square(model.get_v()) << std::endl;
+//    std::cout << " lambda_h = "  << lambda_h << std::endl;
+//    std::cout << "model.get_v() = " << model.get_v() << std::endl;
+    
      // TODO: add thermal_sq here and use get_vector_debye_sq?
     const double mhh2 = (use_1L_EWSB_in_0L_mass ? muH2 : muh_sq_use_0L_EWSB) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mgg2 = (use_1L_EWSB_in_0L_mass ? muH2 : muh_sq_use_0L_EWSB) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = muS2 + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
-    std::cout << "In get_scalar_debeye_masses mhh2 = " << mhh2 << std::endl;
-    std::cout << "In get_scalar_debeye_masses mgg2 = " << mgg2 << std::endl;
-    std::cout << "In get_scalar_debeye_masses mss2 = " << mss2 << std::endl;
-    std::cout << "In get_scalar_debeye_masses s = " << s << std::endl;
-    std::cout << "In get_scalar_debeye_masses h = " << h << std::endl;  
     
- // resummed Goldstone contributions
+//    std::cout << "In get_scalar_debeye_masses mhh2 = " << mhh2 << std::endl;
+//    std::cout << "In get_scalar_debeye_masses mgg2 = " << mgg2 << std::endl;
+//    std::cout << "In get_scalar_debeye_masses mss2 = " << mss2 << std::endl;
+//    std::cout << "In get_scalar_debeye_masses s = " << s << std::endl;
+//    std::cout << "In get_scalar_debeye_masses h = " << h << std::endl;  
+    
+    // resummed Goldstone contributions
     const auto fm2 = get_fermion_masses_sq(phi);
     const auto vm2 = get_vector_masses_sq(phi);
     
@@ -384,9 +340,8 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     MTH2(0, 1) = MTH2(1, 0) = lambda_hs * h * s;
 
 
-    std::cout << "mTG02 = "  << mTG02 << std::endl;
-    std::cout << "mTGpm2 = " << mTGpm2 << std::endl;
-    
+//    std::cout << "mTG02 = "  << mTG02 << std::endl;
+//    std::cout << "mTGpm2 = " << mTGpm2 << std::endl;
     
     // get eigenvalues
     const Eigen::VectorXd mH_sq = MTH2.eigenvalues().real();
@@ -432,11 +387,6 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_vector_deby
   // const double Z_debye = A + B;
   // const double g_debye = A - B;
 
-    std::cout << "In get_vector_debye_sq MW_sq_T = " << MW_sq_T << std::endl;
-    std::cout << "In get_vector_debye_sq mZSq_T = " << mZSq_T << std::endl;
-    std::cout << "In get_vector_debye_sq mPhotonSq_T = " << mPhotonSq_T << std::endl;
-
-
   return {MW_sq_T, mZSq_T,  mPhotonSq_T};
 }
 
@@ -456,11 +406,6 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_fermion_mas
   model_copy.calculate_MFu();
   model_copy.calculate_MFd();
   model_copy.calculate_MFe();
-
-    std::cout << "In get_vector_debye_sq mt^2 = " << square(model_copy.get_MFu()[2]) << std::endl;
-    std::cout << "In get_vector_debye_sq mb^2 = " << square(model_copy.get_MFd()[2]) << std::endl;
-    std::cout << "In get_vector_debye_sq mtau^2 = " << square(model_copy.get_MFe()[2]) << std::endl;
-
 
   return {square(model_copy.get_MFu()[2]), square(model_copy.get_MFd()[2]), square(model_copy.get_MFe()[2])};
 }

@@ -31,7 +31,6 @@ std::string toString(std::vector<double> in, std::vector<double> out, std::vecto
   return data_str.str();;
 }
 
-
 int main(int argc, char* argv[]) {
 
   std::ofstream output_file;  
@@ -117,31 +116,51 @@ int main(int argc, char* argv[]) {
 
 
   if (debug_mode) {
-    Eigen::VectorXd x(2);
-    x <<  SM::v, 0;
-    double Ttest = 100;
-    std::cout << "Numerically derivatives of the full potential at EW VEV:" << std::endl;
-    auto d2Vdh2 = model.d2V_dx2(x,0);
     std::cout << std::setprecision(16);
-    std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
-    std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
-
-    auto vector_debye = model.get_vector_debye_sq(x, 0);
-    std::cout << "MZ = "<< std::sqrt(vector_debye[0]) << std::endl;
-    std::cout << "MW = "<< std::sqrt(vector_debye[1]) << std::endl;
-    std::cout << "Mphoton = "<< std::sqrt(vector_debye[2]) << std::endl;
-
+    std::cout << std::endl;
+    std::cout << "@ after applying the 1L EWSB condition" << std::endl;
+    std::cout << "m_s        = "<< ms << std::endl;
+    std::cout << "muH2       = "<< model.get_muh_sq() << std::endl;
+    std::cout << "muS2       = "<< model.get_mus_sq() << std::endl;   
+    std::cout << "lambda_h   = "<< model.get_lambda_h() << std::endl;      
+    std::cout << "lambda_s   = "<< model.get_lambda_s() << std::endl;  
+    std::cout << "lambda_hs  = "<< model.get_lambda_hs() << std::endl; 
+    
     std::cout << std::endl;
     std::cout << "@ EWSB VEV" << std::endl;
-    double Vtree = model.V0(x);
-    double VCW = model.V1(x);
-    double V1T = model.V1T(x, Ttest);
-    double Vtot = model.V(x, Ttest);
+    Eigen::VectorXd test(2);
+    test <<  SM::v, 0;
+    double Ttest = 100;
+    
+    auto mh_check =  model.get_scalar_masses_sq(test,1);
+    auto mV_check = model.get_vector_masses_sq(test);
+    auto mf_check = model.get_fermion_masses_sq(test);
+    std::cout << "mh1 = "<< std::sqrt(mh_check[0]) << std::endl;
+    std::cout << "mh2 = "<< std::sqrt(mh_check[1]) << std::endl;
+    std::cout << "mg0 = "<< std::sqrt(mh_check[2]) << std::endl;
+    std::cout << "mg+ = "<< std::sqrt(mh_check[3]) << std::endl;
+    std::cout << "MW = "<< std::sqrt(mV_check[0]) << std::endl;
+    std::cout << "MZ = "<< std::sqrt(mV_check[1]) << std::endl;
+    std::cout << "Mphoton = "<< std::sqrt(mV_check[2]) << std::endl;
+    std::cout << "mt = " << std::sqrt(mf_check[0]) << std::endl;
+    std::cout << "mb = " << std::sqrt(mf_check[1]) << std::endl;
+    std::cout << "mtau = " << std::sqrt(mf_check[2]) << std::endl;
+    
+    double Vtree = model.V0(test);
+    double VCW = model.V1(test);
+    double V1T = model.V1T(test, Ttest);
+    double Vtot = model.V(test, Ttest);
     std::cout << "Vtree      = "<< Vtree << std::endl;
     std::cout << "VCW        = "<< VCW << std::endl;   
     std::cout << "V1T(T=100) = "<< V1T << std::endl;      
     std::cout << "V(T=100)   = "<< Vtot << std::endl;  
     std::cout << std::endl;
+    
+    std::cout << "Numerically derivatives of the full potential at EW VEV:" << std::endl;
+    auto d2Vdh2 = model.d2V_dx2(test,0);
+    std::cout << std::setprecision(16);
+    std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
+    std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
     
 //    PhaseTracer::potential_plotter(model, 254, "potential", -5., 5, 0.01, -5., 40., 0.1);
 //    PhaseTracer::potential_plotter(model, 142.35, "potential", 0., 160, 0.2, -2., 160., 0.2);

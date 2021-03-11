@@ -334,6 +334,12 @@ class xSM_MSbar : public OneLoopPotential {
 
   bool iteration_converged = false;
   
+  double get_muh_sq() {return muh_sq;}
+  double get_mus_sq() {return mus_sq;}
+  double get_lambda_h() {return lambda_h;}
+  double get_lambda_s() {return lambda_s;}
+  double get_lambda_hs() {return lambda_hs;}
+    
  protected:
   double ms;
   // Lagrangian parameters
