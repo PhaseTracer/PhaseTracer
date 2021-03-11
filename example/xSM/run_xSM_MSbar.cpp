@@ -90,11 +90,11 @@ int main(int argc, char* argv[]) {
       return 0;
   } 
 
-  bool tree_ewsb = atoi(argv[4]) == 1;
-  if (tree_ewsb) {
-    out_name += "_TreeEWSB";
+  bool use_1L_EWSB_in_0L_mass = atoi(argv[4]) == 1;
+  if (use_1L_EWSB_in_0L_mass) {
+    out_name += "_muhShift";
   } else {
-    out_name += "_NoTreeEWSB";
+    out_name += "_GoldstoneResummation";
   }
   
   if (scan_lhs_ls) {
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "renormal Q = " << Q/SM::mtop << "*m_top" << std::endl;
   std::cout << "daisy_term = " << (Parwani  ? "Parwani" : "ArnoldEspinosa") << std::endl;
-  std::cout << "tree_ewsb  = " << (tree_ewsb  ? "true" : "false") << std::endl;
+  std::cout << "use_1L_EWSB_in_0L_mass  = " << (use_1L_EWSB_in_0L_mass  ? "true" : "false") << std::endl;
   std::cout << "xi  = " << xi << std::endl;
   
   const bool tree_level_tadpoles = false;
@@ -168,10 +168,10 @@ int main(int argc, char* argv[]) {
 //        lambda_s =  0.15;
         // test point for FS
         lambda_hs = 0.25;
-        ms = 67.3632;
+        ms = 66.50567996545465;
         lambda_s =  0.1;
         xi = 1;
-        tree_ewsb = true;
+        use_1L_EWSB_in_0L_mass = false;
         
       } else {
         if (scan_lhs){
@@ -202,8 +202,9 @@ int main(int argc, char* argv[]) {
       std::cout << "Runing lambda_hs  = " << lambda_hs << ", lambda_s  = " << lambda_s << ", m_s  = " << ms << std::endl;
     
       // Construct our model
+      bool use_Goldstone_resum = false;
     
-      auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, tree_ewsb);
+      auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, use_1L_EWSB_in_0L_mass, use_Goldstone_resum);
       std::cout << "iteration converged = " << model.iteration_converged << std::endl;
 
       
@@ -223,13 +224,25 @@ int main(int argc, char* argv[]) {
         std::cout << std::setprecision(16);
         std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
         std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
+
+        auto vector_debye = model.get_vector_debye_sq(x, 0);
+        std::cout << "vector_debye[0] = "<< vector_debye[0] << std::endl;
+        std::cout << "vector_debye[1] = "<< vector_debye[1] << std::endl;
+        std::cout << "vector_debye[2] = "<< vector_debye[2] << std::endl;
       
 //      PhaseTracer::potential_plotter(model, 254, "potential", -5., 5, 0.01, -5., 40., 0.1);
 //      PhaseTracer::potential_plotter(model, 142.35, "potential", 0., 160, 0.2, -2., 160., 0.2);
 
         std::cout << std::endl;
-        double Vtree = model.V0(x);
-        std::cout << "Vtree = "<< Vtree << std::endl;
+        
+        
+    double Vtree = model.V0(x);
+    double VCW = model.V1(x);
+    std::cout << "Vtree = "<< Vtree << std::endl;
+    std::cout << "VCW = "<< VCW << std::endl;
+        
+        
+        
         return 0;
       }
       
