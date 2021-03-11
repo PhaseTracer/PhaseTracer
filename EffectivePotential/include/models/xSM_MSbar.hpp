@@ -28,7 +28,6 @@
 #include <utility>
 #include <vector>
 #include <Eigen/Eigenvalues>
-#include <iostream>
 
 #include "one_loop_potential.hpp"
 #include "pow.hpp"
@@ -201,17 +200,6 @@ class xSM_MSbar : public OneLoopPotential {
   }
 
   double V0(Eigen::VectorXd phi) const override {
-    
-    
-    std::cout << "mZ = "  << SM::mZ << std::endl;
-    
-    std::cout << "muH2 = "  << muh_sq << std::endl
-              << "muS2 = "  << mus_sq << std::endl
-              << "lambda_h = "  << lambda_h << std::endl
-              << "lambda_s = "  << lambda_s << std::endl
-              << "lambda_hs = "  << lambda_hs << std::endl
-        << std::endl;
-    
     return 0.5 * muh_sq * square(phi[0]) +
            0.25 * lambda_h * pow_4(phi[0]) +
            0.25 * lambda_hs * square(phi[0]) * square(phi[1]) +
@@ -248,13 +236,6 @@ class xSM_MSbar : public OneLoopPotential {
     const double mhh2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mgg2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
-    
-    
-    std::cout << "In get_scalar_debeye_masses mhh2 = " << mhh2 << std::endl;
-    std::cout << "In get_scalar_debeye_masses mgg2 = " << mgg2 << std::endl;
-    std::cout << "In get_scalar_debeye_masses mss2 = " << mss2 << std::endl;
-    std::cout << "In get_scalar_debeye_masses s = " << s << std::endl;
-    std::cout << "In get_scalar_debeye_masses h = " << h << std::endl;  
     
     // resummed Goldstone contributions
     const auto fm2 = get_fermion_masses_sq(phi);
@@ -315,27 +296,16 @@ class xSM_MSbar : public OneLoopPotential {
 		const double MZ_sq = (a + b) / 24.;
 		const double Mphoton_sq = (a - b) / 24.;
 
-
-    std::cout << "In get_vector_debye_sq MW_sq_T = " << MW_sq << std::endl;
-    std::cout << "In get_vector_debye_sq mZSq_T = " << MZ_sq << std::endl;
-    std::cout << "In get_vector_debye_sq mZSq_T = " << Mphoton_sq << std::endl;
-
-
     return {MW_sq, MZ_sq, Mphoton_sq};
   }
 
   // W, Z, photon
   std::vector<double> get_vector_dofs() const override {
-    return {6., 3., 3.}; // TODO: check photon dof
+    return {6., 3., 3.};
   }
 
   // top quark
   std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const override {
-  
-    std::cout << "In get_vector_debye_sq mt^2 = " << 0.5 * SM::yt_sq * square(phi[0]) << std::endl;
-    std::cout << "In get_vector_debye_sq mb^2 = " << 0.5 * SM::yb_sq * square(phi[0]) << std::endl;
-    std::cout << "In get_vector_debye_sq mtau^2 = " << 0.5 * SM::ytau_sq * square(phi[0]) << std::endl;
-  
     return {0.5 * SM::yt_sq * square(phi[0]), 
             0.5 * SM::yb_sq * square(phi[0]), 
             0.5 * SM::ytau_sq * square(phi[0])};
@@ -372,9 +342,9 @@ class xSM_MSbar : public OneLoopPotential {
   double lambda_h;
   double mus_sq;
   double lambda_s;
-  double mh_SM = 124.9968487205829;
+  double mh_SM = SM::mh;
   
-  // 
+  // For consistency in one-loop potential
   double muh_sq_use_0L_EWSB;
   bool use_1L_EWSB_in_0L_mass{false};
   bool use_Goldstone_resum{true};
