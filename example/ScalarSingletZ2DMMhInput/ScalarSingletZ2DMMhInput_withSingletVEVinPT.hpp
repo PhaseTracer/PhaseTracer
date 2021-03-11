@@ -148,7 +148,9 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   }
 
 /** Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential */
-  void set_Use_1L_ewsb_in_0L_masses(bool Use_1L_ewsb_in_0L_masses_) { Use_1L_ewsb_in_0L_masses = Use_1L_ewsb_in_0L_masses_; } 
+  void set_use_1L_EWSB_in_0L_mass(bool use_1L_EWSB_in_0L_mass_) { use_1L_EWSB_in_0L_mass = use_1L_EWSB_in_0L_mass_; } 
+  void set_use_Goldstone_resum(bool use_Goldstone_resum_) { use_Goldstone_resum = use_Goldstone_resum_; } 
+  
  private:
   Model model;
   //PA: do we really want mt to be const?  why?
@@ -164,8 +166,8 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
 
   //PA: copying Yang's bad way fo doing this for now ;)
   // flag for using tree-level or one=-loop EWSB conditions in tree-level masses
-  bool Use_1L_ewsb_in_0L_masses{true};
-  
+  bool use_1L_EWSB_in_0L_mass{false};
+  bool use_Goldstone_resum{false};
 };
 
 void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> x) {
@@ -179,7 +181,7 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
 
   // Arrange settings
   Settings settings;
-  settings.set(Settings::precision, 1.e-4);
+  settings.set(Settings::precision, 1.e-8);
   settings.set(Settings::calculate_sm_masses, 1);
   // TODO: only for comparison of one point
   settings.set(Settings::threshold_corrections_loop_order,0);
@@ -334,17 +336,17 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     // PA: Should I use _custom version here and earlier actually?  Check FS model_file and code details. 
     model_copy.solve_ewsb_tree_level();
     //model_copy.solve_ewsb_tree_level_custom();
-    const double muh_sq_tree_ewsb = model_copy.get_muH2();
+    const double muh_sq_use_0L_EWSB = model_copy.get_muH2();
     ///sanity check with couts before committing
-    std::cout << "Getting from model object after tree-level EWSB muh_sq_tree_ewsb = "
-	      <<  muh_sq_tree_ewsb << std::endl;
+    std::cout << "Getting from model object after tree-level EWSB muh_sq_use_0L_EWSB = "
+	      <<  muh_sq_use_0L_EWSB << std::endl;
     std::cout << " should equal - 0.5 * lambda_h *  square(model.get_v()) = "
 	      << - lambda_h * square(model.get_v()) << std::endl;
     std::cout << " lambda_h = "  << lambda_h << std::endl;
     std::cout << "model.get_v() = " << model.get_v() << std::endl;
      // TODO: add thermal_sq here and use get_vector_debye_sq?
-    const double mhh2 = (Use_1L_ewsb_in_0L_masses ? muH2 : muh_sq_tree_ewsb) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
-    const double mgg2 = (Use_1L_ewsb_in_0L_masses ? muH2 : muh_sq_tree_ewsb ) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mhh2 = (use_1L_EWSB_in_0L_mass ? muH2 : muh_sq_use_0L_EWSB) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mgg2 = (use_1L_EWSB_in_0L_mass ? muH2 : muh_sq_use_0L_EWSB) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = muS2 + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
     std::cout << "In get_scalar_debeye_masses mhh2 = " << mhh2 << std::endl;
     std::cout << "In get_scalar_debeye_masses mgg2 = " << mgg2 << std::endl;
@@ -361,15 +363,15 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     const double sum = 1. / (16. * M_PI * M_PI) * (
                        3.  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
                       +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
-		      -6.  * square(yt) * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
-          -6.  * square(yb) * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1]) // TODO: Need check
-          -2.  * square(ytau) * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2]) // TODO: Need check
+		                  -6.  * square(yt) * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
+                      -6.  * square(yb) * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1]) // TODO: Need check
+                      -2.  * square(ytau) * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2]) // TODO: Need check
                       +1.5 * square(g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
                       +0.75* (square(g)+square(gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
                       );
              
     // Goldstone finite temperature masses
-    double mTG02 =   mgg2 + thermal_sq[0] + (Use_1L_ewsb_in_0L_masses ? 0 : sum );
+    double mTG02 =   mgg2 + thermal_sq[0] + ( ( not use_1L_EWSB_in_0L_mass and use_Goldstone_resum )? sum : 0 );
     double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
     // xi-dependence
     mTG02 += 0.25 * xi * (square(g * h) + square(gp * h));
@@ -430,6 +432,11 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_vector_deby
   // const double Z_debye = A + B;
   // const double g_debye = A - B;
 
+    std::cout << "In get_vector_debye_sq MW_sq_T = " << MW_sq_T << std::endl;
+    std::cout << "In get_vector_debye_sq mZSq_T = " << mZSq_T << std::endl;
+    std::cout << "In get_vector_debye_sq mPhotonSq_T = " << mPhotonSq_T << std::endl;
+
+
   return {MW_sq_T, mZSq_T,  mPhotonSq_T};
 }
 
@@ -449,6 +456,11 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_fermion_mas
   model_copy.calculate_MFu();
   model_copy.calculate_MFd();
   model_copy.calculate_MFe();
+
+    std::cout << "In get_vector_debye_sq mt^2 = " << square(model_copy.get_MFu()[2]) << std::endl;
+    std::cout << "In get_vector_debye_sq mb^2 = " << square(model_copy.get_MFd()[2]) << std::endl;
+    std::cout << "In get_vector_debye_sq mtau^2 = " << square(model_copy.get_MFe()[2]) << std::endl;
+
 
   return {square(model_copy.get_MFu()[2]), square(model_copy.get_MFd()[2]), square(model_copy.get_MFe()[2])};
 }

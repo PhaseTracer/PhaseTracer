@@ -51,9 +51,12 @@ class xSM_MSbar : public OneLoopPotential {
    * @brief Make an xSM model using tree or one-loop tadpole constraints
    */
   static xSM_MSbar from_tadpoles(double lambda_hs, double lambda_s, double ms, 
-                                 double Q, double xi, bool tree_level, bool tree_ewsb = false) {
+                                 double Q, double xi, bool tree_level, 
+                                 bool use_1L_EWSB_in_0L_mass = false,
+                                 bool use_Goldstone_resum = true) {
     xSM_MSbar model(lambda_hs, lambda_s, ms);
-    model.set_tree_ewsb(tree_ewsb);
+    model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
+    model.set_use_Goldstone_resum(use_Goldstone_resum);
     model.set_renormalization_scale(Q);
     model.set_xi(xi);
     if (tree_level) {
@@ -71,7 +74,7 @@ class xSM_MSbar : public OneLoopPotential {
    * The singlet mass and quartic are fixed following 1808.01098.
    */
   void apply_tree_level() {
-    double mhh2 = square(SM::mh);
+    double mhh2 = square(mh_SM);
     double mss2 = square(ms);
     
     // TODO: will this affect calculation of lambda_h?
@@ -113,7 +116,6 @@ class xSM_MSbar : public OneLoopPotential {
       const double dlambda_s = std::abs(lambda_s - lambda_s_prev);
 
       const bool converged = (dmuh < tol) && (dlambda_h < tol) && (dmus < tol) && (dlambda_s < tol);
-//      std::cout << "converged = " << converged << std::endl;
       if (converged) {
         return true;
       }
@@ -176,21 +178,9 @@ class xSM_MSbar : public OneLoopPotential {
     vacuum << SM::v, 0.;
     const auto jacobian = dV1_dx(vacuum);
     const auto hessian = d2V1_dx2(vacuum);
-
-    const double mh_sq = square(SM::mh);
-    const double ms_sq = square(ms);
     
-//    const double a = mh_sq + ms_sq;
-//    const double discriminant = square(mh_sq - ms_sq) - 4. * square(hessian(1, 0));
-//    if (discriminant < 0) {
-//      throw std::runtime_error("Could not solve 1l tadpoles");
-//    }
-//    const double b = sqrt(discriminant);
-//    double mhh2 = 0.5 * (a + b);
-//    double mss2 = 0.5 * (a - b);
-    
-    double mhh2 = mh_sq;
-    double mss2 = ms_sq;
+    double mhh2 = square(mh_SM);
+    double mss2 = square(ms);
     
     // TODO: will this affect calculation of lambda_h?
     if (mhh2 < mss2) {
@@ -198,12 +188,12 @@ class xSM_MSbar : public OneLoopPotential {
     }
 
     // Apply SM vacuum and Higgs and singlet masses to constraint three parameters
-
     lambda_h = (mhh2 + jacobian(0) / SM::v - hessian(0, 0)) / (2. * square(SM::v));
     muh_sq = -0.5 * mhh2 - 1.5 *jacobian(0) / SM::v + 0.5 * hessian(0, 0);
     mus_sq = mss2 - 0.5 * lambda_hs * square(SM::v) - hessian(1, 1);
-
-    muh_sq_tree_ewsb = - lambda_h * square(SM::v);
+    
+    // Calculate muh_sq using tree level EWSB, for masses in CW potential
+    muh_sq_use_0L_EWSB = - lambda_h * square(SM::v);
   }
 
   double get_v_tree_s() const {
@@ -255,10 +245,16 @@ class xSM_MSbar : public OneLoopPotential {
     const auto thermal_sq = get_scalar_thermal_sq(T);
     
     // TODO: add thermal_sq here and use get_vector_debye_sq?
-    const double mhh2 = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
-    const double mgg2 = (tree_ewsb ? muh_sq_tree_ewsb : muh_sq) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mhh2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
+    const double mgg2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
     
+    
+    std::cout << "In get_scalar_debeye_masses mhh2 = " << mhh2 << std::endl;
+    std::cout << "In get_scalar_debeye_masses mgg2 = " << mgg2 << std::endl;
+    std::cout << "In get_scalar_debeye_masses mss2 = " << mss2 << std::endl;
+    std::cout << "In get_scalar_debeye_masses s = " << s << std::endl;
+    std::cout << "In get_scalar_debeye_masses h = " << h << std::endl;  
     
     // resummed Goldstone contributions
     const auto fm2 = get_fermion_masses_sq(phi);
@@ -268,12 +264,14 @@ class xSM_MSbar : public OneLoopPotential {
                        3.  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
                       +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
                       -6.  * SM::yt_sq * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
+                      -6.  * SM::yb_sq * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1]) // TODO: Need check
+                      -2.  * SM::ytau_sq * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2]) // TODO: Need check
                       +1.5 * square(SM::g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
                       +0.75* (square(SM::g)+square(SM::gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
                       );
 
     // Goldstone finite temperature masses
-    double mTG02 =   mgg2 + thermal_sq[0] + ( (tree_ewsb and Goldstone_resum ) ? sum : 0);
+    double mTG02 =   mgg2 + thermal_sq[0] + ( ( not use_1L_EWSB_in_0L_mass and use_Goldstone_resum ) ? sum : 0);
     double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
     // xi-dependence
     mTG02 += 0.25 * xi * (square(SM::g * h) + square(SM::gp * h));
@@ -317,6 +315,12 @@ class xSM_MSbar : public OneLoopPotential {
 		const double MZ_sq = (a + b) / 24.;
 		const double Mphoton_sq = (a - b) / 24.;
 
+
+    std::cout << "In get_vector_debye_sq MW_sq_T = " << MW_sq << std::endl;
+    std::cout << "In get_vector_debye_sq mZSq_T = " << MZ_sq << std::endl;
+    std::cout << "In get_vector_debye_sq mZSq_T = " << Mphoton_sq << std::endl;
+
+
     return {MW_sq, MZ_sq, Mphoton_sq};
   }
 
@@ -327,7 +331,14 @@ class xSM_MSbar : public OneLoopPotential {
 
   // top quark
   std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const override {
-    return {0.5 * SM::yt_sq * square(phi[0]), 0.5 * SM::yb_sq * square(phi[0]), 0.5 * SM::ytau_sq * square(phi[0])};
+  
+    std::cout << "In get_vector_debye_sq mt^2 = " << 0.5 * SM::yt_sq * square(phi[0]) << std::endl;
+    std::cout << "In get_vector_debye_sq mb^2 = " << 0.5 * SM::yb_sq * square(phi[0]) << std::endl;
+    std::cout << "In get_vector_debye_sq mtau^2 = " << 0.5 * SM::ytau_sq * square(phi[0]) << std::endl;
+  
+    return {0.5 * SM::yt_sq * square(phi[0]), 
+            0.5 * SM::yb_sq * square(phi[0]), 
+            0.5 * SM::ytau_sq * square(phi[0])};
   }
 
   // top quark
@@ -348,7 +359,8 @@ class xSM_MSbar : public OneLoopPotential {
   };
 
   /** Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential */
-  void set_tree_ewsb(bool tree_ewsb_) { tree_ewsb = tree_ewsb_; }
+  void set_use_1L_EWSB_in_0L_mass(bool use_1L_EWSB_in_0L_mass_) { use_1L_EWSB_in_0L_mass = use_1L_EWSB_in_0L_mass_; }
+  void set_use_Goldstone_resum(bool use_Goldstone_resum_) { use_Goldstone_resum = use_Goldstone_resum_; }
 
   bool iteration_converged = false;
   
@@ -360,11 +372,12 @@ class xSM_MSbar : public OneLoopPotential {
   double lambda_h;
   double mus_sq;
   double lambda_s;
-  // For consistency in one-loop potential
-  double muh_sq_tree_ewsb;
-  bool tree_ewsb{false};
+  double mh_SM = 124.9968487205829;
   
-  bool Goldstone_resum{false};
+  // 
+  double muh_sq_use_0L_EWSB;
+  bool use_1L_EWSB_in_0L_mass{false};
+  bool use_Goldstone_resum{true};
 
 };
 
