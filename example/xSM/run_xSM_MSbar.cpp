@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
   if ( argc == 1 ) {
     debug_mode = true;
     // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
-    ms = 66.50567996545465;
+    ms = 68.22305875133803;
     lambda_s =  0.1;
     lambda_hs = 0.25;
     Q = 173.;
