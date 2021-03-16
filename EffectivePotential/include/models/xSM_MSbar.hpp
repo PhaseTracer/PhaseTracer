@@ -232,8 +232,7 @@ class xSM_MSbar : public OneLoopPotential {
     const double h = phi[0];
     const double s = phi[1];
     const auto thermal_sq = get_scalar_thermal_sq(T);
-    
-    // TODO: add thermal_sq here and use get_vector_debye_sq?
+  
     const double mhh2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mgg2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
