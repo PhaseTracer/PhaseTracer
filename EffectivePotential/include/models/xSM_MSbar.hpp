@@ -213,7 +213,8 @@ class xSM_MSbar : public OneLoopPotential {
   std::vector<double> get_scalar_thermal_sq(double T) const override {
     const double c_h = (9. * square(SM::g) +
                         3. * square(SM::gp) +
-                        2. * (6. * SM::yt_sq + 12. * lambda_h + lambda_hs)) / 48.;
+                        2. * (6. * SM::yt_sq + 6. * SM::yb_sq +
+                              2. * SM::ytau_sq + 12. * lambda_h + lambda_hs)) / 48.;
     const double c_s = (2. * lambda_hs + 3. * lambda_s) / 12.;
     return {c_h * square(T), c_s * square(T)};
   }

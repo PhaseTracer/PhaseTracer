@@ -82,7 +82,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     // PA: up to factor 4 differences for quartics presumably from coupling defs
     // PA: but i should independently check them. 
     const double c_h = 1. / 48. *  ( 9. * square(g) + 3. * square(gp)
-			+ 12. * square(yt) + 4. * square(yb) + 4. * square(ytau)
+			+ 12. * square(yt) + 12. * square(yb) + 4. * square(ytau)
 			+ 12. * lambda_h + 2. * lambda_hs );
      
     const double c_s =  (2. * lambda_hs + 3. * lambda_s) / 12.;
@@ -147,6 +147,11 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     /// this code is just for testing masses delete and replace with proper
   /// tests if possible when done
   double get_EW_VEV() {return model.get_v();}
+  double get_g() {return g;}
+  double get_gp() {return gp;}
+  double get_yt() {return yt;}
+  double get_yb() {return yb;}
+  double get_ytau() {return ytau;}
   
   double get_ms() {return model.get_Mss();}
   double get_muh_sq() {return muH2;}
@@ -158,7 +163,7 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
  private:
   Model model;
   //PA: do we really want mt to be const?  why?
-  const double mt = 173.1;
+  const double mt = 173;
   // PA: An alternative design plan would be todirectly get all plans from the modle object
   // Here instead wwe explicty create versions in this model and get them from the mode object
   // has the downside of allowing mistakes if we e.g. run the model and don't update parameters
