@@ -16,9 +16,6 @@
 #include "phase_plotter.hpp"
 #include "potential_plotter.hpp"
 
-#include "SM_parameters.hpp"
-
-
 std::string toString(std::vector<double> in, std::vector<double> out, std::vector<double> flags) {
   std::stringstream data_str;
   for (auto i : in    ) data_str << i << "\t";
@@ -94,6 +91,14 @@ int main(int argc, char* argv[]) {
 
   if (debug_mode) {
     std::cout << std::setprecision(16);
+
+    std::cout << "EW VEV = " << model.get_EW_VEV() << std::endl;
+    std::cout << "g = " << model.get_g() << std::endl;
+    std::cout << "gp = " << model.get_gp() << std::endl;
+    std::cout << "yt = " << model.get_yt() << std::endl;
+    std::cout << "yb = " << model.get_yb() << std::endl;
+    std::cout << "ytau = " << model.get_ytau() << std::endl;
+
     std::cout << std::endl;
     std::cout << "@ after applying the 1L EWSB condition" << std::endl;
     std::cout << "m_s        = "<< model.get_ms() << std::endl;
@@ -102,8 +107,6 @@ int main(int argc, char* argv[]) {
     std::cout << "lambda_h   = "<< model.get_lambda_h() << std::endl;      
     std::cout << "lambda_s   = "<< model.get_lambda_s() << std::endl;  
     std::cout << "lambda_hs  = "<< model.get_lambda_hs() << std::endl; 
-
-    std::cout << "EW VEV = " << model.get_EW_VEV() << std::endl;
   
 //  std::cout << "gp = " << gp << std::endl;
 //  std::cout << "g = " << g << std::endl;
@@ -114,7 +117,7 @@ int main(int argc, char* argv[]) {
     std::cout << std::endl;
     std::cout << "@ EWSB VEV" << std::endl;
     Eigen::VectorXd test(2);
-    test <<  SM::v, 0;
+    test <<  model.get_EW_VEV(), 0;
     double Ttest = 100;
     
     auto mh_check =  model.get_scalar_masses_sq(test,1);
