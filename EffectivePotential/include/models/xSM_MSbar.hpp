@@ -213,7 +213,8 @@ class xSM_MSbar : public OneLoopPotential {
   std::vector<double> get_scalar_thermal_sq(double T) const override {
     const double c_h = (9. * square(SM::g) +
                         3. * square(SM::gp) +
-                        2. * (6. * SM::yt_sq + 12. * lambda_h + lambda_hs)) / 48.;
+                        2. * (6. * SM::yt_sq + 6. * SM::yb_sq +
+                              2. * SM::ytau_sq + 12. * lambda_h + lambda_hs)) / 48.;
     const double c_s = (2. * lambda_hs + 3. * lambda_s) / 12.;
     return {c_h * square(T), c_s * square(T)};
   }
@@ -231,8 +232,7 @@ class xSM_MSbar : public OneLoopPotential {
     const double h = phi[0];
     const double s = phi[1];
     const auto thermal_sq = get_scalar_thermal_sq(T);
-    
-    // TODO: add thermal_sq here and use get_vector_debye_sq?
+  
     const double mhh2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mgg2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);

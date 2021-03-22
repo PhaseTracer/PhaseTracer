@@ -4,11 +4,6 @@
 /**
   ScalarSingletZ2DMMhInput_withSingletVEVinPT
 
- * Disscuss TODOs in codes
- * Delete comments
- * Delete other FS models 
- *
- 
  */
 
 #include <cmath>
@@ -78,11 +73,8 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   }
  
   std::vector<double> get_scalar_thermal_sq(double T) const override {
-    // PA: I took these from Yang's code already and they match Lachlan's
-    // PA: up to factor 4 differences for quartics presumably from coupling defs
-    // PA: but i should independently check them. 
     const double c_h = 1. / 48. *  ( 9. * square(g) + 3. * square(gp)
-			+ 12. * square(yt) + 4. * square(yb) + 4. * square(ytau)
+			+ 12. * square(yt) + 12. * square(yb) + 4. * square(ytau)
 			+ 12. * lambda_h + 2. * lambda_hs );
      
     const double c_s =  (2. * lambda_hs + 3. * lambda_s) / 12.;
@@ -120,20 +112,14 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     return {phi};
   };
 
-  //PA: check what this is used for, do we really want the pole masses here?
-  //YZ: This is coming from NMSSM example, so no.
-  Eigen::Array<double, 2, 1> get_mh() { return {model.get_Mhh_pole_slha(), model.get_Mss_pole_slha()}; }
-
   // Allows running to a different scale, for checking scale dependence
-  // TODO;  do we leave this as a public method, this chnages the
-  // renormalsiation scale premenanetly
+  // TODO;  do we leave this as a public method, this changes the
+  // renormalsiation scale permanently
   // Could instead make a copy then run and return that
   // and/or only have a public methiod that doe sthe whole thing of
   // varying the scale and recaculating the effective piotential 
   void Run_pars_to(double scale, double tol) {
     model.run_to(scale,tol);
-    // PA: I think I need to now reset all the parameters stored as data members of this class
-    // PA: This feels like bad code design though
     set_VH_pars_from_FS(); // includes setting renormalisation scale
   }
 
@@ -147,6 +133,11 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
     /// this code is just for testing masses delete and replace with proper
   /// tests if possible when done
   double get_EW_VEV() {return model.get_v();}
+  double get_g() {return g;}
+  double get_gp() {return gp;}
+  double get_yt() {return yt;}
+  double get_yb() {return yb;}
+  double get_ytau() {return ytau;}
   
   double get_ms() {return model.get_Mss();}
   double get_muh_sq() {return muH2;}
@@ -157,18 +148,13 @@ class ScalarSingletZ2DMMhInput_withSingletVEVinPT : public OneLoopPotential {
   
  private:
   Model model;
-  //PA: do we really want mt to be const?  why?
-  const double mt = 173.1;
-  // PA: An alternative design plan would be todirectly get all plans from the modle object
-  // Here instead wwe explicty create versions in this model and get them from the mode object
-  // has the downside of allowing mistakes if we e.g. run the model and don't update parameters
-  // Higss potential parameters
+  //TODO: Make it an input
+  double mt_pole = 173;
+  // paramters in tree level Higgs potential
   double lambda_h, lambda_s, lambda_hs, muH2, muS2;
-  // PA: what about the Higgs VEV do we need that here?
   // other parameters that enter at the loop level 
   double gp, g, yt, ytau, yb;
 
-  //PA: copying Yang's bad way fo doing this for now ;)
   // flag for using tree-level or one=-loop EWSB conditions in tree-level masses
   bool use_1L_EWSB_in_0L_mass{false};
   bool use_Goldstone_resum{false};
@@ -200,7 +186,7 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
 
   // Run FS spectrum generator
   softsusy::QedQcd qedqcd;
-  qedqcd.setPoleMt(mt);
+  qedqcd.setPoleMt(mt_pole);
   spectrum_generator.run(qedqcd, input);
 
   // Fetch model from FS
@@ -216,8 +202,7 @@ void ScalarSingletZ2DMMhInput_withSingletVEVinPT::set_input(std::vector<double> 
 }
 
 double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) const {
-  //PA: Do we need  * M_SQRT1_2 for the H field like in THDMIISNMSSMBC?
-  //PA: I guess it depends how I write the poetntial 
+  //Note: \phi_h has \sqrt{1/2} pulled out
   const double h = phi[0] ;
   const double s = phi[1] ;
   const double V0 =
@@ -229,99 +214,32 @@ double ScalarSingletZ2DMMhInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) cons
   return V0;
 }
 
-  /// Commented out version uses FlexibleSUSY to get masses but this ignores singlet VEV contributions.
-  /// We could add the singlet VEV paprst here maybe but seems pointles using FS for this at that stage  
-// std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const {
-//   auto model_copy = model;
-//   // we use tree-levekl EWSB conditions for tree-level Higgs masses
-//   // There amy some complications in this for xSM_MSbar and comparison
-//   // ppaer work
-//   model_copy.solve_ewsb_tree_level();
-//   model_copy.set_v(phi[0]);
-
-//   // CP-even Higgs in \xi = 1
-//   //PA:  I don't see the need fpor calculating the mass at this step.
-//   model_copy.calculate_Mhh();
-//   // get mass matrix for Higgs - in this case it is just the tree mass^2
-//   double matrix_hh = model_copy.get_mass_matrix_hh();
-//   double matrix_ss = model_copy.get_mass_matrix_ss();
-//   // add debeye masses
-//   matrix_hh = matrix_hh  += c_h * square(T);
-//   matrix_ss = matrix_ss  += c_s * square(T);  
-
-//   // G^0 golstone mass, Do we need goldstones, I assume so
-//   // PA: as above I don't see the need fpor calculating the mass at this step.
-//   model_copy.calculate_MAh();
-//   double matrix_Ah = model_copy.get_mass_matrix_Ah();
-//   // PA: double check it is correct to just add same as hh case
-//   // when auto-generating this we probbaly define them all debeye coeffs
-//   // indepenedently even though somme are the same
-//   matrix_Ah += c_h * square(T);
-  
-//   // G^+- golstone mass, Do we need goldstones, I assume so
-//   // PA: as above I don't see the need fpor calculating the mass at this step.
-//   model_copy.calculate_MHp();
-//   double matrix_Hp = model_copy.get_mass_matrix_Hp();
-//   // PA: double check it is correct to just add same as hh case
-//   // when auto-generating this we probbaly define them all debeye coeffs
-//   // indepenedently even though somme are the same
-//   matrix_Hp += c_h * square(T);
-  
-//   std::vector<double> scalar_debye_sq;
-//   scalar_debye_sq.push_back(matrix_hh);
-//   scalar_debye_sq.push_back(matrix_ss);
-//   scalar_debye_sq.push_back(matrix_Ah);
-//   scalar_debye_sq.push_back(matrix_Hp);
-
-//   return scalar_debye_sq;
-// }
-
 std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const {
     const double h = phi[0];
     const double s = phi[1];
     const auto thermal_sq = get_scalar_thermal_sq(T);
     
-    //PA: needed for setting mhh and mgg below. Yang sets it elsewhere.
-    // the name of the bool and the if statement are quite confusing though
-    // tree-level value of muH2 is standard procedure, one-loop is adjustment
-    // to avoid infrared divergence in goldstone boson.
+    // Copy so that we can set tree level EWSB needed in mhh2 and mgg2
     auto model_copy = model;
     // PA: Should I use _custom version here and earlier actually?  Check FS model_file and code details. 
     model_copy.solve_ewsb_tree_level();
-    //model_copy.solve_ewsb_tree_level_custom();
     const double muh_sq_use_0L_EWSB = model_copy.get_muH2();
     
-//    ///sanity check with couts before committing
-//    std::cout << "Getting from model object after tree-level EWSB muh_sq_use_0L_EWSB = "
-//	      <<  muh_sq_use_0L_EWSB << std::endl;
-//    std::cout << " should equal - 0.5 * lambda_h *  square(model.get_v()) = "
-//	      << - lambda_h * square(model.get_v()) << std::endl;
-//    std::cout << " lambda_h = "  << lambda_h << std::endl;
-//    std::cout << "model.get_v() = " << model.get_v() << std::endl;
-    
-     // TODO: add thermal_sq here and use get_vector_debye_sq?
     const double mhh2 = (use_1L_EWSB_in_0L_mass ? muH2 : muh_sq_use_0L_EWSB) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mgg2 = (use_1L_EWSB_in_0L_mass ? muH2 : muh_sq_use_0L_EWSB) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
     const double mss2 = muS2 + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
-    
-//    std::cout << "In get_scalar_debeye_masses mhh2 = " << mhh2 << std::endl;
-//    std::cout << "In get_scalar_debeye_masses mgg2 = " << mgg2 << std::endl;
-//    std::cout << "In get_scalar_debeye_masses mss2 = " << mss2 << std::endl;
-//    std::cout << "In get_scalar_debeye_masses s = " << s << std::endl;
-//    std::cout << "In get_scalar_debeye_masses h = " << h << std::endl;  
     
     // resummed Goldstone contributions
     const auto fm2 = get_fermion_masses_sq(phi);
     const auto vm2 = get_vector_masses_sq(phi);
     
     const double Qsq = square( get_renormalization_scale() );
-    // PA: do we add bottom and tau contributions here? 
     const double sum = 1. / (16. * M_PI * M_PI) * (
                        3.  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
                       +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
 		                  -6.  * square(yt) * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
-                      -6.  * square(yb) * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1]) // TODO: Need check
-                      -2.  * square(ytau) * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2]) // TODO: Need check
+                      -6.  * square(yb) * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1])
+                      -2.  * square(ytau) * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2])
                       +1.5 * square(g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
                       +0.75* (square(g)+square(gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
                       );
@@ -338,10 +256,6 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_scalar_deby
     MTH2(1,1) = mss2 + thermal_sq[1];
     // Mixing between Higgs and singlet
     MTH2(0, 1) = MTH2(1, 0) = lambda_hs * h * s;
-
-
-//    std::cout << "mTG02 = "  << mTG02 << std::endl;
-//    std::cout << "mTGpm2 = " << mTGpm2 << std::endl;
     
     // get eigenvalues
     const Eigen::VectorXd mH_sq = MTH2.eigenvalues().real();
@@ -363,7 +277,6 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_vector_deby
   const double gp_sq = square(gp); 
   const double MW_sq = 0.25 * g_sq * h_sq;
   // Use Debeye coefficients fromlachlan for now, these are different to thdm,
-  // TODO: cross check literature and understand difference.
   const double MW_sq_T = MW_sq + 11.0/6.0 * g_sq * T2;
   /// Z and photon thermal corrections come from diagonalsing 2 by 2 
   const double a = ( g_sq + gp_sq ) * ( 3 * h_sq + 22 * T2 );
@@ -373,19 +286,6 @@ std::vector<double> ScalarSingletZ2DMMhInput_withSingletVEVinPT::get_vector_deby
   
   const double mZSq_T = (a + b) / 24.0;
   const double mPhotonSq_T = (a - b) / 24.0;
-  // const double MZ_sq = 0.25 * (square(g) + square(gp)) * h_sq;
-  // const double MG_sq = 0;
-  
-  // const double vev_sq = square(phi[0]) + square(phi[1]);
-
-  // const double A = (square(g) + square(gp)) * (square(T) + 0.125 * vev_sq);
-  // const double B = 0.125 * sqrt(square(square(g) - square(gp)) *
-  //                              (64. * pow_4(T) + 16. * square(T) * vev_sq) +
-  //                              square(square(g) + square(gp)) * square(vev_sq));
-
-  // const double W_debye = square(g) * (0.25 * vev_sq + 2. * square(T));
-  // const double Z_debye = A + B;
-  // const double g_debye = A - B;
 
   return {MW_sq_T, mZSq_T,  mPhotonSq_T};
 }
