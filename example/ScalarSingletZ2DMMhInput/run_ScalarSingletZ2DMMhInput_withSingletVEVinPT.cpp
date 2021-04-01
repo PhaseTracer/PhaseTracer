@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
   model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
   model.set_use_Goldstone_resum(use_Goldstone_resum);
   model.set_input({Qin, Qin, MhInput, mus2, lambda_s, lambda_hs});
-  model.Run_pars_to(Q);
+  model.Run_pars_to(Q,1E-2);
 
   if (debug_mode) {
     std::cout << std::setprecision(16);
