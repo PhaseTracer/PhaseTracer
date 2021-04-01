@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
   double mus2, lambda_s, lambda_hs;
   double Q, xi, daisy_flag;
   bool use_1L_EWSB_in_0L_mass;
-  bool use_Goldstone_resum = true;
+  bool use_Goldstone_resum = false;
   bool tree_level_tadpoles = false;
 
   const double Qin = 173;
@@ -86,8 +86,8 @@ int main(int argc, char* argv[]) {
 
   model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
   model.set_use_Goldstone_resum(use_Goldstone_resum);
-  model.set_input({Qin, Q, MhInput, mus2, lambda_s, lambda_hs});
-
+  model.set_input({Qin, Qin, MhInput, mus2, lambda_s, lambda_hs});
+  model.Run_pars_to(Q);
 
   if (debug_mode) {
     std::cout << std::setprecision(16);
