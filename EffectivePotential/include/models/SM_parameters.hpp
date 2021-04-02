@@ -41,7 +41,10 @@ namespace SM
     const double yb_sq = square(yb);
     const double ytau_sq = square(ytau);
 
-    const double mtop = 173;
+    const double mtop = yt*v/sqrt(2);
+    const double mb = yb*v/sqrt(2);
+    const double mtau = ytau*v/sqrt(2);
+    
 
 
 
