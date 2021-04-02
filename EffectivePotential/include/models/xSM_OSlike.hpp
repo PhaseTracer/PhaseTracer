@@ -47,8 +47,10 @@ class xSM_OSlike : public OneLoopPotential {
   xSM_OSlike(double lambda_hs_,
             double lambda_s_,
             double m_s_,
-            double xi_):
-    lambda_hs(lambda_hs_), lambda_s(lambda_s_), m_s(m_s_) , xi(xi_){
+            double xi_,
+            bool use_Goldstone_resum_):
+    lambda_hs(lambda_hs_), lambda_s(lambda_s_), m_s(m_s_), 
+    xi(xi_), use_Goldstone_resum(use_Goldstone_resum_){
     set_xi(xi);
     mus_sq = square(m_s) - lambda_hs * square(v) / 2.;
     
@@ -149,19 +151,19 @@ class xSM_OSlike : public OneLoopPotential {
     const std::vector<double> scalar_masses_sq = get_scalar_masses_sq(x, 0);
     for (int ii=0; ii < scalar_masses_sq.size(); ++ii){
       scalar_masses_sq_EW[ii] = scalar_masses_sq[ii];
-      std::cout << "scalar_masses_sq_EW["<< ii << "] = "<< std::sqrt(std::abs(scalar_masses_sq_EW[ii])) << std::endl;
+//      std::cout << "scalar_masses_sq_EW["<< ii << "] = "<< std::sqrt(std::abs(scalar_masses_sq_EW[ii])) << std::endl;
     }
 
-    delta_muSqH = d2VCW(Q);
-    delta_muSqS = d2VCWds2(Q);
-    std::cout << "Q    = "<< Q << std::endl;
-    std::cout << "delta_muSqH    = "<< delta_muSqH << std::endl;
-    std::cout << "delta_muSqS    = "<< delta_muSqS << std::endl;
-    std::cout << "renormalization condition 1    = "<< renormalization_condition_1(Q) << std::endl;
+//    delta_muSqH = d2VCW(Q);
+//    delta_muSqS = d2VCWds2(Q);
+//    std::cout << "Q    = "<< Q << std::endl;
+//    std::cout << "delta_muSqH    = "<< delta_muSqH << std::endl;
+//    std::cout << "delta_muSqS    = "<< delta_muSqS << std::endl;
+//    std::cout << "renormalization condition 1    = "<< renormalization_condition_1(Q) << std::endl;
   }
   
-  double delta_muSqH = 0;
-  double delta_muSqS = 0;
+//  double delta_muSqH = 0;
+//  double delta_muSqS = 0;
   
   double counter_term(Eigen::VectorXd phi, double T) const override{
 //    return -0.5*delta_muSqH*square(phi[0]) - 0.5*delta_muSqS*square(phi[1]);

@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
   bool debug_mode = false;
   double ms, lambda_s, lambda_hs;
   double Q, xi, daisy_flag;
-
+  bool use_Goldstone_resum = true;
   
   if ( argc == 1 ) {
     debug_mode = true;
@@ -45,13 +45,16 @@ int main(int argc, char* argv[]) {
     double lambda_s_min = 2. / square(SM::mh * SM::v) *
                           square(square(ms) - 0.5 * lambda_hs * square(SM::v));
     lambda_s =  lambda_s_min + 0.1;
-    daisy_flag = 0;
-  } else if ( argc == 8 ) {
+    xi = 0;
+    daisy_flag = 1;
+    use_Goldstone_resum = true;
+  } else if ( argc == 7 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
     lambda_hs = atof(argv[3]);
     xi = atof(argv[4]);
     daisy_flag = atoi(argv[5]);
+    use_Goldstone_resum = atoi(argv[6]);
 
   } else {
     std::cout << "Use ./run_xSM_OSlike ms lambda_s lambda_hs xi " << std::endl;
@@ -59,7 +62,7 @@ int main(int argc, char* argv[]) {
   }
   
   std::vector<double> in ={ms, lambda_s, lambda_hs};
-  std::vector<double> flags ={xi, daisy_flag};
+  std::vector<double> flags ={xi, daisy_flag, (float)use_Goldstone_resum};
 
   if (debug_mode){
     LOGGER(debug);
@@ -74,7 +77,7 @@ int main(int argc, char* argv[]) {
   }
   
   // Construct our model
-  EffectivePotential::xSM_OSlike model(lambda_hs, lambda_s, ms, xi);
+  EffectivePotential::xSM_OSlike model(lambda_hs, lambda_s, ms, xi, use_Goldstone_resum);
   model.solve_Q();
   
   // Choose Daisy method 
