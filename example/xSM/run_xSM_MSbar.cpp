@@ -52,8 +52,11 @@ int main(int argc, char* argv[]) {
     Q = 173.;
     xi = 1;
     daisy_flag = 1;
-    use_1L_EWSB_in_0L_mass = false;  
-    use_Goldstone_resum = false;
+    use_1L_EWSB_in_0L_mass = false;
+    if ( xi==0 and not use_1L_EWSB_in_0L_mass )
+      use_Goldstone_resum = true;
+    else 
+      use_Goldstone_resum = false;
     
 //    // Match choices in 1808.01098
 //    lambda_hs = 0.24;
