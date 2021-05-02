@@ -52,8 +52,11 @@ class xSM_MSbar : public OneLoopPotential {
   static xSM_MSbar from_tadpoles(double lambda_hs, double lambda_s, double ms, 
                                  double Q, double xi, bool tree_level, 
                                  bool use_1L_EWSB_in_0L_mass = false,
-                                 bool use_Goldstone_resum = true) {
+                                 bool use_Goldstone_resum = true,
+                                 std::vector<double> SM_parameters={}) {
     xSM_MSbar model(lambda_hs, lambda_s, ms);
+    if (SM_parameters.size() == 7)
+      model.set_SM_parameters(SM_parameters);
     model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
     model.set_use_Goldstone_resum(use_Goldstone_resum);
     model.set_renormalization_scale(Q);
@@ -73,7 +76,7 @@ class xSM_MSbar : public OneLoopPotential {
    * The singlet mass and quartic are fixed following 1808.01098.
    */
   void apply_tree_level() {
-    double mhh2 = square(mh_SM);
+    double mhh2 = square(SM_mh);
     double mss2 = square(ms);
     
     // TODO: will this affect calculation of lambda_h?
@@ -82,9 +85,9 @@ class xSM_MSbar : public OneLoopPotential {
     }
 
     // Apply SM vacuum and Higgs and singlet masses to constraint three parameters
-    lambda_h = mhh2 / (2. * square(SM::v));
-    muh_sq = -lambda_h * square(SM::v);
-    mus_sq = mss2 - 0.5 * lambda_hs * square(SM::v);
+    lambda_h = mhh2 / (2. * square(SM_v));
+    muh_sq = -lambda_h * square(SM_v);
+    mus_sq = mss2 - 0.5 * lambda_hs * square(SM_v);
   }
 
   /**
@@ -174,11 +177,11 @@ class xSM_MSbar : public OneLoopPotential {
    */
   void iterate_one_loop() {
     Eigen::Vector2d vacuum;
-    vacuum << SM::v, 0.;
+    vacuum << SM_v, 0.;
     const auto jacobian = dV1_dx(vacuum);
     const auto hessian = d2V1_dx2(vacuum);
     
-    double mhh2 = square(mh_SM);
+    double mhh2 = square(SM_mh);
     double mss2 = square(ms);
     
     // TODO: will this affect calculation of lambda_h?
@@ -187,12 +190,12 @@ class xSM_MSbar : public OneLoopPotential {
     }
 
     // Apply SM vacuum and Higgs and singlet masses to constraint three parameters
-    lambda_h = (mhh2 + jacobian(0) / SM::v - hessian(0, 0)) / (2. * square(SM::v));
-    muh_sq = -0.5 * mhh2 - 1.5 *jacobian(0) / SM::v + 0.5 * hessian(0, 0);
-    mus_sq = mss2 - 0.5 * lambda_hs * square(SM::v) - hessian(1, 1);
+    lambda_h = (mhh2 + jacobian(0) / SM_v - hessian(0, 0)) / (2. * square(SM_v));
+    muh_sq = -0.5 * mhh2 - 1.5 *jacobian(0) / SM_v + 0.5 * hessian(0, 0);
+    mus_sq = mss2 - 0.5 * lambda_hs * square(SM_v) - hessian(1, 1);
     
     // Calculate muh_sq using tree level EWSB, for masses in CW potential
-    muh_sq_use_0L_EWSB = - lambda_h * square(SM::v);
+    muh_sq_use_0L_EWSB = - lambda_h * square(SM_v);
   }
 
   double get_v_tree_s() const {
@@ -211,10 +214,10 @@ class xSM_MSbar : public OneLoopPotential {
    * Thermal scalar masses of form c * T^2 etc for high-temperature expansion of potential
    */
   std::vector<double> get_scalar_thermal_sq(double T) const override {
-    const double c_h = (9. * square(SM::g) +
-                        3. * square(SM::gp) +
-                        2. * (6. * SM::yt_sq + 6. * SM::yb_sq +
-                              2. * SM::ytau_sq + 12. * lambda_h + lambda_hs)) / 48.;
+    const double c_h = (9. * square(SM_g) +
+                        3. * square(SM_gp) +
+                        2. * (6. * SM_yt_sq + 6. * SM_yb_sq +
+                              2. * SM_ytau_sq + 12. * lambda_h + lambda_hs)) / 48.;
     const double c_s = (2. * lambda_hs + 3. * lambda_s) / 12.;
     return {c_h * square(T), c_s * square(T)};
   }
@@ -244,19 +247,19 @@ class xSM_MSbar : public OneLoopPotential {
     const double sum = 1. / (16. * M_PI * M_PI) * (
                        3.  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
                       +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
-                      -6.  * SM::yt_sq * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
-                      -6.  * SM::yb_sq * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1]) // TODO: Need check
-                      -2.  * SM::ytau_sq * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2]) // TODO: Need check
-                      +1.5 * square(SM::g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
-                      +0.75* (square(SM::g)+square(SM::gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
+                      -6.  * SM_yt_sq * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
+                      -6.  * SM_yb_sq * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1]) // TODO: Need check
+                      -2.  * SM_ytau_sq * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2]) // TODO: Need check
+                      +1.5 * square(SM_g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
+                      +0.75* (square(SM_g)+square(SM_gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
                       );
 
     // Goldstone finite temperature masses
     double mTG02 =   mgg2 + thermal_sq[0] + ( ( not use_1L_EWSB_in_0L_mass and use_Goldstone_resum ) ? sum : 0);
     double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
     // xi-dependence
-    mTG02 += 0.25 * xi * (square(SM::g * h) + square(SM::gp * h));
-    mTGpm2 += 0.25 * xi * square(SM::g * h);
+    mTG02 += 0.25 * xi * (square(SM_g * h) + square(SM_gp * h));
+    mTGpm2 += 0.25 * xi * square(SM_g * h);
     // CP even Higgs thermal temperature masses
     Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2); 
     MTH2(0,0) = mhh2 + thermal_sq[0];
@@ -286,12 +289,12 @@ class xSM_MSbar : public OneLoopPotential {
   std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override {
     const double h_sq = square(phi[0]);
     const double T_sq = square(T);
-    const double MW_sq = 0.25 * square(SM::g) * h_sq + 11. / 6. * square(SM::g) * T_sq;
+    const double MW_sq = 0.25 * square(SM_g) * h_sq + 11. / 6. * square(SM_g) * T_sq;
 
-		const double a = (square(SM::g) + square(SM::gp)) * (3. * h_sq + 22. * T_sq);
-		const double b = std::sqrt(9. * square(square(SM::g) + square(SM::gp)) * square(h_sq) 
-                     + 132. * square(square(SM::g) - square(SM::gp)) * h_sq * T_sq
-                     + 484. * square(square(SM::g) - square(SM::gp)) * pow_4(T));
+		const double a = (square(SM_g) + square(SM_gp)) * (3. * h_sq + 22. * T_sq);
+		const double b = std::sqrt(9. * square(square(SM_g) + square(SM_gp)) * square(h_sq)
+                     + 132. * square(square(SM_g) - square(SM_gp)) * h_sq * T_sq
+                     + 484. * square(square(SM_g) - square(SM_gp)) * pow_4(T));
 
 		const double MZ_sq = (a + b) / 24.;
 		const double Mphoton_sq = (a - b) / 24.;
@@ -306,9 +309,9 @@ class xSM_MSbar : public OneLoopPotential {
 
   // top quark
   std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const override {
-    return {0.5 * SM::yt_sq * square(phi[0]), 
-            0.5 * SM::yb_sq * square(phi[0]), 
-            0.5 * SM::ytau_sq * square(phi[0])};
+    return {0.5 * SM_yt_sq * square(phi[0]),
+            0.5 * SM_yb_sq * square(phi[0]),
+            0.5 * SM_ytau_sq * square(phi[0])};
   }
 
   // top quark
@@ -339,7 +342,17 @@ class xSM_MSbar : public OneLoopPotential {
   double get_lambda_h() {return lambda_h;}
   double get_lambda_s() {return lambda_s;}
   double get_lambda_hs() {return lambda_hs;}
-    
+  
+  void set_SM_parameters(std::vector<double> SM_parameters){
+    SM_mh = SM_parameters[0];
+    SM_v = SM_parameters[1];
+    SM_gp = SM_parameters[2];
+    SM_g = SM_parameters[3];
+    SM_yt_sq = SM_parameters[4];
+    SM_yb_sq = SM_parameters[5];
+    SM_ytau_sq = SM_parameters[6];
+  }
+  
  protected:
   double ms;
   // Lagrangian parameters
@@ -348,7 +361,14 @@ class xSM_MSbar : public OneLoopPotential {
   double lambda_h;
   double mus_sq;
   double lambda_s;
-  double mh_SM = SM::mh;
+
+  double SM_mh = SM::mh;
+  double SM_v = SM::v;
+  double SM_gp = SM::gp;
+  double SM_g = SM::g;
+  double SM_yt_sq = SM::yt_sq;
+  double SM_yb_sq = SM::yb_sq;
+  double SM_ytau_sq = SM::ytau_sq;
   
   // For consistency in one-loop potential
   double muh_sq_use_0L_EWSB;
