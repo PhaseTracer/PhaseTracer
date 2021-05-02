@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
   bool use_1L_EWSB_in_0L_mass;
   bool use_Goldstone_resum = true;
   bool tree_level_tadpoles = false;
-  
+  std::vector<double> SM_parameters ={};
   if ( argc == 1 ) {
     debug_mode = true;
     // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
@@ -58,6 +58,15 @@ int main(int argc, char* argv[]) {
     else 
       use_Goldstone_resum = false;
     
+    SM_parameters.resize(7);
+    SM_parameters[0] = 125.037;
+    SM_parameters[1] = 245.5769069596097;
+    SM_parameters[2] = 0.3576315046101186;
+    SM_parameters[3] = 0.6508561052582112;
+    SM_parameters[4] = square(-0.9962620236551182);
+    SM_parameters[5] = square(0.01644374482551617);
+    SM_parameters[6] = square(0.01023322343014398);
+
 //    // Match choices in 1808.01098
 //    lambda_hs = 0.24;
 //    ms = 0.5 * SM::mh;
@@ -103,7 +112,7 @@ int main(int argc, char* argv[]) {
   }
   
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, use_1L_EWSB_in_0L_mass, use_Goldstone_resum);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, SM_parameters);
   if (debug_mode) std::cout << "1-L EWSB iteration converged = " << model.iteration_converged << std::endl;
 
   // Choose Daisy method 
