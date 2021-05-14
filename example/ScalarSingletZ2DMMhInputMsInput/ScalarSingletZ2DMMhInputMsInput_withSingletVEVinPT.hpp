@@ -176,6 +176,9 @@ void ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT::set_input(std::vector<d
   Settings settings;
   settings.set(Settings::precision, 1.e-8);
   settings.set(Settings::calculate_sm_masses, 1);
+  
+  settings.set(Settings::poleMassLoopOrder, 1);
+  settings.set(Settings::ewsbLoopOrder, 1);
   if (debug) {
     settings.set(Settings::threshold_corrections_loop_order,0);
     settings.set(Settings::beta_loop_order, 0);
