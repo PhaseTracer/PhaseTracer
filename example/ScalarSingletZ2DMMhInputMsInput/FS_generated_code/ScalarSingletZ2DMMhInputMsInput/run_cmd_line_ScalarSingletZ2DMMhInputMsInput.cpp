@@ -130,7 +130,7 @@ int run_solver(int loop_library, const ScalarSingletZ2DMMhInputMsInput_input_par
 
    // SLHA output
    ScalarSingletZ2DMMhInputMsInput_slha_io slha_io;
-   slha_io.fill(models, qedqcd, scales, observables, settings);
+   slha_io.fill(models, qedqcd, scales, observables);
    slha_io.write_to_stream(std::cout);
 
    return spectrum_generator.get_exit_code();
