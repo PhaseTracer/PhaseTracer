@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
   if ( argc == 1 ) {
     debug_mode = true;
     // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
-    ms = 68.22305875133803;
+    ms = 68.2224;
     lambda_s =  0.1;
     lambda_hs = 0.25;
     Q = 173.;
@@ -59,13 +59,13 @@ int main(int argc, char* argv[]) {
       use_Goldstone_resum = false;
     
     SM_parameters.resize(7);
-    SM_parameters[0] = 125.037;
-    SM_parameters[1] = 245.5769069596097;
-    SM_parameters[2] = 0.3576315046101186;
-    SM_parameters[3] = 0.6508561052582112;
-    SM_parameters[4] = square(-0.9962620236551182);
-    SM_parameters[5] = square(0.01644374482551617);
-    SM_parameters[6] = square(0.01023322343014398);
+    SM_parameters[0] = 125.;
+    SM_parameters[1] = 245.5782292532188;
+    SM_parameters[2] = 0.3576323374899369;
+    SM_parameters[3] = 0.6508510850302707;
+    SM_parameters[4] = square(-0.9962566593729878);
+    SM_parameters[5] = square(0.01644365628566979);
+    SM_parameters[6] = square(0.01023316833028443);
 
 //    // Match choices in 1808.01098
 //    lambda_hs = 0.24;
@@ -131,7 +131,6 @@ int main(int argc, char* argv[]) {
     std::cout << std::setprecision(16);
     std::cout << std::endl;
     std::cout << "@ after applying the 1L EWSB condition" << std::endl;
-    std::cout << "m_s        = "<< ms << std::endl;
     std::cout << "muH2       = "<< model.get_muh_sq() << std::endl;
     std::cout << "muS2       = "<< model.get_mus_sq() << std::endl;   
     std::cout << "lambda_h   = "<< model.get_lambda_h() << std::endl;      
@@ -141,16 +140,14 @@ int main(int argc, char* argv[]) {
     std::cout << std::endl;
     std::cout << "@ EWSB VEV" << std::endl;
     Eigen::VectorXd test(2);
-    test <<  SM::v, 0;
+    test <<  SM_parameters[1], 0;
     double Ttest = 100;
     
     auto mh_check =  model.get_scalar_masses_sq(test,1);
     auto mV_check = model.get_vector_masses_sq(test);
     auto mf_check = model.get_fermion_masses_sq(test);
-    std::cout << "mh1 = "<< std::sqrt(mh_check[0]) << std::endl;
-    std::cout << "mh2 = "<< std::sqrt(mh_check[1]) << std::endl;
-    std::cout << "mg0 = "<< std::sqrt(mh_check[2]) << std::endl;
-    std::cout << "mg+ = "<< std::sqrt(mh_check[3]) << std::endl;
+    std::cout << "ms = "<< std::sqrt(mh_check[0]) << std::endl;
+    std::cout << "mh = "<< std::sqrt(mh_check[4]) << std::endl;
     std::cout << "MW = "<< std::sqrt(mV_check[0]) << std::endl;
     std::cout << "MZ = "<< std::sqrt(mV_check[1]) << std::endl;
     std::cout << "Mphoton = "<< std::sqrt(mV_check[2]) << std::endl;
