@@ -312,7 +312,7 @@ $(METACODE_STAMP_ScalarSingletZ2DMMhInputMsInput):
 endif
 
 $(LIBScalarSingletZ2DMMhInputMsInput_DEP) $(EXEScalarSingletZ2DMMhInputMsInput_DEP) $(LLScalarSingletZ2DMMhInputMsInput_DEP) $(LIBScalarSingletZ2DMMhInputMsInput_OBJ) $(EXEScalarSingletZ2DMMhInputMsInput_OBJ) $(LLScalarSingletZ2DMMhInputMsInput_OBJ) $(LLScalarSingletZ2DMMhInputMsInput_LIB): \
-	CPPFLAGS += $(MODScalarSingletZ2DMMhInputMsInput_SUBMOD_INC) $(MODScalarSingletZ2DMMhInputMsInput_INC) $(GSLFLAGS) $(EIGENFLAGS) $(BOOSTFLAGS) $(GM2CALCFLAGS) $(HIMALAYAFLAGS)
+	CPPFLAGS += $(MODScalarSingletZ2DMMhInputMsInput_SUBMOD_INC) $(MODScalarSingletZ2DMMhInputMsInput_INC) $(GSLFLAGS) $(EIGENFLAGS) $(BOOSTFLAGS)  $(HIMALAYAFLAGS)
 
 ifneq (,$(findstring yes,$(ENABLE_LOOPTOOLS)$(ENABLE_FFLITE)))
 $(LIBScalarSingletZ2DMMhInputMsInput_DEP) $(EXEScalarSingletZ2DMMhInputMsInput_DEP) $(LLScalarSingletZ2DMMhInputMsInput_DEP) $(LIBScalarSingletZ2DMMhInputMsInput_OBJ) $(EXEScalarSingletZ2DMMhInputMsInput_OBJ) $(LLScalarSingletZ2DMMhInputMsInput_OBJ) $(LLScalarSingletZ2DMMhInputMsInput_LIB): \
@@ -328,11 +328,11 @@ $(LIBScalarSingletZ2DMMhInputMsInput): $(LIBScalarSingletZ2DMMhInputMsInput_OBJ)
 
 $(DIR)/%.x: $(DIR)/%.o $(LIBScalarSingletZ2DMMhInputMsInput) $(MODScalarSingletZ2DMMhInputMsInput_LIB) $(LIBFLEXI) $(filter-out -%,$(LOOPFUNCLIBS)) $(FUTILIBS)
 		@$(MSG)
-		$(Q)$(CXX) $(LDFLAGS) -o $@ $(call abspathx,$(ADDONLIBS) $^) $(filter -%,$(LOOPFUNCLIBS)) $(GM2CALCLIBS) $(HIMALAYALIBS) $(GSLLIBS) $(SQLITELIBS) $(TSILLIBS) $(FLIBS) $(THREADLIBS) $(LDLIBS) $(FUTILIBS)
+		$(Q)$(CXX) $(LDFLAGS) -o $@ $(call abspathx,$(ADDONLIBS) $^ $(LIBGM2Calc)) $(filter -%,$(LOOPFUNCLIBS)) $(HIMALAYALIBS) $(GSLLIBS) $(SQLITELIBS) $(TSILLIBS) $(FLIBS) $(THREADLIBS) $(LDLIBS) $(FUTILIBS)
 
 $(LLScalarSingletZ2DMMhInputMsInput_LIB): $(LLScalarSingletZ2DMMhInputMsInput_OBJ) $(LIBScalarSingletZ2DMMhInputMsInput) $(MODScalarSingletZ2DMMhInputMsInput_LIB) $(LIBFLEXI) $(filter-out -%,$(LOOPFUNCLIBS)) $(FUTILIBS)
 		@$(MSG)
-		$(Q)$(LIBLNK_MAKE_LIB_CMD) $@ $(CPPFLAGS) $(CFLAGS) $(call abspathx,$(ADDONLIBS) $^) $(filter -%,$(LOOPFUNCLIBS)) $(GM2CALCLIBS) $(HIMALAYALIBS) $(TSILLIBS) $(GSLLIBS) $(THREADLIBS) $(LDLIBS) $(LLLIBS) $(FUTILIBS) $(FLIBS)
+		$(Q)$(LIBLNK_MAKE_LIB_CMD) $@ $(CPPFLAGS) $(CFLAGS) $(call abspathx,$(ADDONLIBS) $^ $(LIBGM2Calc)) $(filter -%,$(LOOPFUNCLIBS)) $(HIMALAYALIBS) $(GSLLIBS) $(THREADLIBS) $(LDLIBS) $(LLLIBS) $(FUTILIBS)
 
 ALLDEP += $(LIBScalarSingletZ2DMMhInputMsInput_DEP) $(EXEScalarSingletZ2DMMhInputMsInput_DEP)
 ALLSRC += $(LIBScalarSingletZ2DMMhInputMsInput_SRC) $(EXEScalarSingletZ2DMMhInputMsInput_SRC)

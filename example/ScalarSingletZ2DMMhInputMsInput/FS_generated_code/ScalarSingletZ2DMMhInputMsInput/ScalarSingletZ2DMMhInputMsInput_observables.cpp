@@ -32,7 +32,7 @@
 #include "lowe.h"
 #include "physical_input.hpp"
 
-#ifdef ENABLE_GM2CALC
+#ifdef ENABLE_GM2Calc
 #include "gm2calc_interface.hpp"
 #endif
 
@@ -116,7 +116,7 @@ void ScalarSingletZ2DMMhInputMsInput_observables::set(const Eigen::ArrayXd& vec)
 
 }
 
-ScalarSingletZ2DMMhInputMsInput_observables calculate_observables(const ScalarSingletZ2DMMhInputMsInput_mass_eigenstates& model,
+ScalarSingletZ2DMMhInputMsInput_observables calculate_observables(ScalarSingletZ2DMMhInputMsInput_mass_eigenstates& model,
                                               const softsusy::QedQcd& qedqcd,
                                               const Physical_input& physical_input,
                                               double scale)
@@ -126,25 +126,19 @@ ScalarSingletZ2DMMhInputMsInput_observables calculate_observables(const ScalarSi
    if (scale > 0.) {
       try {
          model_at_scale.run_to(scale);
-      } catch (const NonPerturbativeRunningError& e) {
-         ScalarSingletZ2DMMhInputMsInput_observables observables;
-         observables.problems.general.flag_non_perturbative_running(scale);
-         return observables;
       } catch (const Error& e) {
-         ScalarSingletZ2DMMhInputMsInput_observables observables;
-         observables.problems.general.flag_thrown(e.what());
-         return observables;
+         model.get_problems().flag_thrown(e.what_detailed());
+         return ScalarSingletZ2DMMhInputMsInput_observables();
       } catch (const std::exception& e) {
-         ScalarSingletZ2DMMhInputMsInput_observables observables;
-         observables.problems.general.flag_thrown(e.what());
-         return observables;
+         model.get_problems().flag_thrown(e.what());
+         return ScalarSingletZ2DMMhInputMsInput_observables();
       }
    }
 
    return calculate_observables(model_at_scale, qedqcd, physical_input);
 }
 
-ScalarSingletZ2DMMhInputMsInput_observables calculate_observables(const ScalarSingletZ2DMMhInputMsInput_mass_eigenstates& model,
+ScalarSingletZ2DMMhInputMsInput_observables calculate_observables(ScalarSingletZ2DMMhInputMsInput_mass_eigenstates& model,
                                               const softsusy::QedQcd& qedqcd,
                                               const Physical_input& physical_input)
 {
@@ -157,12 +151,10 @@ ScalarSingletZ2DMMhInputMsInput_observables calculate_observables(const ScalarSi
       observables.AMU = ScalarSingletZ2DMMhInputMsInput_a_muon::calculate_a_muon(MODEL, qedqcd);
       observables.EFFCPHIGGSPHOTONPHOTON = effective_couplings.get_eff_CphhVPVP();
       observables.EFFCPHIGGSGLUONGLUON = effective_couplings.get_eff_CphhVGVG();
-   } catch (const NonPerturbativeRunningError& e) {
-      observables.problems.general.flag_non_perturbative_running(e.get_scale());
    } catch (const Error& e) {
-      observables.problems.general.flag_thrown(e.what());
+      model.get_problems().flag_thrown(e.what_detailed());
    } catch (const std::exception& e) {
-      observables.problems.general.flag_thrown(e.what());
+      model.get_problems().flag_thrown(e.what());
    }
 
    return observables;

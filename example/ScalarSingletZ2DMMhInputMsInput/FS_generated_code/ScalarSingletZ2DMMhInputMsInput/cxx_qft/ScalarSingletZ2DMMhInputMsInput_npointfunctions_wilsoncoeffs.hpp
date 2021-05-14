@@ -134,7 +134,7 @@ namespace detail {
 
    template<std::intmax_t Num, std::intmax_t Denom = 1>
    struct ratio_helper {
-      static constexpr double value = static_cast<double>(Num) / static_cast<double>(Denom);
+      static constexpr double value = double(Num) / double(Denom);
    };
 
    template<class RealPart, class ImPart>

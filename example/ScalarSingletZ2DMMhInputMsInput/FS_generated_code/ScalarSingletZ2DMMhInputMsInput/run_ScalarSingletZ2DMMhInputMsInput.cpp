@@ -106,7 +106,7 @@ int run_solver(flexiblesusy::ScalarSingletZ2DMMhInputMsInput_slha_io& slha_io,
             spectrum_generator_settings.get(
                Spectrum_generator_settings::force_positive_masses));
          slha_io.set_spectrum(models);
-         slha_io.set_extra(std::get<0>(models), scales, observables, spectrum_generator_settings);
+         slha_io.set_extra(std::get<0>(models), scales, observables);
       }
       slha_io.write_to(slha_output_file);
    }

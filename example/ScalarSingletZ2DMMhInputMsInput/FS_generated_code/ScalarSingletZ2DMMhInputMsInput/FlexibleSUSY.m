@@ -34,7 +34,7 @@ EWSBOutputParameters = {muH2};
 
 SUSYScaleInput = {
   FSFindRoot[ { LamH }, { MhInput - Pole[M[hh]] } ],
-  FSFindRoot[ { muS2 }, { MsInput - Pole[M[ss]] } ]
+  FSFindRoot[ { LamH }, { MsInput - Pole[M[ss]] } ]
 };
 
 InitialGuessAtSUSYScale = {};
