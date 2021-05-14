@@ -98,7 +98,7 @@ void ScalarSingletZ2DMMhInputMsInput_susy_scale_constraint<Two_scale>::apply()
 
    {
       auto solver_1 = [&](const Eigen::Matrix<double,1,1>& x) {
-         MODEL->set_LamH(x(0));
+         MODEL->set_muS2(x(0));
 
          MODEL->calculate_DRbar_masses();
          const auto MsInput = INPUTPARAMETER(MsInput);
@@ -110,10 +110,10 @@ void ScalarSingletZ2DMMhInputMsInput_susy_scale_constraint<Two_scale>::apply()
          return f;
       };
 
-      const auto LamH = MODELPARAMETER(LamH);
+      const auto muS2 = MODELPARAMETER(muS2);
 
       Eigen::VectorXd start_point(1);
-      start_point << LamH;
+      start_point << muS2;
       Root_finder<1> root_finder(solver_1, 100, 1.0e-2);
       const int status = root_finder.find_root(start_point);
       VERBOSE_MSG("\troot finder status: " << gsl_strerror(status));
