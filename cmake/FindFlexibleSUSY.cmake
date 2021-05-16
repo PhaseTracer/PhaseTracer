@@ -35,7 +35,7 @@ if(NOT EXISTS ${FS}/models/${FS_model_name}/lib${FS_model_name}.a)
   endif()
 
   message(STATUS "Making ${FS_model_name} model")
-  execute_process(COMMAND ./configure --with-models=${FS_model_name} --disable-threads --disable-meta
+  execute_process(COMMAND ./configure --with-models=${FS_model_name} --disable-threads --disable-meta --disable-sqlite
                   WORKING_DIRECTORY ${FS}
   )
   	
