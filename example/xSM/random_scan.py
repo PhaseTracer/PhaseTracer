@@ -44,8 +44,8 @@ daisy_flag = 1
 use_1L_EWSB_in_0L_mass = 0
 
 ######################################
-#scheme = "xSM_MSbar"
-#cmd = "./../../../bin/run_"+scheme
+scheme = "xSM_MSbar"
+cmd = "./../../../bin/run_"+scheme
 
 #xi = 1
 #file_name = scheme + "_xi_1"
@@ -55,11 +55,19 @@ use_1L_EWSB_in_0L_mass = 0
 #file_name = scheme + "_xi_01"
 #scan(cmd, file_name)
 
+xi = 0
+use_1L_EWSB_in_0L_mass = 1
+file_name = scheme + "_xi_0"
+scan(cmd, file_name)
+
 #xi = 3
 #file_name = scheme + "_xi_3"
 #scan(cmd, file_name)
 
-######################################
+#####################################
+#scheme = "xSM_MSbar"
+#cmd = "./../../../bin/run_"+scheme
+
 #daisy_flag = 1
 #file_name = scheme + "_daisy_Parwani"
 #scan(cmd, file_name)
@@ -70,8 +78,8 @@ use_1L_EWSB_in_0L_mass = 0
 
 
 #####################################
-scheme = "ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-cmd = "./../../../bin/run_"+scheme
+#scheme = "ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#cmd = "./../../../bin/run_"+scheme
 
 #file_name = scheme + "_mt"
 #Q = 173.
@@ -81,8 +89,8 @@ cmd = "./../../../bin/run_"+scheme
 #Q = 173.*2.
 #scan(cmd, file_name)
 
-file_name = scheme + "_05mt"
-Q = 173./2.
-scan(cmd, file_name)
+#file_name = scheme + "_05mt"
+#Q = 173./2.
+#scan(cmd, file_name)
 
 
