@@ -83,7 +83,8 @@ int main(int argc, char* argv[]) {
 
   // Construct our model
   EffectivePotential::ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT model;
-
+  if (debug_mode) model.set_debug(true);
+  
   model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
   model.set_use_Goldstone_resum(use_Goldstone_resum);
   model.set_input({Qin, Qin, MhInput, ms, lambda_s, lambda_hs});
