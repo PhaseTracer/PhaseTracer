@@ -160,7 +160,7 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
   bool use_Goldstone_resum{false};
 
   // For debuging
-  bool debug = true;
+  bool debug = false;
 };
 
 void ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT::set_input(std::vector<double> x) {
