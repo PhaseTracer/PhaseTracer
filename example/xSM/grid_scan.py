@@ -31,7 +31,6 @@ def scan(cmd, file_name):
 
                 print par
                 os.system(cmd+par)
-                os.system(cmd+par)
                 output = open("output.txt").readline()
                 fo.write( output )
   fo.close()

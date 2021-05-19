@@ -102,8 +102,7 @@ public:
    int solve_ewsb_tree_level();
    int solve_ewsb_one_loop();
    int solve_ewsb();            ///< solve EWSB at ewsb_loop_order level
-   int solve_ewsb_tree_level_custom();
-   
+
    virtual void calculate_spectrum();
    std::string name() const;
    void run_to(double scale, double eps = -1.0) override;
@@ -497,6 +496,7 @@ private:
 
    int get_number_of_ewsb_iterations() const;
    int get_number_of_mass_iterations() const;
+   int solve_ewsb_tree_level_custom();
    void copy_DRbar_masses_to_pole_masses();
 
    // Passarino-Veltman loop functions

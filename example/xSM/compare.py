@@ -77,6 +77,41 @@ else:
   vmax = 0.2
 
 
+def get_griddata(px,py,nx,ny,c2):
+
+    dx = (max(px) - min(px))/nx/2.0
+    dy = (max(py) - min(py))/ny/2.0
+
+    xi = np.linspace(min(px-dx), max(px+dx), nx)
+    yi = np.linspace(min(py-dy), max(py+dy), ny)
+
+    xf = np.zeros((nx,ny))
+    yf = np.zeros((nx,ny))
+    zf = np.zeros((nx,ny))
+
+    for ii,ix in enumerate(xi):
+        for jj,jy in enumerate(yi):
+            xf[ii,jj] = ix
+            yf[ii,jj] = jy
+            if len(c2[(px<ix+dx)&(px>ix-dx)&(py<jy+dy)&(py>jy-dy)])>0:
+                value = min(c2[(px<ix+dx)&(px>ix-dx)&(py<jy+dy)&(py>jy-dy)])
+            else:
+                value = 100
+            zf[ii,jj] = value
+
+    return [xf,yf,zf]
+
+
+def one_contour(ax, px, py, pz, title = '', vmin=0, vmax=6.18 ):
+    [xf,yf,zf] = get_griddata(px, py, 100, 100, pz)
+    ax.contour(xf, yf, zf, [0,2.3,6.18], cmap=mpl.colors.ListedColormap(['red','navy']))
+      
+    ax.tick_params(which = 'both', direction = 'in')
+    ax.set_xlabel(r'$m_{0}$ (GeV)', **labelconf)
+    ax.set_ylabel(r'$m_{1/2}$ (GeV)', **labelconf)
+    ax.set_title(title, **labelconf)
+
+
 ax = axs[0,0]
 map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,3], cmap="autumn", s=20, marker="s", vmin=vmin, alpha=1)
 clb = plt.colorbar(map, ax=ax)
