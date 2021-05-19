@@ -32,8 +32,8 @@
 #include "numerics2.hpp"
 
 #ifdef ENABLE_HIMALAYA
-#include "himalaya/HierarchyCalculator.hpp"
-#include "himalaya/version.hpp"
+#include "HierarchyCalculator.hpp"
+#include "version.hpp"
 #endif
 
 #include <cmath>

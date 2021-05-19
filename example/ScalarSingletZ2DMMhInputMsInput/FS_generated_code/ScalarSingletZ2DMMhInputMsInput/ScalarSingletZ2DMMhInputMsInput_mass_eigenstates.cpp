@@ -3667,6 +3667,7 @@ void CLASSNAME::calculate_Mss_pole()
    do {
       const double M_tree(get_mass_matrix_ss());
       const double p = old_Mss;
+//      const double p = 0;
       double self_energy = Re(self_energy_ss_1loop(p));
       const double mass_sqr = M_tree - self_energy;
 
@@ -3728,6 +3729,7 @@ void CLASSNAME::calculate_Mhh_pole()
    do {
       const double M_tree(get_mass_matrix_hh());
       const double p = old_Mhh;
+//      const double p = 0;
       double self_energy = Re(self_energy_hh_1loop(p));
       const double mass_sqr = M_tree - self_energy;
 
