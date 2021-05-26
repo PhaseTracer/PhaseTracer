@@ -255,7 +255,7 @@ class xSM_MSbar : public OneLoopPotential {
                       );
 
     // Goldstone finite temperature masses
-    double mTG02 =   mgg2 + thermal_sq[0] + ( ( not use_1L_EWSB_in_0L_mass and use_Goldstone_resum ) ? sum : 0);
+    double mTG02 =   mgg2 + thermal_sq[0] + (use_Goldstone_resum ? sum : 0);
     double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
     // xi-dependence
     mTG02 += 0.25 * xi * (square(SM_g * h) + square(SM_gp * h));
