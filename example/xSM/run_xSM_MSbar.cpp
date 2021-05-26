@@ -227,6 +227,6 @@ int main(int argc, char* argv[]) {
   output_file << toString(in, out, flags) << std::endl;
   output_file.close();  
   // Print the data in a particular format for plotting
-  if (debug_mode) PhaseTracer::phase_plotter(tf, "xSM_MSbar");
+//  if (debug_mode) PhaseTracer::phase_plotter(tf, "xSM_MSbar");
   return 0;
 }
