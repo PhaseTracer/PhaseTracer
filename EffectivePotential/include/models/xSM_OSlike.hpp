@@ -282,10 +282,10 @@ class xSM_OSlike : public OneLoopPotential {
                                (16 * square(11./6.) * pow_4(T) + 8. * (11./6.) * square(T) * h_sq) +
                                square(g_sq + gp_sq) * square(h_sq));
 
-    const double W_debye = g_sq * (0.25 * h_sq + 11./6. * square(T));
-    const double Z_debye = A + B;
-    const double g_debye = A - B;
-    return {W_debye, Z_debye};
+    const double MW_sq = g_sq * (0.25 * h_sq + 11./6. * square(T));
+    const double MZ_sq = A + B;
+    const double Mphoton_sq = A - B;
+    return {MW_sq, MZ_sq};
   }
   std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const override{
     return get_vector_debye_sq(phi, 0.);
