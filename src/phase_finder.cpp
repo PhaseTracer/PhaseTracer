@@ -313,7 +313,8 @@ void PhaseFinder::find_phases() {
     dXdT.insert(dXdT.end(), dXdT_up.begin() + 1, dXdT_up.end());
     V.insert(V.end(), V_up.begin() + 1, V_up.end());
 
-    if (std::abs(T.front() - T.back()) > phase_min_length) {
+//  Ignore short phase may cause endless loop. 
+//    if (std::abs(T.front() - T.back()) > phase_min_length) {
       Phase new_;
       new_.key = phases.size();
       new_.X = X;
@@ -324,9 +325,9 @@ void PhaseFinder::find_phases() {
       new_.end_high = end_high;
       phases.push_back(new_);
       LOG(debug) << "Added new phase:" << std::endl << new_;
-    } else {
-      LOG(warning) << "Did not add short phase";
-    }
+//    } else {
+//      LOG(warning) << "Did not add short phase";
+//    }
 
     if (end_high == JUMP_INDICATED_END || end_high == HESSIAN_SINGULAR || end_high == HESSIAN_NOT_POSITIVE_DEFINITE) {
       Point top;
