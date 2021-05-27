@@ -20,25 +20,38 @@
 
 #include <vector>
 #include "phase_finder.hpp"
+#include "one_loop_potential.hpp"
 
 namespace PhaseTracer {
 
+/** @brief Gauge-invariant h-bar expansion method */
 class HbarExpansion : public PhaseFinder {
-  using PhaseFinder::PhaseFinder;
  public:
-  std::function<double(Eigen::VectorXd)> make_objective(double T) const override;
+  /** @brief H-bar expansion needs a one-loop potential */
+  HbarExpansion(EffectivePotential::OneLoopPotential &potential) : PhaseFinder(potential), P1l(potential) {};
   void find_phases() override;
   Point phase_at_T(const Phase& phase, double T) const override;
+  /**
+   * @brief h-bar expansion may consider one minima and one turning point or maxima
+   *
+   * Refer to latter as pseudo-phase and must add it manually.
+   */
   void add_pseudo_phase(Eigen::ArrayXd pseudo_phase) { pseudo_phases.push_back(pseudo_phase); }
 
  private:
+  std::function<double(Eigen::VectorXd)> make_objective(double T) const override;
   std::vector<Eigen::ArrayXd> pseudo_phases;
+  EffectivePotential::OneLoopPotential &P1l;
 };
 
+/** @brief Trace high-temperature expansion of potential */
 class HTExpansion : public PhaseFinder {
-  using PhaseFinder::PhaseFinder;
  public:
+  /** @brief High-temperature expansion needs a one-loop potential */
+  HTExpansion(EffectivePotential::OneLoopPotential &potential) : PhaseFinder(potential), P1l(potential) {};
+ private:
   std::function<double(Eigen::VectorXd)> make_objective(double T) const override;
+  EffectivePotential::OneLoopPotential &P1l;
 };
 
 }  // namespace PhaseTracer

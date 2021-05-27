@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <iomanip>
 #include <random>
@@ -21,268 +22,211 @@
 #include "thermal_function.hpp"
 #include "potential_plotter.hpp"
 
-void help_info(){
-  std::cout << "Wrong command! Please run 'run_xSM_MSbar x1 x2 x3 x4 x5' "<< std::endl;
-  
-  
-  std::cout << "  x1=0: lambda_hs = 0.31, lambda_s = lambda_s^{min}+0.1, m_s=m_h/2"<< std::endl;
-  std::cout << "  x1=1: lambda_hs = 0.2 ~ 0.4, lambda_s = lambda_s^{min}+0.1, m_s=m_h/2"<< std::endl;
-  std::cout << "  x1=2: lambda_hs = 0.1 ~ 0.4, lambda_s = 0.01~0.2, m_s=m_h/2"<< std::endl;
-  std::cout << "  x1=3: lambda_hs = 0.1 ~ 0.4, lambda_s = 0.1, m_s= 10~100 GeV"<< std::endl;
-  std::cout << "  x1=4: lambda_hs = 0.3, lambda_s = 0.01~0.2, m_s= 10~100 GeV"<< std::endl;
-  std::cout << "  x1=5: lambda_hs = 0.1 ~ 0.4, lambda_s = 0.01~0.2, m_s= 10~100 GeV"<< std::endl;
-      
-  std::cout << "  x2=0: Parwani method"<< std::endl;
-  std::cout << "  x2=1: ArnoldEspinosa method"<< std::endl;
-  
-  std::cout << "  x3=0:  renormalization scale = 0.5*m_top "<< std::endl;
-  std::cout << "  x3=1:  renormalization scale = 1.0*m_top "<< std::endl;
-  std::cout << "  x3=2:  renormalization scale = 2.0*m_top "<< std::endl;
-  
-  std::cout << "  x4=0:  tree_ewsb = false "<< std::endl;
-  std::cout << "  x4=1:  tree_ewsb = true "<< std::endl;
-  
-  std::cout << "  x5:  xi "<< std::endl;
+
+std::string toString(std::vector<double> in, std::vector<double> out, std::vector<double> flags) {
+  std::stringstream data_str;
+  for (auto i : in    ) data_str << i << "\t";
+  for (auto i : out   ) data_str << i << "\t";
+  for (auto i : flags ) data_str << i << "\t";
+  return data_str.str();;
 }
 
 int main(int argc, char* argv[]) {
 
-  double xi = 0;
-  if (argc < 5){
-    help_info();
-    return 0;
-  } else if (argc > 5 ){
-    xi = atof(argv[5]);
-  }
-  
-  std::ofstream output_file;
-  std::string out_name = "MSbar_";
-    
-  bool debug_mode = atoi(argv[1]) == 0;
-  bool scan_lhs = atoi(argv[1]) == 1;
-  bool scan_lhs_ls = atoi(argv[1]) == 2;
-  bool scan_lhs_ms = atoi(argv[1]) == 3;
-  bool scan_ls_ms = atoi(argv[1]) == 4;
-  bool scan_lhs_ls_ms = atoi(argv[1]) == 5;
-  
-  bool Parwani = atoi(argv[2]) == 0;
-  if (Parwani) {
-    out_name += "Parwani";
-  } else {
-    out_name += "ArnoldEspinosa";
-  }
-  double Q = SM::mtop;
-  switch (atoi(argv[3])) {
-    case 0:
-      Q = 0.5*SM::mtop;
-      out_name += "_0.5mt";
-      break;
-    case 1:
-      Q = 1.0*SM::mtop;
-      out_name += "_mt";
-      break;
-    case 2:
-      Q = 2.0*SM::mtop;
-      out_name += "_2mt";
-      break;
-    default:
-      help_info();
-      return 0;
-  } 
+  std::ofstream output_file;  
+  output_file.open("output.txt");
 
-  const bool tree_ewsb = atoi(argv[4]) == 1;
-  if (tree_ewsb) {
-    out_name += "_TreeEWSB";
+  bool debug_mode = false;
+  double ms, lambda_s, lambda_hs;
+  double Q, xi, daisy_flag;
+  bool use_1L_EWSB_in_0L_mass;
+  bool use_Goldstone_resum = true;
+  bool tree_level_tadpoles = false;
+  std::vector<double> SM_parameters ={};
+  if ( argc == 1 ) {
+    debug_mode = true;
+    // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
+    ms = 68.2224;
+    lambda_s =  0.1;
+    lambda_hs = 0.25;
+    Q = 173.;
+    xi = 1;
+    daisy_flag = 1;
+    use_1L_EWSB_in_0L_mass = false;
+    if ( xi==0 and not use_1L_EWSB_in_0L_mass )
+      use_Goldstone_resum = true;
+    else 
+      use_Goldstone_resum = false;
+    
+    SM_parameters.resize(7);
+    SM_parameters[0] = 125.;
+    SM_parameters[1] = 245.5782292532188;
+    SM_parameters[2] = 0.3576323374899369;
+    SM_parameters[3] = 0.6508510850302707;
+    SM_parameters[4] = square(-0.9962566593729878);
+    SM_parameters[5] = square(0.01644365628566979);
+    SM_parameters[6] = square(0.01023316833028443);
+
+//    // Match choices in 1808.01098
+//    lambda_hs = 0.24;
+//    ms = 0.5 * SM::mh;
+//    double lambda_s_min = 2. / square(SM::mh * SM::v) *
+//                          square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+//    lambda_s =  lambda_s_min + 0.1;
+//    
+//    // BK point
+//    lambda_hs = 0.4;
+//    ms = 60;
+//    lambda_s =  0.15;
+    
+  } else if ( argc == 8 ) {
+    ms = atof(argv[1]);
+    lambda_s = atof(argv[2]);
+    lambda_hs = atof(argv[3]);
+    Q = atof(argv[4]);
+    xi = atof(argv[5]);
+
+    daisy_flag = atoi(argv[6]);
+    use_1L_EWSB_in_0L_mass = atoi(argv[7]);
   } else {
-    out_name += "_NoTreeEWSB";
+    std::cout << "Use ./run_xSM_MSbar ms lambda_s lambda_hs Q xi daisy_flag use_1L_EWSB_in_0L_mass " << std::endl;
+    return 0;
   }
-  
-  if (scan_lhs_ls) {
-    out_name += "_lhs_ls";
-  } else if (scan_lhs_ms) {
-    out_name += "_lhs_ms";  
-  } else if (scan_ls_ms) {
-    out_name += "_ls_ms";  
-  } else if (scan_lhs_ls_ms) {
-    out_name += "_lhs_ls_ms";  
-  }
-  
-  if (xi > 0){
-    out_name += "_xi";
-  }
-  
-  output_file.open(out_name+".txt");
-  
-  double n_bin_x;
-  double n_bin_y;
+
+  std::vector<double> in ={ms, lambda_s, lambda_hs};
+  std::vector<double> flags ={Q, xi, daisy_flag, (float)use_1L_EWSB_in_0L_mass};
+
   if (debug_mode){
     LOGGER(debug);
-    n_bin_x = 0;
-    n_bin_y = 0;
-  }else {
-    n_bin_x = 50;
-    if (scan_lhs){
-      n_bin_y = 0;
-    } else if (scan_lhs_ms or scan_lhs_ls or scan_ls_ms) {
-      n_bin_y = 50;
-    } else if (scan_lhs_ls_ms){
-      n_bin_x = 5000;
-      n_bin_y = 0;
-    }
-    LOGGER(fatal);
+    std::cout << "ms = " << ms << std::endl
+              << "lambda_s = " << lambda_s << std::endl
+              << "lambda_hs = " << lambda_hs << std::endl
+              << "Q = " << Q << std::endl
+              << "xi = " << xi << std::endl
+              << "daisy_term = " << ( daisy_flag == 0  ? "None" : ( daisy_flag == 1 ? "Parwani" : "ArnoldEspinosa")) << std::endl
+              << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
+              << "use 1-level ewsb in tree-level masses = " << use_1L_EWSB_in_0L_mass << std::endl;
+
+  } else {
+    LOGGER(debug);
+  }
+  
+  // Construct our model
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, SM_parameters);
+  if (debug_mode) std::cout << "1-L EWSB iteration converged = " << model.iteration_converged << std::endl;
+
+  // Choose Daisy method 
+  if (daisy_flag == 0){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::None);
+  } else if (daisy_flag == 1){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
+  } else if (daisy_flag == 2){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
+  } else {
+      std::cout << "Wrong daisy flag" << std::endl;
   }
 
-  std::cout << "renormal Q = " << Q/SM::mtop << "*m_top" << std::endl;
-  std::cout << "daisy_term = " << (Parwani  ? "Parwani" : "ArnoldEspinosa") << std::endl;
-  std::cout << "tree_ewsb  = " << (tree_ewsb  ? "true" : "false") << std::endl;
-  std::cout << "xi  = " << xi << std::endl;
+
+  if (debug_mode) {
+    std::cout << std::setprecision(16);
+    std::cout << std::endl;
+    std::cout << "@ after applying the 1L EWSB condition" << std::endl;
+    std::cout << "muH2       = "<< model.get_muh_sq() << std::endl;
+    std::cout << "muS2       = "<< model.get_mus_sq() << std::endl;   
+    std::cout << "lambda_h   = "<< model.get_lambda_h() << std::endl;      
+    std::cout << "lambda_s   = "<< model.get_lambda_s() << std::endl;  
+    std::cout << "lambda_hs  = "<< model.get_lambda_hs() << std::endl; 
+    
+    std::cout << std::endl;
+    std::cout << "@ EWSB VEV" << std::endl;
+    Eigen::VectorXd test(2);
+    test <<  SM_parameters[1], 0;
+    double Ttest = 100;
+    
+    auto mh_check =  model.get_scalar_masses_sq(test,1);
+    auto mV_check = model.get_vector_masses_sq(test);
+    auto mf_check = model.get_fermion_masses_sq(test);
+    std::cout << "ms = "<< std::sqrt(mh_check[0]) << std::endl;
+    std::cout << "mh = "<< std::sqrt(mh_check[4]) << std::endl;
+    std::cout << "MW = "<< std::sqrt(mV_check[0]) << std::endl;
+    std::cout << "MZ = "<< std::sqrt(mV_check[1]) << std::endl;
+    std::cout << "Mphoton = "<< std::sqrt(mV_check[2]) << std::endl;
+    std::cout << "mt = " << std::sqrt(mf_check[0]) << std::endl;
+    std::cout << "mb = " << std::sqrt(mf_check[1]) << std::endl;
+    std::cout << "mtau = " << std::sqrt(mf_check[2]) << std::endl;
+    
+    double Vtree = model.V0(test);
+    double VCW = model.V1(test);
+    double V1T = model.V1T(test, Ttest);
+    double Vtot = model.V(test, Ttest);
+    std::cout << "Vtree      = "<< Vtree << std::endl;
+    std::cout << "VCW        = "<< VCW << std::endl;   
+    std::cout << "V1T(T=100) = "<< V1T << std::endl;      
+    std::cout << "V(T=100)   = "<< Vtot << std::endl;  
+    std::cout << std::endl;
+    
+    std::cout << "Numerically derivatives of the full potential at EW VEV:" << std::endl;
+    auto d2Vdh2 = model.d2V_dx2(test,0);
+    std::cout << std::setprecision(16);
+    std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
+    std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
+    
+//    PhaseTracer::potential_plotter(model, 254, "potential", -5., 5, 0.01, -5., 40., 0.1);
+//    PhaseTracer::potential_plotter(model, 142.35, "potential", 0., 160, 0.2, -2., 160., 0.2);
+//    return 0;
+  }
+      
+  // Make PhaseFinder object and find the phases
+  PhaseTracer::PhaseFinder pf(model);    
+  pf.set_check_vacuum_at_high(false);
+  pf.set_seed(1);
+//  pf.set_check_hessian_singular(false);
+//  pf.set_hessian_singular_rel_tol(1.e-6);
+    
+  try {
+    pf.find_phases();
+  } catch (...) {
+    std::cout << "ms = " << ms << ",\t"
+              << "lambda_s = " << lambda_s << ",\t"
+              << "lambda_hs = " << lambda_hs << "\t"
+              << "encounters bug!" << std::endl;
+    std::vector<double> out = {-1, 0, 0, 0, 0, 0};
+    output_file << toString(in, out, flags) << std::endl;
+    return 0;
+  }
+    
+  if (debug_mode) std::cout << pf;
+
+  // Make TransitionFinder object and find the transitions
+  PhaseTracer::TransitionFinder tf(pf);
+  tf.find_transitions();
+  if (debug_mode) std::cout << tf;
+    
+  auto t = tf.get_transitions();
+  if (t.size()==0){
+    std::cout << "ms = " << ms << ",\t"
+              << "lambda_s = " << lambda_s << ",\t"
+              << "lambda_hs = " << lambda_hs << "\t"
+              << "found 0 transition!" << std::endl;
+    std::vector<double> out = {-2, 0, 0, 0, 0, 0};
+    output_file << toString(in, out, flags) << std::endl;
+    return 0;
+  }
   
-  const bool tree_level_tadpoles = false;
-  double lambda_hs;
-  double lambda_s;
-  double ms;
-  double lhs_min = 0.1;
-  double lhs_del = 0.4;
-  double ls_min = 0.01;
-  double ls_del = 0.2;
-  double ms_min = 10;
-  double ms_del = 110;
-  
-  std::default_random_engine random(1);
-  std::uniform_real_distribution<double> rand_lhs(lhs_min, lhs_min+lhs_del);
-  std::uniform_real_distribution<double> rand_ls(ls_min, ls_min+ls_del);
-  std::uniform_real_distribution<double> rand_ms(ms_min, ms_min+ms_del);
-  
-  for (double ii = 0; ii <= n_bin_x; ii++) {
-    for (double jj = 0; jj <= n_bin_y; jj++) {
-      if (debug_mode){
-//        lambda_hs = 0.24;
-//        // Match choices in 1808.01098
-//        ms = 0.8 * SM::mh;
-//        double lambda_s_min = 2. / square(SM::mh * SM::v) *
-//        square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-//        lambda_s =  lambda_s_min + 0.1;
-        // BK point
-        // Debug point [ ./../bin/run_xSM_MSbar 0 1 1 0 1 ]
-        lambda_hs = 0.308;
-        ms = 95.8;
-        lambda_s =  0.1;
-      } else {
-        if (scan_lhs){
-          lambda_hs = 0.4 / n_bin_x * ii+0.2;
-          // Match choices in 1808.01098
-          ms = 0.5 * SM::mh;
-          double lambda_s_min = 2. / square(SM::mh * SM::v) *
-          square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-          lambda_s =  lambda_s_min + 0.1;
-        } else if (scan_lhs_ls) {
-          lambda_hs = lhs_del / n_bin_x * ii + lhs_min;
-          lambda_s = ls_del / n_bin_y * jj + ls_min;
-          ms = 0.5 * SM::mh;
-        } else if (scan_lhs_ms) {
-          lambda_hs = lhs_del / n_bin_x * ii + lhs_min;
-          lambda_s = 0.1;
-          ms = ms_del / n_bin_x * jj + ms_min;
-        } else if (scan_ls_ms) {
-          lambda_hs = 0.3;
-          lambda_s = ls_del / n_bin_y * ii + ls_min;
-          ms = ms_del / n_bin_x * jj + ms_min;
-        } else if (scan_lhs_ls_ms){
-          lambda_hs = rand_lhs(random);
-          lambda_s = rand_ls(random);
-          ms = rand_ms(random);
-        }
-      }
-      std::cout << "Runing lambda_hs  = " << lambda_hs << ", lambda_s  = " << lambda_s << ", m_s  = " << ms << std::endl;
-    
-      // Construct our model
-    
-      auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, tree_ewsb);
-      std::cout << "iteration converged = " << model.iteration_converged << std::endl;
-
-      
-//    model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-      if (Parwani){
-        model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
-      } else {
-        model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
-      }
-
-
-      if (debug_mode) {
-        Eigen::VectorXd x(2);
-        x <<  SM::v, 0;
-        std::cout << "Numerically derivatives of the full potential at EW VEV:" << std::endl;
-        auto d2Vdh2 = model.d2V_dx2(x,0);
-        std::cout << std::setprecision(16);
-        std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
-        std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
-      
-//      PhaseTracer::potential_plotter(model, 254, "potential", -5., 5, 0.01, -5., 40., 0.1);
-//      PhaseTracer::potential_plotter(model, 142.35, "potential", 0., 160, 0.2, -2., 160., 0.2);
-//      return 0;
-      }
-      
-      // Make PhaseFinder object and find the phases
-      PhaseTracer::PhaseFinder pf(model);
-      
-      pf.set_check_vacuum_at_high(false);
-      pf.set_seed(1);
-//      pf.set_check_hessian_singular(false);
-//      pf.set_hessian_singular_rel_tol(1.e-6);
-    
-      try {
-        pf.find_phases();
-      } catch (...) {
-        std::cout << "lambda_hs = " << lambda_hs << " encounters bug!" << std::endl;
-        output_file << lambda_hs << "\t" << 0 << "\t";
-        output_file << -1 << "\t" << 0 << "\t"
-                    << 0 << "\t" << 0 << "\t"
-                    << 0 << "\t";
-        output_file << lambda_s << "\t" << ms;
-        output_file << std::endl;
-        continue;
-      }
-    
-      if (debug_mode) std::cout << pf;
-
-      // Make TransitionFinder object and find the transitions
-      PhaseTracer::TransitionFinder tf(pf);
-      tf.find_transitions();
-      if (debug_mode) std::cout << tf;
-    
-      if (not debug_mode) {
-        auto t = tf.get_transitions();
-        if (t.size()==0){
-          std::cout << "lambda_hs = " << lambda_hs << " found 0 transition!" << std::endl;
-          output_file << lambda_hs << "\t" << 0 << "\t";
-          output_file << -1 << "\t" << 0 << "\t"
-                      << 0 << "\t" << 0 << "\t"
-                      << 0 << "\t";
-          output_file << lambda_s << "\t" << ms;
-          output_file << std::endl;
-          continue;
-        }
-        int jj=0;
-        double gamme_max=0;
-        for (int i=0; i<t.size(); i++) {
-          double gamma = t[i].gamma;
-          if (gamme_max < gamma){
-            jj = i;
-            gamme_max = gamma;
-          }
-        }
-        output_file << lambda_hs << "\t" << t.size() << "\t";
-        output_file << t[jj].TC << "\t" << t[jj].true_vacuum[0] << "\t"
-                    << t[jj].true_vacuum[1] << "\t" << t[jj].false_vacuum[0] << "\t"
-                    << t[jj].false_vacuum[1] << "\t";
-        output_file << lambda_s << "\t" << ms;
-        output_file << std::endl;
-      }
-      // Print the data in a particular format for plotting
-      if (debug_mode) PhaseTracer::phase_plotter(tf, out_name);
+  int jj=0;
+  double gamme_max=0;
+  for (int i=0; i<t.size(); i++) {
+    double gamma = t[i].gamma;
+    if (gamme_max < gamma){
+      jj = i;
+      gamme_max = gamma;
     }
   }
-  output_file.close();
+  std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
+  
+  output_file << toString(in, out, flags) << std::endl;
+  output_file.close();  
+  // Print the data in a particular format for plotting
+//  if (debug_mode) PhaseTracer::phase_plotter(tf, "xSM_MSbar");
   return 0;
 }

@@ -15,7 +15,7 @@ TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
   const double Q = 173.03;
   const double xi = 0.;
   const bool tree_level_tadpoles = true;
-  const bool tree_ewsb = false;
+  const bool use_1L_EWSB_in_0L_mass = false;
 
 
   double ms = 0.5 * SM::mh;
@@ -26,7 +26,7 @@ TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
   // Construct our model
   auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles);
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-  model.set_tree_ewsb(tree_ewsb);
+  model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
 
   // Make HBarExpansion object and find the phases
   PhaseTracer::HbarExpansion hb(model);

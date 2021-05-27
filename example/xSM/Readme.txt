@@ -34,6 +34,4 @@
     
   There are some flags you can change in compare.py.
   
-  
-  
   ./bin/run_xSM_MSbar 53.54764873058159 0.12777047117260487 0.18316274089680362 173 1 2 0
