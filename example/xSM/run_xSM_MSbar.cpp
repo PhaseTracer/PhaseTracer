@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
               << "use 1-level ewsb in tree-level masses = " << use_1L_EWSB_in_0L_mass << std::endl;
 
   } else {
-    LOGGER(fatal);
+    LOGGER(debug);
   }
   
   // Construct our model
@@ -227,6 +227,6 @@ int main(int argc, char* argv[]) {
   output_file << toString(in, out, flags) << std::endl;
   output_file.close();  
   // Print the data in a particular format for plotting
-  if (debug_mode) PhaseTracer::phase_plotter(tf, "xSM_MSbar");
+//  if (debug_mode) PhaseTracer::phase_plotter(tf, "xSM_MSbar");
   return 0;
 }
