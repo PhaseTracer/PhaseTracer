@@ -3,14 +3,12 @@
 */
 
 #include <iostream>
+#include <iomanip>
 
 #include "models/xSM_MSbar.hpp"
 #include "models/SM_parameters.hpp"
 #include "transition_finder.hpp"
 #include "h_bar_expansion.hpp"
-#include "phase_plotter.hpp"
-#include "potential_plotter.hpp"
-#include "potential_line_plotter.hpp"
 #include "logger.hpp"
 
 
@@ -21,14 +19,14 @@ int main(int argc, char* argv[]) {
   const double Q = atof(argv[2]);
   const double xi = atof(argv[3]);
   const bool tree_level_tadpoles = atoi(argv[4]);
-  const bool tree_ewsb = atoi(argv[5]);
+  const bool use_1L_EWSB_in_0L_mass = atoi(argv[5]);
   const bool physical_vacuum = true;
 
   std::cout << "lambda_hs = " << lambda_hs << std::endl
             << "Q = " << Q << std::endl
             << "xi = " << xi << std::endl
             << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
-            << "tree-level ewsb parameters = " << tree_ewsb << std::endl;
+            << "use 1-level ewsb in tree-level masses = " << use_1L_EWSB_in_0L_mass << std::endl;
 
   double ms = 0.5 * SM::mh;
   double lambda_s_min = 2. / square(SM::mh * SM::v) *
@@ -36,7 +34,7 @@ int main(int argc, char* argv[]) {
   double lambda_s = lambda_s_min + 0.1;
   
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, tree_ewsb);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, use_1L_EWSB_in_0L_mass);
 
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
 
