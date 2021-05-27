@@ -38,12 +38,12 @@ def fun_diff(data1, data2, data0, show_gamma=False, gamma_min = 0.7):
     if size_1 > 0 and size_2 > 0 and size_0>0:
       if gamma_0 > gamma_min and gamma_0 < 5: 
         if show_gamma:
-          diff = abs(gamma_1 - gamma_2)/gamma_1
-          central = gamma_1
+          diff = abs(gamma_1 - gamma_2)
+          central = gamma_0
         else:
           diff = abs(data1[ii][4] - data2[ii][4])
-          central = data1[ii][4]
-        data_diff.append([ms, lambda_s, lambda_hs, diff, central])
+          central = data0[ii][4]
+        data_diff.append([ms, lambda_s, lambda_hs, diff/central, central])
 
   data_diff.sort(key=(lambda x:x[3])) 
   

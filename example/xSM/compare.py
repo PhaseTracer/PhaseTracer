@@ -13,12 +13,13 @@ use_log = False
 #data_PW = np.loadtxt("scan_results/xSM_MSbar_daisy_Parwani.txt")
 #diff = fun_diff(data_AE, data_PW, data_PW, show_gamma)
 
-data_xi_01 = np.loadtxt("scan_results/xSM_MSbar_xi_01.txt")
-data_xi_1 = np.loadtxt("scan_results/xSM_MSbar_xi_1.txt")
-data_xi_3 = np.loadtxt("scan_results/xSM_MSbar_xi_3.txt")
-diff = fun_diff(data_xi_01, data_xi_3, data_xi_1, show_gamma)
+data_xi_0 = np.loadtxt("random_scan_results/xSM_MSbar_xi_0.txt")
+data_xi_01 = np.loadtxt("random_scan_results/xSM_MSbar_xi_01.txt")
+data_xi_1 = np.loadtxt("random_scan_results/xSM_MSbar_xi_1.txt")
+data_xi_3 = np.loadtxt("random_scan_results/xSM_MSbar_xi_3.txt")
+diff = fun_diff(data_xi_01, data_xi_0, data_xi_1, show_gamma)
 
-fig, axs = plt.subplots(2,2, figsize=(10, 10))
+fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
 
 
 if len(sys.argv)<2 :
@@ -94,29 +95,22 @@ def get_griddata(px,py,nx,ny,c2):
             xf[ii,jj] = ix
             yf[ii,jj] = jy
             if len(c2[(px<ix+dx)&(px>ix-dx)&(py<jy+dy)&(py>jy-dy)])>0:
-                value = min(c2[(px<ix+dx)&(px>ix-dx)&(py<jy+dy)&(py>jy-dy)])
+                value = max(c2[(px<ix+dx)&(px>ix-dx)&(py<jy+dy)&(py>jy-dy)])
             else:
-                value = 100
+                value = -10
             zf[ii,jj] = value
 
     return [xf,yf,zf]
 
+ax = axs[0]
+map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,3], cmap="autumn", s=20, marker="s", vmin=vmin, vmax =0.1,alpha=1)
 
-def one_contour(ax, px, py, pz, title = '', vmin=0, vmax=6.18 ):
-    [xf,yf,zf] = get_griddata(px, py, 100, 100, pz)
-    ax.contour(xf, yf, zf, [0,2.3,6.18], cmap=mpl.colors.ListedColormap(['red','navy']))
-      
-    ax.tick_params(which = 'both', direction = 'in')
-    ax.set_xlabel(r'$m_{0}$ (GeV)', **labelconf)
-    ax.set_ylabel(r'$m_{1/2}$ (GeV)', **labelconf)
-    ax.set_title(title, **labelconf)
+#[xf,yf,zf] = get_griddata(diff[:,nx], diff[:,ny], 50, 50, diff[:,3])
+#map = ax.scatter(xf[zf>-9],yf[zf>-9], c=zf[zf>-9], cmap="autumn", s=20, marker="s", vmin=vmin, vmax =0.1, alpha=1)
 
-
-ax = axs[0,0]
-map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,3], cmap="autumn", s=20, marker="s", vmin=vmin, alpha=1)
 clb = plt.colorbar(map, ax=ax)
 
-label = (r'$|\Delta \gamma_{\rm EW}| / \gamma_{\rm EW}^{bk}$' if show_gamma else r'$|\Delta T_C|$' )
+label = (r'$|\Delta \gamma_{\rm EW}| / \gamma_{\rm EW}^{bk}$' if show_gamma else r'$|\Delta T_C|/T_C$' )
 if use_log:
   label = r'log$_{10}$('+label+')'
 
@@ -127,7 +121,7 @@ ax.set_xlim(xmin,xmax)
 ax.set_ylim(ymin,ymax)
 
 
-ax = axs[0,1]
+ax = axs[1]
 map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,0], cmap="summer", s=20, marker="s", alpha=1)
 clb = plt.colorbar(map, ax=ax)
 
@@ -137,7 +131,7 @@ ax.set_ylabel(ylabel)
 ax.set_xlim(xmin,xmax)
 ax.set_ylim(ymin,ymax)
 
-ax = axs[1,0]
+ax = axs[2]
 map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,4], cmap="winter", s=20, marker="s", alpha=1)
 clb = plt.colorbar(map, ax=ax)
 
