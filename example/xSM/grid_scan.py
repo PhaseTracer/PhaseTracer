@@ -7,7 +7,11 @@ import time
 cwd = os.getcwd()
 print cwd
 
-folder_name = "scan_results"
+
+#folder_name = "scan_results"
+
+folder_name = "gauge_dependence"
+
 if not os.path.exists(folder_name):
   os.mkdir(folder_name) 
 
@@ -40,19 +44,34 @@ scan_ms = True
 scan_lambda_s = True
 scan_lambda_hs = True
 
-# for run_ScalarSingletZ2DMMhInput_withSingletVEVinPT, ms means mu_s
-ms = np.linspace(10,110,50) if scan_ms else [62.5]
-lambda_s = np.linspace(0.01,0.3,50) if scan_lambda_s else [0.1]
-lambda_hs = np.linspace(0.1,0.5,50) if scan_lambda_hs else [0.25]
-
 Q = [173]
 xi = [1]
-daisy_flag = [1]
+daisy_flag = [2] # ArnoldEspinosa
 use_1L_EWSB_in_0L_mass = [0]
 
 
 scheme = "xSM_MSbar"
 cmd = "./../../../bin/run_"+scheme
+
+
+#################### gauge dependence #################
+
+
+ms = [62.5]
+lambda_s = [0.11]
+lambda_hs =  [0.25]
+xi = np.linspace(0, 5, 50)
+
+file_name = "MSbar_"+str(ms[0]) + "_" + str(lambda_s[0]) + "_" + str(lambda_hs[0])
+scan(cmd, file_name)
+
+
+
+# for run_ScalarSingletZ2DMMhInput_withSingletVEVinPT, ms means mu_s
+#ms = np.linspace(10,110,50) if scan_ms else [62.5]
+#lambda_s = np.linspace(0.01,0.3,50) if scan_lambda_s else [0.1]
+#lambda_hs = np.linspace(0.1,0.5,50) if scan_lambda_hs else [0.25]
+
 
 #xi = [1]
 #file_name = scheme + "_xi_1"
@@ -71,9 +90,9 @@ cmd = "./../../../bin/run_"+scheme
 #file_name = scheme + "_daisy_Parwani"
 #scan(cmd, file_name)
 
-daisy_flag = [2]
-file_name = scheme + "_daisy_ArnoldEspinosa"
-scan(cmd, file_name)
+#daisy_flag = [2]
+#file_name = scheme + "_daisy_ArnoldEspinosa"
+#scan(cmd, file_name)
 
 
 ######################################
