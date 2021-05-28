@@ -8,20 +8,38 @@ from plot_fun import fun_gamma, fun_diff, loaddata
 
 fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
 
-def plot_for_gauge(data_MS):
+for ax in axs:
+  ax.grid(axis='x', alpha=0.75)
+  ax.grid(axis='y', alpha=0.75)
+
+def plot_for_gauge(data_MS, color):
   xi = data_MS[:,10]
   TC_MS = data_MS[:,4]
   gamma_MS = fun_gamma(data_MS)
 
   ax = axs[0]
-  ax.scatter(xi, TC_MS, s=20, marker=".", alpha=1)
+  ax.plot(xi, TC_MS,  c=color, alpha=1)
 
   ax = axs[1]
-  ax.scatter(xi, gamma_MS, s=20, marker=".", alpha=1)
+  ax.plot(xi, gamma_MS,  c=color, alpha=1)
 
 
-plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_62.5_0.1_0.25.txt"))
-plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_62.5_0.11_0.25.txt"))
+plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK1.txt"),  "orange")
+plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK2.txt"),  "r")
+plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK3.txt"),  "purple")
+plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK4.txt"),  "g")
+plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK5.txt"),  "b")
+#plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_62.5_0.11_0.25.txt"))
+
+
+axs[0].set_xlabel(r"$\xi$")
+axs[0].set_ylabel(r"$T_C$")
+
+axs[1].set_xlabel(r"$\xi$")
+axs[1].set_ylabel(r"$\gamma$")
+
+fig.tight_layout()
+plt.savefig('gauge_1d.png')
 
 #label = (r'$|\Delta \gamma_{\rm EW}| / \gamma_{\rm EW}^{bk}$' if show_gamma else r'$|\Delta T_C|/T_C$' )
 #if use_log:

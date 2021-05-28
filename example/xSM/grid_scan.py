@@ -56,13 +56,35 @@ cmd = "./../../../bin/run_"+scheme
 
 #################### gauge dependence #################
 
+#BK = 'BK1'
+#ms =  [87.7018]
+#lambda_s =  [0.175366]
+#lambda_hs =  [0.359536]
 
-ms = [62.5]
-lambda_s = [0.11]
-lambda_hs =  [0.25]
+#BK = 'BK2'
+#ms =  [81.8547]
+#lambda_s =  [0.050826]
+#lambda_hs =  [0.37805]
+
+#BK = 'BK3'
+#ms =  [106.918]
+#lambda_s =  [0.0190792]
+#lambda_hs =  [0.474493]
+
+#BK = 'BK4'
+#ms =  [19.6007]
+#lambda_s =  [0.173252]
+#lambda_hs =  [0.312345]
+
+BK = 'BK5'
+ms =  [23.9906]
+lambda_s =  [0.204095]
+lambda_hs =  [0.344696]
+
+
 xi = np.linspace(0, 5, 50)
 
-file_name = "MSbar_"+str(ms[0]) + "_" + str(lambda_s[0]) + "_" + str(lambda_hs[0])
+file_name = "MSbar_"+BK #+str(ms[0]) + "_" + str(lambda_s[0]) + "_" + str(lambda_hs[0])
 scan(cmd, file_name)
 
 
