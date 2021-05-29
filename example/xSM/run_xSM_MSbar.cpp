@@ -115,6 +115,17 @@ int main(int argc, char* argv[]) {
   auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, SM_parameters);
   if (debug_mode) std::cout << "1-L EWSB iteration converged = " << model.iteration_converged << std::endl;
 
+  if (not model.iteration_converged){
+    std::cout << "ms = " << ms << ",\t"
+              << "lambda_s = " << lambda_s << ",\t"
+              << "lambda_hs = " << lambda_hs << "\t"
+              << "found 0 transition!" << std::endl;
+    std::vector<double> out = {-100, 0, 0, 0, 0, 0};
+    output_file << toString(in, out, flags) << std::endl;
+    return 0;
+  }
+  
+
   // Choose Daisy method 
   if (daisy_flag == 0){
     model.set_daisy_method(EffectivePotential::DaisyMethod::None);

@@ -302,7 +302,8 @@ class PhaseFinder {
   /** Maximum number of iterations when tracing a minimum */
   PROPERTY(unsigned int, trace_max_iter, 100000)
   /** Minimum length of a phase in temperature */
-  PROPERTY(double, phase_min_length, 0.5)
+  // Discard short phase checking, because it may cause endless loop. 
+  // PROPERTY(double, phase_min_length, 0.5)
   /** Guesses for locations of minima */
   PROPERTY(std::vector<Eigen::VectorXd>, guess_points, {})
 };
