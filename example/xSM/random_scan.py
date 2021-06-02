@@ -40,7 +40,7 @@ lambda_hs = np.random.uniform(0.1,0.5,n_total)
 
 Q = 173
 xi = 1
-daisy_flag = 1
+daisy_flag = 2
 use_1L_EWSB_in_0L_mass = 0
 
 ######################################
@@ -51,17 +51,32 @@ cmd = "./../../../bin/run_"+scheme
 #file_name = scheme + "_xi_1"
 #scan(cmd, file_name)
 
+#xi = 1
+#use_1L_EWSB_in_0L_mass = 1
+#file_name = scheme + "_xi_1_use_1L_EWSB_in_0L_mass"
+#scan(cmd, file_name)
+
+
 #xi = 0.1
 #file_name = scheme + "_xi_01"
 #scan(cmd, file_name)
 
 xi = 0
-use_1L_EWSB_in_0L_mass = 1
 file_name = scheme + "_xi_0"
 scan(cmd, file_name)
 
+#xi = 0
+#use_1L_EWSB_in_0L_mass = 1
+#file_name = scheme + "_xi_0_use_1L_EWSB_in_0L_mass"
+#scan(cmd, file_name)
+
 #xi = 3
 #file_name = scheme + "_xi_3"
+#scan(cmd, file_name)
+
+#xi = 3
+#use_1L_EWSB_in_0L_mass = 1
+#file_name = scheme + "_xi_3_use_1L_EWSB_in_0L_mass"
 #scan(cmd, file_name)
 
 #####################################

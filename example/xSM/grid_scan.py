@@ -28,7 +28,6 @@ def scan(cmd, file_name):
           for xi_ in xi:
             for daisy_flag_ in daisy_flag:
               for use_1L_EWSB_in_0L_mass_ in use_1L_EWSB_in_0L_mass:
-
                 par = (" " + str(ms_) + " " +str(lambda_s_) + " " + str(lambda_hs_) 
                       +" " + str(Q_) + " " + str(xi_) + " " + str(daisy_flag_) 
                       +" " + str(use_1L_EWSB_in_0L_mass_) )
@@ -56,33 +55,40 @@ cmd = "./../../../bin/run_"+scheme
 
 #################### gauge dependence #################
 
-#BK = 'BK1'
-#ms =  [87.7018]
-#lambda_s =  [0.175366]
-#lambda_hs =  [0.359536]
-
+BK = 'BK1'
+ms =  [106.918]
+lambda_s =  [0.0190792]
+lambda_hs =  [0.474493]
 #BK = 'BK2'
-#ms =  [81.8547]
-#lambda_s =  [0.050826]
-#lambda_hs =  [0.37805]
-
+#ms =  [85.4066]
+#lambda_s =  [0.0130036]
+#lambda_hs =  [0.319915]
 #BK = 'BK3'
-#ms =  [106.918]
-#lambda_s =  [0.0190792]
-#lambda_hs =  [0.474493]
-
+#ms =  [75.4206]
+#lambda_s =  [0.0390329]
+#lambda_hs =  [0.32759]
 #BK = 'BK4'
-#ms =  [19.6007]
-#lambda_s =  [0.173252]
-#lambda_hs =  [0.312345]
+#ms =  [105.836]
+#lambda_s =  [0.0304002]
+#lambda_hs =  [0.446975]
+#BK = 'BK5'
+#ms =  [103.036]
+#lambda_s =  [0.0654765]
+#lambda_hs =  [0.41981]
+#BK = 'BK6'
+#ms =  [18.5591]
+#lambda_s =  [0.271993]
+#lambda_hs =  [0.387765]
 
-BK = 'BK5'
-ms =  [23.9906]
-lambda_s =  [0.204095]
-lambda_hs =  [0.344696]
 
 
-xi = np.linspace(0, 5, 50)
+#BK = 'BK7'
+#ms =  [102.825]
+#lambda_s =  [0.0197856]
+#lambda_hs =  [0.446946]
+
+
+xi = np.linspace(0, 50, 50)
 
 file_name = "MSbar_"+BK #+str(ms[0]) + "_" + str(lambda_s[0]) + "_" + str(lambda_hs[0])
 scan(cmd, file_name)
