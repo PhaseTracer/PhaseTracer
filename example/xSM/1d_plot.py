@@ -8,38 +8,52 @@ from plot_fun import fun_gamma, fun_diff, loaddata
 
 fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
 
+norm = True
+
 for ax in axs:
   ax.grid(axis='x', alpha=0.75)
   ax.grid(axis='y', alpha=0.75)
 
 def plot_for_gauge(data_MS, color):
+
+  sel = data_MS[:,3]>0
+
   xi = data_MS[:,10]
   TC_MS = data_MS[:,4]
   gamma_MS = fun_gamma(data_MS)
 
+  TC_norm = 1
+  gamma_norm = 1
+  if norm :
+    xi_loc = abs(xi-1) < 0.05
+#    print len(xi[xi_loc])
+#    print xi[xi_loc]
+    TC_norm = TC_MS[xi_loc]
+    gamma_norm = gamma_MS[xi_loc]
+    
   ax = axs[0]
-  ax.plot(xi, TC_MS,  c=color, alpha=1)
+  ax.plot(xi[sel], TC_MS[sel]/TC_norm,  c=color, alpha=1)
 
   ax = axs[1]
-  ax.plot(xi, gamma_MS,  c=color, alpha=1)
+  ax.plot(xi[sel], gamma_MS[sel]/gamma_norm,  c=color, alpha=1)
 
 
-plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK1.txt"),  "orange")
-plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK2.txt"),  "r")
-plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK3.txt"),  "purple")
-plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK4.txt"),  "g")
+plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK1.txt"),  "r")
+plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK2.txt"),  "orange")
+plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK3.txt"),  "g")
+plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK4.txt"),  "cyan")
 plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK5.txt"),  "b")
-#plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_62.5_0.11_0.25.txt"))
-
+plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK6.txt"),  "purple")
+#plot_for_gauge(np.loadtxt("gauge_dependence/MSbar_BK7.txt"),  "k")
 
 axs[0].set_xlabel(r"$\xi$")
-axs[0].set_ylabel(r"$T_C$")
+axs[0].set_ylabel(r"$T_C^{(\xi)}/T_C^{(\xi=1)}$" if norm else r"$T_C^{(\xi)}$")
 
 axs[1].set_xlabel(r"$\xi$")
-axs[1].set_ylabel(r"$\gamma$")
+axs[1].set_ylabel(r"$\gamma^{(\xi)}/\gamma^{(\xi=1)}$"if norm else r"$\gamma^{(\xi)}$")
 
 fig.tight_layout()
-plt.savefig('gauge_1d.png')
+plt.savefig('gauge_1d'+('_norm' if norm else '' )+'.png')
 
 #label = (r'$|\Delta \gamma_{\rm EW}| / \gamma_{\rm EW}^{bk}$' if show_gamma else r'$|\Delta T_C|/T_C$' )
 #if use_log:
