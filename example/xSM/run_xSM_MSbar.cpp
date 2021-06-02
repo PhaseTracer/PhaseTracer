@@ -224,15 +224,23 @@ int main(int argc, char* argv[]) {
     return 0;
   }
   
-  int jj=0;
-  double gamme_max=0;
+  // Find the transition with largest gamma from (0,vs) -> (vh,0) 
+  int jj = -1;
+  double gamme_max = 0.;
   for (int i=0; i<t.size(); i++) {
     double gamma = t[i].gamma;
-    if (gamme_max < gamma){
+    if (gamme_max < gamma and abs(t[i].false_vacuum[0])<1. and abs(t[i].true_vacuum[1])<1.){
       jj = i;
       gamme_max = gamma;
     }
   }
+  
+  if (jj<0) {
+    std::vector<double> out = {-3, 0, 0, 0, 0, 0};
+    output_file << toString(in, out, flags) << std::endl;
+    return 0;
+  }
+  
   std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
   
   output_file << toString(in, out, flags) << std::endl;
