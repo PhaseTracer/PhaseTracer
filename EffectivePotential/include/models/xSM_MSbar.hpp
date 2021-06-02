@@ -101,7 +101,8 @@ class xSM_MSbar : public OneLoopPotential {
    */
   bool apply_one_loop(double tol = 0.1) {
     apply_tree_level();
-
+    muh_sq_use_0L_EWSB = muh_sq;
+    
     size_t ii = 0;
     while (true) {
       ++ii;
