@@ -107,9 +107,11 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
   size_t get_n_scalars() const override { return 2; }
   
   std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const override {
-    phi[0] = - phi[0];
-    phi[1] = - phi[1];
-    return {phi};
+    auto phi1 = phi;
+    phi1[0] = - phi[0];
+    auto phi2 = phi;
+    phi2[1] = - phi[1];
+    return {phi1, phi2};
   };
 
   // Allows running to a different scale, for checking scale dependence
