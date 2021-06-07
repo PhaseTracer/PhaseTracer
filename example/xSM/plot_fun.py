@@ -31,23 +31,26 @@ def fun_diff(data1, data2, data0, show_gamma=False, norm =True, use_abs=True, ga
     size_2 = data2[ii][3]
     size_0 = data0[ii][3]
     
-    gamma_1 = fun_gamma_line(data1[ii])
-    gamma_2 = fun_gamma_line(data2[ii])
-    gamma_0 = fun_gamma_line(data0[ii])
-
     if size_1 > 0 and size_2 > 0 and size_0>0:
-      if gamma_0 > gamma_min and gamma_0 < 5: 
-        if show_gamma:
-          diff = abs(gamma_1 - gamma_2) if use_abs else gamma_1 - gamma_2
-          x1 = gamma_1
-          x2 = gamma_2
-          central = gamma_0
-        else:
-          diff = abs(data1[ii][4] - data2[ii][4]) if use_abs else data1[ii][4] - data2[ii][4]
-          x1 = data1[ii][4] 
-          x2 = data2[ii][4]
-          central = data0[ii][4]
-        data_diff.append([ms, lambda_s, lambda_hs, diff/central if norm else diff, central, x1, x2])
+      TC_1 = data1[ii][4]
+      TC_2 = data2[ii][4]
+      TC_0 = data0[ii][4]
+      if TC_1>0 and TC_0>0 and TC_0>0:
+        gamma_1 = fun_gamma_line(data1[ii])
+        gamma_2 = fun_gamma_line(data2[ii])
+        gamma_0 = fun_gamma_line(data0[ii])
+        if gamma_0 > gamma_min and gamma_0 < 5: 
+          if show_gamma:
+            diff = abs(gamma_1 - gamma_2) if use_abs else gamma_1 - gamma_2
+            x1 = gamma_1
+            x2 = gamma_2
+            central = gamma_0
+          else:
+            diff = abs(TC_1 - TC_2) if use_abs else TC_1 - TC_2
+            x1 = TC_1
+            x2 = TC_2
+            central = TC_0
+          data_diff.append([ms, lambda_s, lambda_hs, diff/central if norm else diff, central, x1, x2])
 
   if sort:
     data_diff.sort(key=(lambda x:x[3])) 
