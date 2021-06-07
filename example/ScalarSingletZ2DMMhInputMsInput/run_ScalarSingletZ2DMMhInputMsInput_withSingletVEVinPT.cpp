@@ -191,11 +191,12 @@ int main(int argc, char* argv[]) {
     return 0;
   }
   
-  int jj=0;
-  double gamme_max=0;
+  // Find the transition with largest gamma from (0,vs) -> (vh,0) 
+  int jj = -1;
+  double gamme_max = 0.;
   for (int i=0; i<t.size(); i++) {
     double gamma = t[i].gamma;
-    if (gamme_max < gamma){
+    if (gamme_max < gamma and abs(t[i].false_vacuum[0])<1. and abs(t[i].true_vacuum[1])<1.){
       jj = i;
       gamme_max = gamma;
     }
