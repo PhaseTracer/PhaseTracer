@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 //    ms = 60;
 //    lambda_s =  0.15;
     
-  } else if ( argc == 8 ) {
+  } else if ( argc == 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
     lambda_hs = atof(argv[3]);
@@ -88,13 +88,14 @@ int main(int argc, char* argv[]) {
 
     daisy_flag = atoi(argv[6]);
     use_1L_EWSB_in_0L_mass = atoi(argv[7]);
+    use_Goldstone_resum = atoi(argv[8]);
   } else {
-    std::cout << "Use ./run_xSM_MSbar ms lambda_s lambda_hs Q xi daisy_flag use_1L_EWSB_in_0L_mass " << std::endl;
+    std::cout << "Use ./run_xSM_MSbar ms lambda_s lambda_hs Q xi daisy_flag use_1L_EWSB_in_0L_mass use_Goldstone_resum" << std::endl;
     return 0;
   }
 
   std::vector<double> in ={ms, lambda_s, lambda_hs};
-  std::vector<double> flags ={Q, xi, daisy_flag, (float)use_1L_EWSB_in_0L_mass};
+  std::vector<double> flags ={Q, xi, daisy_flag, (float)use_1L_EWSB_in_0L_mass, (float)use_Goldstone_resum};
 
   if (debug_mode){
     LOGGER(debug);
@@ -105,7 +106,8 @@ int main(int argc, char* argv[]) {
               << "xi = " << xi << std::endl
               << "daisy_term = " << ( daisy_flag == 0  ? "None" : ( daisy_flag == 1 ? "Parwani" : "ArnoldEspinosa")) << std::endl
               << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
-              << "use 1-level ewsb in tree-level masses = " << use_1L_EWSB_in_0L_mass << std::endl;
+              << "use 1-level ewsb in tree-level masses = " << use_1L_EWSB_in_0L_mass << std::endl
+              << "use Goldstone resum = " << use_Goldstone_resum << std::endl;
 
   } else {
     LOGGER(fatal);
