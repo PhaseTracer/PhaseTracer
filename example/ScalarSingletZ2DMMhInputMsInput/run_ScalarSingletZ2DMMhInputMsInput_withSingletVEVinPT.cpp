@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
   }
 
   std::vector<double> in ={ms, lambda_s, lambda_hs};
-  std::vector<double> flags ={Q, xi, daisy_flag, (float)use_1L_EWSB_in_0L_mass};
+  std::vector<double> flags ={Q, xi, daisy_flag, (float)use_1L_EWSB_in_0L_mass, (float)use_Goldstone_resum};
 
   if (debug_mode){
     LOGGER(debug);
@@ -76,7 +76,8 @@ int main(int argc, char* argv[]) {
               << "xi = " << xi << std::endl
               << "daisy_term = " << ( daisy_flag == 0  ? "None" : ( daisy_flag == 1 ? "Parwani" : "ArnoldEspinosa")) << std::endl
               << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
-              << "use 1-level ewsb in tree-level masses = " << use_1L_EWSB_in_0L_mass << std::endl;
+              << "use 1-level ewsb in tree-level masses = " << use_1L_EWSB_in_0L_mass << std::endl
+              << "use Goldstone resum = " << use_Goldstone_resum << std::endl;
 
   } else {
     LOGGER(fatal);
