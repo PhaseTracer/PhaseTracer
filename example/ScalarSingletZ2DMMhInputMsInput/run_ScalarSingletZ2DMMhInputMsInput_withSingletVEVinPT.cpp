@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
     daisy_flag = 1;
     use_1L_EWSB_in_0L_mass = false;  
     use_Goldstone_resum = false;
-  } else if ( argc == 8 ) {
+  } else if ( argc == 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
     lambda_hs = atof(argv[3]);
@@ -58,6 +58,7 @@ int main(int argc, char* argv[]) {
     xi = atof(argv[5]);
     daisy_flag = atoi(argv[6]);
     use_1L_EWSB_in_0L_mass = atoi(argv[7]);
+    use_Goldstone_resum = atoi(argv[8]);
   } else {
     std::cout << "Use ./run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT ms lambda_s lambda_hs Q xi daisy_flag use_1L_EWSB_in_0L_mass " << std::endl;
     return 0;
