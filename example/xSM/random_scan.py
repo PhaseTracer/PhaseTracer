@@ -23,7 +23,7 @@ def scan(cmd, file_name):
   for ii in range(n_total):
     par = (" " + str(ms[ii]) + " " +str(lambda_s[ii]) + " " + str(lambda_hs[ii]) 
           +" " + str(Q) + " " + str(xi) + " " + str(daisy_flag) 
-          +" " + str(use_1L_EWSB_in_0L_mass) )
+          +" " + str(use_1L_EWSB_in_0L_mass) + " " + str(use_Goldstone_resum) )
 
     print par
     os.system(cmd+par)
@@ -38,14 +38,16 @@ ms = np.random.uniform(10,110,n_total)
 lambda_s = np.random.uniform(0.01,0.3,n_total)
 lambda_hs = np.random.uniform(0.1,0.5,n_total)
 
-Q = 173
+mt = 173.
+Q = mt
 xi = 1
 daisy_flag = 2
 use_1L_EWSB_in_0L_mass = 0
+use_Goldstone_resum = 0
 
 ######################################
-scheme = "xSM_MSbar"
-cmd = "./../../../bin/run_"+scheme
+#scheme = "xSM_MSbar"
+#cmd = "./../../../bin/run_"+scheme
 
 #xi = 1
 #file_name = scheme + "_xi_1"
@@ -61,9 +63,9 @@ cmd = "./../../../bin/run_"+scheme
 #file_name = scheme + "_xi_01"
 #scan(cmd, file_name)
 
-xi = 0
-file_name = scheme + "_xi_0"
-scan(cmd, file_name)
+#xi = 0
+#file_name = scheme + "_xi_0"
+#scan(cmd, file_name)
 
 #xi = 0
 #use_1L_EWSB_in_0L_mass = 1
@@ -93,15 +95,15 @@ scan(cmd, file_name)
 
 
 #####################################
-#scheme = "ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-#cmd = "./../../../bin/run_"+scheme
+scheme = "ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+cmd = "./../../../bin/run_"+scheme
 
-#file_name = scheme + "_mt"
-#Q = 173.
-#scan(cmd, file_name)
+file_name = scheme + "_mt"
+Q = mt
+scan(cmd, file_name)
 
 #file_name = scheme + "_2mt"
-#Q = 173.*2.
+#Q = mt*2.
 #scan(cmd, file_name)
 
 #file_name = scheme + "_05mt"

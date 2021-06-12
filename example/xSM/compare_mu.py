@@ -6,15 +6,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from plot_fun import fun_gamma, fun_diff, loaddata
 
 
-data_xi_0 = np.loadtxt("random_scan_results/xSM_MSbar_xi_0.txt")
-data_xi_1 = np.loadtxt("random_scan_results/xSM_MSbar_xi_1.txt")
-data_xi_3 = np.loadtxt("random_scan_results/xSM_MSbar_xi_3.txt")
+data_mu_05 = np.loadtxt("random_scan_results/ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_05mt.txt")
+data_mu_1 = np.loadtxt("random_scan_results/ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_mt.txt")
+data_mu_2 = np.loadtxt("random_scan_results/ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_2mt.txt")
   
-#data_xi_1 = np.loadtxt("random_scan_results_new/xSM_MSbar_xi_1_use_1L_EWSB_in_0L_mass.txt")
-#data_xi_3 = np.loadtxt("random_scan_results_new/xSM_MSbar_xi_3_use_1L_EWSB_in_0L_mass.txt")
-
-
-
 show_gamma = True
 use_log = False
 
@@ -89,9 +84,9 @@ def get_griddata(px,py,nx,ny,c2):
     return [xf,yf,zf]
 
 
-if False:
+if True:
 
-  diff = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma)
+  diff = fun_diff(data_mu_05, data_mu_2, data_mu_1, show_gamma)
   if use_log:
     diff[:,3] = np.log10(diff[:,3]+1E-10) 
     vmin = -5
@@ -110,7 +105,7 @@ if False:
   fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
 
   ax = axs[0]
-  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,3], cmap="rainbow", vmax = 0.1, s=30, marker=".", vmin=vmin,alpha=1)
+  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,3], cmap="rainbow", vmax =0.4,  s=30, marker=".", vmin=vmin,alpha=1)
 
   #[xf,yf,zf] = get_griddata(diff[:,nx], diff[:,ny], 50, 50, diff[:,3])
   #map = ax.scatter(xf[zf>-9],yf[zf>-9], c=zf[zf>-9], cmap="autumn", s=20, marker="s", vmin=vmin, vmax =0.1, alpha=1)
@@ -118,7 +113,7 @@ if False:
   clb = plt.colorbar(map, ax=ax)
 
 
-  label = (r'$|\gamma^{(\xi=0)} - \gamma^{(\xi=3)}| / \gamma^{(\xi=1)}$' if show_gamma else r'$|T_C^{(\xi=0)}-T_C^{(\xi=3)}|/T_C^{(\xi=1)}$' )
+  label = (r'$|\gamma^{(\mu=\frac{1}{2}m_t)} - \gamma^{(\mu=2m_t)}| / \gamma^{(\mu=m_t)}$' if show_gamma else r'$|T_C^{(\mu=\frac{1}{2}m_t)}-T_C^{(\mu=2m_t)}|/T_C^{(\mu=m_t)}$' )
   if use_log:
     label = r'log$_{10}$('+label+')'
 
@@ -143,14 +138,14 @@ if False:
   map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,4], cmap="winter", s=30, marker=".", alpha=1)
   clb = plt.colorbar(map, ax=ax)
 
-  ax.set_title(label="Corresponding "+ (r"$\gamma^{(\xi=1)}$" if show_gamma else r"$T_C^{(\xi=1)}$") )
+  ax.set_title(label="Corresponding "+ (r"$\gamma^{(\mu=m_t)}$" if show_gamma else r"$T_C^{(\mu=m_t)}$") )
   ax.set_xlabel(xlabel)
   ax.set_ylabel(ylabel)
   ax.set_xlim(xmin,xmax)
   ax.set_ylim(ymin,ymax)
 
   fig.tight_layout()
-  plt.savefig('gauge_'+figure_name + ('_gamma' if show_gamma else '_Tc') + ( '_log' if use_log else '') + '.png')
+  plt.savefig('mu_'+figure_name + ('_gamma' if show_gamma else '_Tc') + ( '_log' if use_log else '') + '.png')
 
 
 if False:
@@ -158,12 +153,12 @@ if False:
   norm = True
   ZoomIn = False
 
-  label_TC = r'$[T_C^{(\xi=0)}-T_C^{(\xi=3)}]/T_C^{(\xi=1)}$' if norm else r'$T_C^{(\xi=0)} - T_C^{(\xi=3)}$'
-  label_gamma = r'$[\gamma^{(\xi=0)}-\gamma^{(\xi=3)}]/\gamma^{(\xi=1)}$' if norm else r'$\gamma^{(\xi=0)} - \gamma^{(\xi=3)}$'
+  label_TC = r'$[T_C^{(\mu=\frac{1}{2}m_t)}-T_C^{(\mu=2m_t)}]/T_C^{(\mu=m_t)}$' if norm else r'$T_C^{(\mu=\frac{1}{2}m_t)} - T_C^{(\mu=2m_t)}$'
+  label_gamma = r'$[\gamma^{(\mu=\frac{1}{2}m_t)}-\gamma^{(\mu=2m_t)}]/\gamma^{(\mu=m_t)}$' if norm else r'$\gamma^{(\mu=\frac{1}{2}m_t)} - \gamma^{(\mu=2m_t)}$'
   
-  diff_for_gamma = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma=True, norm = norm, use_abs = False, sort=False)
+  diff_for_gamma = fun_diff(data_mu_05, data_mu_2, data_mu_1, show_gamma=True, norm = norm, use_abs = False, sort=False)
   diff_gamma = diff_for_gamma[:,3]
-  diff_for_TC = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma=False, norm = norm, use_abs = False, sort=False)
+  diff_for_TC = fun_diff(data_mu_05, data_mu_2, data_mu_1, show_gamma=False, norm = norm, use_abs = False, sort=False)
   diff_TC = diff_for_TC[:,3]
   
   fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
@@ -197,35 +192,35 @@ if False:
     ax.set_ylim(-1,2)
 
   fig.tight_layout()
-  plt.savefig('gaugue_hist'+ ('_norm' if norm else '') + ('_ZoomIn' if ZoomIn else '') + '.png')
+  plt.savefig('mu_hist'+ ('_norm' if norm else '') + ('_ZoomIn' if ZoomIn else '') + '.png')
   
   
-if True:
+if False:
 
   norm = True
   ZoomIn = False
 
-  one_point = False
+  one_point = True
 
-  label_TC = r'$[T_C^{(\xi=0)}-T_C^{(\xi=3)}]/T_C^{(\xi=1)}$' if norm else r'$T_C^{(\xi=0)} - T_C^{(\xi=3)}$'
-  label_gamma = r'$[\gamma^{(\xi=0)}-\gamma^{(\xi=3)}]/\gamma^{(\xi=1)}$' if norm else r'$\gamma^{(\xi=0)} - \gamma^{(\xi=3)}$'
+  label_TC = r'$[T_C^{(\mu=\frac{1}{2}m_t)}-T_C^{(\mu=2m_t)}]/T_C^{(\mu=m_t)}$' if norm else r'$T_C^{(\mu=\frac{1}{2}m_t)} - T_C^{(\mu=2m_t)}$'
+  label_gamma = r'$[\gamma^{(\mu=\frac{1}{2}m_t)}-\gamma^{(\mu=2m_t)}]/\gamma^{(\mu=m_t)}$' if norm else r'$\gamma^{(\mu=\frac{1}{2}m_t)} - \gamma^{(\mu=2m_t)}$'
   
 
 
-  diff_for_gamma = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma=True, norm = norm, use_abs = False, sort=False)
+  diff_for_gamma = fun_diff(data_mu_05, data_mu_2, data_mu_1, show_gamma=True, norm = norm, use_abs = False, sort=False)
   diff_gamma = diff_for_gamma[:,3]
-  diff_for_TC = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma=False, norm = norm, use_abs = False, sort=False)
+  diff_for_TC = fun_diff(data_mu_05, data_mu_2, data_mu_1, show_gamma=False, norm = norm, use_abs = False, sort=False)
   diff_TC = diff_for_TC[:,3]
 
   fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
 
   if one_point:
-    sel_1 = diff_TC < - 0.4
-    sel_2 = abs(diff_TC+0.2) < 1E-3
-    sel_3 = (abs(diff_TC+0.1) < 1E-3) & (abs(diff_gamma-0.1) < 1E-2)
-    sel_4 = (abs(diff_TC+0.06) < 5E-4) & (abs(diff_gamma-0.1) < 5E-3)
-    sel_5 = (diff_TC > -0.048) & (abs(diff_gamma-0.15) < 1.2E-3)
-    sel_6 = diff_TC > -0.0135
+    sel_1 = diff_TC < - 1.12
+    sel_2 = abs(diff_TC+0.5) < 1E-02
+    sel_3 = (abs(diff_TC+0.2) < 2E-3) & (diff_gamma < -0.7)
+    sel_4 = (diff_TC < -0.26) & (diff_gamma>0.25)
+    sel_5 = abs(diff_TC - 0.11) < 1E-3
+    sel_6 = diff_TC > 0.952
   else:
     sel_1 = diff_TC < - 0.21
     sel_2 = (diff_TC > - 0.21) & (diff_TC < - 0.15)
@@ -241,7 +236,7 @@ if True:
   print "ms = ",        diff_for_gamma[:,0][sel_1]
   print "lambda_s = ",  diff_for_gamma[:,1][sel_1]
   print "lambda_hs = ", diff_for_gamma[:,2][sel_1]
-  if len(diff_for_gamma[:,0][sel_1])>1: print diff_for_gamma[sel_1]
+  if len(diff_for_gamma[:,0][sel_1])>1: print diff_for_TC[sel_1]
   
   print "BK = 'BK2'"
   print "ms = ",        diff_for_gamma[:,0][sel_2]
@@ -274,15 +269,7 @@ if True:
   if len(diff_for_TC[:,0][sel_6])>1: print diff_for_TC[sel_6]
 
 
-  norm = False
-  diff_for_gamma = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma=True, norm = norm, use_abs = False, sort=False)
-  diff_gamma = diff_for_gamma[:,3]
-  diff_for_TC = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma=False, norm = norm, use_abs = False, sort=False)
-  diff_TC = diff_for_TC[:,3]
-  label_TC = r'$[T_C^{(\xi=0)}-T_C^{(\xi=3)}]/T_C^{(\xi=1)}$' if norm else r'$T_C^{(\xi=0)} - T_C^{(\xi=3)}$'
-  label_gamma = r'$[\gamma^{(\xi=0)}-\gamma^{(\xi=3)}]/\gamma^{(\xi=1)}$' if norm else r'$\gamma^{(\xi=0)} - \gamma^{(\xi=3)}$'
-  
-#  bk6 = (data_xi_0[:,0] == diff_for_gamma[:,0][sel_6] ) & (data_xi_0[:,1] == diff_for_gamma[:,1][sel_6] )
+#  bk6 = (data_mu_0[:,0] == diff_for_gamma[:,0][sel_6] ) & (data_mu_0[:,1] == diff_for_gamma[:,1][sel_6] )
 #  
 #  print data_xi_0[bk6]
 #  print data_xi_1[bk6]
@@ -350,7 +337,7 @@ if True:
     ax.set_ylim(-1,1)
 
   fig.tight_layout()
-  plt.savefig('gaugue_sel_bk_points.png' if one_point else 'gaugue_classify.png')
+  plt.savefig('mu_sel_bk_points.png' if one_point else 'mu_classify.png')
   
 
 plt.show()
