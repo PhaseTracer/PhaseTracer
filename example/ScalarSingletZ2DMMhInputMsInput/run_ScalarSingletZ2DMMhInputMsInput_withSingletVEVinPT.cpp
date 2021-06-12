@@ -202,6 +202,13 @@ int main(int argc, char* argv[]) {
       gamme_max = gamma;
     }
   }
+  
+  if (jj<0) {
+    std::vector<double> out = {-3, 0, 0, 0, 0, 0};
+    output_file << toString(in, out, flags) << std::endl;
+    return 0;
+  }
+  
   std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
   
   output_file << toString(in, out, flags) << std::endl;
