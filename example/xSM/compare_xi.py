@@ -15,7 +15,7 @@ data_xi_3 = np.loadtxt("random_scan_results/xSM_MSbar_xi_3.txt")
 
 
 
-show_gamma = True
+show_gamma = False
 use_log = False
 
 if len(sys.argv)<2 :
@@ -31,6 +31,7 @@ else:
 if par=="lhs_ls":    
     nx = 1
     ny = 2
+    nz = 0
     xlabel = r'$\lambda_{S}$'
     ylabel = r'$\lambda_{HS}$'
     zlabel = r'$m_{S}$'
@@ -43,6 +44,7 @@ if par=="lhs_ls":
 if par=="lhs_ms":    
     nx = 0
     ny = 2
+    nz = 1
     xlabel = r'$m_{S}$'
     ylabel = r'$\lambda_{HS}$'
     zlabel = r'$\lambda_{S}$'
@@ -55,6 +57,7 @@ if par=="lhs_ms":
 if par=="ls_ms":    
     nx = 0
     ny = 1
+    nz = 2
     xlabel = r'$m_{S}$'
     ylabel = r'$\lambda_{S}$'
     zlabel = r'$\lambda_{HS}$'
@@ -89,7 +92,7 @@ def get_griddata(px,py,nx,ny,c2):
     return [xf,yf,zf]
 
 
-if False:
+if True:
 
   diff = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma)
   if use_log:
@@ -130,7 +133,7 @@ if False:
 
 
   ax = axs[1]
-  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,0], cmap="autumn", s=30, marker=".", alpha=1)
+  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,nz], cmap="autumn", s=30, marker=".", alpha=1)
   clb = plt.colorbar(map, ax=ax)
 
   ax.set_title(label="Corresponding "+zlabel)
@@ -200,7 +203,7 @@ if False:
   plt.savefig('gaugue_hist'+ ('_norm' if norm else '') + ('_ZoomIn' if ZoomIn else '') + '.png')
   
   
-if True:
+if False:
 
   norm = True
   ZoomIn = False

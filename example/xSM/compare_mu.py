@@ -10,7 +10,7 @@ data_mu_05 = np.loadtxt("random_scan_results/ScalarSingletZ2DMMhInputMsInput_wit
 data_mu_1 = np.loadtxt("random_scan_results/ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_mt.txt")
 data_mu_2 = np.loadtxt("random_scan_results/ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_2mt.txt")
   
-show_gamma = True
+show_gamma = False
 use_log = False
 
 if len(sys.argv)<2 :
@@ -26,6 +26,7 @@ else:
 if par=="lhs_ls":    
     nx = 1
     ny = 2
+    nz = 0
     xlabel = r'$\lambda_{S}$'
     ylabel = r'$\lambda_{HS}$'
     zlabel = r'$m_{S}$'
@@ -38,6 +39,7 @@ if par=="lhs_ls":
 if par=="lhs_ms":    
     nx = 0
     ny = 2
+    nz = 1
     xlabel = r'$m_{S}$'
     ylabel = r'$\lambda_{HS}$'
     zlabel = r'$\lambda_{S}$'
@@ -50,6 +52,7 @@ if par=="lhs_ms":
 if par=="ls_ms":    
     nx = 0
     ny = 1
+    nz = 2
     xlabel = r'$m_{S}$'
     ylabel = r'$\lambda_{S}$'
     zlabel = r'$\lambda_{HS}$'
@@ -105,7 +108,7 @@ if True:
   fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
 
   ax = axs[0]
-  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,3], cmap="rainbow", vmax =0.4,  s=30, marker=".", vmin=vmin,alpha=1)
+  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,3], cmap="rainbow", vmax =0.2,  s=30, marker=".", vmin=vmin,alpha=1)
 
   #[xf,yf,zf] = get_griddata(diff[:,nx], diff[:,ny], 50, 50, diff[:,3])
   #map = ax.scatter(xf[zf>-9],yf[zf>-9], c=zf[zf>-9], cmap="autumn", s=20, marker="s", vmin=vmin, vmax =0.1, alpha=1)
@@ -125,7 +128,7 @@ if True:
 
 
   ax = axs[1]
-  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,0], cmap="autumn", s=30, marker=".", alpha=1)
+  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,nz], cmap="autumn", s=30, marker=".", alpha=1)
   clb = plt.colorbar(map, ax=ax)
 
   ax.set_title(label="Corresponding "+zlabel)
