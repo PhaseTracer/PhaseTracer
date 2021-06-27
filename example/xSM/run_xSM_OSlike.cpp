@@ -40,29 +40,34 @@ int main(int argc, char* argv[]) {
   if ( argc == 1 ) {
     debug_mode = true;
     // Match choices in 1808.01098
-    lambda_hs = 0.24;
-    ms = 0.5 * SM::mh;
-    double lambda_s_min = 2. / square(SM::mh * SM::v) *
-                          square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-    lambda_s =  lambda_s_min + 0.1;
-    xi = 0;
-    daisy_flag = 1;
-    use_Goldstone_resum = true;
-  } else if ( argc == 7 ) {
+//    lambda_hs = 0.24;
+//    ms = 0.5 * SM::mh;
+//    double lambda_s_min = 2. / square(SM::mh * SM::v) *
+//                          square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+//    lambda_s =  lambda_s_min + 0.1;
+//    xi = 0;
+//    daisy_flag = 1;
+//    use_Goldstone_resum = true;
+    
+      lambda_hs = 0.25;
+      ms = 68.2224;
+      lambda_s =  0.1;
+      xi = 0;
+      daisy_flag = 1;
+      use_Goldstone_resum = true;
+    
+  } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
     lambda_hs = atof(argv[3]);
-    xi = atof(argv[4]);
-    daisy_flag = atoi(argv[5]);
-    use_Goldstone_resum = atoi(argv[6]);
+    xi = atof(argv[5]);
+    daisy_flag = atoi(argv[6]);
+    use_Goldstone_resum = atoi(argv[8]);
 
   } else {
     std::cout << "Use ./run_xSM_OSlike ms lambda_s lambda_hs xi " << std::endl;
     return 0;
   }
-  
-  std::vector<double> in ={ms, lambda_s, lambda_hs};
-  std::vector<double> flags ={xi, daisy_flag, (float)use_Goldstone_resum};
 
   if (debug_mode){
     LOGGER(debug);
@@ -78,7 +83,10 @@ int main(int argc, char* argv[]) {
   
   // Construct our model
   EffectivePotential::xSM_OSlike model(lambda_hs, lambda_s, ms, xi, use_Goldstone_resum);
-  model.solve_Q();
+  model.solve_renormalization_scale();
+  
+  std::vector<double> in ={ms, lambda_s, lambda_hs};
+  std::vector<double> flags ={xi, daisy_flag, (float)use_Goldstone_resum, model.get_renormalization_scale()};
   
   // Choose Daisy method 
   if (daisy_flag == 0){
@@ -93,7 +101,7 @@ int main(int argc, char* argv[]) {
   
   if (debug_mode) {
       Eigen::VectorXd x(2);
-      x <<  SM::v, 0;      
+      x <<  SM::v, 0;
 //      std::cout << "V0=" << model.V0(x) << std::endl;
 //      std::cout << "V1=" << model.V1(x,0) << std::endl;
 //      std::cout << "V1T=" << model.V1T(x,100) << std::endl;
@@ -110,7 +118,7 @@ int main(int argc, char* argv[]) {
       
   pf.set_check_vacuum_at_high(false);
   pf.set_seed(0);
-  pf.set_check_hessian_singular(false);
+//  pf.set_check_hessian_singular(false);
     
   try {
     pf.find_phases();
@@ -123,7 +131,7 @@ int main(int argc, char* argv[]) {
     output_file << toString(in, out, flags) << std::endl;
     return 0;
   }
-     if (debug_mode) std::cout << pf;
+  if (debug_mode) std::cout << pf;
 
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf);
@@ -141,15 +149,23 @@ int main(int argc, char* argv[]) {
     return 0;
   }
   
-  int jj=0;
-  double gamme_max=0;
+  // Find the transition with largest gamma from (0,vs) -> (vh,0)
+  int jj = -1;
+  double gamme_max = 0.;
   for (int i=0; i<t.size(); i++) {
     double gamma = t[i].gamma;
-    if (gamme_max < gamma){
+    if (gamme_max < gamma and abs(t[i].false_vacuum[0])<1. and abs(t[i].true_vacuum[1])<1.){
       jj = i;
       gamme_max = gamma;
     }
   }
+  
+  if (jj<0) {
+    std::vector<double> out = {-3, 0, 0, 0, 0, 0};
+    output_file << toString(in, out, flags) << std::endl;
+    return 0;
+  }
+  
   std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
   
   output_file << toString(in, out, flags) << std::endl;
