@@ -59,7 +59,7 @@ class xSM_OSlike : public OneLoopPotential {
   double VCW(Eigen::VectorXd phi, double mu){
     double correction = 0;
     Q = mu;
-    const std::vector<double> scalar_masses_sq = get_scalar_masses_sq(phi, 0);
+    const std::vector<double> scalar_masses_sq = get_scalar_masses_sq(phi, xi);
     const std::vector<double> fermion_masses_sq = get_fermion_masses_sq(phi);
     const std::vector<double> vector_masses_sq = get_vector_masses_sq(phi);
     
@@ -148,7 +148,7 @@ class xSM_OSlike : public OneLoopPotential {
     
     Eigen::VectorXd x(2);
     x << v, 0;
-    const std::vector<double> scalar_masses_sq = get_scalar_masses_sq(x, 0);
+    const std::vector<double> scalar_masses_sq = get_scalar_masses_sq(x, xi);
     for (int ii=0; ii < scalar_masses_sq.size(); ++ii){
       scalar_masses_sq_EW[ii] = scalar_masses_sq[ii];
 //      std::cout << "scalar_masses_EW["<< ii << "] = "<< std::sqrt(std::abs(scalar_masses_sq_EW[ii])) << std::endl;
