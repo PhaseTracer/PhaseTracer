@@ -46,13 +46,13 @@ class xSM_OSlike : public OneLoopPotential {
   
   xSM_OSlike(double lambda_hs_,
             double lambda_s_,
-            double m_s_,
+            double ms_,
             double xi_,
             bool use_Goldstone_resum_):
-    lambda_hs(lambda_hs_), lambda_s(lambda_s_), m_s(m_s_), 
+    lambda_hs(lambda_hs_), lambda_s(lambda_s_), ms(ms_),
     xi(xi_), use_Goldstone_resum(use_Goldstone_resum_){
     set_xi(xi);
-    mus_sq = square(m_s) - lambda_hs * square(v) / 2.;
+    mus_sq = square(ms) - lambda_hs * square(v) / 2.;
     
   }
 
@@ -139,7 +139,7 @@ class xSM_OSlike : public OneLoopPotential {
   }
   
 
-  void solve_Q(){
+  void solve_renormalization_scale(){
     
     const auto f = [this](double mu) {return this->renormalization_condition_1(mu);};
     const auto result = boost::math::tools::bisect(f, 10., 500., TerminationCondition());
@@ -151,9 +151,13 @@ class xSM_OSlike : public OneLoopPotential {
     const std::vector<double> scalar_masses_sq = get_scalar_masses_sq(x, 0);
     for (int ii=0; ii < scalar_masses_sq.size(); ++ii){
       scalar_masses_sq_EW[ii] = scalar_masses_sq[ii];
-//      std::cout << "scalar_masses_sq_EW["<< ii << "] = "<< std::sqrt(std::abs(scalar_masses_sq_EW[ii])) << std::endl;
+//      std::cout << "scalar_masses_EW["<< ii << "] = "<< std::sqrt(std::abs(scalar_masses_sq_EW[ii])) << std::endl;
     }
-
+    
+//    for (int ii=0; ii < vector_masses_sq_EW.size(); ++ii){
+//      std::cout << "vector_masses_EW["<< ii << "] = "<< std::sqrt(std::abs(vector_masses_sq_EW[ii])) << std::endl;
+//    }
+    
 //    delta_muSqH = d2VCW(Q);
 //    delta_muSqS = d2VCWds2(Q);
 //    std::cout << "Q    = "<< Q << std::endl;
@@ -210,15 +214,15 @@ class xSM_OSlike : public OneLoopPotential {
                     (vector_masses_sq_EW[i] * xlogx(x) - vector_masses_sq[i] * 3. / 2.);
       correction += vector_dofs[i] * 2. * vector_masses_sq[i] * vector_masses_sq_EW[i];
     }
-    return correction / (64. * M_PI * M_PI);                  
+    return correction / (64. * M_PI * M_PI);
   }
 
   /**
    * Thermal scalar masses of form c * T^2 etc for high-temperature expansion of potential
    */
   std::vector<double> get_scalar_thermal_sq(double T) const override {
-    const double c_h = (9. * square(SM::g) +
-                        3. * square(SM::gp) +
+    const double c_h = (9. * g_sq +
+                        3. * gp_sq +
                         2. * (6. * SM::yt_sq + 6. * SM::yb_sq +
                               2. * SM::ytau_sq + 12. * lambda_h + lambda_hs)) / 48.;
     const double c_s = (2. * lambda_hs + 3. * lambda_s) / 12.;
@@ -242,19 +246,19 @@ class xSM_OSlike : public OneLoopPotential {
     const double sum = 1. / (16. * M_PI * M_PI) * (
                        3.  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
                       +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
-                      -6.  * SM::yt_sq * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
-                      -6.  * SM::yb_sq * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1])
-                      -2.  * SM::ytau_sq * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2])
-                      +1.5 * square(SM::g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
-                      +0.75* (square(SM::g)+square(SM::gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
+                      -6.  * yt_sq * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
+                      -6.  * yb_sq * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1])
+                      -2.  * ytau_sq * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2])
+                      +1.5 * g_sq * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
+                      +0.75* (g_sq+gp_sq) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
                       );
 
     // Goldstone finite temperature masses
     double mTG02 =   mgg2 + thermal_sq[0] + ( use_Goldstone_resum ? sum : 0);
     double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
     // xi-dependence
-    mTG02 += 0.25 * xi * (square(SM::g * h) + square(SM::gp * h));
-    mTGpm2 += 0.25 * xi * square(SM::g * h);
+    mTG02 += 0.25 * xi * (square(g * h) + square(gp * h));
+    mTGpm2 += 0.25 * xi * square(g * h);
     // CP even Higgs thermal temperature masses
     Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2); 
     MTH2(0,0) = mhh2 + thermal_sq[0];
@@ -313,39 +317,42 @@ class xSM_OSlike : public OneLoopPotential {
     return {phi1,phi2};
   };
 
+  double get_renormalization_scale(){
+    return Q;
+  }
 
  private:
   
   const double v = SM::v;
   const double mh = SM::mh;
-  const double mtop = SM::mtop;
-  const double mb = SM::mb;
-  const double mtau = SM::mtau;
-  const double mZ = SM::mZ;
-  const double mW = SM::mW;
   const double g = SM::g;
   const double g_sq = g * g;
   const double gp = SM::gp;
   const double gp_sq = gp * gp;
   const double yt_sq = SM::yt_sq;
+  const double yb_sq = SM::yt_sq;
+  const double ytau_sq = SM::ytau_sq;
+  const double mtop = SM::mtop;
+  const double mb = SM::mb;
+  const double mtau = SM::mtau;
+  const double mZ = SM::mZ;
+  const double mW = SM::mW;
   
   double Q=mtop;       // renormalization scale
   double eps = 0.001;  // for solving renormalization scale
   
   const double muh_sq = -0.5 * mh * mh;
   const double lambda_h = -muh_sq / square(v);
-
-  std::vector<double> scalar_masses_sq_EW = {mh*mh/4., mh*mh, 0.0};
-  const std::vector<double> vector_masses_sq_EW = {mW*mW, mZ*mZ, 0};
-  const std::vector<double> fermion_masses_sq_EW = {mtop*mtop, mb*mb, mtau*mtau};
-  
   double lambda_hs = 0.25;
-  double m_s = 65;
+  double ms = 65;
   double lambda_s = 0.1;
-  double mus_sq = square(m_s) - lambda_hs * square(v) / 2.;
-
+  double mus_sq = square(ms) - lambda_hs * square(v) / 2.;
   double xi=0;
   bool use_Goldstone_resum{true};
+          
+  std::vector<double> scalar_masses_sq_EW = {ms*ms, mh*mh, 0.0, 0,0, 0.0};
+  const std::vector<double> vector_masses_sq_EW = {mW*mW, mZ*mZ};
+  const std::vector<double> fermion_masses_sq_EW = {mtop*mtop, mb*mb, mtau*mtau};
   
 };
 
