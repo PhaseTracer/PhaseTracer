@@ -12,9 +12,10 @@ print cwd
 
 #folder_name = "gauge_dependence"
 
-folder_name = "goldstone_catastrophe"
+#folder_name = "goldstone_catastrophe"
 
-#folder_name = "scale_dependence"
+folder_name = "onshell"
+
 
 if not os.path.exists(folder_name):
   os.mkdir(folder_name) 
@@ -41,10 +42,6 @@ def scan(cmd, file_name):
   fo.close()
 
 
-scan_ms = True
-scan_lambda_s = True
-scan_lambda_hs = True
-
 Q = [173]
 xi = [1]
 daisy_flag = "2" # ArnoldEspinosa
@@ -55,10 +52,45 @@ use_Goldstone_resum = "1"
 #cmd = "./../../../bin/run_"+scheme
 ##################### gauge dependence #################
 
-##BK = 'BK1'
-##ms =  [106.918]
-##lambda_s =  [0.0190792]
-##lambda_hs =  [0.474493]
+#BK = 'BK3_0'
+#ms =  [75.4206]
+#lambda_s =  [0.0390329]
+#lambda_hs =  [0.32759]
+#
+#BK = 'BK3_ms_p'
+#ms =  [77]
+#lambda_s =  [0.0390329]
+#lambda_hs =  [0.32759]
+#
+#BK = 'BK3_ms_m'
+#ms =  [75]
+#lambda_s =  [0.0390329]
+#lambda_hs =  [0.32759]
+##
+#BK = 'BK3_ls_p'
+#ms =  [75.4206]
+#lambda_s =  [0.041]
+#lambda_hs =  [0.32759]
+#
+#BK = 'BK3_ls_m'
+#ms =  [75.4206]
+#lambda_s =  [0.037]
+#lambda_hs =  [0.32759]
+#
+#BK = 'BK3_lhs_p'
+#ms =  [75.4206]
+#lambda_s =  [0.0390329]
+#lambda_hs =  [0.33]
+
+#BK = 'BK3_lhs_m'
+#ms =  [75.4206]
+#lambda_s =  [0.0390329]
+#lambda_hs =  [0.29]
+
+#BK = 'BK1'
+#ms =  [106.918]
+#lambda_s =  [0.0190792]
+#lambda_hs =  [0.474493]
 #BK = 'BK2'
 #ms =  [85.4066]
 #lambda_s =  [0.0130036]
@@ -80,7 +112,9 @@ use_Goldstone_resum = "1"
 ##lambda_s =  [0.271993]
 ##lambda_hs =  [0.387765]
 
-#xi = np.linspace(0, 5, 200)
+#file_name = BK
+
+#xi = np.linspace(0, 5, 30)
 
 #file_name = BK + "_goldstone_resum"
 #use_1L_EWSB_in_0L_mass = "0"
@@ -112,10 +146,10 @@ use_Goldstone_resum = "1"
 
 
 ######################################
-scheme = "ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-cmd = "./../../../bin/run_"+scheme
-mt = 173.
-use_Goldstone_resum = "0"
+#scheme = "ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#cmd = "./../../../bin/run_"+scheme
+#mt = 173.
+#use_Goldstone_resum = "0"
 
 #BK = 'BK1'
 #ms =  [37.1949]
@@ -125,26 +159,26 @@ use_Goldstone_resum = "0"
 #ms =  [70.4449]
 #lambda_s =  [0.013275]
 #lambda_hs =  [0.199424]
-BK = 'BK3'
-ms =  [82.6337]
-lambda_s =  [0.0595215]
-lambda_hs =  [0.291194]
-BK = 'BK4'
-ms =  [19.9661]
-lambda_s =  [0.149159]
-lambda_hs =  [0.290839]
-BK = 'BK5'
-ms =  [93.4236]
-lambda_s =  [0.0206235]
-lambda_hs =  [0.457805]
+#BK = 'BK3'
+#ms =  [82.6337]
+#lambda_s =  [0.0595215]
+#lambda_hs =  [0.291194]
+#BK = 'BK4'
+#ms =  [19.9661]
+#lambda_s =  [0.149159]
+#lambda_hs =  [0.290839]
+#BK = 'BK5'
+#ms =  [93.4236]
+#lambda_s =  [0.0206235]
+#lambda_hs =  [0.457805]
 #BK = 'BK6'
 #ms =  [42.3438]
 #lambda_s =  [0.113348]
 #lambda_hs =  [0.286329]
 
-file_name = BK + "_mu"
-Q = np.linspace(0.5*mt, 2*mt, 20)
-scan(cmd, file_name)
+#file_name = BK + "_mu"
+#Q = np.linspace(0.5*mt, 2*mt, 20)
+#scan(cmd, file_name)
 
 
 
@@ -158,3 +192,50 @@ scan(cmd, file_name)
 #Q = [173.]
 
 
+##################### gauge dependence #################
+
+scheme = "xSM_OSlike"
+cmd = "./../../../bin/run_"+scheme
+n_total = 15
+
+xi = [1]
+file_name = scheme + "_xi_1"
+
+file_name += "_ms_fixed"
+ms = [65]
+lambda_s = np.linspace(0.01,0.3,n_total)
+lambda_hs = np.linspace(0.1,0.5,n_total)
+scan(cmd, file_name)
+
+
+file_name += "_ls_fixed"
+ms = np.linspace(10,110,n_total)
+lambda_s = [0.1]
+lambda_hs = np.linspace(0.1,0.5,n_total)
+scan(cmd, file_name)
+
+
+file_name += "_lhs_fixed"
+ms = np.linspace(10,110,n_total)
+lambda_s = np.linspace(0.01,0.3,n_total)
+lambda_hs = [0.3]
+scan(cmd, file_name)
+
+
+#scheme = "xSM_OSlike"
+#cmd = "./../../../bin/run_"+scheme
+
+#file_name = "BK1"
+#xi = np.linspace(0, 5, 30)
+#ms =  [37.1949]
+#lambda_s =  [0.281362]
+#lambda_hs =  [0.422943]
+#
+#file_name = "BK1_no_gildstone_catastrophe"
+#xi = np.linspace(0.01, 5, 30)
+#use_Goldstone_resum = "0"
+#ms =  [37.1949]
+#lambda_s =  [0.281362]
+#lambda_hs =  [0.422943]
+#
+#scan(cmd, file_name)
