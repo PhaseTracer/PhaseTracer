@@ -5,15 +5,28 @@ from scipy.interpolate import interp1d
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from plot_fun import fun_gamma, fun_diff, loaddata
 
+if False:
+  scheme = "MSbar"
+  data_xi_0 = np.loadtxt("random_scan_results/xSM_MSbar_xi_0.txt")
+  data_xi_1 = np.loadtxt("random_scan_results/xSM_MSbar_xi_1.txt")
+  data_xi_3 = np.loadtxt("random_scan_results/xSM_MSbar_xi_3.txt")
+  marker_size = 30
+else:
+  scheme = "OSlike"
+  if sys.argv[1] == '1':
+    data_xi_0 = np.loadtxt("onshell/xSM_OSlike_xi_0_ls_fixed.txt")
+    data_xi_1 = np.loadtxt("onshell/xSM_OSlike_xi_1_ls_fixed.txt")
+    data_xi_3 = np.loadtxt("onshell/xSM_OSlike_xi_3_ls_fixed.txt")
+  elif sys.argv[1] == '3':
+    data_xi_0 = np.loadtxt("onshell/xSM_OSlike_xi_0_lhs_fixed.txt")
+    data_xi_1 = np.loadtxt("onshell/xSM_OSlike_xi_1_lhs_fixed.txt")
+    data_xi_3 = np.loadtxt("onshell/xSM_OSlike_xi_3_lhs_fixed.txt")
+  else:
+    data_xi_0 = np.loadtxt("onshell/xSM_OSlike_xi_0_ms_fixed.txt")
+    data_xi_1 = np.loadtxt("onshell/xSM_OSlike_xi_1_ms_fixed.txt")
+    data_xi_3 = np.loadtxt("onshell/xSM_OSlike_xi_3_ms_fixed.txt")
 
-data_xi_0 = np.loadtxt("random_scan_results/xSM_MSbar_xi_0.txt")
-data_xi_1 = np.loadtxt("random_scan_results/xSM_MSbar_xi_1.txt")
-data_xi_3 = np.loadtxt("random_scan_results/xSM_MSbar_xi_3.txt")
-  
-#data_xi_1 = np.loadtxt("random_scan_results_new/xSM_MSbar_xi_1_use_1L_EWSB_in_0L_mass.txt")
-#data_xi_3 = np.loadtxt("random_scan_results_new/xSM_MSbar_xi_3_use_1L_EWSB_in_0L_mass.txt")
-
-
+  marker_size = 100
 
 show_gamma = False
 use_log = False
@@ -113,7 +126,7 @@ if True:
   fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
 
   ax = axs[0]
-  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,3], cmap="rainbow", vmax = 0.1, s=30, marker=".", vmin=vmin,alpha=1)
+  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,3], cmap="rainbow", s=marker_size, marker=".", alpha=1)
 
   #[xf,yf,zf] = get_griddata(diff[:,nx], diff[:,ny], 50, 50, diff[:,3])
   #map = ax.scatter(xf[zf>-9],yf[zf>-9], c=zf[zf>-9], cmap="autumn", s=20, marker="s", vmin=vmin, vmax =0.1, alpha=1)
@@ -133,7 +146,7 @@ if True:
 
 
   ax = axs[1]
-  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,nz], cmap="autumn", s=30, marker=".", alpha=1)
+  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,nz], cmap="autumn", s=marker_size, marker=".", alpha=1)
   clb = plt.colorbar(map, ax=ax)
 
   ax.set_title(label="Corresponding "+zlabel)
@@ -143,7 +156,7 @@ if True:
   ax.set_ylim(ymin,ymax)
 
   ax = axs[2]
-  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,4], cmap="winter", s=30, marker=".", alpha=1)
+  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,4], cmap="winter", s=marker_size, marker=".", alpha=1)
   clb = plt.colorbar(map, ax=ax)
 
   ax.set_title(label="Corresponding "+ (r"$\gamma^{(\xi=1)}$" if show_gamma else r"$T_C^{(\xi=1)}$") )
@@ -153,7 +166,7 @@ if True:
   ax.set_ylim(ymin,ymax)
 
   fig.tight_layout()
-  plt.savefig('gauge_'+figure_name + ('_gamma' if show_gamma else '_Tc') + ( '_log' if use_log else '') + '.png')
+  plt.savefig(scheme+'_gauge_'+figure_name + ('_gamma' if show_gamma else '_Tc') + ( '_log' if use_log else '') + '.png')
 
 
 if False:
