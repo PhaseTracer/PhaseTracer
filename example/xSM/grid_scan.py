@@ -10,11 +10,11 @@ print cwd
 
 #folder_name = "scan_results"
 
-#folder_name = "gauge_dependence"
+folder_name = "gauge_dependence"
 
 #folder_name = "goldstone_catastrophe"
 
-folder_name = "onshell"
+#folder_name = "onshell"
 
 
 if not os.path.exists(folder_name):
@@ -51,7 +51,36 @@ use_Goldstone_resum = "1"
 #scheme = "xSM_MSbar"
 #cmd = "./../../../bin/run_"+scheme
 ##################### gauge dependence #################
+# 2d 
+scheme = "xSM_MSbar"
+cmd = "./../../../bin/run_"+scheme
+n_total = 200
 
+xi = [0]
+file_name_ = scheme + "_xi_0"
+
+file_name  = file_name_+ "_ms_fixed"
+ms = [65]
+lambda_s = np.linspace(0.01,0.3,n_total)
+lambda_hs = np.linspace(0.1,0.5,n_total)
+scan(cmd, file_name)
+
+
+file_name  = file_name_+ "_ls_fixed"
+ms = np.linspace(10,110,n_total)
+lambda_s = [0.1]
+lambda_hs = np.linspace(0.1,0.5,n_total)
+scan(cmd, file_name)
+
+
+file_name  = file_name_+ "_lhs_fixed"
+ms = np.linspace(10,110,n_total)
+lambda_s = np.linspace(0.01,0.3,n_total)
+lambda_hs = [0.3]
+scan(cmd, file_name)
+
+
+##################### gauge dependence #################
 #BK = 'BK3_0'
 #ms =  [75.4206]
 #lambda_s =  [0.0390329]
@@ -192,34 +221,34 @@ use_Goldstone_resum = "1"
 #Q = [173.]
 
 
-##################### gauge dependence #################
+###################### gauge dependence #################
 
-scheme = "xSM_OSlike"
-cmd = "./../../../bin/run_"+scheme
-n_total = 15
+#scheme = "xSM_OSlike"
+#cmd = "./../../../bin/run_"+scheme
+#n_total = 50
 
-xi = [1]
-file_name = scheme + "_xi_1"
+#xi = [0]
+#file_name_ = scheme + "_xi_0"
 
-file_name += "_ms_fixed"
-ms = [65]
-lambda_s = np.linspace(0.01,0.3,n_total)
-lambda_hs = np.linspace(0.1,0.5,n_total)
-scan(cmd, file_name)
-
-
-file_name += "_ls_fixed"
-ms = np.linspace(10,110,n_total)
-lambda_s = [0.1]
-lambda_hs = np.linspace(0.1,0.5,n_total)
-scan(cmd, file_name)
+#file_name  = file_name_+ "_ms_fixed"
+#ms = [65]
+#lambda_s = np.linspace(0.01,0.3,n_total)
+#lambda_hs = np.linspace(0.1,0.5,n_total)
+#scan(cmd, file_name)
 
 
-file_name += "_lhs_fixed"
-ms = np.linspace(10,110,n_total)
-lambda_s = np.linspace(0.01,0.3,n_total)
-lambda_hs = [0.3]
-scan(cmd, file_name)
+#file_name  = file_name_+ "_ls_fixed"
+#ms = np.linspace(10,110,n_total)
+#lambda_s = [0.1]
+#lambda_hs = np.linspace(0.1,0.5,n_total)
+#scan(cmd, file_name)
+
+
+#file_name  = file_name_+ "_lhs_fixed"
+#ms = np.linspace(10,110,n_total)
+#lambda_s = np.linspace(0.01,0.3,n_total)
+#lambda_hs = [0.3]
+#scan(cmd, file_name)
 
 
 #scheme = "xSM_OSlike"

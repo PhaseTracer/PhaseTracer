@@ -5,28 +5,12 @@ from scipy.interpolate import interp1d
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from plot_fun import fun_gamma, fun_diff, loaddata
 
-if False:
-  scheme = "MSbar"
-  data_xi_0 = np.loadtxt("random_scan_results/xSM_MSbar_xi_0.txt")
-  data_xi_1 = np.loadtxt("random_scan_results/xSM_MSbar_xi_1.txt")
-  data_xi_3 = np.loadtxt("random_scan_results/xSM_MSbar_xi_3.txt")
-  marker_size = 30
-else:
-  scheme = "OSlike"
-  if sys.argv[1] == '1':
-    data_xi_0 = np.loadtxt("onshell/xSM_OSlike_xi_0_ls_fixed.txt")
-    data_xi_1 = np.loadtxt("onshell/xSM_OSlike_xi_1_ls_fixed.txt")
-    data_xi_3 = np.loadtxt("onshell/xSM_OSlike_xi_3_ls_fixed.txt")
-  elif sys.argv[1] == '3':
-    data_xi_0 = np.loadtxt("onshell/xSM_OSlike_xi_0_lhs_fixed.txt")
-    data_xi_1 = np.loadtxt("onshell/xSM_OSlike_xi_1_lhs_fixed.txt")
-    data_xi_3 = np.loadtxt("onshell/xSM_OSlike_xi_3_lhs_fixed.txt")
-  else:
-    data_xi_0 = np.loadtxt("onshell/xSM_OSlike_xi_0_ms_fixed.txt")
-    data_xi_1 = np.loadtxt("onshell/xSM_OSlike_xi_1_ms_fixed.txt")
-    data_xi_3 = np.loadtxt("onshell/xSM_OSlike_xi_3_ms_fixed.txt")
+scheme = "MSbar"
+data_xi_0 = np.loadtxt("random_scan_results/xSM_MSbar_xi_0.txt")
+data_xi_1 = np.loadtxt("random_scan_results/xSM_MSbar_xi_1.txt")
+data_xi_3 = np.loadtxt("random_scan_results/xSM_MSbar_xi_3.txt")
+marker_size = 30
 
-  marker_size = 100
 
 show_gamma = False
 use_log = False
@@ -105,9 +89,9 @@ def get_griddata(px,py,nx,ny,c2):
     return [xf,yf,zf]
 
 
-if True:
+if False:
 
-  diff = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma)
+  diff = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma, norm =False, use_abs=False, gamma_min=0.7)
   if use_log:
     diff[:,3] = np.log10(diff[:,3]+1E-10) 
     vmin = -5
@@ -123,7 +107,7 @@ if True:
     vmin = 0
     vmax = 0.2
 
-  fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
+  fig, axs = plt.subplots(2, 1, figsize=(5, 9))
 
   ax = axs[0]
   map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,3], cmap="rainbow", s=marker_size, marker=".", alpha=1)
@@ -134,7 +118,7 @@ if True:
   clb = plt.colorbar(map, ax=ax)
 
 
-  label = (r'$|\gamma^{(\xi=0)} - \gamma^{(\xi=3)}| / \gamma^{(\xi=1)}$' if show_gamma else r'$|T_C^{(\xi=0)}-T_C^{(\xi=3)}|/T_C^{(\xi=1)}$' )
+  label = (r'$|\gamma^{(\xi=0)} - \gamma^{(\xi=3)}| / \gamma^{(\xi=1)}$' if show_gamma else r'$T_C^{(\xi=0)}-T_C^{(\xi=3)}$' )
   if use_log:
     label = r'log$_{10}$('+label+')'
 
@@ -155,32 +139,37 @@ if True:
   ax.set_xlim(xmin,xmax)
   ax.set_ylim(ymin,ymax)
 
-  ax = axs[2]
-  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,4], cmap="winter", s=marker_size, marker=".", alpha=1)
-  clb = plt.colorbar(map, ax=ax)
+#  ax = axs[2]
+#  map = ax.scatter(diff[:,nx], diff[:,ny], c=diff[:,4], cmap="winter", s=marker_size, marker=".", alpha=1)
+#  clb = plt.colorbar(map, ax=ax)
 
-  ax.set_title(label="Corresponding "+ (r"$\gamma^{(\xi=1)}$" if show_gamma else r"$T_C^{(\xi=1)}$") )
-  ax.set_xlabel(xlabel)
-  ax.set_ylabel(ylabel)
-  ax.set_xlim(xmin,xmax)
-  ax.set_ylim(ymin,ymax)
+#  ax.set_title(label="Corresponding "+ (r"$\gamma^{(\xi=1)}$" if show_gamma else r"$T_C^{(\xi=1)}$") )
+#  ax.set_xlabel(xlabel)
+#  ax.set_ylabel(ylabel)
+#  ax.set_xlim(xmin,xmax)
+#  ax.set_ylim(ymin,ymax)
 
   fig.tight_layout()
-  plt.savefig(scheme+'_gauge_'+figure_name + ('_gamma' if show_gamma else '_Tc') + ( '_log' if use_log else '') + '.png')
+  plt.savefig(scheme+'_gauge_3d_'+figure_name + ('_gamma' if show_gamma else '_Tc') + ( '_log' if use_log else '') + '.png')
 
 
-if False:
+if True:
 
-  norm = True
+  norm = False
   ZoomIn = False
 
   label_TC = r'$[T_C^{(\xi=0)}-T_C^{(\xi=3)}]/T_C^{(\xi=1)}$' if norm else r'$T_C^{(\xi=0)} - T_C^{(\xi=3)}$'
-  label_gamma = r'$[\gamma^{(\xi=0)}-\gamma^{(\xi=3)}]/\gamma^{(\xi=1)}$' if norm else r'$\gamma^{(\xi=0)} - \gamma^{(\xi=3)}$'
+  label_gamma = r'$[\gamma^{(\xi=0)}-\gamma^{(\xi=3)}]/\gamma^{(\xi=1)}$'
   
-  diff_for_gamma = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma=True, norm = norm, use_abs = False, sort=False)
+  diff_for_gamma = fun_diff(data_xi_0, data_xi_3, data_xi_0, show_gamma=True, norm = True, use_abs = False, sort=False)
+  diff_gamma_norm = diff_for_gamma[:,3]
+  diff_for_gamma = fun_diff(data_xi_0, data_xi_3, data_xi_0, show_gamma=True, norm = False, use_abs = False, sort=False)
   diff_gamma = diff_for_gamma[:,3]
-  diff_for_TC = fun_diff(data_xi_0, data_xi_3, data_xi_1, show_gamma=False, norm = norm, use_abs = False, sort=False)
+  diff_for_TC = fun_diff(data_xi_0, data_xi_3, data_xi_0, show_gamma=False, norm = False, use_abs = False, sort=False)
   diff_TC = diff_for_TC[:,3]
+  diff_for_TC = fun_diff(data_xi_0, data_xi_3, data_xi_0, show_gamma=False, norm = True, use_abs = False, sort=False)
+  diff_TC_norm = diff_for_TC[:,3]
+#  diff_TC_abs = diff_for_TC[:,4]
   
   fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
 
@@ -189,31 +178,31 @@ if False:
   
   ax.hist(x=diff_TC, bins=50, color='g', log=True, alpha=0.7, rwidth=0.85)
 
-  ax.set_xlabel(label_TC)
+  ax.set_xlabel(r'$T_C^{(\xi=0)} - T_C^{(\xi=3)}$')
   ax.set_ylabel("Number of samples")
 
   ax = axs[1]
+  ax.grid(axis='x', alpha=0.75)
   ax.grid(axis='y', alpha=0.75)
-  if ZoomIn:
-    ax.hist(x=diff_gamma, bins=50, range = [-1,1], color='g', log=True, alpha=0.7, rwidth=0.85)
-  else:
-    ax.hist(x=diff_gamma, bins=50, color='g', log=True, alpha=0.7, rwidth=0.85)
-  ax.set_xlabel(label_gamma)
+  ax.hist(x=diff_TC_norm, bins=50, color='g', log=True, alpha=0.7, rwidth=0.85)
+  ax.set_xlabel(r'$[T_C^{(\xi=0)}-T_C^{(\xi=3)}]/T_C^{(\xi=1)}$')
   ax.set_ylabel("Number of samples")
-  
   
   ax = axs[2]
   ax.grid(axis='x', alpha=0.75)
   ax.grid(axis='y', alpha=0.75)
-  ax.scatter(diff_TC, diff_gamma, c='g', alpha=0.7)
-  ax.set_xlabel(label_TC)
-  ax.set_ylabel(label_gamma)
-  if ZoomIn:
-    ax.set_xlim(-0.1,0.15)
-    ax.set_ylim(-1,2)
+  ax.hist(x=diff_gamma_norm, bins=50, color='g', log=True, alpha=0.7, rwidth=0.85)
+  ax.set_xlabel(label_gamma)
+  ax.set_ylabel("Number of samples")
+
+#  ax = axs[2]
+#  ax.grid(axis='y', alpha=0.75)
+#  ax.scatter(diff_TC, diff_gamma, c=diff_TC_abs, alpha=1)
+#  ax.set_xlabel(label_TC)
+#  ax.set_ylabel(r'$\gamma^{(\xi=0)}-\gamma^{(\xi=3)}$')
 
   fig.tight_layout()
-  plt.savefig('gaugue_hist'+ ('_norm' if norm else '') + ('_ZoomIn' if ZoomIn else '') + '.png')
+  plt.savefig('gauge_hist'+ ('_norm' if norm else '') + ('_ZoomIn' if ZoomIn else '') + '.png')
   
   
 if False:
