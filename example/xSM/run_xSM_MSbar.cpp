@@ -46,11 +46,11 @@ int main(int argc, char* argv[]) {
   if ( argc == 1 ) {
     debug_mode = true;
     // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
-    ms = 68.2224;
+    ms = 65.;
     lambda_s =  0.1;
-    lambda_hs = 0.25;
+    lambda_hs = 0.3;
     Q = 173.;
-    xi = 1;
+    xi = 3;
     daisy_flag = 1;
     use_1L_EWSB_in_0L_mass = false;
     if ( xi==0 and not use_1L_EWSB_in_0L_mass )
@@ -213,8 +213,8 @@ int main(int argc, char* argv[]) {
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf);
   tf.find_transitions();
-  if (debug_mode) std::cout << tf;
-    
+  if (debug_mode) std::cout << tf;  
+  
   auto t = tf.get_transitions();
   if (t.size()==0){
     std::cout << "ms = " << ms << ",\t"
@@ -225,7 +225,7 @@ int main(int argc, char* argv[]) {
     output_file << toString(in, out, flags) << std::endl;
     return 0;
   }
-  
+    
   // Find the transition with largest gamma from (0,vs) -> (vh,0) 
   int jj = -1;
   double gamme_max = 0.;
@@ -242,6 +242,34 @@ int main(int argc, char* argv[]) {
     output_file << toString(in, out, flags) << std::endl;
     return 0;
   }
+  
+  if (debug_mode) {
+    auto false_vacuum = t[jj].false_vacuum;
+    auto true_vacuum = t[jj].true_vacuum;
+    auto TC = t[jj].TC;
+    std::cout << "V^high = " << model.V(false_vacuum, TC) << std::endl;
+    std::cout << "V1T^high = " << model.V1T(false_vacuum, TC) << std::endl;
+    std::cout << "VCW^high = " << model.V1(false_vacuum, TC) << std::endl;
+    std::cout << "Vtree^high = " << model.V0(false_vacuum) << std::endl;
+    
+    std::cout << "V^low = " << model.V(true_vacuum, TC) << std::endl;
+    std::cout << "V1T^low = " << model.V1T(true_vacuum, TC) << std::endl;
+    std::cout << "VCW^low = " << model.V1(true_vacuum, TC) << std::endl;
+    std::cout << "Vtree^low = " << model.V0(true_vacuum) << std::endl;
+    
+    auto d2V_dx2_high = model.d2V_dx2(false_vacuum, TC);
+    std::cout << "d2V_dx2_high = " << d2V_dx2_high << std::endl;
+    auto d2V_dx2_low = model.d2V_dx2(true_vacuum, TC);
+    std::cout << "d2V_dx2_low = " << d2V_dx2_low << std::endl;
+    
+    auto d2V_dxdt_high = model.d2V_dxdt(false_vacuum, TC);
+    std::cout << "d2V_dxdt_high = " << d2V_dxdt_high << std::endl;
+    auto d2V_dxdt_low = model.d2V_dxdt(true_vacuum, TC);
+    std::cout << "d2V_dxdt_low = " << d2V_dxdt_low << std::endl;
+    
+    
+  }
+  
   
   std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
   
