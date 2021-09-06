@@ -30,7 +30,8 @@ names = [ ["default", "default"],
           ["OSlike", r"OS-like"],
           ["xi3", r"$\xi=3$"],
           ["HT", r"HT"],
-          ["PRM","PRM"]]
+          ["PRM","PRM"],
+          ["covariant_gauge", "covariant"]]
 
 for name in names:
   plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)
@@ -50,6 +51,7 @@ for ii in range(2):
       else:
         axs[ii,jj].legend(loc=4)
     else:
+      axs[ii,jj].set_ylim(0,10)
       axs[ii,jj].set_ylabel(r"$\gamma_{\rm EW}$")
       if jj<1:
         axs[ii,jj].legend(loc=2)
@@ -61,7 +63,7 @@ for ii in range(2):
     elif jj == 1:
       axs[ii,jj].set_xlabel(r"$\lambda_{s}$")
     else:
-      axs[ii,jj].set_xlabel(r"$m_{s}$")
+      axs[ii,jj].set_xlabel(r"$m_{s}$ (GeV)")
 
 fig.tight_layout()
 plt.savefig('1d_bks.png')
