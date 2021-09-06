@@ -13,136 +13,148 @@
 #include "potential_line_plotter.hpp"
 #include "logger.hpp"
 
+std::string toString(std::vector<double> in, std::vector<double> out, std::vector<double> flags) {
+  std::stringstream data_str;
+  for (auto i : in    ) data_str << i << "\t";
+  for (auto i : out   ) data_str << i << "\t";
+  for (auto i : flags ) data_str << i << "\t";
+  return data_str.str();;
+}
 
 int main(int argc, char* argv[]) {
   
-  const bool debug_mode = argc == 1;
-  
-  double bins_lambda_hs;
-  double lambda_hs;
   std::ofstream output_file;
+  output_file.open("output.txt");
   
+  bool debug_mode = false;
+  double ms, lambda_s, lambda_hs;
+  double Q, xi, daisy_flag;
+  bool use_1L_EWSB_in_0L_mass;
+  bool use_Goldstone_resum = true;
+  bool tree_level_tadpoles = false;
+  std::vector<double> SM_parameters ={};
+  
+  if ( argc == 1 ) {
+    debug_mode = true;
+    // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
+    ms = 65.;
+    lambda_s =  0.1;
+    lambda_hs = 0.38;
+    Q = 173.;
+    xi = 3;
+    daisy_flag = 1;
+    use_1L_EWSB_in_0L_mass = false;
+    if ( xi==0 and not use_1L_EWSB_in_0L_mass )
+      use_Goldstone_resum = true;
+    else
+      use_Goldstone_resum = false;
+    
+    // TODO
+    SM_parameters.resize(7);
+    SM_parameters[0] = 125.;
+    SM_parameters[1] = 245.5782292532188;
+    SM_parameters[2] = 0.3576323374899369;
+    SM_parameters[3] = 0.6508510850302707;
+    SM_parameters[4] = square(-0.9962566593729878);
+    SM_parameters[5] = square(0.01644365628566979);
+    SM_parameters[6] = square(0.01023316833028443);
+    
+  } else if ( argc == 9 ) {
+    ms = atof(argv[1]);
+    lambda_s = atof(argv[2]);
+    lambda_hs = atof(argv[3]);
+    Q = atof(argv[4]);
+    xi = atof(argv[5]);
+
+    daisy_flag = atoi(argv[6]);
+    use_1L_EWSB_in_0L_mass = atoi(argv[7]);
+    use_Goldstone_resum = atoi(argv[8]);
+  } else {
+    std::cout << "Use ./run_xSM_MSbar ms lambda_s lambda_hs Q xi daisy_flag use_1L_EWSB_in_0L_mass use_Goldstone_resum" << std::endl;
+    return 0;
+  }
+
+  std::vector<double> in ={ms, lambda_s, lambda_hs};
+  std::vector<double> flags ={Q, xi, daisy_flag, (float)use_1L_EWSB_in_0L_mass, (float)use_Goldstone_resum};
+
   if (debug_mode){
     LOGGER(debug);
-    bins_lambda_hs = 1;
-    lambda_hs = 0.31;
+    std::cout << "ms = " << ms << std::endl
+              << "lambda_s = " << lambda_s << std::endl
+              << "lambda_hs = " << lambda_hs << std::endl
+              << "Q = " << Q << std::endl
+              << "xi = " << xi << std::endl
+              << "daisy_term = " << ( daisy_flag == 0  ? "None" : ( daisy_flag == 1 ? "Parwani" : "ArnoldEspinosa")) << std::endl
+              << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
+              << "use 1-level ewsb in tree-level masses = " << use_1L_EWSB_in_0L_mass << std::endl
+              << "use Goldstone resum = " << use_Goldstone_resum << std::endl;
+
   } else {
     LOGGER(fatal);
-    bins_lambda_hs = 100;
-    output_file.open("PRM.txt");
   }
-  
-  const double Q = SM::mtop;
-  const double xi = 0;
-  const bool tree_level_tadpoles = false;
-  const bool tree_ewsb = false;
-  const bool physical_vacuum = true;
-
-  std::cout << "lambda_hs = " << lambda_hs << std::endl
-            << "Q = " << Q << std::endl
-            << "xi = " << xi << std::endl
-            << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
-            << "tree-level ewsb parameters = " << tree_ewsb << std::endl;
-  
-  for (double ii = 0; ii < bins_lambda_hs; ii++) {
-    if (not debug_mode){
-      lambda_hs = 0.4 / bins_lambda_hs * ii+0.2;
-    }
-  
-    double ms = 0.5 * SM::mh;
-    double lambda_s_min = 2. / square(SM::mh * SM::v) *
-        square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-    double lambda_s = lambda_s_min + 0.1;
     
-    lambda_hs = 0.4;
-    ms = 60;
-    lambda_s =  0.16;
-    
-    // Construct our model
-    auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, tree_ewsb);
+  // Construct our model
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, use_1L_EWSB_in_0L_mass);
 
+  // Choose Daisy method
+  if (daisy_flag == 0){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::None);
+  } else if (daisy_flag == 1){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
+  } else if (daisy_flag == 2){
     model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
-//    model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
-
-    // Make PhaseFinder object and find the phases
-    PhaseTracer::HbarExpansion hb(model);
-    hb.set_seed(0);
-    Eigen::ArrayXd pseudo(2);
-    pseudo << 0., model.get_v_tree_s();
-    hb.add_pseudo_phase(pseudo);
-    hb.find_phases();
-
-    // Make TransitionFinder object and find the transitions
-    PhaseTracer::TransitionFinder tf(hb);
-    tf.set_TC_tol_rel(1e-12);
-    tf.find_transitions();
-
-    // Find gamma using high-temperature expansion
-    PhaseTracer::HTExpansion ht(model);
-    ht.set_seed(0);
-    const double TC = tf.get_transitions()[0].TC;
-    const auto ht_minima = ht.find_minima_at_t(TC);
-
-    // Use minima with greatest Higgs
-    double delta = 0.;
-    for (const auto& m : ht_minima) {
-      delta = std::max(delta, std::abs(m.x(0)));
-    }
-
-    const double gamma = delta / TC;
-    
-    
-    if (debug_mode) {
-      std::cout << hb;
-      std::cout << std::setprecision(15) << tf;
-      std::cout << "gamma_HT = " << gamma << std::endl;
-    } else {
-      auto t = tf.get_transitions();
-      if (t.size()==0){
-        std::cout << "lambda_hs = " << lambda_hs << " found 0 transition!" << std::endl;
-        output_file << lambda_hs << "\t" << 0 << "\t";
-        output_file << -1 << "\t" << 0 << "\t"
-                    << 0 << "\t" << 0 << "\t"
-                    << 0 << "\t";
-        output_file << lambda_s << "\t" << ms;
-        output_file << std::endl;
-        continue;
-      }
-      int jj=0;
-      double gamme_max=0;
-      for (int i=0; i<t.size(); i++) {
-        double gamma = t[i].gamma;
-        if (gamme_max < gamma){
-          jj = i;
-          gamme_max = gamma;
-        }
-      }
-      output_file << lambda_hs << "\t" << t.size() << "\t";
-      output_file << t[jj].TC << "\t" << t[jj].true_vacuum[0] << "\t"
-                  << t[jj].true_vacuum[1] << "\t" << t[jj].false_vacuum[0] << "\t"
-                  << t[jj].false_vacuum[1] << "\t";
-      output_file << lambda_s << "\t" << ms << "\t" << gamma;
-      output_file << std::endl;
-    }
-
-//    // Get Higgs mass
-//    const auto minima_tree = hb.find_minima_at_t(0.);
-//    PhaseTracer::PhaseFinder pf(model);
-//    const auto minima_1l = pf.find_minima_at_t(0.);
-//    std::cout << "v_tree = " << std::abs(minima_tree[0].x[0]) << std::endl;
-//    std::cout << "v_1l = " << std::abs(minima_1l[0].x[0]) << std::endl;
-//
-//    Eigen::ArrayXd physical(2);
-//    physical << SM::v, 0.;
-//    const auto mass_sq_1l = physical_vacuum ? model.get_1l_scalar_masses_sq(physical, 0.) :
-//                                            model.get_1l_scalar_masses_sq(minima_1l[0].x, 0.);
-//    const auto mass_sq_tree = physical_vacuum ? model.get_tree_scalar_masses_sq(physical):
-//                                              model.get_tree_scalar_masses_sq(minima_tree[0].x);
-//    std::cout << "mh_tree = " << std::sqrt(mass_sq_tree[1]) << std::endl;
-//    std::cout << "mh_1l = " << std::sqrt(mass_sq_1l[1]) << std::endl;
-  
+  } else {
+      std::cout << "Wrong daisy flag" << std::endl;
   }
   
+  // Make PhaseFinder object and find the phases
+  PhaseTracer::HbarExpansion hb(model);
+  hb.set_seed(0);
+  Eigen::ArrayXd pseudo(2);
+  pseudo << 0., model.get_v_tree_s();
+  hb.add_pseudo_phase(pseudo);
+  hb.find_phases();
+  
+  // Make TransitionFinder object and find the transitions
+  PhaseTracer::TransitionFinder tf(hb);
+  tf.set_TC_tol_rel(1e-12);
+  tf.find_transitions();
+  if (debug_mode) std::cout << tf;
+  
+  auto t = tf.get_transitions();
+  if (t.size()==0){
+    std::cout << "ms = " << ms << ",\t"
+              << "lambda_s = " << lambda_s << ",\t"
+              << "lambda_hs = " << lambda_hs << "\t"
+              << "found 0 transition!" << std::endl;
+    std::vector<double> out = {-2, 0, 0, 0, 0, 0};
+    output_file << toString(in, out, flags) << std::endl;
+    return 0;
+  }
+  
+  // Find gamma using high-temperature expansion
+  PhaseTracer::HTExpansion ht(model);
+  ht.set_seed(0);
+  const double TC = tf.get_transitions()[0].TC;
+  const auto ht_minima = ht.find_minima_at_t(TC);
+
+  // Use minima with greatest Higgs/scalar
+  double vs, vh;
+  for (const auto& m : ht_minima) {
+    vh = std::max(vh, std::abs(m.x(0)));
+    vs = std::max(vh, std::abs(m.x(1)));
+  }
+
+  if (debug_mode) {
+    std::cout << hb;
+    std::cout << std::setprecision(15) << tf;
+    std::cout << "gamma_HT = " << vh / TC << std::endl;
+  }
+  
+  std::vector<double> out = {1, TC, 0.0, vs, vh, 0.0};
+  
+  output_file << toString(in, out, flags) << std::endl;
   output_file.close();
+  
   return 0;
 }
