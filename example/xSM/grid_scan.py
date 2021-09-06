@@ -7,10 +7,14 @@ import time
 cwd = os.getcwd()
 print cwd
 
+scan_1d_bks = True
+
+if scan_1d_bks:
+  folder_name = "1d_bks"
 
 #folder_name = "scan_results"
 
-folder_name = "gauge_dependence"
+#folder_name = "gauge_dependence"
 
 #folder_name = "goldstone_catastrophe"
 
@@ -40,44 +44,100 @@ def scan(cmd, file_name):
                 output = open("output.txt").readline()
                 fo.write( output )
   fo.close()
+  os.chdir(cwd)
+#  os.rmdir(file_name)
 
-
+# default choice
 Q = [173]
-xi = [1]
+xi = [0]
 daisy_flag = "2" # ArnoldEspinosa
 use_1L_EWSB_in_0L_mass = "0"
 use_Goldstone_resum = "1"
+
+if scan_1d_bks:
+  n_total = 20
+  scan_ms =True
+  scan_ls = False
+  scan_lhs = False
+  
+  if scan_lhs:
+    #1d scan for lambda_hs
+    ms = [65]
+    lambda_s = [0.1]
+    lambda_hs = np.linspace(0.1,0.4,n_total)
+    file_name_ = "lambda_hs_"
+  
+  if scan_ls:
+    #1d scan for lambda_s
+    ms = [65]
+    lambda_s = np.linspace(0.01,0.2,n_total)
+    lambda_hs = [0.3]
+    file_name_ = "lambda_s_"
+  
+  if scan_ms:
+    #1d scan for m_s
+    ms = np.linspace(40,110,n_total)
+    lambda_s = [0.1]
+    lambda_hs = [0.3]
+    file_name_ = "m_s_"
+  
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"default"
+#  scan(cmd, file_name)
+#
+#  scheme = "xSM_MSbar"
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"xi3"
+#  xi = [3]
+#  scan(cmd, file_name)
+#
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#  file_name = file_name_+"2mt"
+#  Q = [173*2]
+#  scan(cmd, file_name)
+#
+#  cmd = "./../../../bin/run_xSM_OSlike"
+#  file_name = file_name_+"OSlike"
+#  scan(cmd, file_name)
+#
+#  cmd = "./../../../bin/run_xSM_HT"
+#  file_name = file_name_+"HT"
+#  scan(cmd, file_name)
+
+  cmd = "./../../../bin/run_xSM_PRM"
+  file_name = file_name_+"PRM"
+  scan(cmd, file_name)
 
 #scheme = "xSM_MSbar"
 #cmd = "./../../../bin/run_"+scheme
 ##################### gauge dependence #################
 # 2d 
-scheme = "xSM_MSbar"
-cmd = "./../../../bin/run_"+scheme
-n_total = 200
-
-xi = [0]
-file_name_ = scheme + "_xi_0"
-
-file_name  = file_name_+ "_ms_fixed"
-ms = [65]
-lambda_s = np.linspace(0.01,0.3,n_total)
-lambda_hs = np.linspace(0.1,0.5,n_total)
-scan(cmd, file_name)
-
-
-file_name  = file_name_+ "_ls_fixed"
-ms = np.linspace(10,110,n_total)
-lambda_s = [0.1]
-lambda_hs = np.linspace(0.1,0.5,n_total)
-scan(cmd, file_name)
-
-
-file_name  = file_name_+ "_lhs_fixed"
-ms = np.linspace(10,110,n_total)
-lambda_s = np.linspace(0.01,0.3,n_total)
-lambda_hs = [0.3]
-scan(cmd, file_name)
+#scheme = "xSM_MSbar"
+#cmd = "./../../../bin/run_"+scheme
+#n_total = 200
+#
+#xi = [0]
+#file_name_ = scheme + "_xi_0"
+#
+#file_name  = file_name_+ "_ms_fixed"
+#ms = [65]
+#lambda_s = np.linspace(0.01,0.3,n_total)
+#lambda_hs = np.linspace(0.1,0.5,n_total)
+#scan(cmd, file_name)
+#
+#
+#file_name  = file_name_+ "_ls_fixed"
+#ms = np.linspace(10,110,n_total)
+#lambda_s = [0.1]
+#lambda_hs = np.linspace(0.1,0.5,n_total)
+#scan(cmd, file_name)
+#
+#
+#file_name  = file_name_+ "_lhs_fixed"
+#ms = np.linspace(10,110,n_total)
+#lambda_s = np.linspace(0.01,0.3,n_total)
+#lambda_hs = [0.3]
+#scan(cmd, file_name)
 
 
 ##################### gauge dependence #################
