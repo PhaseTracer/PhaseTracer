@@ -1,4 +1,4 @@
-import os,sys,signal
+import os,sys,signal,shutil
 import re,shutil
 import subprocess
 import numpy as np
@@ -7,19 +7,16 @@ import time
 cwd = os.getcwd()
 print cwd
 
+
 scan_1d_bks = True
+scan_ms =True
+scan_ls = True
+scan_lhs = True
+
 
 if scan_1d_bks:
+  n_total = 100
   folder_name = "1d_bks"
-
-#folder_name = "scan_results"
-
-#folder_name = "gauge_dependence"
-
-#folder_name = "goldstone_catastrophe"
-
-#folder_name = "onshell"
-
 
 if not os.path.exists(folder_name):
   os.mkdir(folder_name) 
@@ -45,7 +42,40 @@ def scan(cmd, file_name):
                 fo.write( output )
   fo.close()
   os.chdir(cwd)
-#  os.rmdir(file_name)
+  shutil.rmtree(file_name)
+
+
+def perfrom_1d_scan():
+#  cmd = "./../../../bin/run_xSM_PRM"
+#  file_name = file_name_+"PRM"
+#  scan(cmd, file_name)
+#  
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"default"
+#  scan(cmd, file_name)
+
+#  scheme = "xSM_MSbar"
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"xi3"
+#  xi = [3]
+#  scan(cmd, file_name)
+
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#  file_name = file_name_+"2mt"
+#  Q = [173*2]
+#  scan(cmd, file_name)
+
+#  cmd = "./../../../bin/run_xSM_OSlike"
+#  file_name = file_name_+"OSlike"
+#  scan(cmd, file_name)
+
+#  cmd = "./../../../bin/run_xSM_HT"
+#  file_name = file_name_+"HT"
+#  scan(cmd, file_name)
+
+  cmd = "./../../../bin/run_xSM_covariant_gauge"
+  file_name = file_name_+"covariant_gauge"
+  scan(cmd, file_name)
 
 # default choice
 Q = [173]
@@ -55,24 +85,21 @@ use_1L_EWSB_in_0L_mass = "0"
 use_Goldstone_resum = "1"
 
 if scan_1d_bks:
-  n_total = 20
-  scan_ms =True
-  scan_ls = False
-  scan_lhs = False
-  
   if scan_lhs:
     #1d scan for lambda_hs
     ms = [65]
     lambda_s = [0.1]
     lambda_hs = np.linspace(0.1,0.4,n_total)
     file_name_ = "lambda_hs_"
-  
+    perfrom_1d_scan()
+    
   if scan_ls:
     #1d scan for lambda_s
     ms = [65]
     lambda_s = np.linspace(0.01,0.2,n_total)
     lambda_hs = [0.3]
     file_name_ = "lambda_s_"
+    perfrom_1d_scan()
   
   if scan_ms:
     #1d scan for m_s
@@ -80,33 +107,9 @@ if scan_1d_bks:
     lambda_s = [0.1]
     lambda_hs = [0.3]
     file_name_ = "m_s_"
+    perfrom_1d_scan()
   
-#  cmd = "./../../../bin/run_xSM_MSbar"
-#  file_name = file_name_+"default"
-#  scan(cmd, file_name)
-#
-#  scheme = "xSM_MSbar"
-#  cmd = "./../../../bin/run_xSM_MSbar"
-#  file_name = file_name_+"xi3"
-#  xi = [3]
-#  scan(cmd, file_name)
-#
-#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-#  file_name = file_name_+"2mt"
-#  Q = [173*2]
-#  scan(cmd, file_name)
-#
-#  cmd = "./../../../bin/run_xSM_OSlike"
-#  file_name = file_name_+"OSlike"
-#  scan(cmd, file_name)
-#
-#  cmd = "./../../../bin/run_xSM_HT"
-#  file_name = file_name_+"HT"
-#  scan(cmd, file_name)
 
-  cmd = "./../../../bin/run_xSM_PRM"
-  file_name = file_name_+"PRM"
-  scan(cmd, file_name)
 
 #scheme = "xSM_MSbar"
 #cmd = "./../../../bin/run_"+scheme
