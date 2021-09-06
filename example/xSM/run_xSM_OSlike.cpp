@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
     use_Goldstone_resum = atoi(argv[8]);
 
   } else {
-    std::cout << "Use ./run_xSM_OSlike ms lambda_s lambda_hs xi " << std::endl;
+    std::cout << "Use ./run_xSM_OSlike ms lambda_s lambda_hs" << std::endl;
     return 0;
   }
 
