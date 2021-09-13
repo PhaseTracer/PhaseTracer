@@ -171,6 +171,40 @@ class xSM_MSbar : public OneLoopPotential {
     return jacobian;
   }
 
+  Eigen::VectorXd dV0_dx(Eigen::VectorXd phi) const {
+    Eigen::VectorXd dV0dx = Eigen::VectorXd::Zero(phi.size());
+    for (int ii = 0; ii < phi.size(); ++ii) {
+      Eigen::VectorXd f = phi;
+      Eigen::VectorXd b = phi;
+      f(ii) = phi(ii) + 0.5 * h;
+      b(ii) = phi(ii) - 0.5 * h;
+      dV0dx(ii) = (V0(f) - V0(b)) / h;
+    }
+    return dV0dx;
+  }
+
+  Eigen::VectorXd dV1T_dx(Eigen::VectorXd phi, double T) const {
+    Eigen::VectorXd dV1Tdx = Eigen::VectorXd::Zero(phi.size());
+    for (int ii = 0; ii < phi.size(); ++ii) {
+      Eigen::VectorXd f = phi;
+      Eigen::VectorXd b = phi;
+      f(ii) = phi(ii) + 0.5 * h;
+      b(ii) = phi(ii) - 0.5 * h;
+      dV1Tdx(ii) = (V1T(f, T) - V1T(b, T)) / h;
+    }
+    return dV1Tdx;
+  }
+  
+  double dV1T_dT(Eigen::VectorXd phi, double T) const {
+    const double eT =  0.001;
+    return (V1T(phi, T+eT) - V1T(phi, T) )/ eT; 
+  }
+  
+  double ddaisy_dT(Eigen::VectorXd phi, double T) const {
+    const double eT =  0.001;
+    return (daisy(phi, T+eT) - daisy(phi, T) )/ eT; 
+  }
+
   /**
    * Single iteration of one-loop tadpole solver.
    *
