@@ -64,7 +64,7 @@ void phase_plotter(const PhaseTracer::TransitionFinder& tf, std::string prefix =
   const auto this_dir = this_file.parent_path();
   const boost::filesystem::path file("../make_plots/phase_plotter.py");
   const auto program = this_dir / file;
-  std::string command = "python -W ignore " + program.string() + " " + prefix;
+  std::string command = "python3 -W ignore " + program.string() + " " + prefix;
 
   LOG(debug) << "Executing " << command;
   const auto result = std::system(command.c_str());
