@@ -7,7 +7,7 @@ Plot phases
 import re
 import os
 import sys
-from StringIO import StringIO
+from io import StringIO
 from scipy.interpolate import interp1d
 import numpy as np
 import matplotlib
@@ -95,7 +95,7 @@ def constant(x, y, atol=1e-1, **kwargs):
 
 def plane_phi_phi_one(pi, pj, phases, transitions, pdf_name="plane.pdf"):
     full_pdf_name = "phi_{0}_phi_{1}_".format(pi+1, pj+1)+pdf_name
-    print "Plotting phases on (phi_{}, phi_{}) plane for {} figure".format(pi+1, pj+1, full_pdf_name)
+    print("Plotting phases on (phi_{}, phi_{}) plane for {} figure".format(pi+1, pj+1, full_pdf_name))
     fig, ax = plt.subplots()
 
     x_max = -np.inf
@@ -152,7 +152,7 @@ def plane_phi_phi_one(pi, pj, phases, transitions, pdf_name="plane.pdf"):
 
 def plane_phi_phi(phases, transitions, pdf_name="plane.pdf"):
     n_field = phases[0].n_field
-    print "Making plots with {} fields".format(n_field)
+    print("Making plots with {} fields".format(n_field))
     if n_field <= 1:
         return
     for i in range(n_field):
@@ -165,7 +165,7 @@ def is_origin(x, atol=1e-1):
 
 
 def plane_T_V(phases, pdf_name="plane.pdf"):
-    print "Plotting potential against temperature for {} figure".format(pdf_name)
+    print("Plotting potential against temperature for {} figure".format(pdf_name))
     fig, ax = plt.subplots()
 
     # Guess sensible axes limits
@@ -197,7 +197,7 @@ def plane_T_V(phases, pdf_name="plane.pdf"):
 
 
 def plane_phi_T(phases, transitions, pdf_name="plane.pdf"):
-    print "Plotting phases against temperature for {} figure".format(pdf_name)
+    print("Plotting phases against temperature for {} figure".format(pdf_name))
     n_field = phases[0].n_field
     fig, axs = plt.subplots(nrows=1, ncols=n_field)
 
@@ -264,7 +264,7 @@ class Phase(object):
 
 class Transition(object):
     def __init__(self, transition):
-        self.n_field = (len(transition) - 2) / 2
+        self.n_field = (len(transition) - 2) // 2
         self.TC = transition[0]
         self.true_vacuum = transition[1:self.n_field+1]
         self.false_vacuum = transition[self.n_field+1:-1]
