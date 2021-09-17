@@ -9,9 +9,11 @@ print cwd
 
 
 scan_1d_bks = True
-scan_ms =True
-scan_ls = True
-scan_lhs = True
+scan_ms = True
+scan_ls = False
+scan_lhs = False
+
+scan_2d_bks = True
 
 
 if scan_1d_bks:
@@ -21,7 +23,8 @@ if scan_1d_bks:
 if not os.path.exists(folder_name):
   os.mkdir(folder_name) 
 
-def scan(cmd, file_name):
+def scan(cmd, file_name, ms, lambda_s, lambda_hs, Q, xi, daisy_flag, use_1L_EWSB_in_0L_mass, use_Goldstone_resum):
+  print xi
   os.chdir(cwd)
   fo = open(folder_name+"/"+file_name+".txt", "w")
   if not os.path.exists(file_name):
@@ -44,6 +47,12 @@ def scan(cmd, file_name):
   os.chdir(cwd)
   shutil.rmtree(file_name)
 
+# default choice
+Q_in = [173]
+xi_in = [0]
+daisy_flag_in = "2" # ArnoldEspinosa
+use_1L_EWSB_in_0L_mass_in = "0"
+use_Goldstone_resum_in = "1"
 
 def perfrom_1d_scan():
 #  cmd = "./../../../bin/run_xSM_PRM"
@@ -75,14 +84,7 @@ def perfrom_1d_scan():
 
   cmd = "./../../../bin/run_xSM_covariant_gauge"
   file_name = file_name_+"covariant_gauge"
-  scan(cmd, file_name)
-
-# default choice
-Q = [173]
-xi = [0]
-daisy_flag = "2" # ArnoldEspinosa
-use_1L_EWSB_in_0L_mass = "0"
-use_Goldstone_resum = "1"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [3], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 if scan_1d_bks:
   if scan_lhs:
