@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     lambda_s =  0.1;
     lambda_hs = 0.3;
     Q = 173.;
-    xi = 3;
+    xi = 1;
     daisy_flag = 1;
     use_1L_EWSB_in_0L_mass = false;
     if ( xi==0 and not use_1L_EWSB_in_0L_mass )
@@ -87,17 +87,15 @@ int main(int argc, char* argv[]) {
   model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
 
   // Choose Daisy method 
-  // TODO
-  model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-//  if (daisy_flag == 0){
-//    model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-//  } else if (daisy_flag == 1){
-//    model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
-//  } else if (daisy_flag == 2){
-//    model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
-//  } else {
-//      std::cout << "Wrong daisy flag" << std::endl;
-//  }
+  if (daisy_flag == 0){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::None);
+  } else if (daisy_flag == 1){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
+  } else if (daisy_flag == 2){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
+  } else {
+      std::cout << "Wrong daisy flag" << std::endl;
+  }
 
   // Make PhaseFinder object and find the phases
   PhaseTracer::PhaseFinder pf(model);
