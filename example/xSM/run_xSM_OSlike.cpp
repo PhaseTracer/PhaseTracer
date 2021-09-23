@@ -34,8 +34,7 @@ int main(int argc, char* argv[]) {
 
   bool debug_mode = false;
   double ms, lambda_s, lambda_hs;
-  double Q, xi, daisy_flag;
-  bool use_Goldstone_resum = true;
+  double daisy_flag;
   
   if ( argc == 1 ) {
     debug_mode = true;
@@ -45,25 +44,17 @@ int main(int argc, char* argv[]) {
 //    double lambda_s_min = 2. / square(SM::mh * SM::v) *
 //                          square(square(ms) - 0.5 * lambda_hs * square(SM::v));
 //    lambda_s =  lambda_s_min + 0.1;
-//    xi = 0;
 //    daisy_flag = 1;
-//    use_Goldstone_resum = true;
     
       lambda_hs = 0.25;
       ms = 68.2224;
       lambda_s =  0.1;
-      xi = 0;
       daisy_flag = 1;
-      use_Goldstone_resum = true;
-    
   } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
     lambda_hs = atof(argv[3]);
-    xi = atof(argv[5]);
     daisy_flag = atoi(argv[6]);
-    use_Goldstone_resum = atoi(argv[8]);
-
   } else {
     std::cout << "Use ./run_xSM_OSlike ms lambda_s lambda_hs" << std::endl;
     return 0;
@@ -74,7 +65,6 @@ int main(int argc, char* argv[]) {
     std::cout << "ms = " << ms << std::endl
               << "lambda_s = " << lambda_s << std::endl
               << "lambda_hs = " << lambda_hs << std::endl
-              << "xi = " << xi << std::endl
               << "daisy_term = " << ( daisy_flag == 0  ? "None" : ( daisy_flag == 1 ? "Parwani" : "ArnoldEspinosa")) << std::endl;
 
   } else {
@@ -82,11 +72,10 @@ int main(int argc, char* argv[]) {
   }
   
   // Construct our model
-  EffectivePotential::xSM_OSlike model(lambda_hs, lambda_s, ms, xi, use_Goldstone_resum);
-  model.solve_renormalization_scale();
+  EffectivePotential::xSM_OSlike model(lambda_hs, lambda_s, ms);
   
   std::vector<double> in ={ms, lambda_s, lambda_hs};
-  std::vector<double> flags ={xi, daisy_flag, (float)use_Goldstone_resum, model.get_renormalization_scale()};
+  std::vector<double> flags ={0, daisy_flag, 1, model.get_renormalization_scale()};
   
   // Choose Daisy method 
   if (daisy_flag == 0){
@@ -96,7 +85,7 @@ int main(int argc, char* argv[]) {
   } else if (daisy_flag == 2){
     model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
   } else {
-      std::cout << "Wrong daisy flag" << std::endl;
+    std::cout << "Wrong daisy flag" << std::endl;
   }
   
   if (debug_mode) {

@@ -46,20 +46,16 @@ class xSM_OSlike : public OneLoopPotential {
   
   xSM_OSlike(double lambda_hs_,
             double lambda_s_,
-            double ms_,
-            double xi_,
-            bool use_Goldstone_resum_):
-    lambda_hs(lambda_hs_), lambda_s(lambda_s_), ms(ms_),
-    xi(xi_), use_Goldstone_resum(use_Goldstone_resum_){
-    set_xi(xi);
+            double ms_):
+    lambda_hs(lambda_hs_), lambda_s(lambda_s_), ms(ms_){
     mus_sq = square(ms) - lambda_hs * square(v) / 2.;
-    
+    solve_renormalization_scale();
   }
 
   double VCW(Eigen::VectorXd phi, double mu){
     double correction = 0;
     Q = mu;
-    const std::vector<double> scalar_masses_sq = get_scalar_masses_sq(phi, xi);
+    const std::vector<double> scalar_masses_sq = get_scalar_masses_sq(phi);
     const std::vector<double> fermion_masses_sq = get_fermion_masses_sq(phi);
     const std::vector<double> vector_masses_sq = get_vector_masses_sq(phi);
     
@@ -148,7 +144,7 @@ class xSM_OSlike : public OneLoopPotential {
     
     Eigen::VectorXd x(2);
     x << v, 0;
-    const std::vector<double> scalar_masses_sq = get_scalar_masses_sq(x, xi);
+    const std::vector<double> scalar_masses_sq = get_scalar_masses_sq(x);
     for (int ii=0; ii < scalar_masses_sq.size(); ++ii){
       scalar_masses_sq_EW[ii] = scalar_masses_sq[ii];
 //      std::cout << "scalar_masses_EW["<< ii << "] = "<< std::sqrt(std::abs(scalar_masses_sq_EW[ii])) << std::endl;
@@ -254,11 +250,8 @@ class xSM_OSlike : public OneLoopPotential {
                       );
 
     // Goldstone finite temperature masses
-    double mTG02 =   mgg2 + thermal_sq[0] + ( use_Goldstone_resum ? sum : 0);
+    double mTG02 =   mgg2 + thermal_sq[0] + sum;
     double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
-    // xi-dependence
-    mTG02 += 0.25 * xi * (square(g * h) + square(gp * h));
-    mTGpm2 += 0.25 * xi * square(g * h);
     // CP even Higgs thermal temperature masses
     Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2); 
     MTH2(0,0) = mhh2 + thermal_sq[0];
@@ -273,7 +266,7 @@ class xSM_OSlike : public OneLoopPotential {
     std::sort(m_sq_vector.begin(), m_sq_vector.end());
     return m_sq_vector;
   }
-  std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const override {
+  std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi=0) const override {
     return get_scalar_debye_sq(phi, xi, 0.);
   }
   std::vector<double> get_scalar_dofs() const override { return {1., 1., 1., 1., 1}; }
@@ -347,8 +340,6 @@ class xSM_OSlike : public OneLoopPotential {
   double ms = 65;
   double lambda_s = 0.1;
   double mus_sq = square(ms) - lambda_hs * square(v) / 2.;
-  double xi=0;
-  bool use_Goldstone_resum{true};
           
   std::vector<double> scalar_masses_sq_EW = {ms*ms, mh*mh, 0.0, 0,0, 0.0};
   const std::vector<double> vector_masses_sq_EW = {mW*mW, mZ*mZ};
