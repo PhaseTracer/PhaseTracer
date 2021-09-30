@@ -25,13 +25,12 @@ def plot_for_1d(data, x_num, label, column):
   ax = axs[1,column]
   ax.plot(x[sel], gamma[sel], label=label, alpha=1)
 
-names = [ ["default", "default"],
-          ["2mt", r"$Q=2m_t$"],
-          ["OSlike", r"OS-like"],
-          ["xi3", r"$\xi=3$"],
-          ["HT", r"HT"],
-          ["PRM","PRM"],
-          ["covariant_gauge", r"covariant, $\xi=3$"]]
+names = [ ["default", r"MS, $Q=m_t$"],
+          ["2mt", r"MS, $Q=2m_t$"],
+          ["05mt", r"MS, $Q=m_t/2$"],
+          ["PRM", "PRM $Q=m_t$"],
+          ["PRM_2mt", "PRM $Q=2m_t$"],
+          ["PRM_05mt", "PRM $Q=m_t/2$"]]
 
 for name in names:
   plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)
