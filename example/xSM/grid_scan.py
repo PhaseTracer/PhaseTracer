@@ -10,8 +10,8 @@ print cwd
 
 scan_1d_bks = True
 scan_ms = True
-scan_ls = False
-scan_lhs = False
+scan_ls = True
+scan_lhs = True
 
 scan_2d_bks = True
 
@@ -54,37 +54,49 @@ daisy_flag_in = "2" # ArnoldEspinosa
 use_1L_EWSB_in_0L_mass_in = "0"
 use_Goldstone_resum_in = "1"
 
-def perfrom_1d_scan():
+def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 #  cmd = "./../../../bin/run_xSM_PRM"
 #  file_name = file_name_+"PRM"
-#  scan(cmd, file_name)
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+  cmd = "./../../../bin/run_xSM_PRM"
+  file_name = file_name_+"PRM_05mt"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+  
+  cmd = "./../../../bin/run_xSM_PRM"
+  file_name = file_name_+"PRM_2mt"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
 #  
 #  cmd = "./../../../bin/run_xSM_MSbar"
 #  file_name = file_name_+"default"
 #  scan(cmd, file_name)
 
-#  scheme = "xSM_MSbar"
 #  cmd = "./../../../bin/run_xSM_MSbar"
 #  file_name = file_name_+"xi3"
-#  xi = [3]
-#  scan(cmd, file_name)
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [3], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
 #  file_name = file_name_+"2mt"
-#  Q = [173*2]
-#  scan(cmd, file_name)
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173*2], xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#  file_name = file_name_+"05mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  cmd = "./../../../bin/run_xSM_OSlike"
 #  file_name = file_name_+"OSlike"
-#  scan(cmd, file_name)
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
 
 #  cmd = "./../../../bin/run_xSM_HT"
 #  file_name = file_name_+"HT"
-#  scan(cmd, file_name)
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_xSM_covariant_gauge"
-  file_name = file_name_+"covariant_gauge"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [3], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+#  cmd = "./../../../bin/run_xSM_covariant_gauge"
+#  file_name = file_name_+"covariant_gauge"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [3], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 if scan_1d_bks:
   if scan_lhs:
@@ -92,24 +104,24 @@ if scan_1d_bks:
     ms = [65]
     lambda_s = [0.1]
     lambda_hs = np.linspace(0.1,0.4,n_total)
-    file_name_ = "lambda_hs_"
-    perfrom_1d_scan()
+    filename = "lambda_hs_"
+    perfrom_1d_scan(ms, lambda_s, lambda_hs, filename)
     
   if scan_ls:
     #1d scan for lambda_s
     ms = [65]
     lambda_s = np.linspace(0.01,0.2,n_total)
     lambda_hs = [0.3]
-    file_name_ = "lambda_s_"
-    perfrom_1d_scan()
+    filename = "lambda_s_"
+    perfrom_1d_scan(ms, lambda_s, lambda_hs, filename)
   
   if scan_ms:
     #1d scan for m_s
     ms = np.linspace(40,110,n_total)
     lambda_s = [0.1]
     lambda_hs = [0.3]
-    file_name_ = "m_s_"
-    perfrom_1d_scan()
+    filename = "m_s_"
+    perfrom_1d_scan(ms, lambda_s, lambda_hs, filename)
   
 
 
