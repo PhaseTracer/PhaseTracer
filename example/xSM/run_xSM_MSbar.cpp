@@ -41,7 +41,6 @@ int main(int argc, char* argv[]) {
   double Q, xi, daisy_flag;
   bool use_1L_EWSB_in_0L_mass;
   bool use_Goldstone_resum = true;
-  bool tree_level_tadpoles = false;
   std::vector<double> SM_parameters ={};
   if ( argc == 1 ) {
     debug_mode = true;
@@ -51,21 +50,18 @@ int main(int argc, char* argv[]) {
     lambda_hs = 0.3;
     Q = 173.;
     xi = 3;
-    daisy_flag = 1;
+    daisy_flag = 2;
     use_1L_EWSB_in_0L_mass = false;
-    if ( xi==0 and not use_1L_EWSB_in_0L_mass )
-      use_Goldstone_resum = true;
-    else 
-      use_Goldstone_resum = false;
+    use_Goldstone_resum = false;
     
-    SM_parameters.resize(7);
-    SM_parameters[0] = 125.;
-    SM_parameters[1] = 245.5782292532188;
-    SM_parameters[2] = 0.3576323374899369;
-    SM_parameters[3] = 0.6508510850302707;
-    SM_parameters[4] = square(-0.9962566593729878);
-    SM_parameters[5] = square(0.01644365628566979);
-    SM_parameters[6] = square(0.01023316833028443);
+//    SM_parameters.resize(7);
+//    SM_parameters[0] = 125.;
+//    SM_parameters[1] = 245.5782292532188;
+//    SM_parameters[2] = 0.3576323374899369;
+//    SM_parameters[3] = 0.6508510850302707;
+//    SM_parameters[4] = square(-0.9962566593729878);
+//    SM_parameters[5] = square(0.01644365628566979);
+//    SM_parameters[6] = square(0.01023316833028443);
 
 //    // Match choices in 1808.01098
 //    lambda_hs = 0.24;
@@ -105,7 +101,6 @@ int main(int argc, char* argv[]) {
               << "Q = " << Q << std::endl
               << "xi = " << xi << std::endl
               << "daisy_term = " << ( daisy_flag == 0  ? "None" : ( daisy_flag == 1 ? "Parwani" : "ArnoldEspinosa")) << std::endl
-              << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
               << "use 1-level ewsb in tree-level masses = " << use_1L_EWSB_in_0L_mass << std::endl
               << "use Goldstone resum = " << use_Goldstone_resum << std::endl;
 
@@ -114,7 +109,7 @@ int main(int argc, char* argv[]) {
   }
   
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, SM_parameters);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, false, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, false, SM_parameters);
   if (debug_mode) std::cout << "1-L EWSB iteration converged = " << model.iteration_converged << std::endl;
 
   if (not model.iteration_converged){
@@ -153,7 +148,7 @@ int main(int argc, char* argv[]) {
     std::cout << std::endl;
     std::cout << "@ EWSB VEV" << std::endl;
     Eigen::VectorXd test(2);
-    test <<  SM_parameters[1], 0;
+    test <<  246, 0;
     double Ttest = 100;
     
     auto mh_check =  model.get_scalar_masses_sq(test,1);
@@ -167,22 +162,22 @@ int main(int argc, char* argv[]) {
     std::cout << "mt = " << std::sqrt(mf_check[0]) << std::endl;
     std::cout << "mb = " << std::sqrt(mf_check[1]) << std::endl;
     std::cout << "mtau = " << std::sqrt(mf_check[2]) << std::endl;
+//    
+//    double Vtree = model.V0(test);
+//    double VCW = model.V1(test);
+//    double V1T = model.V1T(test, Ttest);
+//    double Vtot = model.V(test, Ttest);
+//    std::cout << "Vtree      = "<< Vtree << std::endl;
+//    std::cout << "VCW        = "<< VCW << std::endl;   
+//    std::cout << "V1T(T=100) = "<< V1T << std::endl;      
+//    std::cout << "V(T=100)   = "<< Vtot << std::endl;  
+//    std::cout << std::endl;
     
-    double Vtree = model.V0(test);
-    double VCW = model.V1(test);
-    double V1T = model.V1T(test, Ttest);
-    double Vtot = model.V(test, Ttest);
-    std::cout << "Vtree      = "<< Vtree << std::endl;
-    std::cout << "VCW        = "<< VCW << std::endl;   
-    std::cout << "V1T(T=100) = "<< V1T << std::endl;      
-    std::cout << "V(T=100)   = "<< Vtot << std::endl;  
-    std::cout << std::endl;
-    
-    std::cout << "Numerically derivatives of the full potential at EW VEV:" << std::endl;
-    auto d2Vdh2 = model.d2V_dx2(test,0);
-    std::cout << std::setprecision(16);
-    std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
-    std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
+//    std::cout << "Numerically derivatives of the full potential at EW VEV:" << std::endl;
+//    auto d2Vdh2 = model.d2V_dx2(test,0);
+//    std::cout << std::setprecision(16);
+//    std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
+//    std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
     
 //    PhaseTracer::potential_plotter(model, 254, "potential", -5., 5, 0.01, -5., 40., 0.1);
 //    PhaseTracer::potential_plotter(model, 142.35, "potential", 0., 160, 0.2, -2., 160., 0.2);
@@ -243,32 +238,42 @@ int main(int argc, char* argv[]) {
     return 0;
   }
   
-  if (debug_mode) {
-    auto false_vacuum = t[jj].false_vacuum;
-    auto true_vacuum = t[jj].true_vacuum;
-    auto TC = t[jj].TC;
-    std::cout << "V^high = " << model.V(false_vacuum, TC) << std::endl;
-    std::cout << "V1T^high = " << model.V1T(false_vacuum, TC) << std::endl;
-    std::cout << "VCW^high = " << model.V1(false_vacuum, TC) << std::endl;
-    std::cout << "Vtree^high = " << model.V0(false_vacuum) << std::endl;
-    
-    std::cout << "V^low = " << model.V(true_vacuum, TC) << std::endl;
-    std::cout << "V1T^low = " << model.V1T(true_vacuum, TC) << std::endl;
-    std::cout << "VCW^low = " << model.V1(true_vacuum, TC) << std::endl;
-    std::cout << "Vtree^low = " << model.V0(true_vacuum) << std::endl;
-    
-    auto d2V_dx2_high = model.d2V_dx2(false_vacuum, TC);
-    std::cout << "d2V_dx2_high = " << d2V_dx2_high << std::endl;
-    auto d2V_dx2_low = model.d2V_dx2(true_vacuum, TC);
-    std::cout << "d2V_dx2_low = " << d2V_dx2_low << std::endl;
-    
-    auto d2V_dxdt_high = model.d2V_dxdt(false_vacuum, TC);
-    std::cout << "d2V_dxdt_high = " << d2V_dxdt_high << std::endl;
-    auto d2V_dxdt_low = model.d2V_dxdt(true_vacuum, TC);
-    std::cout << "d2V_dxdt_low = " << d2V_dxdt_low << std::endl;
-    
-    
-  }
+//  if (debug_mode) {
+//    auto false_vacuum = t[jj].false_vacuum;
+//    auto true_vacuum = t[jj].true_vacuum;
+//    auto TC = t[jj].TC;
+//    std::cout << "V^high = " << model.V(false_vacuum, TC) << std::endl;
+//    std::cout << "V1T^high = " << model.V1T(false_vacuum, TC) << std::endl;
+//    std::cout << "VCW^high = " << model.V1(false_vacuum) << std::endl;
+//    std::cout << "daisy^high = " << model.daisy(false_vacuum,TC) << std::endl;
+//    std::cout << "Vtree^high = " << model.V0(false_vacuum) << std::endl;
+//    
+//    std::cout << "V^low = " << model.V(true_vacuum, TC) << std::endl;
+//    std::cout << "V1T^low = " << model.V1T(true_vacuum, TC) << std::endl;
+//    std::cout << "VCW^low = " << model.V1(true_vacuum) << std::endl;
+//    std::cout << "daisy^low = " << model.daisy(true_vacuum,TC) << std::endl;
+//    std::cout << "Vtree^low = " << model.V0(true_vacuum) << std::endl;
+//    
+//    auto d2V_dx2_high = model.d2V_dx2(false_vacuum, TC);
+//    std::cout << "d2V_dx2_high = " << d2V_dx2_high << std::endl;
+//    auto d2V_dx2_low = model.d2V_dx2(true_vacuum, TC);
+//    std::cout << "d2V_dx2_low = " << d2V_dx2_low << std::endl;
+//    
+//    auto d2V_dxdt_high = model.d2V_dxdt(false_vacuum, TC);
+//    std::cout << "d2V_dxdt_high = " << d2V_dxdt_high << std::endl;
+//    auto d2V_dxdt_low = model.d2V_dxdt(true_vacuum, TC);
+//    std::cout << "d2V_dxdt_low = " << d2V_dxdt_low << std::endl;
+//    
+//    std::cout << "@ EWSB VEV" << std::endl;
+//    Eigen::VectorXd test(2);
+//    test <<  SM_parameters[1], 0;
+//    std::cout << "dV1T_dT(T=0) = " << model.dV1T_dT(test, 0.0001) << std::endl;
+//    std::cout << "ddaisy_dT(T=0) = " << model.ddaisy_dT(test, 0.0001) << std::endl;
+//    
+//    std::cout << "dV1T_dT(T=TC) = " << model.dV1T_dT(test, TC) << std::endl;
+//    std::cout << "ddaisy_dT(T=TC) = " << model.ddaisy_dT(test, TC) << std::endl;
+//    
+//  }
   
   
   std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
