@@ -88,5 +88,5 @@ for ii in range(2):
       axs[ii,jj].set_xlabel(r"$m_{s}$ (GeV)")
 
 fig.tight_layout()
-plt.savefig('1d_bks.png')
+plt.savefig('1d_scale.png')
 plt.show()
