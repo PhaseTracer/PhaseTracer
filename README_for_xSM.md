@@ -1,3 +1,5 @@
+Basically, I use one cpp main file for each scheme, and the c++ codes only calculate one point in parameter space. I use python scripts to scan the parameter space by calling the c++ codes, so that it is easy to change the scan method and ranges. 
+
 ### Building
 
     mkdir build
@@ -9,7 +11,7 @@
     cmake -DBUILD_WITH_FS_ScalarSingletZ2DMMhInput=on ..
     make
     
-### run
+### run one point
 
   ./bin/run_xSM_MSbar x1 x2 x3 x4 x5 x6 x7
   ./bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT x1 x2 x3 x4 x5 x6 x7
@@ -68,6 +70,7 @@
 
   cd example/xSM/plot_scripts/
   python 1d_plot_bks.py
+  python 1d_plot_scale.py
   
 
 
