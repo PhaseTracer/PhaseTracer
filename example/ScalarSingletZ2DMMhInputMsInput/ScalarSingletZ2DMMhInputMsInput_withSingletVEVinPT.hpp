@@ -148,6 +148,10 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
   double get_lambda_s() {return lambda_s;}
   double get_lambda_hs() {return lambda_hs;}
   
+  double get_v_tree_s() const {
+    return std::sqrt(-muS2 / lambda_s);
+  }
+  
  private:
   Model model;
   //TODO: Make it an input
