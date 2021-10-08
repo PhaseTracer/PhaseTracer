@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iomanip>
 
-#include "models/xSM_MSbar_covariant.hpp"
+#include "models/xSM_MSbar.hpp"
 #include "models/SM_parameters.hpp"
 #include "transition_finder.hpp"
 #include "phase_finder.hpp"
@@ -30,41 +30,28 @@ int main(int argc, char* argv[]) {
   bool debug_mode = false;
   double ms, lambda_s, lambda_hs;
   double Q, xi, daisy_flag;
-  bool use_1L_EWSB_in_0L_mass;
-  bool use_Goldstone_resum = true;
-  bool tree_level_tadpoles = false;
   if ( argc == 1 ) {
     debug_mode = true;
     ms = 65.;
     lambda_s =  0.1;
     lambda_hs = 0.3;
     Q = 173.;
-    xi = 1;
-    daisy_flag = 1;
-    use_1L_EWSB_in_0L_mass = false;
-    if ( xi==0 and not use_1L_EWSB_in_0L_mass )
-      use_Goldstone_resum = true;
-    else 
-      use_Goldstone_resum = false;
-    
+    xi = 3;
+    daisy_flag = 2;
   } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
     lambda_hs = atof(argv[3]);
     Q = atof(argv[4]);
     xi = atof(argv[5]);
-
     daisy_flag = atoi(argv[6]);
-    use_1L_EWSB_in_0L_mass = atoi(argv[7]);
-    use_Goldstone_resum = atoi(argv[8]);
-
   } else {
-    std::cout << "Use ./run_xSM_covaraint_gaugue ms lambda_s lambda_hs" << std::endl;
+    std::cout << "Use ./run_xSM_covaraint_gaugue ms lambda_s lambda_hs Q xi daisy_flag" << std::endl;
     return 0;
   }
 
   std::vector<double> in ={ms, lambda_s, lambda_hs};
-  std::vector<double> flags ={Q, xi, daisy_flag, (float)use_1L_EWSB_in_0L_mass, (float)use_Goldstone_resum};
+  std::vector<double> flags ={Q, xi, daisy_flag};
   
   if (debug_mode){
     LOGGER(debug);
@@ -73,18 +60,14 @@ int main(int argc, char* argv[]) {
               << "lambda_hs = " << lambda_hs << std::endl
               << "Q = " << Q << std::endl
               << "xi = " << xi << std::endl
-              << "daisy_term = " << ( daisy_flag == 0  ? "None" : ( daisy_flag == 1 ? "Parwani" : "ArnoldEspinosa")) << std::endl
-              << "tree-level tadpoles = " << tree_level_tadpoles << std::endl
-              << "use 1-level ewsb in tree-level masses = " << use_1L_EWSB_in_0L_mass << std::endl
-              << "use Goldstone resum = " << use_Goldstone_resum << std::endl;
+              << "daisy_term = " << ( daisy_flag == 0  ? "None" : ( daisy_flag == 1 ? "Parwani" : "ArnoldEspinosa")) << std::endl;
 
   } else {
     LOGGER(fatal);
   }
 
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar_covariant::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles);
-  model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, true);
 
   // Choose Daisy method 
   if (daisy_flag == 0){
