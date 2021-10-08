@@ -8,7 +8,7 @@ cwd = os.getcwd()
 print cwd
 
 n_total = 100000
-n_total = 10
+#n_total = 10
 
 folder_name = "random_scan_results"
 if not os.path.exists(folder_name):
@@ -116,13 +116,13 @@ scheme = "xSM_OSlike"
 cmd = "./../../../bin/run_"+scheme
 use_Goldstone_resum = 1
 
-file_name = scheme + "_xi_0"
-xi = 0
-scan(cmd, file_name)
-
-#file_name = scheme + "_xi_1"
-#xi = 1
+#file_name = scheme + "_xi_0"
+#xi = 0
 #scan(cmd, file_name)
+
+file_name = scheme + "_xi_1"
+xi = 1
+scan(cmd, file_name)
 #
 #file_name = scheme + "_xi_3"
 #xi = 3
