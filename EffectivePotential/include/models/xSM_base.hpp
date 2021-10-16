@@ -72,23 +72,25 @@ class xSM_base : public OneLoopPotential {
   std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override {
     const double h_sq = square(phi[0]);
     const double T_sq = square(T);
-    const double MW_sq = 0.25 * square(SM_g) * h_sq + 11. / 6. * square(SM_g) * T_sq;
-
-		const double a = (square(SM_g) + square(SM_gp)) * (3. * h_sq + 22. * T_sq);
-		const double b = std::sqrt(9. * square(square(SM_g) + square(SM_gp)) * square(h_sq)
+    const double MW_T_sq = 0.25 * square(SM_g) * h_sq;
+    const double MZ_T_sq = 0.25 * (square(SM_g) + square(SM_gp)) * h_sq;
+    const double Mphoton_T_sq = 0.;
+    
+    const double MW_L_sq = 0.25 * square(SM_g) * h_sq + 11. / 6. * square(SM_g) * T_sq;
+		const double a_L = (square(SM_g) + square(SM_gp)) * (3. * h_sq + 22. * T_sq);
+		const double b_L = std::sqrt(9. * square(square(SM_g) + square(SM_gp)) * square(h_sq)
                      + 132. * square(square(SM_g) - square(SM_gp)) * h_sq * T_sq
                      + 484. * square(square(SM_g) - square(SM_gp)) * pow_4(T));
-
-		const double MZ_sq = (a + b) / 24.;
-		const double Mphoton_sq = (a - b) / 24.;
-
+		const double MZ_L_sq = (a_L + b_L) / 24.;
+		const double Mphoton_L_sq = (a_L - b_L) / 24.;
+    
     // Mphoton_sq must be put at the end, as it will not be used in the OSlike scheme.
-    return {MW_sq, MZ_sq, Mphoton_sq};
+    return {MW_L_sq, MZ_L_sq, Mphoton_L_sq, MW_T_sq, MZ_T_sq, Mphoton_T_sq};
   }
 
   // W, Z, photon
   std::vector<double> get_vector_dofs() const override {
-    return {6., 3., 3.};
+    return {2., 1., 1., 4., 2, 2};
   }
 
   // top quark
