@@ -44,8 +44,8 @@ int main(int argc, char* argv[]) {
     // Compare with xSM_MSbar
     ms = 65.;
     lambda_s =  0.1;
-    lambda_hs = 0.25;
-    Q = 173.;
+    lambda_hs = 0.3;
+    Q =173.;
     xi = 0.;
     daisy_flag = 2;
     use_1L_EWSB_in_0L_mass = false;
@@ -64,6 +64,11 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
+    if (xi != 0) {
+      std::cout << "xi != 0 in ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT" << std::endl;
+      return 0;
+    }
+    
   std::vector<double> in ={ms, lambda_s, lambda_hs};
   std::vector<double> flags ={Q, xi, daisy_flag, (float)use_1L_EWSB_in_0L_mass, (float)use_Goldstone_resum};
 
@@ -186,6 +191,9 @@ int main(int argc, char* argv[]) {
   // Use minima with greatest Higgs/scalar
   double vs, vh;
   for (const auto& m : ht_minima) {
+    if (debug_mode) {
+      std::cout << "HT minimum = " << m.x << std::endl;
+    }
     vh = std::max(vh, std::abs(m.x(0)));
     vs = std::max(vh, std::abs(m.x(1)));
   }
@@ -196,9 +204,13 @@ int main(int argc, char* argv[]) {
     std::cout << "gamma_HT = " << vh / TC << std::endl;
   }
   
-  std::vector<double> out = {1, TC, 0.0, vs, vh, 0.0};
-  
-  output_file << toString(in, out, flags) << std::endl;
+  if (ht_minima.size()==1){
+    std::vector<double> out = {1, TC, vh, vs, vh, vs};
+    output_file << toString(in, out, flags) << std::endl;
+  } else {
+    std::vector<double> out = {1, TC, 0.0, vs, vh, 0.0};
+    output_file << toString(in, out, flags) << std::endl;
+  }
   output_file.close();
   
   return 0;
