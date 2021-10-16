@@ -38,7 +38,7 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
   void set_input(std::vector<double> x);
 
   // set data members of this class from FS Model object
-  void set_VH_pars_from_FS() {
+  void set_VH_pars_from_FS(double renormalization_scale) {
     // Fetch parameters from FS model
     gp = model.get_g1() * sqrt(3. / 5.);
     g = model.get_g2();
@@ -63,8 +63,8 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
       std::cout << "running mass for MW = " << model.get_MVWp() << std::endl;
     }
 								
-    set_renormalization_scale(model.get_scale());
-    
+    set_renormalization_scale(renormalization_scale);
+    std::cout << "renormalization_scale= " << renormalization_scale << std::endl;
     // Calculate Debye coefficients
     yt = model.get_Yu(2, 2);
     yb = model.get_Yd(2, 2);
@@ -122,7 +122,7 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
   // varying the scale and recaculating the effective piotential 
   void Run_pars_to(double scale, double tol) {
     model.run_to(scale,tol);
-    set_VH_pars_from_FS(); // includes setting renormalisation scale
+    set_VH_pars_from_FS(scale); // includes setting renormalisation scale
   }
 
   // Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential 
@@ -207,7 +207,7 @@ void ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT::set_input(std::vector<d
   }
 
   // Fetch parameters from FS model anduse them to  set data members for this class
-  set_VH_pars_from_FS(); // includes setting renormalisation scale
+  set_VH_pars_from_FS(model.get_scale()); // includes setting renormalisation scale
 }
 
 double ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT::V0(Eigen::VectorXd phi) const {
