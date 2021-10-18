@@ -20,7 +20,7 @@ endif()
 # Build BSMPT if required
 if(NOT EXISTS ${BSMPT}/src/models/libModels.a)
   message(STATUS "Making BSMPT")
-  execute_process(COMMAND git checkout tags/v2.1
+  execute_process(COMMAND git checkout tags/v2.3.1
                   WORKING_DIRECTORY ${BSMPT})
   execute_process(COMMAND cmake -DUseLibCMAES=OFF .
                   WORKING_DIRECTORY ${BSMPT})
@@ -63,6 +63,6 @@ find_library(BSMPT_THERMAL_LIB
 
 find_library(BSMPT_UTILITY_LIB
   NAMES libUtility.a
-  PATHS ${BSMPT}/src
+  PATHS ${BSMPT}/src/utility
 )
 
