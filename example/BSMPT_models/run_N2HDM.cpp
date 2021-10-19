@@ -6,9 +6,9 @@
 #include <string>
 #include <vector>
 
-#include "Minimizer.h"
-#include "IncludeAllModels.h"
-#include "ClassPotentialRN2HDM.h"
+#include <BSMPT/minimizer/Minimizer.h>
+#include <BSMPT/models/IncludeAllModels.h>
+#include <BSMPT/models/ClassPotentialRN2HDM.h>
 
 #include "models/BSMPT.hpp"
 #include "transition_finder.hpp"

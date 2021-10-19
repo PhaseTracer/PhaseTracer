@@ -8,3 +8,8 @@ link_libraries(
 )
 
 add_executable(unit_tests catch_main.cpp ${TEST_FILES})
+if(TARGET NLopt::nlopt)
+  target_link_libraries(unit_tests PUBLIC NLopt::nlopt)
+else()
+  target_link_libraries(unit_tests PUBLIC NLopt::nlopt_cxx)
+endif()

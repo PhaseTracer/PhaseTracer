@@ -9,6 +9,17 @@ add_executable(run_1D_test_model run_1D_test_model.cpp)
 add_executable(run_2D_test_model run_2D_test_model.cpp)
 add_executable(scan_Z2_scalar_singlet_model scan_Z2_scalar_singlet_model.cpp)
 add_executable(time time.cpp)
+if(TARGET NLopt::nlopt)
+  target_link_libraries(run_1D_test_model PUBLIC NLopt::nlopt)
+  target_link_libraries(run_2D_test_model PUBLIC NLopt::nlopt)
+  target_link_libraries(scan_Z2_scalar_singlet_model PUBLIC NLopt::nlopt)
+  target_link_libraries(time PUBLIC NLopt::nlopt)
+else()
+  target_link_libraries(run_1D_test_model PUBLIC NLopt::nlopt_cxx)
+  target_link_libraries(run_2D_test_model PUBLIC NLopt::nlopt_cxx)
+  target_link_libraries(scan_Z2_scalar_singlet_model PUBLIC NLopt::nlopt_cxx)
+  target_link_libraries(time PUBLIC NLopt::nlopt_cxx)
+endif()
 
 # add any subdirs that might contain programs
 
