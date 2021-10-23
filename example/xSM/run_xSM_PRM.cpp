@@ -39,15 +39,12 @@ int main(int argc, char* argv[]) {
     // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
     ms = 65.;
     lambda_s =  0.1;
-    lambda_hs = 0.38;
+    lambda_hs = 0.25;
     Q = 173.;
-    xi = 3;
-    daisy_flag = 1;
+    xi = 0.;
+    daisy_flag = 0;
     use_1L_EWSB_in_0L_mass = false;
-    if ( xi==0 and not use_1L_EWSB_in_0L_mass )
-      use_Goldstone_resum = true;
-    else
-      use_Goldstone_resum = false;
+    use_Goldstone_resum = true;
     
     // TODO
     SM_parameters.resize(7);
@@ -65,7 +62,6 @@ int main(int argc, char* argv[]) {
     lambda_hs = atof(argv[3]);
     Q = atof(argv[4]);
     xi = atof(argv[5]);
-
     daisy_flag = atoi(argv[6]);
     use_1L_EWSB_in_0L_mass = atoi(argv[7]);
     use_Goldstone_resum = atoi(argv[8]);
@@ -99,12 +95,9 @@ int main(int argc, char* argv[]) {
   // Choose Daisy method
   if (daisy_flag == 0){
     model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-  } else if (daisy_flag == 1){
-    model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
-  } else if (daisy_flag == 2){
-    model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
   } else {
-      std::cout << "Wrong daisy flag" << std::endl;
+    std::cout << "No daisy correction for PRM method!" << std::endl;
+    return 0;
   }
   
   // Make PhaseFinder object and find the phases
