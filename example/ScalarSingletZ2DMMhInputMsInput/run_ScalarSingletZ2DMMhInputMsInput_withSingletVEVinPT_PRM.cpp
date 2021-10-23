@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     lambda_hs = 0.3;
     Q =173.;
     xi = 0.;
-    daisy_flag = 2;
+    daisy_flag = 0;
     use_1L_EWSB_in_0L_mass = false;
     use_Goldstone_resum = true;
   } else if ( argc == 9 ) {
@@ -68,6 +68,7 @@ int main(int argc, char* argv[]) {
       std::cout << "xi != 0 in ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT" << std::endl;
       return 0;
     }
+    
     
   std::vector<double> in ={ms, lambda_s, lambda_hs};
   std::vector<double> flags ={Q, xi, daisy_flag, (float)use_1L_EWSB_in_0L_mass, (float)use_Goldstone_resum};
@@ -98,13 +99,11 @@ int main(int argc, char* argv[]) {
   // Choose Daisy method
   if (daisy_flag == 0){
     model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-  } else if (daisy_flag == 1){
-    model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
-  } else if (daisy_flag == 2){
-    model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
   } else {
-      std::cout << "Wrong daisy flag" << std::endl;
+    std::cout << "No daisy correction for PRM method!" << std::endl;
+    return 0;
   }
+  
   
   if (debug_mode) {
     std::cout << std::setprecision(16);
