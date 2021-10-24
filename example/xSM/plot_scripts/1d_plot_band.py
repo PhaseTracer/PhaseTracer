@@ -9,9 +9,10 @@ from plot_fun import fun_gamma, fun_diff, loaddata
 
 cmap = cm.get_cmap('rainbow')
 
-fig, axs = plt.subplots(2, 3, figsize=(10, 6))
+plot_scale = False
+plot_xi = True
 
-def line_for_1d(data, x_num, color, column):
+def line_for_1d(data, x_num, color, column, label = ""):
   sel = data[:,3]>0
 
   x = data[:,x_num][sel]
@@ -19,11 +20,18 @@ def line_for_1d(data, x_num, color, column):
   gamma = fun_gamma(data)[sel]
 
   ax = axs[0,column]
-  ax.plot(x, TC, color=color, alpha=1)
-
+  if label == "":
+    ax.plot(x, TC, color=color, alpha=1)
+  else:
+    ax.plot(x, TC, color=color, alpha=1, label=label)
+    
   ax = axs[1,column]
-  ax.plot(x, gamma, color=color, alpha=1)
-
+  if label == "":
+    ax.plot(x, gamma, color=color, alpha=1)
+  else:
+    ax.plot(x, gamma, color=color, alpha=1, label=label)
+    
+    
 def range_for_1d(data1, data2, x_num, label, column, color):
 
   sel1 = data1[:,3]>0
@@ -49,17 +57,39 @@ def range_for_1d(data1, data2, x_num, label, column, color):
   ax = axs[1,column]
   ax.fill_between(x,fgamma1(x),fgamma2(x), color=color, alpha=0.3, linewidth=0, label=label)
 
-for name in [["m_s",0,2], ["lambda_s",1,1], ["lambda_hs",2,0],]:
-  line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_default.txt"), name[1], "g", name[2])
+fig, axs = plt.subplots(2, 3, figsize=(10, 6))
 
-  range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_05mt.txt"),
-               np.loadtxt("../1d_bks/"+name[0]+"_2mt.txt"),
-               name[1], r"MS, $Q\in[m_t/2,2m_t]$", name[2], 'g')
+for name in [["m_s",0,2], ["lambda_s",1,1], ["lambda_hs",2,0],]:
+
+
+  if plot_scale:
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_default.txt"), name[1], "g", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_05mt.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_2mt.txt"),
+                 name[1], r"MS, $Q\in[m_t/2,2m_t]$", name[2], 'g')
+                 
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_mt.txt"), name[1], "r", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_05mt.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_2mt.txt"),
+                 name[1], r"PRM, $Q\in[m_t/2,2m_t]$", name[2], 'r')
+  elif plot_xi:     
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_xi1.txt"), name[1], "g", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_xi0.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_xi3.txt"),
+                 name[1], r"MS, $xi\in[0,3]$", name[2], 'g')
+                 
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noD_xi1.txt"), name[1], "r", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noD_xi0.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_noD_xi3.txt"),
+                 name[1], r"MS(no daisy), $xi\in[0,3]$", name[2], 'r')
+
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_xi1.txt"), name[1], "b", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_xi0.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_xi3.txt"),
+                 name[1], r"PRM(1L), $xi\in[0,3]$", name[2], 'b')
+
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_0L.txt"), name[1], "k", name[2], r"PRM(0L)")
                
-  line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_mt.txt"), name[1], "r", name[2])
-  range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_05mt.txt"),
-               np.loadtxt("../1d_bks/"+name[0]+"_PRM_2mt.txt"),
-               name[1], r"PRM, $Q\in[m_t/2,2m_t]$", name[2], 'r')
   
 for ii in range(2):
   for jj in range(3):
@@ -88,5 +118,10 @@ for ii in range(2):
       axs[ii,jj].set_xlabel(r"$m_{s}$ (GeV)")
 
 fig.tight_layout()
-plt.savefig('1d_scale.png')
+
+if plot_scale:
+  plt.savefig('1d_scale.png')
+elif plot_xi:
+  plt.savefig('1d_xi.png')
+
 plt.show()
