@@ -28,9 +28,7 @@ def plot_for_1d(data, x_num, label, column):
 
 if plot_methods:
   
-  fig, axs = plt.subplots(2, 3, figsize=(10, 6))
-  
-  
+#  fig, axs = plt.subplots(2, 3, figsize=(10, 6))
 #  names = [ ["default", "default"],
 #            ["2mt", r"$Q=2m_t$"],
 #            ["OSlike", r"OS-like"],
@@ -39,18 +37,22 @@ if plot_methods:
 #            ["PRM","PRM"],
 #            ["covariant_gauge", r"covariant, $\xi=3$"]]
 
+  fig, axs = plt.subplots(2, 4, figsize=(13, 6))
   names = [ ["default", "Goldstone resummation"],
-            ["1L_EWSB", "one-loop EWSB"] ]
+            ["1L_EWSB", "One-loop EWSB"] ]
 
 
   for name in names:
     plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)
     plot_for_1d(np.loadtxt("../1d_bks/lambda_s_"+name[0]+".txt"), 1, name[1], 1)
     plot_for_1d(np.loadtxt("../1d_bks/m_s_"+name[0]+".txt"), 0, name[1], 2)
+  plot_for_1d(np.loadtxt("../1d_bks/Rxi_MSbar_resummation.txt"), 10, "Goldstone resummation", 3)
+  plot_for_1d(np.loadtxt("../1d_bks/Rxi_MSbar_1L_EWSB.txt"), 10, "One-loop EWSB", 3)
+  plot_for_1d(np.loadtxt("../1d_bks/Rxi_MSbar_no.txt"), 10, "Nothing", 3)
     
 
   for ii in range(2):
-    for jj in range(3):
+    for jj in range(4):
       axs[ii,jj].grid(axis='x', alpha=0.75)
       axs[ii,jj].grid(axis='y', alpha=0.75)
       
@@ -72,8 +74,10 @@ if plot_methods:
         axs[ii,jj].set_xlabel(r"$\lambda_{hs}$")
       elif jj == 1:
         axs[ii,jj].set_xlabel(r"$\lambda_{s}$")
-      else:
+      elif jj == 2:
         axs[ii,jj].set_xlabel(r"$m_{s}$ (GeV)")
+      else:
+        axs[ii,jj].set_xlabel(r"$\xi$")
 
   fig.tight_layout()
   plt.savefig('1d_bks.png')
