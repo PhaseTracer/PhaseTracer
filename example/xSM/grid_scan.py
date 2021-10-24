@@ -9,16 +9,18 @@ print cwd
 
 
 scan_1d_bks = True
-scan_ms = True
-scan_ls = True
-scan_lhs = True
+scan_ms = False
+scan_ls = False
+scan_lhs = False
+scan_1d_xi = True
 
 scan_2d_bks = True
 
 
-if scan_1d_bks:
-  n_total = 100
+if scan_1d_bks or scan_1d_xi:
+  n_total = 10
   folder_name = "1d_bks"
+
 
 if not os.path.exists(folder_name):
   os.mkdir(folder_name) 
@@ -60,7 +62,6 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
   file_name = file_name_+"default"
   scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-
   cmd = "./../../../bin/run_xSM_PRM"
   file_name = file_name_+"PRM_woFS"
   scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
@@ -80,6 +81,10 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
   cmd = "./../../../bin/run_xSM_MSbar"
   file_name = file_name_+"xi3"
   scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [3], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+  file_name = file_name_+"mt"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
   cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
   file_name = file_name_+"2mt"
@@ -128,8 +133,28 @@ if scan_1d_bks:
     filename = "m_s_"
     perfrom_1d_scan(ms, lambda_s, lambda_hs, filename)
   
+  if scan_1d_xi:
+    ms = [65]
+    lambda_s = [0.1]
+    lambda_hs = [0.3]
+    xi = np.linspace(0,10,n_total)
+#
+#    cmd = "./../../../bin/run_xSM_MSbar"
+#    file_name = "xi_MSbar"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
+#    cmd = "./../../../bin/run_xSM_HT"
+#    file_name = "xi_HT"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#
+#    cmd = "./../../../bin/run_xSM_PRM"
+#    file_name = "xi_PRM"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
+    cmd = "./../../../bin/run_xSM_PRM_0L"
+    file_name = "xi_PRM_0L"
+    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", "0", "0")
+    
 #scheme = "xSM_MSbar"
 #cmd = "./../../../bin/run_"+scheme
 ##################### gauge dependence #################
