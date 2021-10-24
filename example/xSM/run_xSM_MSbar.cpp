@@ -41,6 +41,8 @@ int main(int argc, char* argv[]) {
   double Q, xi, daisy_flag;
   bool use_1L_EWSB_in_0L_mass;
   bool use_Goldstone_resum = true;
+  bool tree_level_tadpoles = false;
+  bool use_covariant_gauge = false;
   std::vector<double> SM_parameters ={};
   if ( argc == 1 ) {
     debug_mode = true;
@@ -75,7 +77,7 @@ int main(int argc, char* argv[]) {
 //    ms = 60;
 //    lambda_s =  0.15;
     
-  } else if ( argc == 9 ) {
+  } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
     lambda_hs = atof(argv[3]);
@@ -85,6 +87,19 @@ int main(int argc, char* argv[]) {
     daisy_flag = atoi(argv[6]);
     use_1L_EWSB_in_0L_mass = atoi(argv[7]);
     use_Goldstone_resum = atoi(argv[8]);
+    if ( argc > 9 ){
+      // default
+      // tree_level_tadpoles = false
+      // use_covariant_gauge = true
+      if ( atoi(argv[9]) == 1 ){
+        tree_level_tadpoles = true;
+      } else if ( atoi(argv[9]) == 2 ){
+        use_covariant_gauge = true;
+      } else if ( atoi(argv[9]) == 3 ){
+        use_covariant_gauge = true;
+        tree_level_tadpoles = true;
+      } 
+    }
   } else {
     std::cout << "Use ./run_xSM_MSbar ms lambda_s lambda_hs Q xi daisy_flag use_1L_EWSB_in_0L_mass use_Goldstone_resum" << std::endl;
     return 0;
@@ -109,7 +124,7 @@ int main(int argc, char* argv[]) {
   }
   
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, false, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, false, SM_parameters);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, use_covariant_gauge, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, tree_level_tadpoles, SM_parameters);
   if (debug_mode) std::cout << "1-L EWSB iteration converged = " << model.iteration_converged << std::endl;
 
   if (not model.iteration_converged){
