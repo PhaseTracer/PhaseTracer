@@ -18,7 +18,6 @@
 #include "h_bar_expansion.hpp"
 #include "one_loop_potential.hpp"
 
-
 namespace PhaseTracer {
 
 std::function<double(Eigen::VectorXd)> HTExpansion::make_objective(double T) const {
@@ -82,6 +81,7 @@ void HbarExpansion::find_phases() {
     phase.end_high = REACHED_T_STOP;
     phases.push_back(phase);
   }
+  remove_redundant();
 }
 
 }  // namespace PhaseTracer
