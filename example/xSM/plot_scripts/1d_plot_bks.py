@@ -7,8 +7,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
-plot_methods = False
-plot_xi = True
+plot_methods = True
+plot_xi = False
 
 cmap = cm.get_cmap('rainbow')
 
@@ -30,13 +30,18 @@ if plot_methods:
   
   fig, axs = plt.subplots(2, 3, figsize=(10, 6))
   
-  names = [ ["default", "default"],
-            ["2mt", r"$Q=2m_t$"],
-            ["OSlike", r"OS-like"],
-            ["xi3", r"$\xi=3$"],
-            ["HT", r"HT"],
-            ["PRM","PRM"],
-            ["covariant_gauge", r"covariant, $\xi=3$"]]
+  
+#  names = [ ["default", "default"],
+#            ["2mt", r"$Q=2m_t$"],
+#            ["OSlike", r"OS-like"],
+#            ["xi3", r"$\xi=3$"],
+#            ["HT", r"HT"],
+#            ["PRM","PRM"],
+#            ["covariant_gauge", r"covariant, $\xi=3$"]]
+
+  names = [ ["default", "Goldstone resummation"],
+            ["1L_EWSB", "one-loop EWSB"] ]
+
 
   for name in names:
     plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)
