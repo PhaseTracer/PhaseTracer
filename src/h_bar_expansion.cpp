@@ -17,6 +17,7 @@
 
 #include "h_bar_expansion.hpp"
 #include "one_loop_potential.hpp"
+#include "logger.hpp"
 
 namespace PhaseTracer {
 
@@ -55,6 +56,7 @@ void HbarExpansion::find_phases() {
   const auto zero = Eigen::VectorXd::Zero(n_scalars);
 
   for (const auto& m : minima) {
+    LOG(debug) << "minima 2= " << m ;
     Phase phase;
     phase.key = key++;
     phase.T = {t_low, t_high};
@@ -71,6 +73,7 @@ void HbarExpansion::find_phases() {
   // for gauge invariance, should be a minima, maxima or saddle point
 
   for (const auto& p : pseudo_phases) {
+    LOG(debug) << "pseudo_phases 2= " << p ;
     Phase phase;
     phase.key = key++;
     phase.T = {t_low, t_high};
