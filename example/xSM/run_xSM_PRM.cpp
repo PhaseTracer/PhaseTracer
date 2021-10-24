@@ -32,45 +32,32 @@ int main(int argc, char* argv[]) {
   bool use_1L_EWSB_in_0L_mass;
   bool use_Goldstone_resum = true;
   bool tree_level_tadpoles = false;
-  std::vector<double> SM_parameters ={};
   
   if ( argc == 1 ) {
     debug_mode = true;
     // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
     ms = 65.;
     lambda_s =  0.1;
-    lambda_hs = 0.38;
+    lambda_hs = 0.25;
     Q = 173.;
-    xi = 3;
-    daisy_flag = 1;
+    xi = 0.;
+    daisy_flag = 0;
     use_1L_EWSB_in_0L_mass = false;
-    if ( xi==0 and not use_1L_EWSB_in_0L_mass )
-      use_Goldstone_resum = true;
-    else
-      use_Goldstone_resum = false;
+    use_Goldstone_resum = true;
     
-    // TODO
-    SM_parameters.resize(7);
-    SM_parameters[0] = 125.;
-    SM_parameters[1] = 245.5782292532188;
-    SM_parameters[2] = 0.3576323374899369;
-    SM_parameters[3] = 0.6508510850302707;
-    SM_parameters[4] = square(-0.9962566593729878);
-    SM_parameters[5] = square(0.01644365628566979);
-    SM_parameters[6] = square(0.01023316833028443);
-    
-  } else if ( argc == 9 ) {
+  } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
     lambda_hs = atof(argv[3]);
     Q = atof(argv[4]);
     xi = atof(argv[5]);
-
     daisy_flag = atoi(argv[6]);
     use_1L_EWSB_in_0L_mass = atoi(argv[7]);
     use_Goldstone_resum = atoi(argv[8]);
+    if ( argc > 9 )
+      tree_level_tadpoles = true;
   } else {
-    std::cout << "Use ./run_xSM_MSbar ms lambda_s lambda_hs Q xi daisy_flag use_1L_EWSB_in_0L_mass use_Goldstone_resum" << std::endl;
+    std::cout << "Use ./run_xSM_MSbar ms lambda_s lambda_hs Q xi daisy_flag use_1L_EWSB_in_0L_mass use_Goldstone_resum tree_level_tadpoles" << std::endl;
     return 0;
   }
 
@@ -94,17 +81,20 @@ int main(int argc, char* argv[]) {
   }
     
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, tree_level_tadpoles, use_1L_EWSB_in_0L_mass);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, false, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, tree_level_tadpoles);
 
   // Choose Daisy method
   if (daisy_flag == 0){
     model.set_daisy_method(EffectivePotential::DaisyMethod::None);
-  } else if (daisy_flag == 1){
-    model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
-  } else if (daisy_flag == 2){
-    model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
   } else {
-      std::cout << "Wrong daisy flag" << std::endl;
+    std::cout << "No daisy correction for PRM method!" << std::endl;
+    return 0;
+  }
+  
+  if (debug_mode) {
+      std::cout << "muh_sq = " << model.get_muh_sq() << std::endl
+                << "mus_sq = " << model.get_lambda_h() << std::endl
+                << "lambda_h = " << model.get_lambda_h() << std::endl;
   }
   
   // Make PhaseFinder object and find the phases
@@ -114,6 +104,8 @@ int main(int argc, char* argv[]) {
   pseudo << 0., model.get_v_tree_s();
   hb.add_pseudo_phase(pseudo);
   hb.find_phases();
+  if (debug_mode) std::cout << hb;
+  
   
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(hb);

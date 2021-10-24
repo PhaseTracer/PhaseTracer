@@ -86,6 +86,7 @@ class xSM_MSbar : public xSM_base {
     lambda_h = mhh2 / (2. * square(SM_v));
     muh_sq = -lambda_h * square(SM_v);
     mus_sq = mss2 - 0.5 * lambda_hs * square(SM_v);
+    muh_sq_use_0L_EWSB = muh_sq;
   }
 
   /**
@@ -99,7 +100,7 @@ class xSM_MSbar : public xSM_base {
    */
   bool apply_one_loop(double tol = 0.1) {
     apply_tree_level();
-    muh_sq_use_0L_EWSB = muh_sq;
+    muh_sq_use_0L_EWSB = muh_sq; // TODO: this can be deleted?
     
     size_t ii = 0;
     while (true) {
