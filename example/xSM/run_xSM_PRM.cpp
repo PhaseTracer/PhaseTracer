@@ -32,6 +32,7 @@ int main(int argc, char* argv[]) {
   bool use_1L_EWSB_in_0L_mass;
   bool use_Goldstone_resum = true;
   bool tree_level_tadpoles = false;
+  bool use_covariant_gauge = false;
   
   if ( argc == 1 ) {
     debug_mode = true;
@@ -54,8 +55,19 @@ int main(int argc, char* argv[]) {
     daisy_flag = atoi(argv[6]);
     use_1L_EWSB_in_0L_mass = atoi(argv[7]);
     use_Goldstone_resum = atoi(argv[8]);
-    if ( argc > 9 )
-      tree_level_tadpoles = true;
+    if ( argc > 9 ){
+      // default
+      // tree_level_tadpoles = false
+      // use_covariant_gauge = true
+      if ( atoi(argv[9]) == 1 ){
+        tree_level_tadpoles = true;
+      } else if ( atoi(argv[9]) == 2 ){
+        use_covariant_gauge = true;
+      } else if ( atoi(argv[9]) == 3 ){
+        use_covariant_gauge = true;
+        tree_level_tadpoles = true;
+      } 
+    }
   } else {
     std::cout << "Use ./run_xSM_MSbar ms lambda_s lambda_hs Q xi daisy_flag use_1L_EWSB_in_0L_mass use_Goldstone_resum tree_level_tadpoles" << std::endl;
     return 0;
@@ -81,7 +93,7 @@ int main(int argc, char* argv[]) {
   }
     
   // Construct our model
-  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, false, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, tree_level_tadpoles);
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, use_covariant_gauge, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, tree_level_tadpoles);
 
   // Choose Daisy method
   if (daisy_flag == 0){
