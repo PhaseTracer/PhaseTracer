@@ -42,14 +42,14 @@ int main(int argc, char* argv[]) {
   if ( argc == 1 ) {
     debug_mode = true;
     // Compare with xSM_MSbar
-    ms = 68.2223573013075;
+    ms = 65;
     lambda_s =  0.1;
-    lambda_hs = 0.25;
+    lambda_hs = 0.3;
     Q = 173.;
-    xi = 1;
-    daisy_flag = 1;
+    xi = 0;
+    daisy_flag = 2;
     use_1L_EWSB_in_0L_mass = false;  
-    use_Goldstone_resum = false;
+    use_Goldstone_resum = true;
   } else if ( argc == 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
 
   // Construct our model
   EffectivePotential::ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT model;
-  if (debug_mode) model.set_debug(true);
+//  if (debug_mode) model.set_debug(true);
   
   // Choose Daisy method 
   if (daisy_flag == 0){
