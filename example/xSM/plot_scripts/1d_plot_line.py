@@ -8,8 +8,8 @@ sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
 plot_methods = False
-plot_Goldstone = False
-plot_xi = True
+plot_Goldstone = True
+plot_xi = False
 
 cmap = cm.get_cmap('rainbow')
 
@@ -39,12 +39,11 @@ if plot_methods or plot_Goldstone:
               ["covariant_gauge", r"covariant, $\xi=3$"]]
     ncolumn = 3
   if plot_Goldstone:
-    fig, axs = plt.subplots(2, 4, figsize=(13, 6))
     names = [ ["default", "Goldstone resummation"],
               ["1L_EWSB", "One-loop EWSB"] ]
     ncolumn = 4
 
-  fig, axs = plt.subplots(2, ncolumn, figsize=(10, 6))
+  fig, axs = plt.subplots(2, ncolumn, figsize=(13, 6))
 
   for name in names:
     plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)

@@ -57,21 +57,30 @@ def range_for_1d(data1, data2, x_num, label, column, color):
   ax = axs[1,column]
   ax.fill_between(x,fgamma1(x),fgamma2(x), color=color, alpha=0.3, linewidth=0, label=label)
 
-fig, axs = plt.subplots(2, 3, figsize=(10, 6))
+fig, axs = plt.subplots(2, 3, figsize=(12, 6))
 
 for name in [["m_s",0,2], ["lambda_s",1,1], ["lambda_hs",2,0],]:
 
 
   if plot_scale:
-    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_default.txt"), name[1], "g", name[2])
-    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_05mt.txt"),
-                 np.loadtxt("../1d_bks/"+name[0]+"_2mt.txt"),
-                 name[1], r"MS, $Q\in[m_t/2,2m_t]$", name[2], 'g')
                  
     line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_mt.txt"), name[1], "r", name[2])
     range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_05mt.txt"),
                  np.loadtxt("../1d_bks/"+name[0]+"_PRM_2mt.txt"),
                  name[1], r"PRM, $Q\in[m_t/2,2m_t]$", name[2], 'r')
+
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_mt.txt"), name[1], "g", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_05mt.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_2mt.txt"),
+                 name[1], r"MS, $Q\in[m_t/2,2m_t]$", name[2], 'g')
+                 
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noD_mt.txt"), name[1], "b", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noD_05mt.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_noD_2mt.txt"),
+                 name[1], r"MS(no daisy), $Q\in[m_t/2,2m_t]$", name[2], 'b')
+
+
+                 
   elif plot_xi:     
     line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_xi1.txt"), name[1], "g", name[2])
     range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_xi0.txt"),
