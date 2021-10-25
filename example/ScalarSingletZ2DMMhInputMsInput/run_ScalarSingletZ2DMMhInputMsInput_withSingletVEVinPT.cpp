@@ -87,6 +87,17 @@ int main(int argc, char* argv[]) {
   EffectivePotential::ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT model;
   if (debug_mode) model.set_debug(true);
   
+  // Choose Daisy method 
+  if (daisy_flag == 0){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::None);
+  } else if (daisy_flag == 1){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
+  } else if (daisy_flag == 2){
+    model.set_daisy_method(EffectivePotential::DaisyMethod::ArnoldEspinosa);
+  } else {
+      std::cout << "Wrong daisy flag" << std::endl;
+  }
+  
   model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
   model.set_use_Goldstone_resum(use_Goldstone_resum);
   model.set_input({Qin, Qin, MhInput, ms, lambda_s, lambda_hs});
