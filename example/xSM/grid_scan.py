@@ -9,12 +9,12 @@ print cwd
 
 
 scan_1d_bks = True
-scan_ms = False
-scan_ls = False
-scan_lhs = False
-scan_1d_xi = True
+scan_ms = True
+scan_ls = True
+scan_lhs = True
+scan_1d_xi = False
 
-scan_2d_bks = True
+scan_2d_bks = False
 
 
 if scan_1d_bks or scan_1d_xi:
@@ -59,10 +59,10 @@ use_Goldstone_resum_in = "1"
 
 def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 
-  ############## methods ################
-  cmd = "./../../../bin/run_xSM_MSbar"
-  file_name = file_name_+"default"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  ############## methods ################
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"default"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  cmd = "./../../../bin/run_xSM_PRM"
 #  file_name = file_name_+"PRM_woFS"
@@ -124,9 +124,9 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 #  file_name = file_name_+"noD_2mt"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173*2], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-#  file_name = file_name_+"noD_05mt"
-#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+  file_name = file_name_+"noD_05mt"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  ############### xi band ####################
 
