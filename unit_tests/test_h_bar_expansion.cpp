@@ -6,22 +6,19 @@
 #include "logger.hpp"
 
 
-TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
-
-  LOGGER(fatal);
-
+std::vector<double> h_bar_expansion(bool use_covariant_gauge, double xi) {
   // Construct our model
   const double lambda_hs = 0.3;
   const double Q = 173.03;
-  const double xi = 0.;
 
   double ms = 0.5 * SM::mh;
   double lambda_s_min = 2. / square(SM::mh * SM::v) *
       square(square(ms) - 0.5 * lambda_hs * square(SM::v));
   double lambda_s = lambda_s_min + 0.1;
-  
-  // Construct our model 
-  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi);
+
+  // Construct our model
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi,
+                                                            use_covariant_gauge, false, false, true);
   model.set_daisy_method(EffectivePotential::DaisyMethod::None);
 
   // Make HBarExpansion object and find the phases
@@ -41,6 +38,7 @@ TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
   PhaseTracer::HTExpansion ht(model);
   ht.set_seed(0);
   const double TC = tf.get_transitions()[0].TC;
+
   const auto ht_minima = ht.find_minima_at_t(TC);
 
   // Use minima with greatest Higgs
@@ -51,6 +49,25 @@ TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
 
   const double gamma = delta / TC;
 
-  CHECK(gamma == Approx(2.059489504));
-  CHECK(TC == Approx(90.3332920749));
+  return {gamma, TC};
+}
+
+TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
+  LOGGER(fatal);
+
+  SECTION("covariant gauge") {
+    for (double xi : {0., 0.5, 1., 2.}) {
+      const auto cov = h_bar_expansion(true, xi);
+      CHECK(cov[0] == Approx(1.9756895848));
+      CHECK(cov[1] == Approx(94.2642482268));
+    }
+  }
+
+  SECTION("R_xi gauge") {
+    for (double xi : {0., 0.5, 1., 2.}) {
+      const auto rxi = h_bar_expansion(false, xi);
+      CHECK(rxi[0] == Approx(1.9756895848));
+      CHECK(rxi[1] == Approx(94.264247631));
+    }
+  }
 }
