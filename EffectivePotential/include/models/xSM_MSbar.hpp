@@ -26,6 +26,9 @@
 
 #include "xSM_base.hpp"
 
+#include <utility>
+#include <vector>
+
 namespace EffectivePotential {
 
 class xSM_MSbar : public xSM_base {
@@ -35,7 +38,7 @@ class xSM_MSbar : public xSM_base {
    */
   xSM_MSbar(double lambda_hs_,
             double lambda_s_,
-            double ms_){
+            double ms_) {
       lambda_hs = lambda_hs_;
       lambda_s = lambda_s_;
       ms = ms_;
@@ -44,21 +47,39 @@ class xSM_MSbar : public xSM_base {
   /**
    * @brief Make an xSM model using tree or one-loop tadpole constraints
    */
-  static xSM_MSbar from_tadpoles(double lambda_hs, double lambda_s, double ms, 
-                                 double Q, double xi, 
+  static xSM_MSbar from_tadpoles(double lambda_hs, double lambda_s, double ms,
+                                 double Q, double xi,
                                  bool use_covariant_gauge = false,
                                  bool use_1L_EWSB_in_0L_mass = false,
                                  bool use_Goldstone_resum = true,
                                  bool use_tree_level_tadpole = false,
-                                 std::vector<double> SM_parameters={}) {
+                                 std::vector<double> SM_parameters = {}) {
+    // Make model that we'll begin setting options etc on
     xSM_MSbar model(lambda_hs, lambda_s, ms);
-    if (SM_parameters.size() == 7)
+
+    // Set SM parameters if present
+    if (SM_parameters.size() == 7) {
       model.set_SM_parameters(SM_parameters);
+    }
+
+    // Set some options
     model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
     model.set_use_Goldstone_resum(use_Goldstone_resum);
     model.set_use_covariant_gauge(use_covariant_gauge);
     model.set_renormalization_scale(Q);
-    model.set_xi(xi);
+
+    // Special care about gauge. Covariant gauge only has xi dependence
+    // in the masses; no explicit dependence in the potential.
+    // So the ordinary xi is set to zero, as this one appears expicitly in the
+    // potential. And the user input one is saved to a new parameter
+    if (!use_covariant_gauge) {
+      model.set_xi(xi);
+    } else {
+      model.xi_covariant_internal = xi;
+      model.set_xi(0.);
+    }
+
+    // Apply the relevant tadpole conditions
     if (use_tree_level_tadpole) {
       model.apply_tree_level();
     } else {
@@ -76,7 +97,7 @@ class xSM_MSbar : public xSM_base {
   void apply_tree_level() {
     double mhh2 = square(SM_mh);
     double mss2 = square(ms);
-    
+
     // TODO: will this affect calculation of lambda_h?
     if (mss2 > mhh2) {
       std::swap(mhh2, mss2);
@@ -100,8 +121,8 @@ class xSM_MSbar : public xSM_base {
    */
   bool apply_one_loop(double tol = 0.1) {
     apply_tree_level();
-    muh_sq_use_0L_EWSB = muh_sq; // TODO: this can be deleted?
-    
+    muh_sq_use_0L_EWSB = muh_sq;  // TODO: this can be deleted?
+
     size_t ii = 0;
     while (true) {
       ++ii;
@@ -121,7 +142,7 @@ class xSM_MSbar : public xSM_base {
       if (converged) {
         return true;
       }
-      if (ii > 1000){
+      if (ii > 1000) {
         return false;
       }
     }
@@ -193,15 +214,15 @@ class xSM_MSbar : public xSM_base {
     }
     return dV1Tdx;
   }
-  
+
   double dV1T_dT(Eigen::VectorXd phi, double T) const {
     const double eT =  0.001;
-    return (V1T(phi, T+eT) - V1T(phi, T) )/ eT; 
+    return (V1T(phi, T+eT) - V1T(phi, T) )/ eT;
   }
-  
+
   double ddaisy_dT(Eigen::VectorXd phi, double T) const {
     const double eT =  0.001;
-    return (daisy(phi, T+eT) - daisy(phi, T) )/ eT; 
+    return (daisy(phi, T+eT) - daisy(phi, T) )/ eT;
   }
 
   /**
@@ -214,10 +235,10 @@ class xSM_MSbar : public xSM_base {
     vacuum << SM_v, 0.;
     const auto jacobian = dV1_dx(vacuum);
     const auto hessian = d2V1_dx2(vacuum);
-    
+
     double mhh2 = square(SM_mh);
     double mss2 = square(ms);
-    
+
     // TODO: will this affect calculation of lambda_h?
     if (mhh2 < mss2) {
       std::swap(mhh2, mss2);
@@ -227,7 +248,7 @@ class xSM_MSbar : public xSM_base {
     lambda_h = (mhh2 + jacobian(0) / SM_v - hessian(0, 0)) / (2. * square(SM_v));
     muh_sq = -0.5 * mhh2 - 1.5 *jacobian(0) / SM_v + 0.5 * hessian(0, 0);
     mus_sq = mss2 - 0.5 * lambda_hs * square(SM_v) - hessian(1, 1);
-    
+
     // Calculate muh_sq using tree level EWSB, for masses in CW potential
     muh_sq_use_0L_EWSB = - lambda_h * square(SM_v);
   }
@@ -246,20 +267,23 @@ class xSM_MSbar : public xSM_base {
   }
 
   /** @brief Real part of square root */
-  double real_sqrt(double x) const{
+  double real_sqrt(double x) const {
     return (x > 0.) ? std::sqrt(x) : 0.;
   }
 
+  /** @brief Scalar Debye masses careful treatment of covariant gauge etc */
   std::vector<double> get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const override {
     const double h = phi[0];
     const double s = phi[1];
-    if (not use_covariant_gauge) {
+
+    if (!use_covariant_gauge) {
+      // This is the ordinary R_\xi gauge
       const auto thermal_sq = get_scalar_thermal_sq(T);
-    
+
       const double mhh2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
       const double mgg2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
       const double mss2 = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
-      
+
       // resummed Goldstone contributions
       const auto fm2 = get_fermion_masses_sq(phi);
       const auto vm2 = get_vector_masses_sq(phi);
@@ -268,22 +292,21 @@ class xSM_MSbar : public xSM_base {
                          3.  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
                         +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
                         -6.  * SM_yt_sq * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
-                        -6.  * SM_yb_sq * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1]) // TODO: Need check
-                        -2.  * SM_ytau_sq * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2]) // TODO: Need check
+                        -6.  * SM_yb_sq * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1])  // TODO: Need check
+                        -2.  * SM_ytau_sq * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2])  // TODO: Need check
                         +1.5 * square(SM_g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
-                        +0.75* (square(SM_g)+square(SM_gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1])
-                        );
+                        +0.75* (square(SM_g)+square(SM_gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1]));
 
       // Goldstone finite temperature masses
       double mTG02 =   mgg2 + thermal_sq[0] + (use_Goldstone_resum ? sum : 0);
-      double mTGpm2 = mTG02; // 2 degrees of freedom or two degenerate copies
+      double mTGpm2 = mTG02;  // 2 degrees of freedom or two degenerate copies
       // xi-dependence
       mTG02 += 0.25 * xi * (square(SM_g * h) + square(SM_gp * h));
       mTGpm2 += 0.25 * xi * square(SM_g * h);
       // CP even Higgs thermal temperature masses
-      Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2); 
-      MTH2(0,0) = mhh2 + thermal_sq[0];
-      MTH2(1,1) = mss2 + thermal_sq[1];
+      Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2);
+      MTH2(0, 0) = mhh2 + thermal_sq[0];
+      MTH2(1, 1) = mss2 + thermal_sq[1];
       // Mixing between Higgs and singlet
       MTH2(0, 1) = MTH2(1, 0) = lambda_hs * h * s;
       // get eigenvalues
@@ -291,67 +314,70 @@ class xSM_MSbar : public xSM_base {
       // vector for all scalars, including two mass degenerate charged goldstones
       return {mH_sq(0), mH_sq(1), mTG02, mTGpm2, mTGpm2};
     } else {
-      const double mgb_sq = muh_sq + lambda_h * square(phi[0]) + 0.5 * lambda_hs * square(phi[1]);
+      // This is the covariant gauge. The parameter xi_covariant_internal
+      // plays the role of xi. We must have xi = 0 so that there is no
+      // explicit xi dependence in the potential
+      const double mgb_sq = muh_sq + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
 
-      const double mode1 = (muh_sq + 0.5 * lambda_hs * square(phi[1]) + lambda_h * square(phi[0]))
-                            * xi * square(SM::g) * square(phi[0]);
+      const double mode1 = (muh_sq + 0.5 * lambda_hs * square(s) + lambda_h * square(h))
+                            * xi_covariant_internal * square(SM::g) * square(h);
 
-      const double mode2 = (muh_sq + 0.5 * lambda_hs * square(phi[1]) + lambda_h * square(phi[0]))
-                            * xi * (square(SM::g) + square(SM::gp)) * square(phi[0]);
+      const double mode2 = (muh_sq + 0.5 * lambda_hs * square(s) + lambda_h * square(h))
+                            * xi_covariant_internal * (square(SM::g) + square(SM::gp)) * square(h);
 
-      const double pi_11 = (0.5 * lambda_h + 0.0625 * square(SM::gp) 
+      const double pi_11 = (0.5 * lambda_h + 0.0625 * square(SM::gp)
                             + 3. * 0.0625 * square(SM::g) + 0.25 * SM::yt_sq) * square(T);
-      const double pi_22 = 0.25 * lambda_s * square(T); 
+      const double pi_22 = 0.25 * lambda_s * square(T);
 
-      const double m1p_sq = 0.5 * (mgb_sq + real_sqrt(square(mgb_sq) - mode1)) + pi_11; 
-      const double m1m_sq = 0.5 * (mgb_sq - real_sqrt(square(mgb_sq) - mode1)) + pi_11; 
-      const double m2p_sq = 0.5 * (mgb_sq + real_sqrt(square(mgb_sq) - mode2)) + pi_11; 
-      const double m2m_sq = 0.5 * (mgb_sq - real_sqrt(square(mgb_sq) - mode2)) + pi_11; 
+      const double m1p_sq = 0.5 * (mgb_sq + real_sqrt(square(mgb_sq) - mode1)) + pi_11;
+      const double m1m_sq = 0.5 * (mgb_sq - real_sqrt(square(mgb_sq) - mode1)) + pi_11;
+      const double m2p_sq = 0.5 * (mgb_sq + real_sqrt(square(mgb_sq) - mode2)) + pi_11;
+      const double m2m_sq = 0.5 * (mgb_sq - real_sqrt(square(mgb_sq) - mode2)) + pi_11;
 
-      const double m11_sq = muh_sq + 0.5 * lambda_hs * square(phi[1]) + 3. * lambda_h * square(phi[0]) + pi_11;
-      const double m22_sq = mus_sq + 0.5 * lambda_hs * square(phi[0]) + 3. * lambda_s * square(phi[1]) + pi_22;
-      const double m12_sq = lambda_hs * phi[1] * phi[0];
+      const double m11_sq = muh_sq + 0.5 * lambda_hs * square(s) + 3. * lambda_h * square(h) + pi_11;
+      const double m22_sq = mus_sq + 0.5 * lambda_hs * square(h) + 3. * lambda_s * square(s) + pi_22;
+      const double m12_sq = lambda_hs * s * h;
 
       const double trace = m11_sq + m22_sq;
       const double det = m11_sq * m22_sq - square(m12_sq);
 
-      const double mh_sq = 0.5 * (trace - real_sqrt(square(trace) -4. * det));
-      const double ms_sq = 0.5 * (trace + real_sqrt(square(trace) -4. * det));
+      const double mh_sq = 0.5 * (trace - real_sqrt(square(trace) - 4. * det));
+      const double ms_sq = 0.5 * (trace + real_sqrt(square(trace) - 4. * det));
 
       return {m1p_sq, m1m_sq, m2p_sq, m2m_sq, mh_sq, ms_sq};
     }
   }
-  
+
   // Physical Higgs bosons and Goldstone bosons
   std::vector<double> get_scalar_dofs() const override {
-    if (not use_covariant_gauge) {
-      return {1., 1., 1., 1., 1};
-    } else {
+    if (use_covariant_gauge) {
       return {2., 2., 1., 1., 1., 1.};
+    } else {
+      return  {1., 1., 1., 1., 1};
     }
-    
   }
 
-  bool iteration_converged = false;  
-  double get_muh_sq() {return muh_sq;}
-  double get_mus_sq() {return mus_sq;}
-  double get_lambda_h() {return lambda_h;}
-  double get_lambda_s() {return lambda_s;}
-  double get_lambda_hs() {return lambda_hs;}
-    
- protected:
+  bool iteration_converged = false;
+  double get_muh_sq() const { return muh_sq; }
+  double get_mus_sq() const { return mus_sq; }
+  double get_lambda_h() const { return lambda_h; }
+  double get_lambda_s() const { return lambda_s; }
+  double get_lambda_hs() const { return lambda_hs; }
 
+ protected:
   /** Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential */
   void set_use_1L_EWSB_in_0L_mass(bool use_1L_EWSB_in_0L_mass_) { use_1L_EWSB_in_0L_mass = use_1L_EWSB_in_0L_mass_; }
   void set_use_Goldstone_resum(bool use_Goldstone_resum_) { use_Goldstone_resum = use_Goldstone_resum_; }
   void set_use_covariant_gauge(bool use_covariant_gauge_) { use_covariant_gauge = use_covariant_gauge_; }
-  
+
   // For consistency in one-loop potential
   double muh_sq_use_0L_EWSB;
   bool use_1L_EWSB_in_0L_mass{false};
   bool use_Goldstone_resum{true};
   bool use_covariant_gauge{false};
 
+  // hack for covariant gauge
+  double xi_covariant_internal{0.};
 };
 
 }  // namespace EffectivePotential

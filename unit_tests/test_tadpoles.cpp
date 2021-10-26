@@ -3,11 +3,7 @@
 #include "models/SM_parameters.hpp"
 #include "logger.hpp"
 
-
-TEST_CASE("Z2 scalar singlet massses from tadpoles", "[TadpoleSolver]") {
-
-  LOGGER(fatal);
-
+std::vector<double> tadpole_result(bool use_tree_level_tadpole, bool use_covariant_gauge) {
   // Construct our model
   const double lambda_hs = 0.3;
   const double Q = SM::mtop;
@@ -19,22 +15,34 @@ TEST_CASE("Z2 scalar singlet massses from tadpoles", "[TadpoleSolver]") {
   double lambda_s_min = 2. / square(SM::mh * SM::v) *
       square(square(ms) - 0.5 * lambda_hs * square(SM::v));
   double lambda_s = lambda_s_min + 0.1;
-  
-  // Construct models with tree-level and one-loop tadpoles
-  auto tree = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, true);
-  auto one_loop = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, false);
+
+  auto model = EffectivePotential::xSM_MSbar::from_tadpoles(lambda_hs, lambda_s, ms, Q, xi,
+              use_covariant_gauge, false, false, use_tree_level_tadpole);
 
   // Find singlet masses
-  const auto mass_sq_1l = one_loop.get_1l_scalar_masses_sq(physical, 0.);
-  const double mh_1l = std::sqrt(mass_sq_1l[1]);
-  const double ms_1l = std::sqrt(mass_sq_1l[0]);
-  const auto mass_sq_tree = tree.get_tree_scalar_masses_sq(physical);
-  const double mh_tree = std::sqrt(mass_sq_tree[1]);
-  const double ms_tree = std::sqrt(mass_sq_tree[0]); 
+  const auto mass_sq = use_tree_level_tadpole ? model.get_tree_scalar_masses_sq(physical) : model.get_1l_scalar_masses_sq(physical, 0.);
+  const double mh_out = std::sqrt(mass_sq[1]);
+  const double ms_out = std::sqrt(mass_sq[0]);
 
-  // Check them to constraints
-  CHECK(mh_1l == Approx(SM::mh));
-  CHECK(mh_tree == Approx(SM::mh));
-  CHECK(ms_1l == Approx(0.5 * SM::mh));
-  CHECK(ms_tree == Approx(0.5 * SM::mh));
+  return {mh_out, ms_out};
+}
+
+TEST_CASE("Z2 scalar singlet massses from tadpoles", "[TadpoleSolver]") {
+  LOGGER(fatal);
+
+  SECTION("covariant gauge") {
+    for (bool use_tree_level_tadpole : {false, true}) {
+      const auto cov = tadpole_result(use_tree_level_tadpole, true);
+      CHECK(cov[0] == Approx(SM::mh));
+      CHECK(cov[1] == Approx(0.5 * SM::mh));
+    }
+  }
+
+  SECTION("R_xi gauge") {
+    for (bool use_tree_level_tadpole : {false, true}) {
+      const auto rxi = tadpole_result(use_tree_level_tadpole, false);
+      CHECK(rxi[0] == Approx(SM::mh));
+      CHECK(rxi[1] == Approx(0.5 * SM::mh));
+    }
+  }
 }
