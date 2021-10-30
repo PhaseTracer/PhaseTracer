@@ -5,14 +5,12 @@ import numpy as np
 import time
 
 cwd = os.getcwd()
-print cwd
-
 
 scan_1d_bks = True
-scan_ms = True
-scan_ls = True
-scan_lhs = True
-scan_1d_xi = False
+scan_ms = False
+scan_ls = scan_ms
+scan_lhs = scan_ms
+scan_1d_xi = True
 
 scan_2d_bks = False
 
@@ -26,7 +24,7 @@ if not os.path.exists(folder_name):
   os.mkdir(folder_name) 
 
 def scan(cmd, file_name, ms, lambda_s, lambda_hs, Q, xi, daisy_flag, use_1L_EWSB_in_0L_mass, use_Goldstone_resum, special_flag=""):
-  print xi
+  print(xi)
   os.chdir(cwd)
   fo = open(folder_name+"/"+file_name+".txt", "w")
   if not os.path.exists(file_name):
@@ -42,7 +40,7 @@ def scan(cmd, file_name, ms, lambda_s, lambda_hs, Q, xi, daisy_flag, use_1L_EWSB
                       +" " + use_1L_EWSB_in_0L_mass + " "+ use_Goldstone_resum 
                       +" " + special_flag)
 
-                print par
+                print(par)
                 os.system(cmd+par)
                 output = open("output.txt").readline()
                 fo.write( output )
@@ -238,13 +236,13 @@ if scan_1d_bks:
     file_name = "Rxi_MSbar_resummation"
     scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
     
-    cmd = "./../../../bin/run_xSM_MSbar"
-    file_name = "Rxi_MSbar_1L_EWSB"
-    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, "1", "0")
- 
-    cmd = "./../../../bin/run_xSM_MSbar"
-    file_name = "Rxi_MSbar_no"
-    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, "0", "0") 
+#    cmd = "./../../../bin/run_xSM_MSbar"
+#    file_name = "Rxi_MSbar_1L_EWSB"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, "1", "0")
+#
+#    cmd = "./../../../bin/run_xSM_MSbar"
+#    file_name = "Rxi_MSbar_no"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, "0", "0")
 
 #scheme = "xSM_MSbar"
 #cmd = "./../../../bin/run_"+scheme
