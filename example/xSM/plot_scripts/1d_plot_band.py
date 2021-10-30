@@ -4,7 +4,7 @@ import matplotlib.cm as cm
 import numpy as np
 from scipy.interpolate import interp1d
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-sys.path.append( '../' )
+#sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
 cmap = cm.get_cmap('rainbow')
