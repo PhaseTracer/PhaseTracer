@@ -7,8 +7,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
-plot_methods = False
-plot_Goldstone = True
+plot_methods = True
+plot_Goldstone = False
 plot_xi = False
 
 cmap = cm.get_cmap('rainbow')
@@ -30,13 +30,25 @@ def plot_for_1d(data, x_num, label, column):
 if plot_methods or plot_Goldstone:
   if plot_methods:
     
-    names = [ ["default", "default"],
-              ["2mt", r"$Q=2m_t$"],
+#    names = [ ["default", "default"],
+#              ["2mt", r"$Q=2m_t$"],
+#              ["OSlike", r"OS-like"],
+#              ["xi3", r"$\xi=3$"],
+#              ["HT", r"HT"],
+#              ["PRM","PRM"],
+#              ["covariant_gauge", r"covariant, $\xi=3$"]]
+
+#    names = [ ["default", "MSbar, ArnoldEspinosa"],
+#              ["OSlike", r"OS-like, ArnoldEspinosa"],
+#              ["Parwani","MSbar, Parwani"],
+#              ["noDaisy", r"MSbar, no daisy"]] 
+              
+    names = [ ["default", "MSbar"],
               ["OSlike", r"OS-like"],
-              ["xi3", r"$\xi=3$"],
-              ["HT", r"HT"],
-              ["PRM","PRM"],
-              ["covariant_gauge", r"covariant, $\xi=3$"]]
+              ["PRM_woFS_0L", r"PRM(0-L)"],
+              ["PRM_woFS", r"PRM(1-L)"],
+              ["HT","HT"]] 
+              
     ncolumn = 3
   if plot_Goldstone:
     names = [ ["default", "Goldstone resummation"],
@@ -59,7 +71,7 @@ if plot_xi:
   fig, axs = plt.subplots(2, 2, figsize=(10, 6))
 
   names = [ ["MSbar", "MS"],
-            ["PRM", "PRM"],
+            ["PRM", "PRM(1-L)"],
             ["PRM_0L", r"PRM(0-L)"]]
   ncolumn = 2
     
@@ -90,7 +102,7 @@ for ii in range(2):
         else:
           axs[ii,jj].legend(loc=4)
       else:
-#        axs[ii,jj].set_ylim(0,10)
+        axs[ii,jj].set_ylim(0,5)
         axs[ii,jj].set_ylabel(r"$\gamma_{\rm EW}$")
         if jj<1:
           axs[ii,jj].legend(loc=2)
