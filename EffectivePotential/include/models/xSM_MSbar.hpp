@@ -25,6 +25,7 @@
  */
 
 #include "xSM_base.hpp"
+#include "logger.hpp"
 
 #include <utility>
 #include <vector>
@@ -143,7 +144,8 @@ class xSM_MSbar : public xSM_base {
       if (converged) {
         return true;
       }
-      if (ii > 1000) {
+      if (ii > 100000) {
+        LOG(fatal) << "1l iterations did not converge";
         return false;
       }
     }
@@ -324,7 +326,6 @@ class xSM_MSbar : public xSM_base {
       // plays the role of xi. We must have xi = 0 so that there is no
       // explicit xi dependence in the potential
 
-      mg_sq = muh_sq + lambda_h * square(h) + 0.5 * lambda_hs * square(s) + (use_Goldstone_resum ? sum : 0.);
       const double mode1 = (chosen_muh_sq + 0.5 * lambda_hs * square(s) + lambda_h * square(h))
                             * xi_covariant_internal * square(SM::g) * square(h);
 
