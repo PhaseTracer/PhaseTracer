@@ -10,11 +10,11 @@ print cwd
 
 scan_1d_bks = True
 scan_ms = True
-scan_ls = True
-scan_lhs = True
+scan_ls = scan_ms
+scan_lhs = scan_ms
 scan_1d_xi = False
 
-scan_2d_bks = False
+scan_2d_bks = True 
 
 
 if scan_1d_bks or scan_1d_xi:
@@ -64,14 +64,25 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 #  file_name = file_name_+"default"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-#  cmd = "./../../../bin/run_xSM_PRM"
-#  file_name = file_name_+"PRM_woFS"
-#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+  cmd = "./../../../bin/run_xSM_PRM"
+  file_name = file_name_+"PRM_woFS"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+  cmd = "./../../../bin/run_xSM_PRM"
+  file_name = file_name_+"PRM_woFS_0L"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
 
 #  cmd = "./../../../bin/run_xSM_OSlike"
 #  file_name = file_name_+"OSlike"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"Parwani"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"noDaisy"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  cmd = "./../../../bin/run_xSM_HT"
 #  file_name = file_name_+"HT"
@@ -104,6 +115,18 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 #  file_name = file_name_+"PRM_2mt"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_PRM"
+#  file_name = file_name_+"PRM_0L_mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
+#  
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_PRM"
+#  file_name = file_name_+"PRM_0L_05mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
+#  
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_PRM"
+#  file_name = file_name_+"PRM_0L_2mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
+
 #  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
 #  file_name = file_name_+"mt"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
@@ -124,9 +147,37 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 #  file_name = file_name_+"noD_2mt"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173*2], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-  file_name = file_name_+"noD_05mt"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#  file_name = file_name_+"noD_05mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"noRGE_05mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"noRGE_mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"noRGE_2mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)  
+
+#  cmd = "./../../../bin/run_xSM_PRM"
+#  file_name = file_name_+"PRM_woFS_xi0"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [0], "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+#  cmd = "./../../../bin/run_xSM_PRM"
+#  file_name = file_name_+"PRM_noRGE_05mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+#  cmd = "./../../../bin/run_xSM_PRM"
+#  file_name = file_name_+"PRM_noRGE_mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  
+#  cmd = "./../../../bin/run_xSM_PRM"
+#  file_name = file_name_+"PRM_noRGE_2mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  ############### xi band ####################
 
@@ -205,9 +256,9 @@ if scan_1d_bks:
 #    file_name = "Rxi_MSbar"
 #    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-#    cmd = "./../../../bin/run_xSM_MSbar"
-#    file_name = "covariant_MSbar"
-#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "2")
+    cmd = "./../../../bin/run_xSM_MSbar"
+    file_name = "covariant_MSbar"
+    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "2")
 
 #    cmd = "./../../../bin/run_xSM_HT"
 #    file_name = "Rxi_HT"
@@ -220,31 +271,39 @@ if scan_1d_bks:
 #    cmd = "./../../../bin/run_xSM_PRM"
 #    file_name = "Rxi_PRM_0L"
 #    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "0", "1")
-#    
-#    cmd = "./../../../bin/run_xSM_PRM"
-#    file_name = "covariant_PRM"
-#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "0", "2")
 
 #    cmd = "./../../../bin/run_xSM_PRM"
-#    file_name = "covariant_PRM_0L"
-#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "0", "3")
+#    file_name = "Rxi_PRM_0L_resum"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "1", "1")
+
+    cmd = "./../../../bin/run_xSM_PRM"
+    file_name = "covariant_PRM"
+    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "0", "2")
+
+    cmd = "./../../../bin/run_xSM_PRM"
+    file_name = "covariant_PRM_0L"
+    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "0", "3")
+
+    cmd = "./../../../bin/run_xSM_PRM"
+    file_name = "covariant_PRM_0L_resum"
+    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "1", "3")
 
 #    cmd = "./../../../bin/run_xSM_MSbar"
 #    file_name = "Rxi_MSbar"
 #    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-    xi = np.linspace(0,2,n_total)
-    cmd = "./../../../bin/run_xSM_MSbar"
-    file_name = "Rxi_MSbar_resummation"
-    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
-    
-    cmd = "./../../../bin/run_xSM_MSbar"
-    file_name = "Rxi_MSbar_1L_EWSB"
-    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, "1", "0")
- 
-    cmd = "./../../../bin/run_xSM_MSbar"
-    file_name = "Rxi_MSbar_no"
-    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, "0", "0") 
+#    xi = np.linspace(0,2,n_total)
+#    cmd = "./../../../bin/run_xSM_MSbar"
+#    file_name = "Rxi_MSbar_resummation"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#    
+#    cmd = "./../../../bin/run_xSM_MSbar"
+#    file_name = "Rxi_MSbar_1L_EWSB"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, "1", "0")
+# 
+#    cmd = "./../../../bin/run_xSM_MSbar"
+#    file_name = "Rxi_MSbar_no"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, "0", "0") 
 
 #scheme = "xSM_MSbar"
 #cmd = "./../../../bin/run_"+scheme
