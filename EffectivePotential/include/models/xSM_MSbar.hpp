@@ -28,6 +28,7 @@
 
 #include <utility>
 #include <vector>
+#include <iostream>
 
 namespace EffectivePotential {
 
@@ -276,75 +277,66 @@ class xSM_MSbar : public xSM_base {
     const double h = phi[0];
     const double s = phi[1];
 
+    const double chosen_muh_sq = use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB;
+    const auto thermal_sq = get_scalar_thermal_sq(T);
+
+    // Mass matrix elements
+    const double m11_sq = chosen_muh_sq + 0.5 * lambda_hs * square(s) + 3. * lambda_h * square(h);
+    const double m22_sq = mus_sq + 0.5 * lambda_hs * square(h) + 3. * lambda_s * square(s);
+    const double m12_sq = lambda_hs * s * h;
+
+    // Resummed Goldstone contributions
+    const auto fm_sq = get_fermion_masses_sq(phi);
+    const auto vm_sq = get_vector_masses_sq(phi);
+    const double q_sq = square(get_renormalization_scale());
+    const double sum = 1. / (16. * M_PI * M_PI) * (
+                      + 3. * lambda_h * (q_sq * xlogx(m11_sq / q_sq) - m11_sq)
+                      + 0.5 * lambda_hs * (q_sq * xlogx(m22_sq / q_sq) - m22_sq)
+                      - 6. * SM_yt_sq * (q_sq * xlogx(fm_sq[0] / q_sq) - fm_sq[0])
+                      - 6. * SM_yb_sq * (q_sq * xlogx(fm_sq[1] / q_sq) - fm_sq[1])  //  TODO: Need check
+                      - 2. * SM_ytau_sq * (q_sq * xlogx(fm_sq[2] / q_sq) - fm_sq[2])  //  TODO: Need check
+                      + 1.5 * square(SM_g) * (q_sq * xlogx(vm_sq[0] / q_sq) - 1. / 3. * vm_sq[0])
+                      + 0.75 * (square(SM_g) + square(SM_gp)) * (q_sq * xlogx(vm_sq[1] / q_sq) - 1. / 3. * vm_sq[1]));
+
+    // Goldstone mass
+    double mg_sq = chosen_muh_sq + lambda_h * square(h) + 0.5 * lambda_hs * square(s) + (use_Goldstone_resum ? sum : 0.);
+
+    // CP even Higgs thermal temperature masses
+    Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2);
+    MTH2(0, 0) = m11_sq + thermal_sq[0];
+    MTH2(1, 1) = m22_sq + thermal_sq[1];
+    // Mixing between Higgs and singlet
+    MTH2(0, 1) = MTH2(1, 0) = m12_sq;
+    // Get eigenvalues
+    const Eigen::VectorXd mH_sq = MTH2.eigenvalues().real();
+
     if (!use_covariant_gauge) {
       // This is the ordinary R_\xi gauge
-      const auto thermal_sq = get_scalar_thermal_sq(T);
-
-      const double mhh2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + 3. * lambda_h * square(h) + 0.5 * lambda_hs * square(s);
-      const double mgg2 = (use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB) + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
-      const double mss2 = mus_sq + 3. * lambda_s * square(s) + 0.5 * lambda_hs * square(h);
-
-      // resummed Goldstone contributions
-      const auto fm2 = get_fermion_masses_sq(phi);
-      const auto vm2 = get_vector_masses_sq(phi);
-      const double Qsq = square(get_renormalization_scale());
-      const double sum = 1. / (16. * M_PI * M_PI) * (
-                         3.  * lambda_h * (Qsq*xlogx(mhh2/Qsq) - mhh2)
-                        +0.5 * lambda_hs * (Qsq*xlogx(mss2/Qsq) - mss2)
-                        -6.  * SM_yt_sq * (Qsq*xlogx(fm2[0]/Qsq) - fm2[0])
-                        -6.  * SM_yb_sq * (Qsq*xlogx(fm2[1]/Qsq) - fm2[1])  // TODO: Need check
-                        -2.  * SM_ytau_sq * (Qsq*xlogx(fm2[2]/Qsq) - fm2[2])  // TODO: Need check
-                        +1.5 * square(SM_g) * (Qsq*xlogx(vm2[0]/Qsq) - 1./3.*vm2[0])
-                        +0.75* (square(SM_g)+square(SM_gp)) * (Qsq*xlogx(vm2[1]/Qsq) - 1./3.*vm2[1]));
 
       // Goldstone finite temperature masses
-      double mTG02 =   mgg2 + thermal_sq[0] + (use_Goldstone_resum ? sum : 0);
-      double mTGpm2 = mTG02;  // 2 degrees of freedom or two degenerate copies
-      // xi-dependence
-      mTG02 += 0.25 * xi * (square(SM_g * h) + square(SM_gp * h));
-      mTGpm2 += 0.25 * xi * square(SM_g * h);
-      // CP even Higgs thermal temperature masses
-      Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2);
-      MTH2(0, 0) = mhh2 + thermal_sq[0];
-      MTH2(1, 1) = mss2 + thermal_sq[1];
-      // Mixing between Higgs and singlet
-      MTH2(0, 1) = MTH2(1, 0) = lambda_hs * h * s;
-      // get eigenvalues
-      const Eigen::VectorXd mH_sq = MTH2.eigenvalues().real();
-      // vector for all scalars, including two mass degenerate charged goldstones
-      return {mH_sq(0), mH_sq(1), mTG02, mTGpm2, mTGpm2};
+      const double mg0_sq = mg_sq + thermal_sq[0] + 0.25 * xi * (square(SM_g * h) + square(SM_gp * h));
+      const double mgpm_sq = mg_sq + thermal_sq[0] + 0.25 * xi * square(SM_g * h);
+
+      // Vector for all scalars, including two mass degenerate charged goldstones
+      return {mH_sq(0), mH_sq(1), mg0_sq, mgpm_sq, mgpm_sq};
     } else {
       // This is the covariant gauge. The parameter xi_covariant_internal
       // plays the role of xi. We must have xi = 0 so that there is no
       // explicit xi dependence in the potential
-      const double mgb_sq = muh_sq + lambda_h * square(h) + 0.5 * lambda_hs * square(s);
 
-      const double mode1 = (muh_sq + 0.5 * lambda_hs * square(s) + lambda_h * square(h))
+      mg_sq = muh_sq + lambda_h * square(h) + 0.5 * lambda_hs * square(s) + (use_Goldstone_resum ? sum : 0.);
+      const double mode1 = (chosen_muh_sq + 0.5 * lambda_hs * square(s) + lambda_h * square(h))
                             * xi_covariant_internal * square(SM::g) * square(h);
 
-      const double mode2 = (muh_sq + 0.5 * lambda_hs * square(s) + lambda_h * square(h))
+      const double mode2 = (chosen_muh_sq + 0.5 * lambda_hs * square(s) + lambda_h * square(h))
                             * xi_covariant_internal * (square(SM::g) + square(SM::gp)) * square(h);
 
-      const double pi_11 = (0.5 * lambda_h + 0.0625 * square(SM::gp)
-                            + 3. * 0.0625 * square(SM::g) + 0.25 * SM::yt_sq) * square(T);
-      const double pi_22 = 0.25 * lambda_s * square(T);
+      const double m1p_sq = 0.5 * (mg_sq + real_sqrt(square(mg_sq) - mode1)) + thermal_sq[0];
+      const double m1m_sq = 0.5 * (mg_sq - real_sqrt(square(mg_sq) - mode1)) + thermal_sq[0];
+      const double m2p_sq = 0.5 * (mg_sq + real_sqrt(square(mg_sq) - mode2)) + thermal_sq[0];
+      const double m2m_sq = 0.5 * (mg_sq - real_sqrt(square(mg_sq) - mode2)) + thermal_sq[0];
 
-      const double m1p_sq = 0.5 * (mgb_sq + real_sqrt(square(mgb_sq) - mode1)) + pi_11;
-      const double m1m_sq = 0.5 * (mgb_sq - real_sqrt(square(mgb_sq) - mode1)) + pi_11;
-      const double m2p_sq = 0.5 * (mgb_sq + real_sqrt(square(mgb_sq) - mode2)) + pi_11;
-      const double m2m_sq = 0.5 * (mgb_sq - real_sqrt(square(mgb_sq) - mode2)) + pi_11;
-
-      const double m11_sq = muh_sq + 0.5 * lambda_hs * square(s) + 3. * lambda_h * square(h) + pi_11;
-      const double m22_sq = mus_sq + 0.5 * lambda_hs * square(h) + 3. * lambda_s * square(s) + pi_22;
-      const double m12_sq = lambda_hs * s * h;
-
-      const double trace = m11_sq + m22_sq;
-      const double det = m11_sq * m22_sq - square(m12_sq);
-
-      const double mh_sq = 0.5 * (trace - real_sqrt(square(trace) - 4. * det));
-      const double ms_sq = 0.5 * (trace + real_sqrt(square(trace) - 4. * det));
-
-      return {m1p_sq, m1m_sq, m2p_sq, m2m_sq, mh_sq, ms_sq};
+      return {m1p_sq, m1m_sq, m2p_sq, m2m_sq, mH_sq(0), mH_sq(1)};
     }
   }
 
