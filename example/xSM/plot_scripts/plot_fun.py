@@ -4,6 +4,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 def fun_gamma(data):
+  np.seterr(divide='ignore',invalid='ignore')
   return abs(data[:,5]-data[:,7])/data[:,4]
 
 def fun_gamma_line(line):
@@ -16,13 +17,13 @@ def loaddata(name, gamma_min=0.1):
 
 def fun_diff(data1, data2, data0, show_gamma=False, norm =True, use_abs=True, gamma_min = 0.0, sort=True):
   if len(data1) != len(data2) or len(data1) != len(data0):
-    print "Wrong data files"
+    print("Wrong data files")
     sys.exit()
   data_diff = []
   for ii in range(len(data1)):
     if data1[ii][0] != data2[ii][0] or data1[ii][0] != data0[ii][0]:
-      print "Wrong data files"
-      print ii, data1[ii][0], data2[ii][0], data0[ii][0]
+      print("Wrong data files")
+      print(ii, data1[ii][0], data2[ii][0], data0[ii][0])
       sys.exit()
     ms = data1[ii][0]
     lambda_s = data1[ii][1]
