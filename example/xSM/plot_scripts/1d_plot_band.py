@@ -9,8 +9,8 @@ from plot_fun import fun_gamma, fun_diff, loaddata
 
 cmap = cm.get_cmap('rainbow')
 
-plot_scale = False
-plot_xi = True
+plot_scale = True
+plot_xi = False
 
 def line_for_1d(data, x_num, color, column, label = ""):
   sel = data[:,3]>0
@@ -63,21 +63,36 @@ for name in [["m_s",0,2], ["lambda_s",1,1], ["lambda_hs",2,0],]:
 
 
   if plot_scale:
+
+#    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_noRGE_mt.txt"), name[1], "b", name[2])
+#    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_noRGE_05mt.txt"),
+#                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_noRGE_2mt.txt"),
+#                 name[1], r"PRM(no RGE), $Q\in[m_t/2,2m_t]$", name[2], 'b')
+
+#    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noRGE_mt.txt"), name[1], "purple", name[2])
+#    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noRGE_05mt.txt"),
+#                 np.loadtxt("../1d_bks/"+name[0]+"_noRGE_2mt.txt"),
+#                 name[1], r"MS(no RGE), $Q\in[m_t/2,2m_t]$", name[2], 'purple')
                  
     line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_mt.txt"), name[1], "r", name[2])
     range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_05mt.txt"),
                  np.loadtxt("../1d_bks/"+name[0]+"_PRM_2mt.txt"),
                  name[1], r"PRM, $Q\in[m_t/2,2m_t]$", name[2], 'r')
 
+                 
     line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_mt.txt"), name[1], "g", name[2])
     range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_05mt.txt"),
                  np.loadtxt("../1d_bks/"+name[0]+"_2mt.txt"),
                  name[1], r"MS, $Q\in[m_t/2,2m_t]$", name[2], 'g')
                  
+                 
+                 
     line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noD_mt.txt"), name[1], "b", name[2])
     range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noD_05mt.txt"),
                  np.loadtxt("../1d_bks/"+name[0]+"_noD_2mt.txt"),
                  name[1], r"MS(no daisy), $Q\in[m_t/2,2m_t]$", name[2], 'b')
+
+
 
 
                  
