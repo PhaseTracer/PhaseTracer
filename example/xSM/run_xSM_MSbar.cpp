@@ -51,11 +51,12 @@ int main(int argc, char* argv[]) {
     lambda_s =  0.1;
     lambda_hs = 0.3;
     Q = 173.;
-    xi = 3;
+    xi = 3.;
     daisy_flag = 2;
     use_1L_EWSB_in_0L_mass = false;
-    use_Goldstone_resum = false;
-    
+    use_Goldstone_resum = true;
+    use_covariant_gauge = true;
+      
 //    SM_parameters.resize(7);
 //    SM_parameters[0] = 125.;
 //    SM_parameters[1] = 245.5782292532188;
@@ -163,14 +164,19 @@ int main(int argc, char* argv[]) {
     std::cout << std::endl;
     std::cout << "@ EWSB VEV" << std::endl;
     Eigen::VectorXd test(2);
-    test <<  246, 0;
+    test <<  SM::v, 0;
     double Ttest = 100;
     
-    auto mh_check =  model.get_scalar_masses_sq(test,1);
+    auto mh_check =  model.get_scalar_masses_sq(test,0);
     auto mV_check = model.get_vector_masses_sq(test);
     auto mf_check = model.get_fermion_masses_sq(test);
-    std::cout << "ms = "<< std::sqrt(mh_check[0]) << std::endl;
-    std::cout << "mh = "<< std::sqrt(mh_check[4]) << std::endl;
+    std::cout << "mh1 = "<< std::sqrt(mh_check[0]) << std::endl;
+    std::cout << "mh2 = "<< std::sqrt(mh_check[1]) << std::endl;
+    std::cout << "mh3 = "<< std::sqrt(mh_check[2]) << std::endl;
+    std::cout << "mh4 = "<< std::sqrt(mh_check[3]) << std::endl;
+//    std::cout << "mh1 = "<< std::sqrt(mh_check[4]) << std::endl;
+//    std::cout << "mh1 = "<< std::sqrt(mh_check[5]) << std::endl;
+//      return 0;
     std::cout << "MW = "<< std::sqrt(mV_check[0]) << std::endl;
     std::cout << "MZ = "<< std::sqrt(mV_check[1]) << std::endl;
     std::cout << "Mphoton = "<< std::sqrt(mV_check[2]) << std::endl;

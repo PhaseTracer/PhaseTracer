@@ -132,9 +132,12 @@ class xSM_MSbar : public xSM_base {
       double lambda_s_prev = lambda_s;
       double muh_sq_prev = muh_sq;
       double mus_sq_prev = mus_sq;
-
+//        std::cout << "=========="<< std::endl;
+//        std::cout << "muh_sq_prev=" << muh_sq << std::endl;
+//        std::cout << "lambda_h_prev=" << lambda_h << std::endl;
       iterate_one_loop();
-
+//        std::cout << "muh_sq=" << muh_sq << std::endl;
+//        std::cout << "lambda_h=" << lambda_h << std::endl;
       const double dmuh = std::abs(muh_sq - muh_sq_prev);
       const double dmus = std::abs(mus_sq - mus_sq_prev);
       const double dlambda_h = std::abs(lambda_h - lambda_h_prev);
@@ -247,6 +250,8 @@ class xSM_MSbar : public xSM_base {
       std::swap(mhh2, mss2);
     }
 
+//      std::cout<< "jacobian(0)=" << jacobian(0) << std::endl;
+//      std::cout<< "hessian(0, 0)=" << hessian(0, 0) << std::endl;
     // Apply SM vacuum and Higgs and singlet masses to constraint three parameters
     lambda_h = (mhh2 + jacobian(0) / SM_v - hessian(0, 0)) / (2. * square(SM_v));
     muh_sq = -0.5 * mhh2 - 1.5 *jacobian(0) / SM_v + 0.5 * hessian(0, 0);
@@ -326,17 +331,19 @@ class xSM_MSbar : public xSM_base {
       // plays the role of xi. We must have xi = 0 so that there is no
       // explicit xi dependence in the potential
 
-      const double mode1 = (chosen_muh_sq + 0.5 * lambda_hs * square(s) + lambda_h * square(h))
-                            * xi_covariant_internal * square(SM::g) * square(h);
-
-      const double mode2 = (chosen_muh_sq + 0.5 * lambda_hs * square(s) + lambda_h * square(h))
-                            * xi_covariant_internal * (square(SM::g) + square(SM::gp)) * square(h);
+      const double mode1 = mg_sq * xi_covariant_internal * square(SM::g) * square(h);
+      const double mode2 = mg_sq * xi_covariant_internal * (square(SM::g) + square(SM::gp)) * square(h);
 
       const double m1p_sq = 0.5 * (mg_sq + real_sqrt(square(mg_sq) - mode1)) + thermal_sq[0];
       const double m1m_sq = 0.5 * (mg_sq - real_sqrt(square(mg_sq) - mode1)) + thermal_sq[0];
       const double m2p_sq = 0.5 * (mg_sq + real_sqrt(square(mg_sq) - mode2)) + thermal_sq[0];
       const double m2m_sq = 0.5 * (mg_sq - real_sqrt(square(mg_sq) - mode2)) + thermal_sq[0];
 
+//        std::cout << "xi=" << xi << std::endl;
+//        std::cout << "xi_covariant_internal=" << xi_covariant_internal << std::endl;
+//        std::cout << "mg_sq=" << mg_sq << std::endl;
+//        std::cout << "mode1=" << mode1 << std::endl;
+//        std::cout << "xi_covariant_internal * square(SM::g) * square(h)=" << xi_covariant_internal * square(SM::g) * square(h) << std::endl;
       return {m1p_sq, m1m_sq, m2p_sq, m2m_sq, mH_sq(0), mH_sq(1)};
     }
   }
