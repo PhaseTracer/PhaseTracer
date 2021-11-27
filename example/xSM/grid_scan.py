@@ -7,10 +7,10 @@ import time
 cwd = os.getcwd()
 
 scan_1d_bks = True
-scan_ms = True
+scan_ms = False
 scan_ls = scan_ms
 scan_lhs = scan_ms
-scan_1d_xi = False
+scan_1d_xi = True
 
 scan_2d_bks = True 
 
@@ -253,10 +253,10 @@ if scan_1d_bks:
 #    cmd = "./../../../bin/run_xSM_MSbar"
 #    file_name = "Rxi_MSbar"
 #    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
-
-    cmd = "./../../../bin/run_xSM_MSbar"
-    file_name = "covariant_MSbar"
-    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "2")
+#
+#    cmd = "./../../../bin/run_xSM_MSbar"
+#    file_name = "covariant_MSbar"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "2")
 
 #    cmd = "./../../../bin/run_xSM_HT"
 #    file_name = "Rxi_HT"
@@ -276,15 +276,15 @@ if scan_1d_bks:
 
     cmd = "./../../../bin/run_xSM_PRM"
     file_name = "covariant_PRM"
-    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "0", "2")
-
-    cmd = "./../../../bin/run_xSM_PRM"
-    file_name = "covariant_PRM_0L"
-    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "0", "3")
-
-    cmd = "./../../../bin/run_xSM_PRM"
-    file_name = "covariant_PRM_0L_resum"
-    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "1", "3")
+    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "2")
+#
+#    cmd = "./../../../bin/run_xSM_PRM"
+#    file_name = "covariant_PRM_0L"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "0", "3")
+#
+#    cmd = "./../../../bin/run_xSM_PRM"
+#    file_name = "covariant_PRM_0L_resum"
+#    scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, "0", use_1L_EWSB_in_0L_mass_in, "1", "3")
 
 #    cmd = "./../../../bin/run_xSM_MSbar"
 #    file_name = "Rxi_MSbar"
