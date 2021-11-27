@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 from scipy.interpolate import interp1d
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+#from mpl_toolkits.axes_grid1 import make_axes_locatable
 #sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
-plot_methods = True
+plot_methods = False
 plot_Goldstone = False
-plot_xi = False
+plot_xi = True
 
 cmap = cm.get_cmap('rainbow')
 
@@ -38,16 +38,16 @@ if plot_methods or plot_Goldstone:
 #              ["PRM","PRM"],
 #              ["covariant_gauge", r"covariant, $\xi=3$"]]
 
-#    names = [ ["default", "MSbar, ArnoldEspinosa"],
-#              ["OSlike", r"OS-like, ArnoldEspinosa"],
-#              ["Parwani","MSbar, Parwani"],
-#              ["noDaisy", r"MSbar, no daisy"]] 
+    names = [ ["default", "MSbar, ArnoldEspinosa"],
+              ["OSlike", r"OS-like, ArnoldEspinosa"],
+              ["Parwani","MSbar, Parwani"],
+              ["noDaisy", r"MSbar, no daisy"]] 
               
-    names = [ ["default", "MSbar"],
-              ["OSlike", r"OS-like"],
-              ["PRM_woFS_0L", r"PRM(0-L)"],
-              ["PRM_woFS", r"PRM(1-L)"],
-              ["HT","HT"]] 
+#    names = [ ["default", "MSbar"],
+#              ["OSlike", r"OS-like"],
+#              ["PRM_woFS_0L", r"PRM(0-L)"],
+#              ["PRM_woFS", r"PRM(1-L)"],
+#              ["HT","HT"]]
               
     ncolumn = 3
   if plot_Goldstone:
