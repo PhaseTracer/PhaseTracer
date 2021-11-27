@@ -147,7 +147,7 @@ class xSM_MSbar : public xSM_base {
       if (converged) {
         return true;
       }
-      if (ii > 100000) {
+      if (ii > 1000) {
         LOG(fatal) << "1l iterations did not converge";
         return false;
       }
@@ -239,9 +239,6 @@ class xSM_MSbar : public xSM_base {
   void iterate_one_loop() {
     Eigen::Vector2d vacuum;
     vacuum << SM_v, 0.;
-    const auto jacobian = dV1_dx(vacuum);
-    const auto hessian = d2V1_dx2(vacuum);
-
     double mhh2 = square(SM_mh);
     double mss2 = square(ms);
 
@@ -253,8 +250,13 @@ class xSM_MSbar : public xSM_base {
 //      std::cout<< "jacobian(0)=" << jacobian(0) << std::endl;
 //      std::cout<< "hessian(0, 0)=" << hessian(0, 0) << std::endl;
     // Apply SM vacuum and Higgs and singlet masses to constraint three parameters
-    lambda_h = (mhh2 + jacobian(0) / SM_v - hessian(0, 0)) / (2. * square(SM_v));
-    muh_sq = -0.5 * mhh2 - 1.5 *jacobian(0) / SM_v + 0.5 * hessian(0, 0);
+      const auto jacobian = dV1_dx(vacuum);
+      muh_sq = - lambda_h*square(SM_v) - jacobian(0) / SM_v;
+//    muh_sq = -0.5 * mhh2 - 1.5 *jacobian(0) / SM_v + 0.5 * hessian(0, 0);
+      const auto jacobian_updated = dV1_dx(vacuum);
+      const auto hessian = d2V1_dx2(vacuum);
+      lambda_h = (mhh2 + jacobian_updated(0) / SM_v - hessian(0, 0)) / (2. * square(SM_v));
+
     mus_sq = mss2 - 0.5 * lambda_hs * square(SM_v) - hessian(1, 1);
 
     // Calculate muh_sq using tree level EWSB, for masses in CW potential
@@ -341,7 +343,14 @@ class xSM_MSbar : public xSM_base {
 
 //        std::cout << "xi=" << xi << std::endl;
 //        std::cout << "xi_covariant_internal=" << xi_covariant_internal << std::endl;
+//        std::cout << ".................................." << std::endl;
+//        std::cout << ".......h=" << h << ", s =" << s << std::endl;
+//        std::cout << ".......m1p_sq=" << m1p_sq << ", m1m_sq =" << m1m_sq << std::endl;
+//        std::cout << " mg_sq = " << mg_sq << ", mode1 = " << mode1 << std::endl;
 //        std::cout << "mg_sq=" << mg_sq << std::endl;
+//        std::cout << "real_sqrt(square(mg_sq) - mode1)=" << real_sqrt(square(mg_sq) - mode1) << std::endl;
+//        std::cout << "m1m_sq=" << m1m_sq << std::endl;
+//        std::cout << "real_sqrt(square(mg_sq) - mode1)=" << real_sqrt(square(mg_sq) - mode1) << std::endl;
 //        std::cout << "mode1=" << mode1 << std::endl;
 //        std::cout << "xi_covariant_internal * square(SM::g) * square(h)=" << xi_covariant_internal * square(SM::g) * square(h) << std::endl;
       return {m1p_sq, m1m_sq, m2p_sq, m2m_sq, mH_sq(0), mH_sq(1)};
