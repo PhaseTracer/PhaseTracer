@@ -73,12 +73,21 @@ for name in [["m_s",0,2], ["lambda_s",1,1], ["lambda_hs",2,0],]:
 #    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noRGE_05mt.txt"),
 #                 np.loadtxt("../1d_bks/"+name[0]+"_noRGE_2mt.txt"),
 #                 name[1], r"MS(no RGE), $Q\in[m_t/2,2m_t]$", name[2], 'purple')
-                 
-    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_mt.txt"), name[1], "r", name[2])
-    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_05mt.txt"),
-                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_2mt.txt"),
-                 name[1], r"PRM, $Q\in[m_t/2,2m_t]$", name[2], 'r')
 
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_mt.txt"), name[1], "k", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_05mt.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"),
+                 name[1], r"PRM(No RGE), $Q\in[m_t/2,2m_t]$", name[2], 'k')
+                 
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_mt.txt"), name[1], "yellow", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_05mt.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_2mt.txt"),
+                 name[1], r"PRM(No RGE, FS), $Q\in[m_t/2,2m_t]$", name[2], 'yellow')
+
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_mt.txt"), name[1], "r", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_05mt.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_2mt.txt"),
+                 name[1], r"PRM, $Q\in[m_t/2,2m_t]$", name[2], 'r')
                  
     line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_mt.txt"), name[1], "g", name[2])
     range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_05mt.txt"),
@@ -122,10 +131,10 @@ for ii in range(2):
     
     if ii == 0:
       axs[ii,jj].set_ylabel(r"$T_C$ (GeV)")
-      if jj<1:
-        axs[ii,jj].legend(loc=3)
-      else:
-        axs[ii,jj].legend(loc=4)
+#      if jj<1:
+#        axs[ii,jj].legend(loc=3)
+#      else:
+#        axs[ii,jj].legend(loc=4)
     else:
       axs[ii,jj].set_ylim(0,10)
       axs[ii,jj].set_ylabel(r"$\gamma_{\rm EW}$")

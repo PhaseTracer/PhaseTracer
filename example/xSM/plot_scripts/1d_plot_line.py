@@ -7,9 +7,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 #sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
-plot_methods = True
+plot_methods = False
 plot_Goldstone = False
-plot_xi = False
+plot_xi = True
 
 cmap = cm.get_cmap('rainbow')
 
@@ -70,7 +70,9 @@ if plot_methods or plot_Goldstone:
 if plot_xi:
   fig, axs = plt.subplots(2, 2, figsize=(10, 6))
 
-  names = [ ["MSbar", "MS"],
+  names = [ ["MSbar", "MS(Goldstone resum)"],
+            ["MSbar_1L_EWSB", "MS(Modified $\mu$)"],
+            ["MSbar_no", "MS(None)"],
             ["PRM", "PRM(1-L)"],
             ["PRM_0L", r"PRM(0-L)"]]
   ncolumn = 2
@@ -79,6 +81,8 @@ if plot_xi:
     plot_for_1d(np.loadtxt("../1d_bks/Rxi_"+name[0]+".txt"), 10, name[1], 0)
     plot_for_1d(np.loadtxt("../1d_bks/covariant_"+name[0]+".txt"), 10, name[1], 1)
 
+#  plot_for_1d(np.loadtxt("../1d_bks/Rxi_PRM_FS_0L.txt"), 10, "PRM(FS,0-L)", 0)
+  
   data = np.loadtxt("../1d_bks/Rxi_HT.txt")
   TC = data[:,4]
   gamma = fun_gamma(data)
