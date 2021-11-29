@@ -37,6 +37,7 @@ TEST_CASE("Z2 scalar singlet massses from tadpoles", "[TadpoleSolver]") {
     for (bool use_tree_level_tadpole : {false, true}) {
       for (bool use_Goldstone_resum : {false, true}) {
         for (bool use_1L_EWSB_in_0L_mass : {false, true}) {
+          if (use_Goldstone_resum==use_1L_EWSB_in_0L_mass) continue;
           INFO("1L in 0L mass = " + std::to_string(use_1L_EWSB_in_0L_mass)
                 + ". goldstone = " + std::to_string(use_Goldstone_resum)
                 + ". tree tadpole = " + std::to_string(use_tree_level_tadpole));
