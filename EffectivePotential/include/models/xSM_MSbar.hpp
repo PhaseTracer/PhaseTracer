@@ -84,6 +84,7 @@ class xSM_MSbar : public xSM_base {
     // Apply the relevant tadpole conditions
     if (use_tree_level_tadpole) {
       model.apply_tree_level();
+      model.iteration_converged = true;
     } else {
       model.iteration_converged = model.apply_one_loop();
     }
