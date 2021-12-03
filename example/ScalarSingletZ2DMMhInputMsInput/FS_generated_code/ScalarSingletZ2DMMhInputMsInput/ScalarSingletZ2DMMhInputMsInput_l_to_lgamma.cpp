@@ -20,7 +20,7 @@
 /**
  * @file ScalarSingletZ2DMMhInputMsInput_l_to_lgamma.cpp
  *
- * This file was generated with FlexibleSUSY 2.5.0 and SARAH 4.14.3 .
+ * This file was generated with FlexibleSUSY 2.6.1 and SARAH 4.14.3 .
  */
 
 #include <valarray>
@@ -53,16 +53,16 @@ double lepton_total_decay_width(
 
    const auto leptonInMass = context.mass<FIn>(indices1);
    const auto leptonOutMass = context.mass<FOut>(indices2);
-   const auto r = pow(leptonOutMass/leptonInMass, 2);
-   const auto GF2 = pow(qedqcd.displayFermiConstant(), 2);
-   const double Alpha = Sqr(FIn::electric_charge * unit_charge(context))/(4*Pi);
+   const auto r = Power2(leptonOutMass/leptonInMass);
+   const auto GF2 = Power2(qedqcd.displayFermiConstant());
+   const double Alpha = Power2(FIn::electric_charge * unit_charge(context))/(4*Pi);
 
    // eq. 10.6 of http://pdg.lbl.gov/2018/reviews/rpp2018-rev-standard-model.pdf
-   return 
+   return
       // tree-level (with massless outgoing lepton)
-      GF2*pow(leptonInMass,5)/(192.0*pow(Pi,3)) 
+      GF2*Power5(leptonInMass)/(192.0*Power3(Pi))
       // outgoing lepton mass correction
-      * (1 - 8*r + 8*pow(r,3) - pow(r,4) - 12*r*r*std::log(r));
+      * (1 - 8*r + 8*Power3(r) - Power4(r) - 12*r*r*std::log(r));
       // higher order correction
       //* (1.0 + 0.5 * Alpha * (6.25-Sqr(Pi))/Pi)
 }
