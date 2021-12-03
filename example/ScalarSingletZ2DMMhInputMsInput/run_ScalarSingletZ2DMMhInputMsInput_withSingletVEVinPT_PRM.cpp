@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
   std::ofstream output_file;  
   output_file.open("output.txt");
 
-  bool debug_mode = false;
+  bool debug_mode = true;
   double ms, lambda_s, lambda_hs;
   double Q, xi, daisy_flag;
   bool use_1L_EWSB_in_0L_mass;
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     lambda_s =  0.1;
     lambda_hs = 0.3;
     Q = 0.5*173.;
-    xi = 0;
+    xi = 1;
     daisy_flag = 0;
     use_1L_EWSB_in_0L_mass = false;  
     use_Goldstone_resum = false;
@@ -76,9 +76,8 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
-    if (xi != 0) {
-      std::cout << "xi != 0 in ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT" << std::endl;
-      return 0;
+    if (xi != 1) {
+      std::cout << "xi is set to 1 in ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT." << std::endl;
     }
     
     
