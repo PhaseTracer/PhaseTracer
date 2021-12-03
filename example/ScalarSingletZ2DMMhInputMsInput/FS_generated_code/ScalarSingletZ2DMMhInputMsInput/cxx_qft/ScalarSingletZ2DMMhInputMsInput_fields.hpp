@@ -20,7 +20,7 @@
 /**
  * @file cxx_qft/ScalarSingletZ2DMMhInputMsInput_fields.hpp
  *
- * This file was generated with FlexibleSUSY 2.5.0 and SARAH 4.14.3 .
+ * This file was generated with FlexibleSUSY 2.6.1 and SARAH 4.14.3 .
  */
 
 #ifndef ScalarSingletZ2DMMhInputMsInput_CXXQFT_FIELDS_H
@@ -100,7 +100,7 @@ namespace ScalarSingletZ2DMMhInputMsInput_cxx_diagrams {
     * is not 1.
     */
    template <class Field>
-   typename std::enable_if<Field::numberOfGenerations != 1, bool>::type
+   std::enable_if_t<Field::numberOfGenerations != 1, bool>
    isSMField(const typename field_indices<Field>::type& indices) {
       boost::array<bool, Field::numberOfGenerations> sm_flags;
 
@@ -114,7 +114,7 @@ namespace ScalarSingletZ2DMMhInputMsInput_cxx_diagrams {
    }
 
    template <class Field>
-   typename std::enable_if<Field::numberOfGenerations == 1, bool>::type
+   std::enable_if_t<Field::numberOfGenerations == 1, bool>
    isSMField(const typename field_indices<Field>::type&) {
       return boost::mpl::at_c<typename Field::sm_flags, 0>::type::value;
    }
@@ -132,6 +132,8 @@ namespace ScalarSingletZ2DMMhInputMsInput_cxx_diagrams {
    struct is_massless {
       static constexpr bool value = Field::massless;
    };
+   template<typename Field>
+   constexpr bool is_massless_v = is_massless<Field>::value;
 
    enum class ParticleColorRep {
       singlet,
@@ -147,36 +149,48 @@ namespace ScalarSingletZ2DMMhInputMsInput_cxx_diagrams {
          Field::color_rep == ParticleColorRep::singlet;
    };
    template<typename Field>
+   constexpr bool is_singlet_v = is_singlet<Field>::value;
+
+   template<typename Field>
    struct is_triplet {
       static constexpr bool value = Field::color_rep == ParticleColorRep::triplet;
    };
+   template<typename Field>
+   constexpr bool is_triplet_v = is_triplet<Field>::value;
+
    template<typename Field>
    struct is_anti_triplet {
       static constexpr bool value =
          Field::color_rep == ParticleColorRep::anti_triplet;
    };
    template<typename Field>
+   constexpr bool is_anti_triplet_v = is_anti_triplet<Field>::value;
+
+   template<typename Field>
    struct is_octet {
       static constexpr bool value = Field::color_rep == ParticleColorRep::octet;
    };
    template<typename Field>
-   constexpr typename std::enable_if<
+   constexpr bool is_octet_v = is_octet<Field>::value;
+
+   template<typename Field>
+   constexpr std::enable_if_t<
       is_triplet<Field>::value, ParticleColorRep
-      >::type
+      >
    color_conj() {
       return ParticleColorRep::anti_triplet;
    }
    template<typename Field>
-   constexpr typename std::enable_if<
+   constexpr std::enable_if_t<
       is_anti_triplet<Field>::value, ParticleColorRep
-      >::type
+      >
    color_conj() {
       return ParticleColorRep::triplet;
    }
    template<typename Field>
-   constexpr typename std::enable_if<
+   constexpr std::enable_if_t<
       !is_triplet<Field>::value && !is_anti_triplet<Field>::value, ParticleColorRep
-      >::type
+      >
    color_conj() {
       return Field::color_rep;
    }
