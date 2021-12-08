@@ -6,18 +6,26 @@ import time
 
 cwd = os.getcwd()
 
-scan_1d_bks = True
+scan_1d_bks = False
 scan_ms = False
 scan_ls = scan_ms
 scan_lhs = scan_ms
-scan_1d_xi = True
+scan_1d_xi = False
 
-scan_2d_bks = True 
-
+scan_2d_scan = True 
+scan_ls_lhs = True
+scan_ms_ls = scan_ls_lhs
+scan_ms_lhs = scan_ls_lhs
 
 if scan_1d_bks or scan_1d_xi:
   n_total = 100
   folder_name = "1d_bks"
+
+if scan_2d_scan:
+  n_x = 30
+  n_y = n_x
+  folder_name = "2d_scan"
+
 
 
 if not os.path.exists(folder_name):
@@ -325,6 +333,47 @@ if scan_1d_bks:
     file_name = "covariant_MSbar_no"
     scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi, daisy_flag_in, "0", "0", "2")
 
+
+
+
+
+
+
+
+
+
+def perfrom_2d_scan(ms, lambda_s, lambda_hs, file_name_):
+
+  cmd = "./../../../bin/run_xSM_MSbar"
+  file_name = file_name_+"default"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+  cmd = "./../../../bin/run_xSM_MSbar"
+  file_name = file_name_+"_xi3"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [3], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+if scan_2d_scan:
+  
+  if scan_ls_lhs:
+    ms = [65]
+    lambda_s = np.linspace(0.01,0.3,n_x)
+    lambda_hs = np.linspace(0.1,0.5,n_y)
+    filename = "lhs_ls_"
+    perfrom_2d_scan(ms, lambda_s, lambda_hs, filename)
+
+  if scan_ms_ls:
+    ms = np.linspace(10,120,n_x)
+    lambda_s = np.linspace(0.01,0.3,n_y)
+    lambda_hs = [0.3]
+    filename = "ms_ls_"
+    perfrom_2d_scan(ms, lambda_s, lambda_hs, filename)
+    
+  if scan_ms_lhs:
+    ms = np.linspace(10,120,n_x)
+    lambda_s = [0.1]
+    lambda_hs = np.linspace(0.1,0.5,n_y)
+    filename = "ms_lhs_"
+    perfrom_2d_scan(ms, lambda_s, lambda_hs, filename)
 
 #scheme = "xSM_MSbar"
 #cmd = "./../../../bin/run_"+scheme

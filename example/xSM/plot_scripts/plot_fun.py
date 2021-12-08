@@ -15,11 +15,13 @@ def loaddata(name, gamma_min=0.1):
   data = data[data[:,3]>0]
   return data[fun_gamma(data)>gamma_min]
 
-def fun_diff(data1, data2, data0, show_gamma=False, norm =True, use_abs=True, gamma_min = 0.0, sort=True):
+def fun_diff(data1, data2, data0, show_gamma=False, norm =False, use_abs=False, gamma_min = 0.4, sort=True):
   if len(data1) != len(data2) or len(data1) != len(data0):
     print("Wrong data files")
     sys.exit()
   data_diff = []
+  data_1 = []
+  data_2 = []
   for ii in range(len(data1)):
     if data1[ii][0] != data2[ii][0] or data1[ii][0] != data0[ii][0]:
       print("Wrong data files")
@@ -43,7 +45,7 @@ def fun_diff(data1, data2, data0, show_gamma=False, norm =True, use_abs=True, ga
         gamma_1 = fun_gamma_line(data1[ii])
         gamma_2 = fun_gamma_line(data2[ii])
         gamma_0 = fun_gamma_line(data0[ii])
-        if gamma_0 >= gamma_min and gamma_0 < 5: 
+        if gamma_0 >= gamma_min and gamma_0 < 10: 
           if show_gamma:
             diff = abs(gamma_1 - gamma_2) if use_abs else gamma_1 - gamma_2
             x1 = gamma_1
@@ -55,9 +57,16 @@ def fun_diff(data1, data2, data0, show_gamma=False, norm =True, use_abs=True, ga
             x2 = TC_2
             central = TC_0
           data_diff.append([ms, lambda_s, lambda_hs, diff/central if norm else diff, central, x1, x2])
-
+    elif size_1 != 0 and size_2 == 0:
+      if gamma_1 > gamma_min :
+        data_1.append([lambda_hs, lambda_s, ms])
+    elif size_1 == 0 and size_2 != 0:
+      if gamma_2 > gamma_min :
+        data_2.append([lambda_hs, lambda_s, ms])
+        
+        
   if sort:
     data_diff.sort(key=(lambda x:abs(x[3]))) 
   
-  return np.array(data_diff)
+  return np.array(data_diff), np.array(data_1), np.array(data_2)   
   
