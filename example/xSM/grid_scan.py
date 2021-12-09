@@ -22,7 +22,7 @@ if scan_1d_bks or scan_1d_xi:
   folder_name = "1d_bks"
 
 if scan_2d_scan:
-  n_x = 30
+  n_x = 200
   n_y = n_x
   folder_name = "2d_scan"
 
@@ -349,7 +349,7 @@ def perfrom_2d_scan(ms, lambda_s, lambda_hs, file_name_):
   scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
   cmd = "./../../../bin/run_xSM_MSbar"
-  file_name = file_name_+"_xi3"
+  file_name = file_name_+"xi3"
   scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [3], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 if scan_2d_scan:
