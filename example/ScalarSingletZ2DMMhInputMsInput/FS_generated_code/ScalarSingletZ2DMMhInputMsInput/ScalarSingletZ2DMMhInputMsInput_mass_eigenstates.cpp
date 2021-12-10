@@ -25,7 +25,7 @@
  * which solve EWSB and calculate pole masses and mixings from MSbar
  * parameters.
  *
- * This file was generated with FlexibleSUSY 2.5.0 and SARAH 4.14.3 .
+ * This file was generated with FlexibleSUSY 2.6.1 and SARAH 4.14.3 .
  */
 
 #include "ScalarSingletZ2DMMhInputMsInput_mass_eigenstates.hpp"
@@ -3667,7 +3667,6 @@ void CLASSNAME::calculate_Mss_pole()
    do {
       const double M_tree(get_mass_matrix_ss());
       const double p = old_Mss;
-//      const double p = 0;
       double self_energy = Re(self_energy_ss_1loop(p));
       const double mass_sqr = M_tree - self_energy;
 
@@ -3729,7 +3728,6 @@ void CLASSNAME::calculate_Mhh_pole()
    do {
       const double M_tree(get_mass_matrix_hh());
       const double p = old_Mhh;
-//      const double p = 0;
       double self_energy = Re(self_energy_hh_1loop(p));
       const double mass_sqr = M_tree - self_energy;
 

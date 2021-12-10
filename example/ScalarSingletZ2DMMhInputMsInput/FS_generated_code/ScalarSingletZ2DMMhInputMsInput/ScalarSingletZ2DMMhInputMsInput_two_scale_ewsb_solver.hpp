@@ -22,7 +22,7 @@
  *
  * @brief contains class for solving EWSB when two-scale algorithm is used
  *
- * This file was generated with FlexibleSUSY 2.5.0 and SARAH 4.14.3 .
+ * This file was generated with FlexibleSUSY 2.6.1 and SARAH 4.14.3 .
  */
 
 #ifndef ScalarSingletZ2DMMhInputMsInput_TWO_SCALE_EWSB_SOLVER_H

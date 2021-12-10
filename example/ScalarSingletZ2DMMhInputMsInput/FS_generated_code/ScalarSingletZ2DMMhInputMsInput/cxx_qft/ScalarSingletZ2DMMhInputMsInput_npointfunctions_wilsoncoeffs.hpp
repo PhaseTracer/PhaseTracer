@@ -20,7 +20,7 @@
 /**
  * @file cxx_qft/ScalarSingletZ2DMMhInputMsInput_npointfunctions_wilsoncoeffs.hpp
  *
- * This file was generated with FlexibleSUSY 2.5.0 and SARAH 4.14.3 .
+ * This file was generated with FlexibleSUSY 2.6.1 and SARAH 4.14.3 .
  */
 
 #ifndef ScalarSingletZ2DMMhInputMsInput_CXXQFT_NPOINTFUNCTIONS_H
@@ -134,7 +134,7 @@ namespace detail {
 
    template<std::intmax_t Num, std::intmax_t Denom = 1>
    struct ratio_helper {
-      static constexpr double value = double(Num) / double(Denom);
+      static constexpr double value = static_cast<double>(Num) / static_cast<double>(Denom);
    };
 
    template<class RealPart, class ImPart>

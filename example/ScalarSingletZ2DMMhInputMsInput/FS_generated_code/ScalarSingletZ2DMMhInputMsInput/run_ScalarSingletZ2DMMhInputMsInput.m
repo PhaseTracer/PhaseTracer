@@ -33,6 +33,7 @@ handle = FSScalarSingletZ2DMMhInputMsInputOpenHandle[
         higgs3loopCorrectionAtAtAt -> 1,   (* FlexibleSUSY[29] *)
         higgs4loopCorrectionAtAsAsAs -> 1, (* FlexibleSUSY[30] *)
         loopLibrary -> 0,                  (* FlexibleSUSY[31] *)
+        calculateDecays -> 1,              (* FlexibleSUSY[32] *)
         parameterOutputScale -> 0          (* MODSEL[12] *)
     },
     fsSMParameters -> {
@@ -78,6 +79,7 @@ handle = FSScalarSingletZ2DMMhInputMsInputOpenHandle[
 
 spectrum    = FSScalarSingletZ2DMMhInputMsInputCalculateSpectrum[handle];
 observables = FSScalarSingletZ2DMMhInputMsInputCalculateObservables[handle];
+
 FSScalarSingletZ2DMMhInputMsInputCloseHandle[handle];
 
 Print[spectrum];

@@ -20,7 +20,7 @@
 /**
  * @file cxx_qft/ScalarSingletZ2DMMhInputMsInput_qft.hpp
  *
- * This file was generated with FlexibleSUSY 2.5.0 and SARAH 4.14.3 .
+ * This file was generated with FlexibleSUSY 2.6.1 and SARAH 4.14.3 .
  */
 
 #ifndef ScalarSingletZ2DMMhInputMsInput_CXXQFT_QFT_H
