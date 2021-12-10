@@ -30,12 +30,13 @@ int main(int argc, char* argv[]) {
   std::ofstream output_file;  
   output_file.open("output.txt");
 
-  bool debug_mode = false;
+  bool debug_mode = true;
   double ms, lambda_s, lambda_hs;
   double Q, xi, daisy_flag;
   bool use_1L_EWSB_in_0L_mass;
   bool use_Goldstone_resum = false;
-
+  bool use_tree_level_tadpoles = false;
+  bool use_tree_level_beta = false;
   const double Qin = 173;
   const double MhInput = 125;
   
@@ -46,11 +47,12 @@ int main(int argc, char* argv[]) {
     lambda_s =  0.1;
     lambda_hs = 0.3;
     Q = 0.5*173.;
-    xi = 0;
+    xi = 1;
     daisy_flag = 0;
     use_1L_EWSB_in_0L_mass = false;  
     use_Goldstone_resum = false;
-  } else if ( argc == 9 ) {
+    use_tree_level_tadpoles = true;
+  } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
     lambda_hs = atof(argv[3]);
@@ -59,14 +61,23 @@ int main(int argc, char* argv[]) {
     daisy_flag = atoi(argv[6]);
     use_1L_EWSB_in_0L_mass = atoi(argv[7]);
     use_Goldstone_resum = atoi(argv[8]);
+    if ( argc > 9 ){
+      if ( atoi(argv[9]) == 1 ) {
+        use_tree_level_tadpoles = true;
+      }
+      if ( atoi(argv[9]) == 3 ) {
+        use_tree_level_tadpoles = true;
+        use_tree_level_beta = true;
+      }
+    }
+    
   } else {
     std::cout << "Use ./run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT ms lambda_s lambda_hs Q xi daisy_flag use_1L_EWSB_in_0L_mass " << std::endl;
     return 0;
   }
 
-    if (xi != 0) {
-      std::cout << "xi != 0 in ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT" << std::endl;
-      return 0;
+    if (xi != 1) {
+      std::cout << "xi is set to 1 in ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT." << std::endl;
     }
     
     
@@ -92,6 +103,8 @@ int main(int argc, char* argv[]) {
   EffectivePotential::ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT model;
 //  if (debug_mode) model.set_debug(true);
   
+  model.set_use_tree_level_tadpoles(use_tree_level_tadpoles);
+  model.set_use_tree_level_beta(use_tree_level_beta);
   model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
   model.set_use_Goldstone_resum(use_Goldstone_resum);
   model.set_input({Qin, Qin, MhInput, ms, lambda_s, lambda_hs});

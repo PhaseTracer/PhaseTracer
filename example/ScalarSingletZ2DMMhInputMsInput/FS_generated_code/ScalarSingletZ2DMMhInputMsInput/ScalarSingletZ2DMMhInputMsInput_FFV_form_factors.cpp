@@ -19,7 +19,7 @@
 /**
  * @file ScalarSingletZ2DMMhInputMsInput_FFV_form_factors.cpp
  *
- * This file was generated with FlexibleSUSY 2.5.0 and SARAH 4.14.3 .
+ * This file was generated with FlexibleSUSY 2.6.1 and SARAH 4.14.3 .
  */
 
 #include <complex>
@@ -131,7 +131,7 @@ double OneLoopFunctionA(double r)
    } else {
       return (2.0 - 9.0 * r + 18.0 * r * r - 11.0 * r * r * r +
               6.0 * r * r * r * std::log(r)) /
-             pow(1.0 - r, 4);
+             Power4(1.0 - r);
    }
 }
 
@@ -162,7 +162,7 @@ double OneLoopFunctionB(double r)
       return 2. *
              (1.0 - 6.0 * r + 3.0 * r * r + 2.0 * r * r * r -
               6.0 * r * r * std::log(r)) /
-             pow(1.0 - r, 4);
+             Power4(1.0 - r);
    }
 }
 
@@ -190,7 +190,7 @@ double OneLoopFunctionC(double r)
               0.0220588235294117647  * y * y * y * y * y * y * y * y * y * y * y * y * y * y -
               0.0196078431372549020  * y * y * y * y * y * y * y * y * y * y * y * y * y * y * y);
    } else {
-      return 3. * (1.0 - r * r + 2.0 * r * std::log(r)) / pow(1.0 - r, 3);
+      return 3. * (1.0 - r * r + 2.0 * r * std::log(r)) / Power3(1.0 - r);
    }
 }
 
@@ -201,7 +201,7 @@ double OneLoopFunctionD(double r)
    } else {
       return (16.0 - 45.0 * r + 36.0 * r * r - 7.0 * r * r * r +
               6.0 * (2.0 - 3.0 * r) * std::log(r)) /
-             pow(1.0 - r, 4);
+             Power4(1.0 - r);
    }
 }
 
@@ -231,7 +231,7 @@ double OneLoopFunctionE(double r)
    } else {
       return 2. *
              (2.0 + 3.0 * r - 6.0 * r * r + r * r * r + 6.0 * r * std::log(r)) /
-             pow(1.0 - r, 4);
+             Power4(1.0 - r);
    }
 }
 
@@ -240,8 +240,8 @@ double OneLoopFunctionF(double r)
    const double y = r - 1.0;
    if (std::abs(y) < 0.155) {
       // error around x=1 is <= 10^-13 on an intel i7
-      return (1.0 - 
-              0.75 * y + 
+      return (1.0 -
+              0.75 * y +
               0.6 * y * y -
               0.50000000000000000000 * y * y * y +
               0.4285714285714285714  * y * y * y * y -
@@ -258,7 +258,7 @@ double OneLoopFunctionF(double r)
               0.16666666666666666667 * y * y * y * y * y * y * y * y * y * y * y * y * y * y * y);
    } else {
       return 3. / 2. * (-3.0 + 4.0 * r - r * r - 2.0 * std::log(r)) /
-             pow(1.0 - r, 3);
+             Power3(1.0 - r);
    }
 }
 
@@ -289,7 +289,7 @@ std::valarray<std::complex<double>> FFV_SSF<Fj, Fi, V, SA, SB, F>::value(
    for (const auto& indexIn: index_range<VertexFBarFjSBar>()) {
       for (const auto& indexOut: index_range<VertexFiBarFS>()) {
 
-         // cycle if generations of external fermions  are different then requested   
+         // cycle if generations of external fermions  are different then requested
          const auto jFieldIndices = VertexFBarFjSBar::template indices_of_field<2>(indexIn);
          const auto iFieldIndices = VertexFiBarFS::template indices_of_field<0>(indexOut);
          if (jFieldIndices != indices_in || iFieldIndices != indices_out)
@@ -304,7 +304,7 @@ std::valarray<std::complex<double>> FFV_SSF<Fj, Fi, V, SA, SB, F>::value(
          // match indices of the scalar in the loop
          const auto scalarFieldIndicesIn = VertexFBarFjSBar::template indices_of_field<1>(indexIn);
          const auto scalarIndicesOut = VertexFiBarFS::template indices_of_field<1>(indexOut);
-         if (scalarFieldIndicesIn != scalarIndicesOut) 
+         if (scalarFieldIndicesIn != scalarIndicesOut)
             continue;
 
          if (discard_SM_contributions) {
@@ -321,29 +321,32 @@ std::valarray<std::complex<double>> FFV_SSF<Fj, Fi, V, SA, SB, F>::value(
 
          const auto mS = context.mass<SA>(scalarFieldIndicesIn);
          const auto mF = context.mass<F>(fermionFieldIndicesIn);
-         const auto x = pow(mF/mS, 2);
+         const auto x = Power2(mF/mS);
+         const auto oneLoopFunctionA = OneLoopFunctionA(x);
+         const auto oneLoopFunctionB = OneLoopFunctionB(x);
+         const auto oneLoopFunctionC = OneLoopFunctionC(x);
 
          // TODO: check the sign convention of this coupling
          std::complex<double> vector_boson_coupling {-vertexEmit.value(1,0)};
 
          // eq. 15 of hep-ph/9510309 (possibly with different sign)
          const std::complex<double> A1L =
-            - 1./18. * vertexOut.right() * vertexIn.left() * OneLoopFunctionA(x);
+            - 1./18. * vertexOut.right() * vertexIn.left() * oneLoopFunctionA;
          // eq. 16 of hep-ph/9510309 (possibly with different sign)
-         const std::complex<double> A2L = 
-            - vertexOut.left() * vertexIn.right() * OneLoopFunctionB(x)/12.
-            - vertexOut.left()* vertexIn.left() * mF/mj * OneLoopFunctionC(x)/3.
-            - mi/mj * vertexOut.right() * vertexIn.left() * OneLoopFunctionB(x)/12.; 
+         const std::complex<double> A2L =
+            - vertexOut.left() * vertexIn.right() * oneLoopFunctionB/12.
+            - vertexOut.left()* vertexIn.left() * mF/mj * oneLoopFunctionC/3.
+            - mi/mj * vertexOut.right() * vertexIn.left() * oneLoopFunctionB/12.;
 
          // eq. 15 & 16 of hep-ph/9510309 after replacement L <-> R (possibly with different sign)
-         const std::complex<double> A1R = 
-            - 1./18. * vertexOut.left() * vertexIn.right() * OneLoopFunctionA(x);
-         const std::complex<double> A2R = 
-            - vertexOut.right() * vertexIn.left() * OneLoopFunctionB(x)/12. 
-            - vertexOut.right()* vertexIn.right() * mF/mj * OneLoopFunctionC(x)/3.
-            - mi/mj * vertexOut.left() * vertexIn.right() * OneLoopFunctionB(x)/12.; 
+         const std::complex<double> A1R =
+            - 1./18. * vertexOut.left() * vertexIn.right() * oneLoopFunctionA;
+         const std::complex<double> A2R =
+            - vertexOut.right() * vertexIn.left() * oneLoopFunctionB/12.
+            - vertexOut.right()* vertexIn.right() * mF/mj * oneLoopFunctionC/3.
+            - mi/mj * vertexOut.left() * vertexIn.right() * oneLoopFunctionB/12.;
 
-         const std::complex<double> massFactor = pow(mS,-2);
+         const std::complex<double> massFactor = 1.0/Power2(mS);
 
          res += oneOver32PiSqr * vector_boson_coupling * massFactor
             * std::valarray<std::complex<double>> {A1L, A1R, A2L, A2R};
@@ -363,14 +366,14 @@ std::valarray<std::complex<double>> FFV_FFS<Fj, Fi, V, FA, FB, S>::value(
 {
 
    static_assert(
-      std::is_same<FA, FB>::type::value, 
+      std::is_same<FA, FB>::type::value,
       "Internal fermions in the FFV_FFS instantiation must be of the same type."
    );
 
    using VertexFBarFjSBar = Vertex<typename S::lorentz_conjugate, typename FA::lorentz_conjugate, Fj>;
    using VertexFiBarFS    = Vertex<typename Fi::lorentz_conjugate, FB, S>;
    using VertexFBarFVBar  = Vertex<typename FB::lorentz_conjugate, FA, typename V::lorentz_conjugate>;
-   
+
    // masses of external fermions
    const auto mj = context.mass<Fj>(indices_in);
    const auto mi = context.mass<Fi>(indices_out);
@@ -380,7 +383,7 @@ std::valarray<std::complex<double>> FFV_FFS<Fj, Fi, V, FA, FB, S>::value(
    for (const auto& indexIn: index_range<VertexFBarFjSBar>()) {
       for (const auto& indexOut: index_range<VertexFiBarFS>()) {
 
-         // cycle if generations of external fermions are different then requested   
+         // cycle if generations of external fermions are different then requested
          const auto jFieldIndices = VertexFBarFjSBar::template indices_of_field<2>(indexIn);
          const auto iFieldIndices = VertexFiBarFS::template indices_of_field<0>(indexOut);
          if (jFieldIndices != indices_in || iFieldIndices != indices_out)
@@ -393,7 +396,7 @@ std::valarray<std::complex<double>> FFV_FFS<Fj, Fi, V, FA, FB, S>::value(
 
          const auto scalarFieldIndicesIn = VertexFBarFjSBar::template indices_of_field<0>(indexIn);
          const auto scalarIndicesOut = VertexFiBarFS::template indices_of_field<2>(indexOut);
-         if (scalarFieldIndicesIn != scalarIndicesOut) 
+         if (scalarFieldIndicesIn != scalarIndicesOut)
             continue;
 
          if (discard_SM_contributions) {
@@ -404,34 +407,37 @@ std::valarray<std::complex<double>> FFV_FFS<Fj, Fi, V, FA, FB, S>::value(
 
          const auto vertexIn = VertexFBarFjSBar::evaluate(indexIn, context);
          const auto vertexOut = VertexFiBarFS::evaluate(indexOut, context);
-         
+
          const auto indexEmit = concatenate(fermionFieldIndicesIn, fermionFieldIndicesIn);
          const auto vertexEmit = VertexFBarFVBar::evaluate(indexEmit, context);
 
          const auto mF = context.mass<FA>(fermionFieldIndicesIn);
          const auto mS = context.mass<S>(scalarFieldIndicesIn);
-         const auto x = pow(mF/mS, 2);
+         const auto x = Power2(mF/mS);
+         const auto oneLoopFunctionD = OneLoopFunctionD(x);
+         const auto oneLoopFunctionE = OneLoopFunctionE(x);
+         const auto oneLoopFunctionF = OneLoopFunctionF(x);
 
          std::complex<double> vector_boson_coupling {vertexEmit.left()};
 
          // eq. 18 of hep-ph/9510309 (possibly with different sign)
          const std::complex<double> A1L =
-            - 1./18. * vertexOut.right() * vertexIn.left() * OneLoopFunctionD(x);
+            - 1./18. * vertexOut.right() * vertexIn.left() * oneLoopFunctionD;
          // eq. 19 of hep-ph/9510309 (possibly with different sign)
-         const std::complex<double> A2L = 
-            - vertexOut.left() * vertexIn.right() * OneLoopFunctionE(x)/12.0 
-            - vertexOut.left()* vertexIn.left() * mF/mj * OneLoopFunctionF(x) * 2./3.
-            - mi/mj * vertexOut.right() * vertexIn.left() * OneLoopFunctionE(x)/12.0;
+         const std::complex<double> A2L =
+            - vertexOut.left() * vertexIn.right() * oneLoopFunctionE/12.0
+            - vertexOut.left()* vertexIn.left() * mF/mj * oneLoopFunctionF * 2./3.
+            - mi/mj * vertexOut.right() * vertexIn.left() * oneLoopFunctionE/12.0;
 
          // eq. 18 & 18 of hep-ph/9510309 after replacement L <-> R (possibly with different sign)
-         const std::complex<double> A1R = 
-            - 1./18. * vertexOut.left() * vertexIn.right() * OneLoopFunctionD(x);
-         const std::complex<double> A2R = 
-            - vertexOut.right() * vertexIn.left() * OneLoopFunctionE(x)/12.0 
-            - vertexOut.right()* vertexIn.right() * mF/mj * OneLoopFunctionF(x) * 2./3.
-            - mi/mj * vertexOut.left() * vertexIn.right() * OneLoopFunctionE(x)/12.0; 
+         const std::complex<double> A1R =
+            - 1./18. * vertexOut.left() * vertexIn.right() * oneLoopFunctionD;
+         const std::complex<double> A2R =
+            - vertexOut.right() * vertexIn.left() * oneLoopFunctionE/12.0
+            - vertexOut.right()* vertexIn.right() * mF/mj * oneLoopFunctionF * 2./3.
+            - mi/mj * vertexOut.left() * vertexIn.right() * oneLoopFunctionE/12.0;
 
-         const std::complex<double> massFactor = pow(mS,-2);
+         const std::complex<double> massFactor = 1.0/Power2(mS);
 
          res += oneOver32PiSqr * vector_boson_coupling * massFactor
             * std::valarray<std::complex<double>> {A1L, A1R, A2L, A2R};

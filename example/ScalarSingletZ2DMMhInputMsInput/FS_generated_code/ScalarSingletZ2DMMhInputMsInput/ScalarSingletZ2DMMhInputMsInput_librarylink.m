@@ -1,5 +1,5 @@
 Print["================================"];
-Print["FlexibleSUSY 2.5.0"];
+Print["FlexibleSUSY 2.6.1"];
 Print["ScalarSingletZ2DMMhInputMsInput"];
 Print["http://flexiblesusy.hepforge.org"];
 Print["================================"];
@@ -114,9 +114,10 @@ Options[FSScalarSingletZ2DMMhInputMsInputOpenHandle] = {
     Sequence @@ fsDefaultSettings,
     Sequence @@ fsDefaultSMParameters,
     Sequence @@ fsScalarSingletZ2DMMhInputMsInputDefaultInputParameters
+
 };
 
-FSScalarSingletZ2DMMhInputMsInputOpenHandle[a___, (fsSettings | fsSMParameters | fsModelParameters) -> s_List, r___] :=
+FSScalarSingletZ2DMMhInputMsInputOpenHandle[a___, (fsSettings | fsSMParameters | fsModelParameters ) -> s_List, r___] :=
     FSScalarSingletZ2DMMhInputMsInputOpenHandle[a, Sequence @@ s, r];
 
 FSScalarSingletZ2DMMhInputMsInputOpenHandle[OptionsPattern[]] :=
@@ -195,6 +196,7 @@ FSScalarSingletZ2DMMhInputMsInputOpenHandle[OptionsPattern[]] :=
             OptionValue[MsInput],
             OptionValue[QEWSB],
             OptionValue[Qin]
+
         }
 ];
 
@@ -280,6 +282,7 @@ FSScalarSingletZ2DMMhInputMsInputSet[handle_Integer, p:OptionsPattern[]] :=
             OptionValue[MsInput],
             OptionValue[QEWSB],
             OptionValue[Qin]
+
         }] /. HoldPattern[OptionValue[param_]] :> param /.
         { p } /.
         FSScalarSingletZ2DMMhInputMsInputGetSettings[handle] /.

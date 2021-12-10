@@ -20,6 +20,7 @@
 #ifndef ScalarSingletZ2DMMhInputMsInput_OBSERVABLES_H
 #define ScalarSingletZ2DMMhInputMsInput_OBSERVABLES_H
 
+#include "observable_problems.hpp"
 #include <string>
 #include <vector>
 #include <Eigen/Core>
@@ -34,7 +35,7 @@ class ScalarSingletZ2DMMhInputMsInput_mass_eigenstates;
 class Physical_input;
 
 struct ScalarSingletZ2DMMhInputMsInput_observables {
-   static const int NUMBER_OF_OBSERVABLES = 5;
+   static const int NUMBER_OF_OBSERVABLES = 1;
 
    ScalarSingletZ2DMMhInputMsInput_observables();
    Eigen::ArrayXd get() const; ///< returns vector of all observables
@@ -42,18 +43,17 @@ struct ScalarSingletZ2DMMhInputMsInput_observables {
    void clear(); ///< sets all observables to zero
    void set(const Eigen::ArrayXd&); ///< sets all observables from given vector
 
+   Observable_problems problems;
    double a_muon; ///< a_muon = (g-2)/2 of the muon (calculated with FlexibleSUSY)
-   std::complex<double> eff_cp_higgs_photon_photon; ///< effective H-Photon-Photon coupling
-   std::complex<double> eff_cp_higgs_gluon_gluon; ///< effective H-Gluon-Gluon coupling
 
 };
 
 ScalarSingletZ2DMMhInputMsInput_observables calculate_observables(
-   ScalarSingletZ2DMMhInputMsInput_mass_eigenstates&, const softsusy::QedQcd&,
+   const ScalarSingletZ2DMMhInputMsInput_mass_eigenstates&, const softsusy::QedQcd&,
    const Physical_input&);
 
 ScalarSingletZ2DMMhInputMsInput_observables calculate_observables(
-   ScalarSingletZ2DMMhInputMsInput_mass_eigenstates&, const softsusy::QedQcd&,
+   const ScalarSingletZ2DMMhInputMsInput_mass_eigenstates&, const softsusy::QedQcd&,
    const Physical_input&, double scale);
 
 } // namespace flexiblesusy

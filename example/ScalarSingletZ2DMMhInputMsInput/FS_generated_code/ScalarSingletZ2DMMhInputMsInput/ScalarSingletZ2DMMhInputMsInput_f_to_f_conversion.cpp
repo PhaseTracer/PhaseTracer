@@ -19,7 +19,7 @@
 /**
  * @file ScalarSingletZ2DMMhInputMsInput_f_to_f_conversion.cpp
  *
- * This file was generated with FlexibleSUSY 2.5.0 and SARAH 4.14.3 .
+ * This file was generated with FlexibleSUSY 2.6.1 and SARAH 4.14.3 .
  */
 
 #include <valarray>

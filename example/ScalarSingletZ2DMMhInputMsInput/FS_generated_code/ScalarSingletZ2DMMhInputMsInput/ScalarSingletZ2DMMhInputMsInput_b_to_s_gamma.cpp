@@ -20,7 +20,7 @@
 /**
  * @file ScalarSingletZ2DMMhInputMsInput_b_to_s_gamma.cpp
  *
- * This file was generated with FlexibleSUSY 2.5.0 and SARAH 4.14.3 .
+ * This file was generated with FlexibleSUSY 2.6.1 and SARAH 4.14.3 .
  */
 
 #include <array>

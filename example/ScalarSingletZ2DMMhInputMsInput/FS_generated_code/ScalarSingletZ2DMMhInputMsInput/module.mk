@@ -32,6 +32,9 @@ LIBScalarSingletZ2DMMhInputMsInput_CXXQFT_VERTICES_SRC ?= ''
 ScalarSingletZ2DMMhInputMsInput_FlexibleEFTHiggs_MK := \
 		$(DIR)/FlexibleEFTHiggs.mk
 
+ScalarSingletZ2DMMhInputMsInput_FlexibleDecay_MK := \
+		$(DIR)/decays/FlexibleDecay.mk
+
 ScalarSingletZ2DMMhInputMsInput_INCLUDE_MK := \
 		$(ScalarSingletZ2DMMhInputMsInput_SUSY_BETAS_MK) \
 		$(ScalarSingletZ2DMMhInputMsInput_SOFT_BETAS_MK)
@@ -57,7 +60,6 @@ LIBScalarSingletZ2DMMhInputMsInput_SRC := \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_f_to_f_conversion.cpp \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_l_to_lgamma.cpp \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_b_to_s_gamma.cpp \
-		$(DIR)/ScalarSingletZ2DMMhInputMsInput_effective_couplings.cpp \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_info.cpp \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_input_parameters.cpp \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_mass_eigenstates.cpp \
@@ -94,7 +96,6 @@ LIBScalarSingletZ2DMMhInputMsInput_HDR := \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_f_to_f_conversion.hpp \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_l_to_lgamma.hpp \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_b_to_s_gamma.hpp \
-		$(DIR)/ScalarSingletZ2DMMhInputMsInput_effective_couplings.hpp \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_ewsb_solver.hpp \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_ewsb_solver_interface.hpp \
 		$(DIR)/ScalarSingletZ2DMMhInputMsInput_high_scale_constraint.hpp \
@@ -141,6 +142,7 @@ ifneq ($(MAKECMDGOALS),release)
 ifneq ($(MAKECMDGOALS),doc)
 -include $(ScalarSingletZ2DMMhInputMsInput_SUSY_BETAS_MK)
 -include $(ScalarSingletZ2DMMhInputMsInput_SOFT_BETAS_MK)
+-include $(ScalarSingletZ2DMMhInputMsInput_FlexibleDecay_MK)
 -include $(ScalarSingletZ2DMMhInputMsInput_CXXQFT_VERTICES_MK)
 -include $(ScalarSingletZ2DMMhInputMsInput_FlexibleEFTHiggs_MK)
 ifneq ($(MAKECMDGOALS),clean)
@@ -153,6 +155,8 @@ $(ScalarSingletZ2DMMhInputMsInput_SUSY_BETAS_MK): run-metacode-$(MODNAME)
 		@$(CONVERT_DOS_PATHS) $@
 $(ScalarSingletZ2DMMhInputMsInput_SOFT_BETAS_MK): run-metacode-$(MODNAME)
 		@$(CONVERT_DOS_PATHS) $@
+
+$(ScalarSingletZ2DMMhInputMsInput_FlexibleDecay_MK): run-metacode-$(MODNAME)
 $(ScalarSingletZ2DMMhInputMsInput_CXXQFT_VERTICES_MK): run-metacode-$(MODNAME)
 		@$(CONVERT_DOS_PATHS) $@
 $(ScalarSingletZ2DMMhInputMsInput_FlexibleEFTHiggs_MK): run-metacode-$(MODNAME)
@@ -288,7 +292,8 @@ pack-$(MODNAME)-src:
 		$(LLScalarSingletZ2DMMhInputMsInput_SRC) $(LLScalarSingletZ2DMMhInputMsInput_MMA) \
 		$(ScalarSingletZ2DMMhInputMsInput_MK) $(ScalarSingletZ2DMMhInputMsInput_INCLUDE_MK) $(ScalarSingletZ2DMMhInputMsInput_CXXQFT_VERTICES_MK) \
 		$(ScalarSingletZ2DMMhInputMsInput_SLHA_INPUT) $(ScalarSingletZ2DMMhInputMsInput_REFERENCES) \
-		$(ScalarSingletZ2DMMhInputMsInput_GNUPLOT)
+		$(ScalarSingletZ2DMMhInputMsInput_GNUPLOT) \
+		$(ScalarSingletZ2DMMhInputMsInput_FlexibleDecay_MK)
 
 $(LIBScalarSingletZ2DMMhInputMsInput_SRC) $(LIBScalarSingletZ2DMMhInputMsInput_HDR) $(LIBScalarSingletZ2DMMhInputMsInput_CXXQFT_HDR) $(EXEScalarSingletZ2DMMhInputMsInput_SRC) $(LLScalarSingletZ2DMMhInputMsInput_SRC) $(LLScalarSingletZ2DMMhInputMsInput_MMA) \
 : run-metacode-$(MODNAME)
@@ -312,7 +317,7 @@ $(METACODE_STAMP_ScalarSingletZ2DMMhInputMsInput):
 endif
 
 $(LIBScalarSingletZ2DMMhInputMsInput_DEP) $(EXEScalarSingletZ2DMMhInputMsInput_DEP) $(LLScalarSingletZ2DMMhInputMsInput_DEP) $(LIBScalarSingletZ2DMMhInputMsInput_OBJ) $(EXEScalarSingletZ2DMMhInputMsInput_OBJ) $(LLScalarSingletZ2DMMhInputMsInput_OBJ) $(LLScalarSingletZ2DMMhInputMsInput_LIB): \
-	CPPFLAGS += $(MODScalarSingletZ2DMMhInputMsInput_SUBMOD_INC) $(MODScalarSingletZ2DMMhInputMsInput_INC) $(GSLFLAGS) $(EIGENFLAGS) $(BOOSTFLAGS)  $(HIMALAYAFLAGS)
+	CPPFLAGS += $(MODScalarSingletZ2DMMhInputMsInput_SUBMOD_INC) $(MODScalarSingletZ2DMMhInputMsInput_INC) $(GSLFLAGS) $(EIGENFLAGS) $(BOOSTFLAGS) $(GM2CALCFLAGS) $(HIMALAYAFLAGS)
 
 ifneq (,$(findstring yes,$(ENABLE_LOOPTOOLS)$(ENABLE_FFLITE)))
 $(LIBScalarSingletZ2DMMhInputMsInput_DEP) $(EXEScalarSingletZ2DMMhInputMsInput_DEP) $(LLScalarSingletZ2DMMhInputMsInput_DEP) $(LIBScalarSingletZ2DMMhInputMsInput_OBJ) $(EXEScalarSingletZ2DMMhInputMsInput_OBJ) $(LLScalarSingletZ2DMMhInputMsInput_OBJ) $(LLScalarSingletZ2DMMhInputMsInput_LIB): \
@@ -328,11 +333,11 @@ $(LIBScalarSingletZ2DMMhInputMsInput): $(LIBScalarSingletZ2DMMhInputMsInput_OBJ)
 
 $(DIR)/%.x: $(DIR)/%.o $(LIBScalarSingletZ2DMMhInputMsInput) $(MODScalarSingletZ2DMMhInputMsInput_LIB) $(LIBFLEXI) $(filter-out -%,$(LOOPFUNCLIBS)) $(FUTILIBS)
 		@$(MSG)
-		$(Q)$(CXX) $(LDFLAGS) -o $@ $(call abspathx,$(ADDONLIBS) $^ $(LIBGM2Calc)) $(filter -%,$(LOOPFUNCLIBS)) $(HIMALAYALIBS) $(GSLLIBS) $(SQLITELIBS) $(TSILLIBS) $(FLIBS) $(THREADLIBS) $(LDLIBS) $(FUTILIBS)
+		$(Q)$(CXX) $(LDFLAGS) -o $@ $(call abspathx,$(ADDONLIBS) $^) $(filter -%,$(LOOPFUNCLIBS)) $(GM2CALCLIBS) $(HIMALAYALIBS) $(GSLLIBS) $(SQLITELIBS) $(TSILLIBS) $(FLIBS) $(THREADLIBS) $(LDLIBS) $(FUTILIBS)
 
 $(LLScalarSingletZ2DMMhInputMsInput_LIB): $(LLScalarSingletZ2DMMhInputMsInput_OBJ) $(LIBScalarSingletZ2DMMhInputMsInput) $(MODScalarSingletZ2DMMhInputMsInput_LIB) $(LIBFLEXI) $(filter-out -%,$(LOOPFUNCLIBS)) $(FUTILIBS)
 		@$(MSG)
-		$(Q)$(LIBLNK_MAKE_LIB_CMD) $@ $(CPPFLAGS) $(CFLAGS) $(call abspathx,$(ADDONLIBS) $^ $(LIBGM2Calc)) $(filter -%,$(LOOPFUNCLIBS)) $(HIMALAYALIBS) $(GSLLIBS) $(THREADLIBS) $(LDLIBS) $(LLLIBS) $(FUTILIBS)
+		$(Q)$(LIBLNK_MAKE_LIB_CMD) $@ $(CPPFLAGS) $(CFLAGS) $(call abspathx,$(ADDONLIBS) $^) $(filter -%,$(LOOPFUNCLIBS)) $(GM2CALCLIBS) $(HIMALAYALIBS) $(TSILLIBS) $(GSLLIBS) $(THREADLIBS) $(LDLIBS) $(LLLIBS) $(FUTILIBS) $(FLIBS)
 
 ALLDEP += $(LIBScalarSingletZ2DMMhInputMsInput_DEP) $(EXEScalarSingletZ2DMMhInputMsInput_DEP)
 ALLSRC += $(LIBScalarSingletZ2DMMhInputMsInput_SRC) $(EXEScalarSingletZ2DMMhInputMsInput_SRC)

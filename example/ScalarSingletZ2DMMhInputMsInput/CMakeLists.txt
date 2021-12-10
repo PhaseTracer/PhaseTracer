@@ -1,5 +1,5 @@
 if(BUILD_WITH_FS_ScalarSingletZ2DMMhInputMsInput)
-  set(FS_version "v2.5.0")
+  set(FS_version "v2.6.1")
   set(FS_model_name "ScalarSingletZ2DMMhInputMsInput")
   set(SARAH_model_name "ScalarSingletZ2DM")
 

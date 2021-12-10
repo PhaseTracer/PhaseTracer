@@ -128,6 +128,8 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
   // Whether to use special tadpole constraints in masses entering Coleman-Weinberg potential 
   void set_use_1L_EWSB_in_0L_mass(bool use_1L_EWSB_in_0L_mass_) { use_1L_EWSB_in_0L_mass = use_1L_EWSB_in_0L_mass_; } 
   void set_use_Goldstone_resum(bool use_Goldstone_resum_) { use_Goldstone_resum = use_Goldstone_resum_; } 
+  void set_use_tree_level_tadpoles(bool use_tree_level_tadpoles_) { use_tree_level_tadpoles = use_tree_level_tadpoles_; } 
+  void set_use_tree_level_beta(bool use_tree_level_beta_) {use_tree_level_beta = use_tree_level_beta_;}
   
   // For debuging
   void set_debug(bool debug_) { debug=debug_; }
@@ -164,6 +166,8 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
   // flag for using tree-level or one=-loop EWSB conditions in tree-level masses
   bool use_1L_EWSB_in_0L_mass{false};
   bool use_Goldstone_resum{false};
+  bool use_tree_level_tadpoles{false};
+  bool use_tree_level_beta{false};
 
   // For debuging
   bool debug = false;
@@ -183,9 +187,15 @@ void ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT::set_input(std::vector<d
   settings.set(Settings::precision, 1.e-8);
   settings.set(Settings::calculate_sm_masses, 1);
   settings.set(Settings::loop_library, 0);
-  settings.set(Settings::pole_mass_loop_order, 1);
-  settings.set(Settings::ewsb_loop_order, 1);
-  if (debug) {
+  if (use_tree_level_tadpoles) {
+    settings.set(Settings::pole_mass_loop_order, 0);
+    settings.set(Settings::ewsb_loop_order, 0);
+  } else {
+    settings.set(Settings::pole_mass_loop_order, 1);
+    settings.set(Settings::ewsb_loop_order, 1);
+  }
+
+  if (use_tree_level_beta) {
     settings.set(Settings::threshold_corrections_loop_order,0);
     settings.set(Settings::beta_loop_order, 0);
   }
