@@ -153,7 +153,7 @@ for ii in range(2):
 fig.tight_layout()
 
 if plot_scale:
-  plt.savefig('1d_scale.png')
+  plt.savefig('1d_scale.pdf')
 elif plot_xi:
   plt.savefig('1d_xi.png')
 
