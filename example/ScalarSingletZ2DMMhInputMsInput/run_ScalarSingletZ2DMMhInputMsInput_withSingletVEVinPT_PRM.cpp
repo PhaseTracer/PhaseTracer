@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
   std::ofstream output_file;  
   output_file.open("output.txt");
 
-  bool debug_mode = true;
+  bool debug_mode = false;
   double ms, lambda_s, lambda_hs;
   double Q, xi, daisy_flag;
   bool use_1L_EWSB_in_0L_mass;
@@ -46,11 +46,11 @@ int main(int argc, char* argv[]) {
     ms = 65;
     lambda_s =  0.1;
     lambda_hs = 0.3;
-    Q = 0.5*173.;
+    Q = 173.;
     xi = 1;
     daisy_flag = 0;
     use_1L_EWSB_in_0L_mass = false;  
-    use_Goldstone_resum = false;
+    use_Goldstone_resum = true;
     use_tree_level_tadpoles = true;
   } else if ( argc >= 9 ) {
     ms = atof(argv[1]);

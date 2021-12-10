@@ -39,12 +39,13 @@ int main(int argc, char* argv[]) {
     // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
     ms = 65.;
     lambda_s =  0.1;
-    lambda_hs = 0.25;
+    lambda_hs = 0.3;
     Q = 173.;
-    xi = 0.;
+    xi = 1.;
     daisy_flag = 0;
     use_1L_EWSB_in_0L_mass = false;
     use_Goldstone_resum = true;
+    tree_level_tadpoles = true;
     
   } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
