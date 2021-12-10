@@ -9,8 +9,10 @@ from plot_fun import fun_gamma, fun_diff, loaddata
 
 plot_methods = False
 plot_Goldstone = False
-plot_xi = True
+plot_xi = False
 plot_xi_zoomin = False 
+
+plot_scale = True
 
 figure_format = "pdf"
 
@@ -70,6 +72,18 @@ if plot_methods or plot_Goldstone:
     plot_for_1d(np.loadtxt("../1d_bks/Rxi_MSbar_1L_EWSB.txt"), 10, "One-loop EWSB", 3)
     plot_for_1d(np.loadtxt("../1d_bks/Rxi_MSbar_no.txt"), 10, "Nothing", 3)
 
+if plot_scale:
+  names = [ ["PRM_0L_noRGE_mt", "_PRM_0L_noRGE_mt"],
+            ["PRM_woFS_noRGE_mt", "PRM_woFS_noRGE_mt"]
+               ]
+  ncolumn = 3
+  fig, axs = plt.subplots(2, ncolumn, figsize=(13, 6))
+  for name in names:
+    plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)
+    plot_for_1d(np.loadtxt("../1d_bks/lambda_s_"+name[0]+".txt"), 1, name[1], 1)
+    plot_for_1d(np.loadtxt("../1d_bks/m_s_"+name[0]+".txt"), 0, name[1], 2)
+    
+
 if plot_xi:
   
   fig, axs = plt.subplots(2, 2, figsize=(10, 6))
@@ -97,7 +111,9 @@ if plot_xi:
 
   axs[0,0].set_title(r"R-$\xi$ gauge")
   axs[0,1].set_title(r"Covariant gauge")
-  
+
+
+
   
 for ii in range(2):
     for jj in range(ncolumn):
@@ -119,7 +135,7 @@ for ii in range(2):
 #        else:
 #          axs[ii,jj].legend(loc=1)
       
-      if plot_methods or plot_Goldstone:
+      if plot_methods or plot_Goldstone or plot_scale:
         if jj == 0:
           axs[ii,jj].set_xlabel(r"$\lambda_{hs}$")
         elif jj == 1:
@@ -133,17 +149,22 @@ for ii in range(2):
           axs[ii,jj].set_xlabel(r"$\xi$")
         else:
           axs[ii,jj].set_xlabel(r"$\xi_W=\xi_B$")
-        axs[ii,jj].set_xlim(0,10)
+        if plot_xi:
+          axs[ii,jj].set_xlim(0,10)
         if ii == 1:
-          axs[ii,jj].set_ylim(1.5,2.5)
+          if plot_xi:
+            axs[ii,jj].set_ylim(1.5,2.5)
         if plot_xi_zoomin:
           axs[ii,jj].set_xlim(0,0.5)
           if ii == 1:
             axs[ii,jj].set_ylim(1.75,2.05)
           else:
             axs[ii,jj].set_ylim(110,114)
-          
-axs[0,1].legend(bbox_to_anchor=(1,0), loc=3)
+
+if plot_xi:
+  axs[0,1].legend(bbox_to_anchor=(1,0), loc=3)
+if plot_scale:
+  axs[0,0].legend(loc=3)
 
 fig.tight_layout()
 
