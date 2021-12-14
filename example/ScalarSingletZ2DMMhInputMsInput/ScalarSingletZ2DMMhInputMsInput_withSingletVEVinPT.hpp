@@ -73,11 +73,11 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
   }
  
   std::vector<double> get_scalar_thermal_sq(double T) const override {
-    const double c_h = 1. / 48. *  ( 9. * square(g) + 3. * square(gp)
-			+ 12. * square(yt) + 12. * square(yb) + 4. * square(ytau)
-			+ 12. * lambda_h + 2. * lambda_hs );
-     
-    const double c_s =  (2. * lambda_hs + 3. * lambda_s) / 12.;
+    const double c_h = (9. * square(g) +
+                        3. * square(gp) +
+                        2. * (6. * square(yt) + 6. * square(yb) +
+                              2. * square(ytau) + 12. * lambda_h + lambda_hs)) / 48.;
+    const double c_s = (2. * lambda_hs + 3. * lambda_s) / 12.;
     return {c_h * square(T), c_s * square(T)};
   }
   
