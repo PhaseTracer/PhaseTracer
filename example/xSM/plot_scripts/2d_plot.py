@@ -4,17 +4,23 @@ import numpy as np
 from scipy.interpolate import interp1d
 from plot_fun import fun_gamma, fun_diff, loaddata
   
-show_gamma = False
+plot_xi = False
+plot_scale = True
 
-  
-figure_name = "xi"
-show_deltaT = False
+show_deltaT = True
 
+if plot_xi:
+  figure_name = "xi"
+if plot_scale:
+  figure_name = "scale"
 
 
 
 if show_deltaT:
-  title=r"$|T_C^{(\xi=3)}-T_C^{(\xi=0)}|$ [GeV]"
+  if plot_xi:
+    title=r"$|T_C^{(\xi=3)}-T_C^{(\xi=0)}|$ [GeV]"
+  if plot_scale:
+    title=r"$|T_C^{(Q=\frac{1}{2}m_t)}-T_C^{(Q=2m_t)}|$ [GeV]"
   cm = 'rainbow'
 else:
   title=r"$T_C^{(\xi=0)}$ [GeV]"
@@ -24,8 +30,13 @@ labels=[r'$M_s$ [GeV]', r'$\lambda_{S}$', r'$\lambda_{HS}$']
 
 def make_plot(ax, par):
   #############################
-  data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
-  data2 = np.loadtxt("../2d_scan/"+par+"_xi3.txt")
+  if plot_xi:
+    data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
+    data2 = np.loadtxt("../2d_scan/"+par+"_xi3.txt")
+  if plot_scale:
+    data1 = np.loadtxt("../2d_scan/"+par+"_05mt.txt")
+    data2 = np.loadtxt("../2d_scan/"+par+"_2mt.txt")
+    
   show_data = fun_diff(data2, data1, data1)
     
   # 0=lambda_hs, 1=lambda_s, 2=ms

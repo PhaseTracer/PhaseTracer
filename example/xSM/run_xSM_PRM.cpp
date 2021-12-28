@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
     ms = 65.;
     lambda_s =  0.1;
-    lambda_hs = 0.3;
+    lambda_hs = 0.26;
     Q = 173.;
     xi = 1.;
     daisy_flag = 0;
@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
   
   if (debug_mode) {
       std::cout << "muh_sq = " << model.get_muh_sq() << std::endl
-                << "mus_sq = " << model.get_lambda_h() << std::endl
+                << "mus_sq = " << model.get_mus_sq() << std::endl
                 << "lambda_h = " << model.get_lambda_h() << std::endl;
   }
   
@@ -146,19 +146,26 @@ int main(int argc, char* argv[]) {
   // Use minima with greatest Higgs/scalar
   double vs, vh;
   for (const auto& m : ht_minima) {
+    if (debug_mode) {
+      std::cout << "HT minimum = " << m.x << std::endl;
+    }
     vh = std::max(vh, std::abs(m.x(0)));
     vs = std::max(vh, std::abs(m.x(1)));
   }
-
+  
   if (debug_mode) {
     std::cout << hb;
     std::cout << std::setprecision(15) << tf;
     std::cout << "gamma_HT = " << vh / TC << std::endl;
   }
   
-  std::vector<double> out = {1, TC, 0.0, vs, vh, 0.0};
-  
-  output_file << toString(in, out, flags) << std::endl;
+  if (ht_minima.size()==1){
+    std::vector<double> out = {1, TC, vh, vs, vh, vs};
+    output_file << toString(in, out, flags) << std::endl;
+  } else {
+    std::vector<double> out = {1, TC, 0.0, vs, vh, 0.0};
+    output_file << toString(in, out, flags) << std::endl;
+  }
   output_file.close();
   
   return 0;
