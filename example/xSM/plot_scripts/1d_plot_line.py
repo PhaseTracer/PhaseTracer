@@ -177,4 +177,6 @@ elif plot_xi:
     plt.savefig('1d_xi.'+figure_format)
   else:
     plt.savefig('1d_xi_zoom_in.'+figure_format)
+if plot_scale:
+  plt.savefig('1d_scale_line.png')
 plt.show()
