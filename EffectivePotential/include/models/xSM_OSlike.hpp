@@ -193,11 +193,13 @@ class xSM_OSlike : public xSM_base {
 
     // vector correction
     // deleted photon contribution as it has no effect
-    for (size_t i = 0; i < vector_masses_sq.size()-1 ; ++i) {
-      const double x = vector_masses_sq[i] / vector_masses_sq_EW[i];
-      correction += vector_dofs[i] * vector_masses_sq[i] *
-                    (vector_masses_sq_EW[i] * xlogx(x) - vector_masses_sq[i] * 3. / 2.);
-      correction += vector_dofs[i] * 2. * vector_masses_sq[i] * vector_masses_sq_EW[i];
+    for (size_t i = 0; i < vector_masses_sq.size(); ++i) {
+      if (i!=2 and i!=5){
+        const double x = vector_masses_sq[i] / vector_masses_sq_EW[i];
+        correction += vector_dofs[i] * vector_masses_sq[i] *
+                      (vector_masses_sq_EW[i] * xlogx(x) - vector_masses_sq[i] * 3. / 2.);
+        correction += vector_dofs[i] * 2. * vector_masses_sq[i] * vector_masses_sq_EW[i];
+      }
     }
     return correction / (64. * M_PI * M_PI);
   }
