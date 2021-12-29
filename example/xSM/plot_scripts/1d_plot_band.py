@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 from scipy.interpolate import interp1d
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 #sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
@@ -46,11 +45,11 @@ def interpolate(x1, y1, x2, y2):
     x1 = np.append(x2[0],x1)
     y1 = np.append(y2[0],y1)
   if max(x1) > max(x2):
-    x2 = np.append(x1[-1],x2)
-    y2 = np.append(y1[-1],y2)
+    x2 = np.append(x2,x1[-1])
+    y2 = np.append(y2,y1[-1])
   elif max(x1) < max(x2):
-    x1 = np.append(x2[-1],x1)
-    y1 = np.append(y2[-1],y1)
+    x1 = np.append(x1,x2[-1])
+    y1 = np.append(y1,y2[-1])
 
   f1 = interp1d(x1, y1, kind='linear')
   f2 = interp1d(x2, y2, kind='linear')
@@ -105,7 +104,6 @@ for name in [["m_s",0,2], ["lambda_s",1,1], ["lambda_hs",2,0],]:
     range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noD_05mt.txt"),
                  np.loadtxt("../1d_bks/"+name[0]+"_noD_2mt.txt"),
                  name[1], r"$\overline{\rm MS}$(no daisy)", name[2], 'b')
-                 
 
     line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_mt.txt"), name[1], "r", name[2])
     range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_05mt.txt"),
