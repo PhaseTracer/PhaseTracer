@@ -7,12 +7,12 @@ from scipy.interpolate import interp1d
 #sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
-plot_methods = False
+plot_methods = True
 plot_Goldstone = False
 plot_xi = False
 plot_xi_zoomin = False 
 
-plot_scale = True
+plot_scale = False
 
 figure_format = "pdf"
 
@@ -35,25 +35,11 @@ def plot_for_1d(data, x_num, label, column):
 if plot_methods or plot_Goldstone:
   if plot_methods:
     
-#    names = [ ["default", "default"],
-#              ["2mt", r"$Q=2m_t$"],
-#              ["OSlike", r"OS-like"],
-#              ["xi3", r"$\xi=3$"],
-#              ["HT", r"HT"],
-#              ["PRM","PRM"],
-#              ["covariant_gauge", r"covariant, $\xi=3$"]]
-
-    names = [ ["default", "MSbar, ArnoldEspinosa"],
-              ["OSlike", r"OS-like, ArnoldEspinosa"],
-              ["Parwani","MSbar, Parwani"],
-              ["noDaisy", r"MSbar, no daisy"]] 
-              
-#    names = [ ["default", "MSbar"],
-#              ["OSlike", r"OS-like"],
-#              ["PRM_woFS_0L", r"PRM(0-L)"],
-#              ["PRM_woFS", r"PRM(1-L)"],
-#              ["HT","HT"]]
-              
+    names = [ ["default", r"$\overline{\rm MS}$"],
+              ["OSlike", r"OS-like"],
+              ["HT", r"HT"],
+              ["PRM_woFS_0L","PRM"]] 
+     
     ncolumn = 3
   if plot_Goldstone:
     names = [ ["default", "Goldstone resummation"],

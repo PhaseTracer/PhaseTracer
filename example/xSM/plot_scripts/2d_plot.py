@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from plot_fun import fun_gamma, fun_diff, loaddata
   
-plot_xi = False
+plot_xi = True
 plot_scale = not plot_xi
 
 show_deltaT = True
@@ -37,7 +37,7 @@ def make_plot(ax, par):
   if plot_scale:
     data1 = np.loadtxt("../2d_scan/"+par+"_05mt.txt")
     data2 = np.loadtxt("../2d_scan/"+par+"_2mt.txt")
-    vmax = 10
+    vmax = 15
     
   show_data = fun_diff(data2, data1, data1)
     
@@ -63,7 +63,7 @@ def make_plot(ax, par):
   ymax = max(show_data[:,ny])
     
   if show_deltaT:
-    map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,4]), cmap=cm, edgecolor='none', s=50, vmax=vmax, alpha=1)
+    map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,4]), cmap=cm, edgecolor='none', s=5, vmax=vmax, alpha=1)
   else:
     map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,5], cmap=cm, s=2, vmax=150, alpha=1)
     
