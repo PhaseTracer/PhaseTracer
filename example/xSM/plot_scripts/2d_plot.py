@@ -4,8 +4,9 @@ import numpy as np
 from scipy.interpolate import interp1d
 from plot_fun import fun_gamma, fun_diff, loaddata
   
-plot_xi = True
-plot_scale = not plot_xi
+plot_xi = False
+plot_scale = False
+plot_scheme = True
 
 show_deltaT = True
 
@@ -13,7 +14,8 @@ if plot_xi:
   figure_name = "xi"
 if plot_scale:
   figure_name = "scale"
-
+if plot_scheme:
+  figure_name = "scheme"
 
 
 if show_deltaT:
@@ -21,6 +23,8 @@ if show_deltaT:
     title=r"$|T_C^{(\xi=3)}-T_C^{(\xi=0)}|$ [GeV]"
   if plot_scale:
     title=r"$|T_C^{(Q=\frac{1}{2}m_t)}-T_C^{(Q=2m_t)}|$ [GeV]"
+  if plot_scheme:
+    title=r"$|T_C^{(\overline{\rm MS})}-T_C^{\rm(OS-like)}|$ [GeV]"
   cm = 'rainbow'
 else:
   title=r"$T_C^{(\xi=0)}$ [GeV]"
@@ -38,6 +42,10 @@ def make_plot(ax, par):
     data1 = np.loadtxt("../2d_scan/"+par+"_05mt.txt")
     data2 = np.loadtxt("../2d_scan/"+par+"_2mt.txt")
     vmax = 15
+  if plot_scheme:
+    data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
+    data2 = np.loadtxt("../2d_scan/"+par+"_OSlike.txt")
+    vmax = 6
     
   show_data = fun_diff(data2, data1, data1)
     
@@ -92,6 +100,9 @@ if plot_xi:
   figname += '_xi'
 elif plot_scale:
   figname += '_scale'
+elif plot_scheme:
+  figname += '_scheme'
+  
 if show_deltaT:
   figname += '_deltaT'
 else:
