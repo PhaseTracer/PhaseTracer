@@ -64,7 +64,7 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
     }
 								
     set_renormalization_scale(renormalization_scale);
-    std::cout << "renormalization_scale= " << renormalization_scale << std::endl;
+//    std::cout << "renormalization_scale= " << renormalization_scale << std::endl;
     // Calculate Debye coefficients
     yt = model.get_Yu(2, 2);
     yb = model.get_Yd(2, 2);
