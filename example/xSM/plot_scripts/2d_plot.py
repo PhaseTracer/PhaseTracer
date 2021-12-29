@@ -5,7 +5,7 @@ from scipy.interpolate import interp1d
 from plot_fun import fun_gamma, fun_diff, loaddata
   
 plot_xi = False
-plot_scale = True
+plot_scale = not plot_xi
 
 show_deltaT = True
 
@@ -33,9 +33,11 @@ def make_plot(ax, par):
   if plot_xi:
     data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
     data2 = np.loadtxt("../2d_scan/"+par+"_xi3.txt")
+    vmax = 10
   if plot_scale:
     data1 = np.loadtxt("../2d_scan/"+par+"_05mt.txt")
     data2 = np.loadtxt("../2d_scan/"+par+"_2mt.txt")
+    vmax = 10
     
   show_data = fun_diff(data2, data1, data1)
     
@@ -61,7 +63,7 @@ def make_plot(ax, par):
   ymax = max(show_data[:,ny])
     
   if show_deltaT:
-    map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,4]), cmap=cm, s=2, vmax=10, alpha=1)
+    map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,4]), cmap=cm, edgecolor='none', s=50, vmax=vmax, alpha=1)
   else:
     map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,5], cmap=cm, s=2, vmax=150, alpha=1)
     
@@ -85,7 +87,11 @@ fig.tight_layout()
 
 #plt.subplots_adjust(hspace=0.2)
 
-figname = '2d_scan_xi'
+figname = '2d_scan'
+if plot_xi:
+  figname += '_xi'
+elif plot_scale:
+  figname += '_scale'
 if show_deltaT:
   figname += '_deltaT'
 else:
