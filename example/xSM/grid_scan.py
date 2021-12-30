@@ -13,8 +13,8 @@ scan_lhs = False
 scan_1d_xi = False
 
 scan_2d_scan = True 
-scan_ls_lhs = False
-scan_ms_ls = False
+scan_ls_lhs = True
+scan_ms_ls = True
 scan_ms_lhs = True
 
 if scan_1d_bks or scan_1d_xi:
@@ -373,9 +373,14 @@ def perfrom_2d_scan(ms, lambda_s, lambda_hs, file_name_):
 #  file_name = file_name_+"05mt"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_xSM_OSlike"
-  file_name = file_name_+"OSlike"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_xSM_OSlike"
+#  file_name = file_name_+"OSlike"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+
+  cmd = "./../../../bin/run_xSM_MSbar"
+  file_name = file_name_+"Parwani"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 
 if scan_2d_scan:
