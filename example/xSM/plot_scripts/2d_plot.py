@@ -6,7 +6,9 @@ from plot_fun import fun_gamma, fun_diff, loaddata
   
 plot_xi = False
 plot_scale = False
-plot_scheme = True
+plot_scheme = False
+plot_daisy = True
+
 
 show_deltaT = True
 
@@ -25,6 +27,8 @@ if show_deltaT:
     title=r"$|T_C^{(Q=\frac{1}{2}m_t)}-T_C^{(Q=2m_t)}|$ [GeV]"
   if plot_scheme:
     title=r"$|T_C^{(\overline{\rm MS})}-T_C^{\rm(OS-like)}|$ [GeV]"
+  if plot_daisy:
+    title=r"$|T_C^{\rm (AE)}-T_C^{\rm (PW)}|$ [GeV]"
   cm = 'rainbow'
 else:
   title=r"$T_C^{(\xi=0)}$ [GeV]"
@@ -46,7 +50,11 @@ def make_plot(ax, par):
     data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
     data2 = np.loadtxt("../2d_scan/"+par+"_OSlike.txt")
     vmax = 6
-    
+  if plot_daisy:
+    data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
+    data2 = np.loadtxt("../2d_scan/"+par+"_Parwani.txt")
+    vmax = 10
+  
   show_data = fun_diff(data2, data1, data1)
     
   # 0=lambda_hs, 1=lambda_s, 2=ms
@@ -102,7 +110,9 @@ elif plot_scale:
   figname += '_scale'
 elif plot_scheme:
   figname += '_scheme'
-  
+elif plot_daisy:
+  figname += '_daisy'
+
 if show_deltaT:
   figname += '_deltaT'
 else:
