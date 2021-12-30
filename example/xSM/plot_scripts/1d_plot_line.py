@@ -7,11 +7,13 @@ from scipy.interpolate import interp1d
 #sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
-plot_schemes = True
+plot_schemes = False
 plot_Goldstone = False
 plot_xi = False
 plot_xi_zoomin = False 
 plot_scale = False
+plot_daisy = True
+
 
 figure_format = "pdf"
 
@@ -45,6 +47,21 @@ if plot_schemes:
     plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)
     plot_for_1d(np.loadtxt("../1d_bks/lambda_s_"+name[0]+".txt"), 1, name[1], 1)
     plot_for_1d(np.loadtxt("../1d_bks/m_s_"+name[0]+".txt"), 0, name[1], 2)
+
+if plot_daisy:
+  names = [ ["default", r"$\overline{\rm MS}$(Arnold Espinosa)"],
+            ["Parwani", r"$\overline{\rm MS}$(Parwani)"],
+            ["noDaisy", r"$\overline{\rm MS}$(no daisy)"]] 
+     
+  ncolumn = 3
+
+  fig, axs = plt.subplots(2, ncolumn, figsize=(13, 6))
+
+  for name in names:
+    plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)
+    plot_for_1d(np.loadtxt("../1d_bks/lambda_s_"+name[0]+".txt"), 1, name[1], 1)
+    plot_for_1d(np.loadtxt("../1d_bks/m_s_"+name[0]+".txt"), 0, name[1], 2)
+
 
 if plot_scale:
   names = [ ["PRM_0L_noRGE_mt", "_PRM_0L_noRGE_mt"],
@@ -102,7 +119,7 @@ for ii in range(2):
         axs[ii,jj].set_ylim(0,5)
         axs[ii,jj].set_ylabel(r"$\gamma_{\rm EW}$")
       
-      if plot_schemes or plot_Goldstone or plot_scale:
+      if not plot_xi:
         if jj == 0:
           axs[ii,jj].set_xlabel(r"$\lambda_{hs}$")
           axs[ii,jj].set_xlim(0.1,0.4)
@@ -148,4 +165,8 @@ elif plot_xi:
     plt.savefig('1d_xi_zoom_in.'+figure_format)
 if plot_scale:
   plt.savefig('1d_scale_line.png')
+if plot_daisy:
+  plt.savefig('1d_daisy.pdf')
+  
+  
 plt.show()
