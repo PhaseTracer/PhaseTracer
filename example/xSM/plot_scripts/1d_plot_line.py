@@ -7,11 +7,10 @@ from scipy.interpolate import interp1d
 #sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
-plot_methods = True
+plot_schemes = True
 plot_Goldstone = False
 plot_xi = False
 plot_xi_zoomin = False 
-
 plot_scale = False
 
 figure_format = "pdf"
@@ -20,7 +19,7 @@ cmap = cm.get_cmap('rainbow')
 
 def plot_for_1d(data, x_num, label, column):
 
-  sel = data[:,3]>0
+  sel = (data[:,3]>0) & (fun_gamma(data)>0)
 
   x = data[:,x_num]
   TC = data[:,4]
@@ -32,19 +31,13 @@ def plot_for_1d(data, x_num, label, column):
   ax = axs[1,column]
   ax.plot(x[sel], gamma[sel], label=label, alpha=1)
 
-if plot_methods or plot_Goldstone:
-  if plot_methods:
-    
-    names = [ ["default", r"$\overline{\rm MS}$"],
-              ["OSlike", r"OS-like"],
-              ["HT", r"HT"],
-              ["PRM_woFS_0L","PRM"]] 
+if plot_schemes:
+  names = [ ["default", r"$\overline{\rm MS}$"],
+            ["OSlike", r"OS-like"],
+            ["HT", r"HT"],
+            ["PRM_woFS_0L", r"PRM"]] 
      
-    ncolumn = 3
-  if plot_Goldstone:
-    names = [ ["default", "Goldstone resummation"],
-              ["1L_EWSB", "One-loop EWSB"] ]
-    ncolumn = 4
+  ncolumn = 3
 
   fig, axs = plt.subplots(2, ncolumn, figsize=(13, 6))
 
@@ -52,11 +45,6 @@ if plot_methods or plot_Goldstone:
     plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)
     plot_for_1d(np.loadtxt("../1d_bks/lambda_s_"+name[0]+".txt"), 1, name[1], 1)
     plot_for_1d(np.loadtxt("../1d_bks/m_s_"+name[0]+".txt"), 0, name[1], 2)
-  
-  if plot_Goldstone:
-    plot_for_1d(np.loadtxt("../1d_bks/Rxi_MSbar_resummation.txt"), 10, "Goldstone resummation", 3)
-    plot_for_1d(np.loadtxt("../1d_bks/Rxi_MSbar_1L_EWSB.txt"), 10, "One-loop EWSB", 3)
-    plot_for_1d(np.loadtxt("../1d_bks/Rxi_MSbar_no.txt"), 10, "Nothing", 3)
 
 if plot_scale:
   names = [ ["PRM_0L_noRGE_mt", "_PRM_0L_noRGE_mt"],
@@ -106,30 +94,27 @@ for ii in range(2):
       axs[ii,jj].grid(axis='x', alpha=0.75)
       axs[ii,jj].grid(axis='y', alpha=0.75)
       
+      
       if ii == 0:
         axs[ii,jj].set_ylabel(r"$T_C$ (GeV)")
-#        if jj<1:
-#          axs[ii,jj].legend(loc=3)
-#        else:
-#          axs[ii,jj].legend(loc=4)
-
+        axs[ii,jj].set_ylim(40,170)
       else:
         axs[ii,jj].set_ylim(0,5)
         axs[ii,jj].set_ylabel(r"$\gamma_{\rm EW}$")
-#        if jj<1:
-#          axs[ii,jj].legend(loc=2)
-#        else:
-#          axs[ii,jj].legend(loc=1)
       
-      if plot_methods or plot_Goldstone or plot_scale:
+      if plot_schemes or plot_Goldstone or plot_scale:
         if jj == 0:
           axs[ii,jj].set_xlabel(r"$\lambda_{hs}$")
+          axs[ii,jj].set_xlim(0.1,0.4)
         elif jj == 1:
           axs[ii,jj].set_xlabel(r"$\lambda_{s}$")
+          axs[ii,jj].set_xlim(0.05,0.2)
         elif jj == 2:
           axs[ii,jj].set_xlabel(r"$m_{s}$ (GeV)")
+          axs[ii,jj].set_xlim(40,100)
         else:
           axs[ii,jj].set_xlabel(r"$\xi$")
+        axs[0,0].legend(loc=3)
       else:
         if jj == 0:
           axs[ii,jj].set_xlabel(r"$\xi$")
@@ -154,10 +139,8 @@ if plot_scale:
 
 fig.tight_layout()
 
-if plot_methods:
-  plt.savefig('1d_methods.png')
-elif plot_Goldstone:
-  plt.savefig('1d_Goldstone.png')
+if plot_schemes:
+  plt.savefig('1d_schemes.pdf')
 elif plot_xi:
   if not plot_xi_zoomin:
     plt.savefig('1d_xi.'+figure_format)

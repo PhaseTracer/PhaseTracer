@@ -6,16 +6,16 @@ import time
 
 cwd = os.getcwd()
 
-scan_1d_bks = False
+scan_1d_bks = True
 scan_ms = False
 scan_ls = False
-scan_lhs = False
+scan_lhs = True
 scan_1d_xi = False
 
-scan_2d_scan = True 
-scan_ls_lhs = True
-scan_ms_ls = True
-scan_ms_lhs = True
+scan_2d_scan = False 
+scan_ls_lhs = False
+scan_ms_ls = False
+scan_ms_lhs = False
 
 if scan_1d_bks or scan_1d_xi:
   n_total = 200
