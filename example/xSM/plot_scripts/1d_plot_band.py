@@ -80,7 +80,7 @@ def range_for_1d(data1, data2, x_num, label, column, color):
 #  ax.plot(diff_TC[:,x_num], diff_TC[:,4], color=color, label=label)
   x_TC = np.linspace(max(min(x_TC1),min(x_TC2)), min(max(x_TC1),max(x_TC2)), num=100, endpoint=True)
   ax = axs[1,column]
-  ax.plot(x_TC,abs(fTC1(x_TC)-fTC2(x_TC)), color=color, label=label)
+  ax.plot(x_TC,(fTC1(x_TC)-fTC2(x_TC)), color=color, label=label)
   
   
 #  diff_gamma = fun_diff(data1, data2, data1, show_gamma=True, use_abs=True, sort=False)
@@ -88,7 +88,7 @@ def range_for_1d(data1, data2, x_num, label, column, color):
 #  ax.plot(diff_gamma[:,x_num], diff_gamma[:,4], color=color, label=label)
   x_gamma = np.linspace(max(min(x_gamma1),min(x_gamma2)), min(max(x_gamma1),max(x_gamma2)), num=100, endpoint=True)
   ax = axs[3,column]
-  ax.plot(x_gamma,abs(fgamma1(x_gamma)-fgamma2(x_gamma)), color=color, label=label)
+  ax.plot(x_gamma,(fgamma1(x_gamma)-fgamma2(x_gamma)), color=color, label=label)
 
   
 fig, axs = plt.subplots(4, 3, figsize=(12, 12))
@@ -176,11 +176,11 @@ for ii in range(4):
       axs[ii,jj].set_ylim(0,6)
       axs[ii,jj].set_ylabel(r"$\gamma_{\rm EW}$")
     elif ii == 1:
-      axs[ii,jj].set_ylim(0,30)
-      axs[ii,jj].set_ylabel(r"$|T_C^{(Q=\frac{1}{2}m_t)}-T_C^{(Q=2m_t)}|$ (GeV)")
+      axs[ii,jj].set_ylim(-20,30)
+      axs[ii,jj].set_ylabel(r"$T_C^{(Q=\frac{1}{2}m_t)}-T_C^{(Q=2m_t)}$ (GeV)")
     elif ii == 3:
-      axs[ii,jj].set_ylim(0,4)
-      axs[ii,jj].set_ylabel(r"$|\gamma^{(Q=\frac{1}{2}m_t)}-\gamma^{(Q=2m_t)}|$ (GeV)")
+      axs[ii,jj].set_ylim(-4,2)
+      axs[ii,jj].set_ylabel(r"$\gamma^{(Q=\frac{1}{2}m_t)}-\gamma^{(Q=2m_t)}$ (GeV)")
       
     if jj == 0:
       axs[ii,jj].set_xlabel(r"$\lambda_{hs}$")
