@@ -180,7 +180,7 @@ class xSM_OSlike : public xSM_base {
       const double x = scalar_masses_sq[i] / scalar_masses_sq_EW[i];
       correction += scalar_dofs[i] * scalar_masses_sq[i] *
                     (scalar_masses_sq_EW[i] * xlogx(x) - scalar_masses_sq[i] * 3. / 2.);
-      correction += scalar_dofs[i] * 2. * scalar_masses_sq[i] * scalar_masses_sq_EW[i];
+      correction += scalar_dofs[i] *( 2. * scalar_masses_sq[i] * scalar_masses_sq_EW[i] - 0.5 * scalar_masses_sq_EW[i] * scalar_masses_sq_EW[i]);
     }
 
     // fermion correction
@@ -188,7 +188,7 @@ class xSM_OSlike : public xSM_base {
       const double x = fermion_masses_sq[i] / fermion_masses_sq_EW[i];
       correction -= fermion_dofs[i] * fermion_masses_sq[i] *
                     (fermion_masses_sq_EW[i] * xlogx(x) - fermion_masses_sq[i] * 3. / 2.);
-      correction -= fermion_dofs[i] * 2. * fermion_masses_sq[i] * fermion_masses_sq_EW[i];
+      correction -= fermion_dofs[i] *( 2. * fermion_masses_sq[i] * fermion_masses_sq_EW[i] - 0.5 * fermion_masses_sq_EW[i] * fermion_masses_sq_EW[i]);
     }
 
     // vector correction
@@ -198,7 +198,7 @@ class xSM_OSlike : public xSM_base {
         const double x = vector_masses_sq[i] / vector_masses_sq_EW[i];
         correction += vector_dofs[i] * vector_masses_sq[i] *
                       (vector_masses_sq_EW[i] * xlogx(x) - vector_masses_sq[i] * 3. / 2.);
-        correction += vector_dofs[i] * 2. * vector_masses_sq[i] * vector_masses_sq_EW[i];
+        correction += vector_dofs[i] *( 2. * vector_masses_sq[i] * vector_masses_sq_EW[i] - 0.5 * vector_masses_sq_EW[i] * vector_masses_sq_EW[i]);
       }
     }
     return correction / (64. * M_PI * M_PI);
