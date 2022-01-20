@@ -7,12 +7,12 @@ from scipy.interpolate import interp1d
 #sys.path.append( '../' )
 from plot_fun import fun_gamma, fun_diff, loaddata
 
-plot_schemes = False
+plot_schemes = True
 plot_Goldstone = False
 plot_xi = False
 plot_xi_zoomin = False 
 plot_scale = False
-plot_daisy = True
+plot_daisy = False
 
 
 figure_format = "pdf"
@@ -49,18 +49,45 @@ if plot_schemes:
     plot_for_1d(np.loadtxt("../1d_bks/m_s_"+name[0]+".txt"), 0, name[1], 2)
 
 if plot_daisy:
-  names = [ ["default", r"$\overline{\rm MS}$(Arnold Espinosa)"],
-            ["Parwani", r"$\overline{\rm MS}$(Parwani)"],
-            ["noDaisy", r"$\overline{\rm MS}$(no daisy)"]] 
-     
-  ncolumn = 3
 
+  ncolumn=3
   fig, axs = plt.subplots(2, ncolumn, figsize=(13, 6))
+  
+  name_x = ["lambda_hs", "lambda_s", "m_s"]
+  
+  for ii in range(ncolumn):
+    data0 = np.loadtxt("../1d_bks/"+name_x[ii]+"_noDaisy.txt")
+    data1 = np.loadtxt("../1d_bks/"+name_x[ii]+"_default.txt")
+    data2 = np.loadtxt("../1d_bks/"+name_x[ii]+"_Parwani.txt")
+    show_data1 = fun_diff(data1, data0, data0, show_gamma=False, sort=False)
+    show_data2 = fun_diff(data2, data0, data0, show_gamma=False, sort=False)
+    show_data3 = fun_diff(data2, data1, data1, show_gamma=False, sort=False)
 
-  for name in names:
-    plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)
-    plot_for_1d(np.loadtxt("../1d_bks/lambda_s_"+name[0]+".txt"), 1, name[1], 1)
-    plot_for_1d(np.loadtxt("../1d_bks/m_s_"+name[0]+".txt"), 0, name[1], 2)
+    ax = axs[0,ii]
+    ax.plot(show_data1[:,2-ii], show_data1[:,4], label=r"$T_C^{\rm AE}-T_C^{\rm ND}$", alpha=1)
+    ax.plot(show_data2[:,2-ii], show_data2[:,4], label=r"$T_C^{\rm PW}-T_C^{\rm ND}$", alpha=1)
+    ax.plot(show_data3[:,2-ii], show_data3[:,4], label=r"$T_C^{\rm PW}-T_C^{\rm AE}$", alpha=1)
+    
+    show_data1 = fun_diff(data1, data0, data0, show_gamma=True, sort=False)
+    show_data2 = fun_diff(data2, data0, data0, show_gamma=True, sort=False)
+    show_data3 = fun_diff(data2, data1, data1, show_gamma=True, sort=False)
+
+    ax = axs[1,ii]
+    ax.plot(show_data1[:,2-ii], show_data1[:,4], label=r"$\gamma_{\rm EW}^{\rm AE}-\gamma_{\rm EW}^{\rm ND}$", alpha=1)
+    ax.plot(show_data2[:,2-ii], show_data2[:,4], label=r"$\gamma_{\rm EW}^{\rm PW}-\gamma_{\rm EW}^{\rm ND}$", alpha=1)
+    ax.plot(show_data3[:,2-ii], show_data3[:,4], label=r"$\gamma_{\rm EW}^{\rm PW}-\gamma_{\rm EW}^{\rm AE}$", alpha=1)
+  
+  
+#  names = [ ["default", r"$\overline{\rm MS}$(Arnold Espinosa)"],
+#            ["Parwani", r"$\overline{\rm MS}$(Parwani)"],
+#            ["noDaisy", r"$\overline{\rm MS}$(no daisy)"]] 
+#     
+#  ncolumn = 3
+
+#  for name in names:
+#    plot_for_1d(np.loadtxt("../1d_bks/lambda_hs_"+name[0]+".txt"), 2, name[1], 0)
+#    plot_for_1d(np.loadtxt("../1d_bks/lambda_s_"+name[0]+".txt"), 1, name[1], 1)
+#    plot_for_1d(np.loadtxt("../1d_bks/m_s_"+name[0]+".txt"), 0, name[1], 2)
 
 
 if plot_scale:
@@ -114,9 +141,16 @@ for ii in range(2):
       
       if ii == 0:
         axs[ii,jj].set_ylabel(r"$T_C$ (GeV)")
-        axs[ii,jj].set_ylim(40,170)
+        if plot_daisy:
+          print 0
+        else:
+          axs[ii,jj].set_ylim(40,170)
       else:
-        axs[ii,jj].set_ylim(0,5)
+        if plot_daisy:
+#          axs[ii,jj].set_ylim(0,5)
+          print 0
+        else:
+          axs[ii,jj].set_ylim(0,5)
         axs[ii,jj].set_ylabel(r"$\gamma_{\rm EW}$")
       
       if not plot_xi:
@@ -125,7 +159,10 @@ for ii in range(2):
           axs[ii,jj].set_xlim(0.1,0.4)
         elif jj == 1:
           axs[ii,jj].set_xlabel(r"$\lambda_{s}$")
-          axs[ii,jj].set_xlim(0.05,0.2)
+          if plot_daisy:
+            axs[ii,jj].set_xlim(0.04,0.2)
+          else:
+            axs[ii,jj].set_xlim(0.05,0.2)
         elif jj == 2:
           axs[ii,jj].set_xlabel(r"$m_{s}$ (GeV)")
           axs[ii,jj].set_xlim(40,100)
