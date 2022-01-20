@@ -120,9 +120,14 @@ for name in [["m_s",0,2], ["lambda_s",1,1], ["lambda_hs",2,0],]:
                  np.loadtxt("../1d_bks/"+name[0]+"_noD_2mt.txt"),
                  name[1], r"$\overline{\rm MS}$(no daisy)", name[2], 'b')
 
-    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noRGE_mt.txt"), name[1], "gray", name[2])
-    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noRGE_05mt.txt"),
-                 np.loadtxt("../1d_bks/"+name[0]+"_noRGE_2mt.txt"),
+#    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noRGE_mt.txt"), name[1], "gray", name[2])
+#    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noRGE_05mt.txt"),
+#                 np.loadtxt("../1d_bks/"+name[0]+"_noRGE_2mt.txt"),
+#                 name[1], r"$\overline{\rm MS}$(no RGE)", name[2], 'gray')
+
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noRGE_woFS_mt.txt"), name[1], "gray", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_noRGE_woFS_05mt.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_noRGE_woFS_2mt.txt"),
                  name[1], r"$\overline{\rm MS}$(no RGE)", name[2], 'gray')
 
     line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_mt.txt"), name[1], "r", name[2])
@@ -130,16 +135,16 @@ for name in [["m_s",0,2], ["lambda_s",1,1], ["lambda_hs",2,0],]:
                  np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_2mt.txt"),
                  name[1], r"PRM", name[2], 'r')
                                   
-    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_mt.txt"), name[1], "purple", name[2])
-    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_05mt.txt"),
-                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_2mt.txt"),
+#    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_mt.txt"), name[1], "purple", name[2])
+#    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_05mt.txt"),
+#                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_2mt.txt"),
+#                 name[1], r"PRM(no RGE)", name[2], 'purple')
+#    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_2mt.txt"), name[1], "purple", name[2], linestyle= "--", alpha=0.4)
+#                 
+    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_mt.txt"), name[1], "purple", name[2])
+    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_05mt.txt"),
+                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"),
                  name[1], r"PRM(no RGE)", name[2], 'purple')
-    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_noRGE_2mt.txt"), name[1], "purple", name[2], linestyle= "--", alpha=0.4)
-                 
-#    line_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_mt.txt"), name[1], "k", name[2])
-#    range_for_1d(np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_05mt.txt"),
-#                 np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"),
-#                 name[1], r"PRM(No RGE woFS), $Q\in[m_t/2,2m_t]$", name[2], 'k')
 
                  
 
@@ -179,7 +184,7 @@ for ii in range(4):
       axs[ii,jj].set_ylim(-20,30)
       axs[ii,jj].set_ylabel(r"$T_C^{(Q=\frac{1}{2}m_t)}-T_C^{(Q=2m_t)}$ (GeV)")
     elif ii == 3:
-      axs[ii,jj].set_ylim(-4,2)
+      axs[ii,jj].set_ylim(-5,2)
       axs[ii,jj].set_ylabel(r"$\gamma^{(Q=\frac{1}{2}m_t)}-\gamma^{(Q=2m_t)}$ (GeV)")
       
     if jj == 0:
@@ -192,7 +197,7 @@ for ii in range(4):
       axs[ii,jj].set_xlabel(r"$m_{s}$ (GeV)")
       axs[ii,jj].set_xlim(40,100)
 
-    axs[3,0].legend(loc=2)
+    axs[3,0].legend(loc=3)
     axs[2,0].legend(loc=2)
 
 fig.tight_layout()
