@@ -132,16 +132,18 @@ def scale_line():
 
     return fig, ax
 
-def xi():
+def xi(zoom_in=False):
     fig, ax = plt.subplots(2, 2, figsize=(10, 6), sharey='row', sharex='col')
     ax_styling(ax)
     plt.subplots_adjust(hspace=0.1, wspace=0.1)
 
-    names = {"MSbar": r"$\overline{\rm MS}$ + \texttt{1l\_self\_energy}",
-             "MSbar_1L_EWSB": r"$\overline{\rm MS}$ + \texttt{1l\_tadpole}",
-             "MSbar_no": r"$\overline{\rm MS}$ + \texttt{catastrophe}",
-             "PRM": r"PRM + \texttt{1l\_tadpole}",
-             "PRM_0L": r"PRM"}
+    add_name = '_zoom_in' if zoom_in else ''
+
+    names = {"MSbar"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_self\_energy}",
+             "MSbar_1L_EWSB"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_tadpole}",
+             "MSbar_no"+add_name: r"$\overline{\rm MS}$ + \texttt{catastrophe}",
+             "PRM"+add_name: r"PRM + \texttt{1l\_tadpole}",
+             "PRM_0L"+add_name: r"PRM"}
 
     for k, v in names.items():
         plot_for_1d(ax, np.loadtxt(f"../1d_bks/Rxi_{k}.txt"), 10, v, 0)
@@ -165,10 +167,15 @@ def xi():
     ax[1, 0].set_xlabel(r"$\xi$")
     ax[1, 1].set_xlabel(r"$\xi_W=\xi_B$")
 
+    for a in ax[1, :]:
+        a.set_xlim(0, 10)
+    ax[0, 0].set_ylim(80, 120)
+    ax[1, 0].set_ylim(1.5, 2.5)
+
     return fig, ax
 
 def xi_zoom_in():
-    fig, ax = xi()
+    fig, ax = xi(True)
     for a in ax[1, :]:
         a.set_xlim(0, 0.5)
     ax[0, 0].set_ylim(110, 120)
