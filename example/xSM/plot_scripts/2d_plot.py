@@ -1,17 +1,24 @@
-import sys
+"""
+2d plots for paper
+==================
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.interpolate import interp1d
-from plot_fun import fun_gamma, fun_diff, loaddata
-  
-plot_xi = False 
-plot_scale = True
+from plot_fun import fun_diff
+from style import style
+
+
+style()
+plot_xi = True
+plot_scale = False
 plot_scheme = False
 plot_daisy = False
 
 
-show_deltaT = True
+show_deltaT = False
 show_deltagamma = False
+
 
 if plot_xi:
   figure_name = "xi"
@@ -20,27 +27,26 @@ if plot_scale:
 if plot_scheme:
   figure_name = "scheme"
 
-
 if show_deltaT:
   if plot_xi:
-    title=r"$|T_C^{(\xi=3)}-T_C^{(\xi=0)}|$ [GeV]"
+    title=r"$\left|T_C{(\xi=3)}-T_C{(\xi=0)}\right|$ (GeV)"
   if plot_scale:
-    title=r"$|T_C^{(Q=\frac{1}{2}m_t)}-T_C^{(Q=2m_t)}|$ [GeV]"
+    title=r"$\left|T_C{(Q=\frac{1}{2}m_t)}-T_C{(Q=2m_t)}\right|$ (GeV)"
   if plot_scheme:
-    title=r"$T_C^{(\overline{\rm MS})}-T_C^{\rm(OS-like)}$ [GeV]"
+    title=r"$\left|T_C^{\overline{\rm MS}}-T_C^{\rm OS-like}\right|$ (GeV)"
   if plot_daisy:
     if show_deltagamma:
-      title=r"$|\gamma_{\rm EW}^{\rm (AE)}-\gamma_{\rm EW}^{\rm (PW)}|/\gamma_{\rm EW}^{\rm (AE)}$"
+      title=r"$\left|\gamma_{\rm EW}^{\rm AE}-\gamma_{\rm EW}^{\rm PW}|/\gamma_{\rm EW}^{\rm AE}\right|$"
     else: 
-      title=r"$T_C^{\rm (PW)}-T_C^{\rm (AE)}$ [GeV]"
+      title=r"$\left|T_C^{\rm PW}-T_C^{\rm AE}\right|$ (GeV)"
   cm = 'rainbow'
 else:
-  title=r"$T_C^{(\xi=0)}$ [GeV]"
+  title=r"$T_C{(\xi=0)}$ (GeV)"
   cm = 'cool'
 
-labels=[r'$M_s$ [GeV]', r'$\lambda_{S}$', r'$\lambda_{HS}$']
+labels=[r'$M_s$ (GeV)', r'$\lambda_{S}$', r'$\lambda_{hs}$']
 
-def make_plot(ax, par):
+def make_plot(ax, par, cbar=False):
   #############################
   if plot_xi:
     data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
@@ -65,17 +71,17 @@ def make_plot(ax, par):
   if par=="lhs_ls":    
     nx = 1
     ny = 2
-    label = r"$M_s$=65 GeV"
+    label = r"$M_s=65$ GeV"
     
   if par=="ms_lhs":
     nx = 0
     ny = 2
-    label = r"$\lambda_{S}$=0.1"
+    label = r"$\lambda_{S}=0.1$"
 
   if par=="ms_ls":
     nx = 0
     ny = 1
-    label = r"$\lambda_{HS}=0.3$"
+    label = r"$\lambda_{hs}=0.3$"
 
   xmin = min(show_data[:,nx])
   xmax = max(show_data[:,nx])
@@ -85,36 +91,40 @@ def make_plot(ax, par):
   if show_deltaT:
     if plot_daisy:
       if show_deltagamma:
-        map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,4]), cmap=cm, edgecolor='none', s=5, vmin=0, vmax=.2, alpha=1)
+        map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,4]), cmap=cm, edgecolor='none', s=5, vmin=0, vmax=.2, alpha=1, rasterized=True)
       else:
-        map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=-0.1, vmax=2, alpha=1)
+        map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=-0.1, vmax=2, alpha=1, rasterized=True)
     elif plot_scheme:
-      map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=-show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=-1, vmax=10, alpha=1)
+      map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=-show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=-1, vmax=10, alpha=1, rasterized=True)
     else:
-      map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,4]), cmap=cm, edgecolor='none', s=5, vmax=vmax, alpha=1)
+      map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,4]), cmap=cm, edgecolor='none', s=5, vmax=vmax, alpha=1, rasterized=True)
   else:
-    map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,5], cmap=cm, s=2, vmax=150, alpha=1)
+    map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,5], cmap=cm, s=2, vmax=150, alpha=1, rasterized=True)
     
   ax.set_xlabel(labels[nx])
   ax.set_ylabel(labels[ny])
   ax.set_xlim(xmin,xmax)
   ax.set_ylim(ymin,ymax)
-  ax.set_title(title)
+  ax.set_title(title, fontsize=14)
   ax.text(xmin+0.1*(xmax-xmin),ymax-0.1*(ymax-ymin),label)
 
-  clb = plt.colorbar(map1, ax=ax)
-  if plot_daisy and show_deltagamma:
-    clb.set_ticks([0, .05, .1, .15, .2])
-    clb.set_ticklabels(['0%', '5%', '10%', '15%', '20%'])
+  if cbar:
+      fig = plt.gcf()
+      fig.subplots_adjust(right=0.9, wspace=0.3, bottom=0.125)
+      cbar_ax = fig.add_axes([0.915, 0.15, 0.02, 0.7])
+      fig.colorbar(map1, cax=cbar_ax)
+      if plot_daisy and show_deltagamma:
+        clb.set_ticks([0, .05, .1, .15, .2])
+        clb.set_ticklabels(['0%', '5%', '10%', '15%', '20%'])
 
 
-fig, axs = plt.subplots(1,3, figsize=(15, 5))
+fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
 make_plot(axs[0], par="lhs_ls")
 make_plot(axs[1], par="ms_ls")
-make_plot(axs[2], par="ms_lhs")
+make_plot(axs[2], par="ms_lhs", cbar=True)
 
-fig.tight_layout()
+#fig.tight_layout()
 
 #plt.subplots_adjust(hspace=0.2)
 
@@ -137,4 +147,3 @@ else:
   figname += '_T'
   
 plt.savefig(figname+'.pdf')
-plt.show()
