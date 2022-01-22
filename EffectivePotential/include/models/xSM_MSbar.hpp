@@ -265,7 +265,10 @@ class xSM_MSbar : public xSM_base {
   }
 
   double get_v_tree_s() const {
-    return std::sqrt(-mus_sq / lambda_s);
+    if (mus_sq<0)
+      return std::sqrt(-mus_sq / lambda_s);
+    else
+      return 0.;
   }
 
   /**
