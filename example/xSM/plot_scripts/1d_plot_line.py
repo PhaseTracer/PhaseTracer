@@ -177,9 +177,9 @@ def xi(zoom_in=False):
 def xi_zoom_in():
     fig, ax = xi(True)
     for a in ax[1, :]:
-        a.set_xlim(0, 0.5)
-    ax[0, 0].set_ylim(110, 120)
-    ax[1, 0].set_ylim(1.75, 2)
+        a.set_xlim(0, 0.2)
+    ax[0, 0].set_ylim(110, 114)
+    ax[1, 0].set_ylim(1.75, 2.01)
     return fig, ax
 
 @click.command()
