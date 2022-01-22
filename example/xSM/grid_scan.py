@@ -287,7 +287,7 @@ if scan_1d_bks:
     lambda_s = [0.1]
     lambda_hs = [0.3]
     if xi_zoom_in:
-      xi = np.linspace(0,0.5,n_total)
+      xi = np.linspace(0,0.2,n_total)
       add_file_name = "_zoom_in"
     else:
       xi = np.linspace(0,10,n_total)
