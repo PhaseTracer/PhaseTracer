@@ -45,13 +45,14 @@ int main(int argc, char* argv[]) {
     // Compare with xSM_MSbar
     ms = 65;
     lambda_s =  0.1;
-    lambda_hs = 0.3;
+    lambda_hs = 0.26;
     Q = 173.;
     xi = 1;
     daisy_flag = 0;
     use_1L_EWSB_in_0L_mass = false;  
     use_Goldstone_resum = true;
     use_tree_level_tadpoles = true;
+    use_tree_level_beta = true;
   } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
@@ -102,7 +103,7 @@ int main(int argc, char* argv[]) {
   // Construct our model
   EffectivePotential::ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT model;
 //  if (debug_mode) model.set_debug(true);
-  
+
   model.set_use_tree_level_tadpoles(use_tree_level_tadpoles);
   model.set_use_tree_level_beta(use_tree_level_beta);
   model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
@@ -207,7 +208,7 @@ int main(int argc, char* argv[]) {
       std::cout << "HT minimum = " << m.x << std::endl;
     }
     vh = std::max(vh, std::abs(m.x(0)));
-    vs = std::max(vh, std::abs(m.x(1)));
+    vs = std::max(vs, std::abs(m.x(1)));
   }
   
   if (debug_mode) {
@@ -217,8 +218,8 @@ int main(int argc, char* argv[]) {
   }
   
   if (ht_minima.size()==1){
-    std::vector<double> out = {1, TC, vh, vs, vh, vs};
-    output_file << toString(in, out, flags) << std::endl;
+    std::vector<double> out = {0, TC, vh, vs, vh, vs};
+    output_file << toString(in, oust, flags) << std::endl;
   } else {
     std::vector<double> out = {1, TC, 0.0, vs, vh, 0.0};
     output_file << toString(in, out, flags) << std::endl;

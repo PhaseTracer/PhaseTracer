@@ -12,12 +12,13 @@ from style import style
 
 
 def plot_for_1d(ax, data, x_num, label, column):
-    sel = (data[:, 3] > 0) & (fun_gamma(data) > 0)
+    sel_TC = (data[:, 3] >= 0) 
+    sel_gamma = (fun_gamma(data) > 0)
     x = data[:, x_num]
     TC = data[:, 4]
     gamma = fun_gamma(data)
-    ax[0, column].plot(x[sel], TC[sel], label=label, alpha=1)
-    ax[1, column].plot(x[sel], gamma[sel], label=label, alpha=1)
+    ax[0, column].plot(x[sel_TC], TC[sel_TC], label=label, alpha=1)
+    ax[1, column].plot(x[sel_gamma], gamma[sel_gamma], label=label, alpha=1)
 
 def ax_styling(ax):
     for a in ax.flatten():
