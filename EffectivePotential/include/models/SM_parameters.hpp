@@ -25,14 +25,25 @@
 namespace SM
 {
     // SM parameters
-    const double v = 247.4660195894076;
+//    const double v = 245.5724484517838;
+//    const double mh = 125;
+////
+//    const double g = 0.6508563183329309;
+//    const double gp = 0.3576314692605589;
+//    const double yt = 0.9962622513632488;
+//    const double yb = 0.01644374858393946;
+//    const double ytau = 0.01023322576907503;
+
+    const double v = 247.4554441277994;
     const double mh = 125;
 //
-    const double g = 0.6477243040858367;
-    const double gp = 0.3585619364547326;
-    const double yt = 0.9342037748936957;
-    const double yb = 0.0154730320228006;
-    const double ytau = 0.01001372009234519;
+    const double g = 0.6477108911331643;
+    const double gp = 0.3585642676423744;
+    const double yt = 0.9341420067357675;
+    const double yb = 0.01547368604435034;
+    const double ytau = 0.01001414937355005;
+
+
 
     const double mZ = 0.5*std::sqrt(square(g)+square(gp))*v;
     const double mW = 0.5*g*v;

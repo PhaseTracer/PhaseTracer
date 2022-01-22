@@ -14,9 +14,9 @@ from style import style
 
 style()
 
-def selection(for_TC, x_num, data):
+def selection(for_TC, x_num, data, PRM=False):
     if for_TC:
-        sel = (data[:, 3] > 0) & (data[:, 4] < 200.)
+        sel = ( (data[:,3]>0) | (PRM&(data[:, 3]>=0)) ) & (data[:, 4] < 200.) 
         y = data[:, 4][sel]
     else:
         sel = (data[:, 3] > 0) & (fun_gamma(data) > 0)
@@ -24,8 +24,8 @@ def selection(for_TC, x_num, data):
     x = data[:, x_num][sel]
     return x, y
 
-def line_for_1d(axs, data, x_num, color, column, label="", linestyle="-", alpha=1):
-    x_TC, TC = selection(True, x_num, data)
+def line_for_1d(axs, data, x_num, color, column, label="", linestyle="-", alpha=1, PRM=False):
+    x_TC, TC = selection(True, x_num, data, PRM)
     x_gamma, gamma = selection(False, x_num, data)
 
     ax = axs[0, column]
@@ -58,10 +58,10 @@ def interpolate(x1, y1, x2, y2):
     f2 = interp1d(x2, y2, kind='linear')
     return f1, f2
 
-def range_for_1d(axs, data1, data2, x_num, label, column, color):
+def range_for_1d(axs, data1, data2, x_num, label, column, color, PRM=False):
 
-    x_TC1, TC1 = selection(True, x_num, data1)
-    x_TC2, TC2 = selection(True, x_num, data2)
+    x_TC1, TC1 = selection(True, x_num, data1, PRM)
+    x_TC2, TC2 = selection(True, x_num, data2, PRM)
 
     x_gamma1, gamma1 = selection(False, x_num, data1)
     x_gamma2, gamma2 = selection(False, x_num, data2)
@@ -121,15 +121,16 @@ def make_plot(plot_type):
                      np.loadtxt("../1d_bks/"+name[0]+"_noRGE_woFS_2mt.txt"),
                      name[1], r"$\overline{\rm MS}$ w/o RGE", name[2], 'gray')
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_mt.txt"), name[1], "r", name[2])
+        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_mt.txt"), name[1], "r", name[2], PRM=True)
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_2mt.txt"),
-                     name[1], r"PRM", name[2], 'r')
+                     name[1], r"PRM", name[2], 'r', PRM=True)
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_mt.txt"), name[1], "purple", name[2])
+        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_mt.txt"), name[1], "purple", name[2], PRM=True)
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"),
-                     name[1], r"PRM w/o RGE", name[2], 'purple')
+                     name[1], r"PRM w/o RGE", name[2], 'purple', PRM=True)
+        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"), name[1], "purple", name[2], linestyle="--", alpha=0.4, PRM=True)
 
       else:
         line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_xi1.txt"), name[1], "g", name[2])

@@ -7,11 +7,11 @@ import time
 cwd = os.getcwd()
 
 scan_1d_bks = True
-scan_ms = False
-scan_ls = False
-scan_lhs = False
-scan_1d_xi = True
-xi_zoom_in = True
+scan_ms = True
+scan_ls = True
+scan_lhs = True
+scan_1d_xi = False
+xi_zoom_in = False
 
 
 scan_2d_scan = False 
@@ -70,21 +70,21 @@ use_Goldstone_resum_in = "1"
 def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 
 ###  ############## methods ################
-  cmd = "./../../../bin/run_xSM_MSbar"
-  file_name = file_name_+"default"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"default"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  cmd = "./../../../bin/run_xSM_PRM"
 #  file_name = file_name_+"PRM_woFS"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_xSM_PRM"
-  file_name = file_name_+"PRM_woFS_0L"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
+#  cmd = "./../../../bin/run_xSM_PRM"
+#  file_name = file_name_+"PRM_woFS_0L"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
 
-  cmd = "./../../../bin/run_xSM_OSlike"
-  file_name = file_name_+"OSlike"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_xSM_OSlike"
+#  file_name = file_name_+"OSlike"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  cmd = "./../../../bin/run_xSM_MSbar"
 #  file_name = file_name_+"Parwani"
@@ -253,9 +253,9 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 #  file_name = file_name_+"PRM_woFS_xi0"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [0], "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-#  cmd = "./../../../bin/run_xSM_PRM"
-#  file_name = file_name_+"PRM_woFS_0L"
-#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [0], "0", use_1L_EWSB_in_0L_mass_in, "0", "1")
+  cmd = "./../../../bin/run_xSM_PRM"
+  file_name = file_name_+"PRM_woFS_0L"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, [0], "0", use_1L_EWSB_in_0L_mass_in, "0", "1")
 
 if scan_1d_bks:
   if scan_lhs:
