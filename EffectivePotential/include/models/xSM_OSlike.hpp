@@ -254,6 +254,12 @@ class xSM_OSlike : public xSM_base {
     return Q;
   }
 
+  double get_muh_sq() const { return muh_sq; }
+  double get_mus_sq() const { return mus_sq; }
+  double get_lambda_h() const { return lambda_h; }
+  double get_lambda_s() const { return lambda_s; }
+  double get_lambda_hs() const { return lambda_hs; }
+  
  private:
   double Q = 173.;       // renormalization scale
   double eps = 0.001;  // for solving renormalization scale      

@@ -46,10 +46,10 @@ int main(int argc, char* argv[]) {
 //    lambda_s =  lambda_s_min + 0.1;
 //    daisy_flag = 1;
     
-      lambda_hs = 0.25;
-      ms = 68.2224;
-      lambda_s =  0.1;
-      daisy_flag = 1;
+    ms = 65.;
+    lambda_s =  0.1;
+    lambda_hs = 0.3;
+    daisy_flag = 2;
   } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
@@ -89,17 +89,28 @@ int main(int argc, char* argv[]) {
   }
   
   if (debug_mode) {
+  
+    std::cout << std::setprecision(16);
+    std::cout << std::endl;
+    std::cout << "@ after applying the 1L EWSB condition" << std::endl;
+    std::cout << "muH2       = "<< model.get_muh_sq() << std::endl;
+    std::cout << "muS2       = "<< model.get_mus_sq() << std::endl;   
+    std::cout << "lambda_h   = "<< model.get_lambda_h() << std::endl;      
+    std::cout << "lambda_s   = "<< model.get_lambda_s() << std::endl;  
+    std::cout << "lambda_hs  = "<< model.get_lambda_hs() << std::endl; 
+  
       Eigen::VectorXd x(2);
       x <<  SM::v, 0;
-//      std::cout << "V0=" << model.V0(x) << std::endl;
+      std::cout << "V0=" << model.V0(x) << std::endl;
 //      std::cout << "V1=" << model.V1(x,0) << std::endl;
-//      std::cout << "V1T=" << model.V1T(x,100) << std::endl;
+      std::cout << "V1T=" << model.V1T(x,0) << std::endl;
+      std::cout << "V=" << model.V(x,0) << std::endl;
+      std::cout << "V1=" << model.V(x,0) - model.V0(x) << std::endl;
       
       std::cout << "Numerically derivatives of the full potential at EW VEV:" << std::endl;
       auto d2Vdh2 = model.d2V_dx2(x,0);
       std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
       std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
-
   }  
   
   // Make PhaseFinder object and find the phases
