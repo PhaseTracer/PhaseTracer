@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
   
   if (ht_minima.size()==1){
     std::vector<double> out = {0, TC, vh, vs, vh, vs};
-    output_file << toString(in, oust, flags) << std::endl;
+    output_file << toString(in, out, flags) << std::endl;
   } else {
     std::vector<double> out = {1, TC, 0.0, vs, vh, 0.0};
     output_file << toString(in, out, flags) << std::endl;
