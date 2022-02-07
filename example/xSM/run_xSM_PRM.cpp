@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
     ms = 65.;
     lambda_s =  0.1;
-    lambda_hs = 0.26;
+    lambda_hs = 0.3;
     Q = 173.;
     xi = 1.;
     daisy_flag = 0;
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
       std::cout << "HT minimum = " << m.x << std::endl;
     }
     vh = std::max(vh, std::abs(m.x(0)));
-    vs = std::max(vh, std::abs(m.x(1)));
+    vs = std::max(vs, std::abs(m.x(1)));
   }
   
   if (debug_mode) {
@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
   }
   
   if (ht_minima.size()==1){
-    std::vector<double> out = {1, TC, vh, vs, vh, vs};
+    std::vector<double> out = {0, TC, vh, vs, vh, vs};
     output_file << toString(in, out, flags) << std::endl;
   } else {
     std::vector<double> out = {1, TC, 0.0, vs, vh, 0.0};

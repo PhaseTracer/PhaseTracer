@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
   bool tree_level_tadpoles = false;
   bool use_tree_level_beta = false;
 
-  const double Qin = 173;
+  double Qin = 173;
   const double MhInput = 125;
   
   if ( argc == 1 ) {
@@ -51,6 +51,8 @@ int main(int argc, char* argv[]) {
     daisy_flag = 2;
     use_1L_EWSB_in_0L_mass = false;  
     use_Goldstone_resum = true;
+    use_tree_level_beta = false;
+
   } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
     lambda_s = atof(argv[2]);
@@ -104,6 +106,9 @@ int main(int argc, char* argv[]) {
       std::cout << "Wrong daisy flag" << std::endl;
   }
   
+  if (use_tree_level_beta) {
+    Qin = Q;
+  }
   model.set_use_tree_level_beta(use_tree_level_beta);
   model.set_use_1L_EWSB_in_0L_mass(use_1L_EWSB_in_0L_mass);
   model.set_use_Goldstone_resum(use_Goldstone_resum);
