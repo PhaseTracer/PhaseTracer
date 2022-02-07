@@ -21,7 +21,7 @@
 #include "phase_plotter.hpp"
 #include "thermal_function.hpp"
 #include "potential_plotter.hpp"
-
+#include "potential_line_plotter.hpp"
 
 std::string toString(std::vector<double> in, std::vector<double> out, std::vector<double> flags) {
   std::stringstream data_str;
@@ -51,11 +51,11 @@ int main(int argc, char* argv[]) {
     lambda_s =  0.1;
     lambda_hs = 0.3;
     Q = 173.;
-    xi = 1;
+    xi = 0;
     daisy_flag = 2;
-    use_1L_EWSB_in_0L_mass = true;
-    use_Goldstone_resum = false;
-    use_covariant_gauge = true;
+    use_1L_EWSB_in_0L_mass = false;
+    use_Goldstone_resum = true;
+    use_covariant_gauge = false;
       
 //    SM_parameters.resize(7);
 //    SM_parameters[0] = 125.;
@@ -164,8 +164,8 @@ int main(int argc, char* argv[]) {
     std::cout << std::endl;
     std::cout << "@ EWSB VEV" << std::endl;
     Eigen::VectorXd test(2);
-    test <<  SM::v, 0;
-    double Ttest = 100;
+    test <<  0, 0;
+    double Ttest = 0;
     
     auto mh_check =  model.get_scalar_masses_sq(test,0);
     auto mV_check = model.get_vector_masses_sq(test);
@@ -184,12 +184,12 @@ int main(int argc, char* argv[]) {
     std::cout << "mb = " << std::sqrt(mf_check[1]) << std::endl;
     std::cout << "mtau = " << std::sqrt(mf_check[2]) << std::endl;
 //    
-//    double Vtree = model.V0(test);
-//    double VCW = model.V1(test);
-//    double V1T = model.V1T(test, Ttest);
-//    double Vtot = model.V(test, Ttest);
-//    std::cout << "Vtree      = "<< Vtree << std::endl;
-//    std::cout << "VCW        = "<< VCW << std::endl;   
+    double Vtree = model.V0(test);
+    double VCW = model.V1(test);
+    double V1T = model.V1T(test, Ttest);
+    double Vtot = model.V(test, Ttest);
+    std::cout << "Vtree      = "<< Vtree << std::endl;
+    std::cout << "VCW        = "<< VCW << std::endl;   
 //    std::cout << "V1T(T=100) = "<< V1T << std::endl;      
 //    std::cout << "V(T=100)   = "<< Vtot << std::endl;  
 //    std::cout << std::endl;
@@ -199,6 +199,48 @@ int main(int argc, char* argv[]) {
 //    std::cout << std::setprecision(16);
 //    std::cout << "Sqrt[d^2V/dh^2] = "<< std::sqrt(abs(d2Vdh2(0,0))) << std::endl;
 //    std::cout << "Sqrt[d^2V/ds^2] = "<< std::sqrt(abs(d2Vdh2(1,1))) << std::endl;
+
+
+
+      std::string prefix;
+      if (daisy_flag == 0){
+        prefix = "nodaisy";
+      } else if (daisy_flag == 1){
+        prefix = "Parwani";
+      } else if (daisy_flag == 2){
+        prefix = "ArnoldEspinosa";
+      }
+
+//      Eigen::VectorXd x1(2), x2(2);
+//      x1 << 0, 0;
+//      x2 << 250, 0;
+//      PhaseTracer::potential_line_plotter(model, 150, x1 , x2, "150_1_"+prefix);
+//      x1 << 0, 0;
+//      x2 << 0, 250;
+//      PhaseTracer::potential_line_plotter(model, 150, x1 , x2, "150_2_"+prefix); 
+//      
+//      x1 << 0, 0;
+//      x2 << 250, 0;
+//      PhaseTracer::potential_line_plotter(model, 110.4339097933532, x1 , x2, "110_1_"+prefix);
+//      x1 << 0, 0;
+//      x2 << 0, 250;
+//      PhaseTracer::potential_line_plotter(model, 110.4339097933532, x1 , x2, "110_2_"+prefix);
+//      
+//      
+//      x1 << 0, 0;
+//      x2 << 2, 0;
+//      PhaseTracer::potential_line_plotter(model, 10, x1 , x2, "10_1_"+prefix);
+//      x1 << 245, 0;
+//      x2 << 247, 0;
+//      PhaseTracer::potential_line_plotter(model, 10, x1 , x2, "10_2_"+prefix);
+
+//      x1 << 0, 0;
+//      x2 << 0, 2;
+//      PhaseTracer::potential_line_plotter(model, 10, x1 , x2, "10_3_"+prefix);
+//    
+//      x1 << 0, 217;
+//      x2 << 0, 219;
+//      PhaseTracer::potential_line_plotter(model, 10, x1 , x2, "10_4_"+prefix);
     
 //    PhaseTracer::potential_plotter(model, 254, "potential", -5., 5, 0.01, -5., 40., 0.1);
 //    PhaseTracer::potential_plotter(model, 142.35, "potential", 0., 160, 0.2, -2., 160., 0.2);
