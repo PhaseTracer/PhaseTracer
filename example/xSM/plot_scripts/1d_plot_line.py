@@ -109,26 +109,31 @@ def daisy():
     return fig, ax
 
 def scale_line():
-    fig, ax = plt.subplots(2, 3, figsize=(13, 6))
+    fig, ax = plt.subplots(2, 3, figsize=(13, 6), sharey="row", sharex="col")
     ax_styling(ax)
 
-    names = {"PRM_0L_noRGE_mt": "_PRM_0L_noRGE_mt",
-             "PRM_woFS_noRGE_mt": "PRM_woFS_noRGE_mt"}
+    ax[0, 0].set_ylim(0, 60)
+    ax[1, 0].set_ylim(0, 50)
+    
+    names = {"lowT_noRGE_woFS_mt": r"$(Q=m_t)$",
+             "lowT_noRGE_woFS_05mt": r"$(Q=\frac{1}{2}m_t)$",
+             "lowT_noRGE_woFS_2mt": r"$(Q=2m_t)$",
+}
 
     for k, v in names.items():
-        plot_for_1d(ax, np.loadtxt("../1d_bks/lambda_hs_{k}.txt"), 2, v, 0)
-        plot_for_1d(ax, np.loadtxt("../1d_bks/lambda_s_{k}.txt"), 1, v, 1)
-        plot_for_1d(ax, np.loadtxt("../1d_bks/m_s_{k}.txt"), 0, v, 2)
+        plot_for_1d(ax, np.loadtxt(f"../1d_bks/lambda_hs_{k}.txt"), 2, v, 0)
+        plot_for_1d(ax, np.loadtxt(f"../1d_bks/lambda_s_{k}.txt"), 1, v, 1)
+        plot_for_1d(ax, np.loadtxt(f"../1d_bks/m_s_{k}.txt"), 0, v, 2)
 
-    ax[0, 0].legend(loc=3)
+    ax[1, 0].legend(loc=2)
 
     ax[1, 0].set_xlabel(r"$\lambda_{hs}$")
     ax[1, 1].set_xlabel(r"$\lambda_{s}$")
     ax[1, 2].set_xlabel(r"$m_s$ (GeV)")
 
-    ax[1, 0].set_xlim(0.1, 0.4)
-    ax[1, 1].set_xlim(0.04, 0.2)
-    ax[1, 2].set_xlim(40, 100)
+#    ax[1, 0].set_xlim(0.1, 0.4)
+#    ax[1, 1].set_xlim(0.04, 0.2)
+#    ax[1, 2].set_xlim(40, 100)
 
     return fig, ax
 

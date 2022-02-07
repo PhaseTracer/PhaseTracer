@@ -7,12 +7,12 @@ import time
 cwd = os.getcwd()
 
 scan_1d_bks = True
-scan_ms = False
-scan_ls = False
-scan_lhs = False
-scan_1d_xi = True
-xi_zoom_in = True
-
+scan_ms = True
+scan_ls = True
+scan_lhs = True
+scan_1d_xi = False
+xi_zoom_in = False
+lowT_zoom_in = False
 
 scan_2d_scan = False 
 scan_ls_lhs = False
@@ -70,21 +70,21 @@ use_Goldstone_resum_in = "1"
 def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 
 ###  ############## methods ################
-  cmd = "./../../../bin/run_xSM_MSbar"
-  file_name = file_name_+"default"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_xSM_MSbar"
+#  file_name = file_name_+"default"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  cmd = "./../../../bin/run_xSM_PRM"
 #  file_name = file_name_+"PRM_woFS"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_xSM_PRM"
-  file_name = file_name_+"PRM_woFS_0L"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
-
-  cmd = "./../../../bin/run_xSM_OSlike"
-  file_name = file_name_+"OSlike"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_xSM_PRM"
+#  file_name = file_name_+"PRM_woFS_0L"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
+#
+#  cmd = "./../../../bin/run_xSM_OSlike"
+#  file_name = file_name_+"OSlike"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, Q_in, xi_in, daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  cmd = "./../../../bin/run_xSM_MSbar"
 #  file_name = file_name_+"Parwani"
@@ -162,6 +162,18 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 #  file_name = file_name_+"05mt"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
+  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+  file_name = file_name_+"PW_mt"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], [1], "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+  file_name = file_name_+"PW_2mt"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173*2], [1], "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
+  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+  file_name = file_name_+"PW_05mt"
+  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], [1], "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+
 #  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
 #  file_name = file_name_+"noRGE_mt"
 #  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "3")
@@ -197,7 +209,7 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 
 #  cmd = "./../../../bin/run_xSM_MSbar"
 #  file_name = file_name_+"noRGE_woFS_2mt"
-#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)  
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #  cmd = "./../../../bin/run_xSM_PRM"
 #  file_name = file_name_+"PRM_woFS_xi0"
@@ -262,24 +274,53 @@ if scan_1d_bks:
     #1d scan for lambda_hs
     ms = [65]
     lambda_s = [0.1]
-    lambda_hs = np.linspace(0.1,0.4,n_total)
-    filename = "lambda_hs_"
+    if not lowT_zoom_in:
+      lambda_hs = np.linspace(0.1,0.4,n_total)
+      filename = "lambda_hs_"
+    else:
+      #noRGE_woFS_mt
+      lambda_hs = np.linspace(0.36,0.370452,50)
+      lambda_hs = np.append(lambda_hs, np.linspace(0.370452,0.37397,n_total))
+      lambda_hs = np.append(lambda_hs, np.linspace(0.373864,0.373871,n_total))
+      lambda_hs = np.sort(lambda_hs)
+      
+#      #noRGE_woFS_05mt
+#      lambda_hs = np.linspace(0.36,0.363158,50)
+#      lambda_hs = np.append(lambda_hs, np.linspace(0.363158,0.373684,n_total))
+#      lambda_hs = np.append(lambda_hs, np.linspace(0.368871,0.368923,n_total))
+#      lambda_hs = np.sort(lambda_hs)
+      
+#      #noRGE_woFS_2mt
+#      lambda_hs = np.linspace(0.36, 0.373684,100)
+#      lambda_hs = np.append(lambda_hs, np.linspace(0.373684, 0.378947,100) )
+#      lambda_hs = np.append(lambda_hs, np.linspace(0.378681, 0.378705,100) )
+            
+      filename = "lambda_hs_lowT_"
+      
     perfrom_1d_scan(ms, lambda_s, lambda_hs, filename)
     
   if scan_ls:
     #1d scan for lambda_s
     ms = [65]
-    lambda_s = np.linspace(0.01,0.2,n_total)
     lambda_hs = [0.3]
-    filename = "lambda_s_"
+    if not lowT_zoom_in:
+      lambda_s = np.linspace(0.01,0.2,n_total)
+      filename = "lambda_s_"
+    else:
+      lambda_s = np.linspace(0.042,0.055,n_total)
+      filename = "lambda_s_lowT_"
     perfrom_1d_scan(ms, lambda_s, lambda_hs, filename)
   
   if scan_ms:
     #1d scan for m_s
-    ms = np.linspace(40,110,n_total)
     lambda_s = [0.1]
     lambda_hs = [0.3]
-    filename = "m_s_"
+    if not lowT_zoom_in:
+      ms = np.linspace(40,110,n_total)
+      filename = "m_s_"
+    else:
+      ms = np.linspace(30,50,n_total)
+      filename = "m_s_lowT_"
     perfrom_1d_scan(ms, lambda_s, lambda_hs, filename)
   
   if scan_1d_xi:
