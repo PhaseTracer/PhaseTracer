@@ -98,18 +98,22 @@ def make_plot(plot_type):
     else:
         raise RuntimeError("unknown plot type")
 
-    fig, axs = plt.subplots(4, 3, figsize=(11, 11), sharey="row", sharex="col")
+    fig, axs = plt.subplots(4, 3, figsize=(11, 12), sharey="row", sharex="col")
     plt.subplots_adjust(hspace=0.015, wspace=0.015)
 
     for name in [["m_s", 0, 2], ["lambda_s", 1, 1], ["lambda_hs", 2, 0]]:
 
       if plot_scale:
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_mt.txt"), name[1], "g", name[2])
+        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_mt.txt"), name[1], "purple", name[2])
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_2mt.txt"),
-                     name[1], r"$\overline{\rm MS}$", name[2], 'g')
-
+                     name[1], r"$\overline{\rm MS}$ w AE", name[2], 'purple')
+                     
+        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PW_mt.txt"), name[1], "g", name[2])
+        range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PW_05mt.txt"),
+                     np.loadtxt("../1d_bks/"+name[0]+"_PW_2mt.txt"),
+                     name[1], r"$\overline{\rm MS}$ w PW", name[2], 'g')
 
         line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noD_mt.txt"), name[1], "b", name[2])
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noD_05mt.txt"),
@@ -126,10 +130,10 @@ def make_plot(plot_type):
                      np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_2mt.txt"),
                      name[1], r"PRM", name[2], 'r')
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_mt.txt"), name[1], "purple", name[2])
+        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_mt.txt"), name[1], "orange", name[2])
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"),
-                     name[1], r"PRM w/o RGE", name[2], 'purple')
+                     name[1], r"PRM w/o RGE", name[2], 'orange')
 
       else:
         line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_xi1.txt"), name[1], "g", name[2])
@@ -156,7 +160,7 @@ def make_plot(plot_type):
         axs[ii, jj].grid(axis='y', alpha=0.5)
 
         if ii == 0:
-          axs[ii, jj].set_ylim(40, 170)
+          axs[ii, jj].set_ylim(20, 170)
           axs[ii, 0].set_ylabel(r"$T_C$ (GeV)")
         elif ii == 2:
           axs[ii, jj].set_ylim(0, 6)
@@ -178,10 +182,15 @@ def make_plot(plot_type):
           axs[-1, jj].set_xlabel(r"$m_{s}$ (GeV)")
           axs[ii, jj].set_xlim(40, 100)
 
-        axs[3, 0].legend(loc=3, framealpha=0.7)
-        axs[2, 0].legend(loc=2, framealpha=0.7)
 
-    fig.tight_layout()
+    if plot_scale:
+      handles, labels = axs[1, 1].get_legend_handles_labels()
+      plt.figlegend(handles, labels, ncol=3, loc="upper center", bbox_to_anchor=(0.115, 0.75, 0.795, 0.2))
+      plt.subplots_adjust(top=0.87)
+    else:
+      axs[3, 0].legend(loc=3, framealpha=0.7)
+      axs[2, 0].legend(loc=2, framealpha=0.7)
+      fig.tight_layout()
 
     if plot_scale:
       plt.savefig('1d_scale.pdf')
