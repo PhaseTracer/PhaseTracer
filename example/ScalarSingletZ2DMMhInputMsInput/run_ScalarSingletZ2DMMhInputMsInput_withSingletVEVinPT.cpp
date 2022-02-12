@@ -15,11 +15,12 @@
 #include "logger.hpp"
 #include "phase_plotter.hpp"
 #include "potential_plotter.hpp"
+#include "potential_line_plotter.hpp"
 
 std::string toString(std::vector<double> in, std::vector<double> out, std::vector<double> flags) {
   std::stringstream data_str;
-  for (auto i : in    ) data_str << i << "\t";
-  for (auto i : out   ) data_str << i << "\t";
+  for (auto i : in    ) data_str << std::setprecision(16) << i << "\t";
+  for (auto i : out   ) data_str << std::setprecision(16) << i << "\t";
   for (auto i : flags ) data_str << i << "\t";
   return data_str.str();;
 }
@@ -134,6 +135,8 @@ int main(int argc, char* argv[]) {
     std::cout << "lambda_s   = "<< model.get_lambda_s() << std::endl;  
     std::cout << "lambda_hs  = "<< model.get_lambda_hs() << std::endl; 
   
+    std::cout << "tree min   = "<< std::sqrt(-model.get_muh_sq() / model.get_lambda_h()) << std::endl; 
+  
 //  std::cout << "gp = " << gp << std::endl;
 //  std::cout << "g = " << g << std::endl;
 //  std::cout << "yt = " << yt << std::endl;
@@ -167,6 +170,22 @@ int main(int argc, char* argv[]) {
     std::cout << "V1T(T=100) = "<< V1T << std::endl;      
     std::cout << "V(T=100)   = "<< Vtot << std::endl;  
     std::cout << std::endl;
+    
+    if (true){
+      std::string prefix;
+      if (daisy_flag == 0){
+        prefix = "nodaisy";
+      } else if (daisy_flag == 1){
+        prefix = "Parwani";
+      } else if (daisy_flag == 2){
+        prefix = "ArnoldEspinosa";
+      }
+    
+      Eigen::VectorXd x1(2), x2(2);
+      x1 << 245, 0;
+      x2 << 275, 0;
+      PhaseTracer::potential_line_plotter(model, 0, x1 , x2, "0_1_"+std::to_string(Q));
+    }
 //    return 0;
   }
     
@@ -228,7 +247,7 @@ int main(int argc, char* argv[]) {
   
   if (jj<0) {
     std::vector<double> out = {-3, 0, 0, 0, 0, 0};
-    output_file << toString(in, out, flags) << std::endl;
+    output_file <<  toString(in, out, flags) << std::endl;
     return 0;
   }
   
