@@ -114,11 +114,11 @@ def scale_line():
     ax_styling(ax)
 
     ax[0, 0].set_ylim(0, 60)
-    ax[1, 0].set_ylim(0, 50)
+    ax[1, 0].set_ylim(0, 40)
     
-    names = {"lowT_noRGE_woFS_mt": r"$(Q=m_t)$",
-             "lowT_noRGE_woFS_05mt": r"$(Q=\frac{1}{2}m_t)$",
-             "lowT_noRGE_woFS_2mt": r"$(Q=2m_t)$",
+    names = {"lowT_05mt": r"$(Q=\frac{1}{2}m_t)$",
+             "lowT_mt": r"$(Q=m_t)$",
+             "lowT_2mt": r"$(Q=2m_t)$",
 }
 
     for k, v in names.items():
@@ -132,9 +132,9 @@ def scale_line():
     ax[1, 1].set_xlabel(r"$\lambda_{s}$")
     ax[1, 2].set_xlabel(r"$m_s$ (GeV)")
 
-#    ax[1, 0].set_xlim(0.1, 0.4)
-#    ax[1, 1].set_xlim(0.04, 0.2)
-#    ax[1, 2].set_xlim(40, 100)
+    ax[1, 0].set_xlim(0.36, 0.3715)
+    ax[1, 1].set_xlim(0.048, 0.054)
+    ax[1, 2].set_xlim(44.8, 50)
 
     return fig, ax
 
