@@ -46,7 +46,7 @@ for ii in range(3):
   plt.subplot(3,2,1)
   plt.plot(data[:,2], data[:,1]/pow(T,4), label = name[ii], c=colors[ii], **LINE)
   VEV = data[:,1] == min(data[:,1])
-  plt.plot(data[VEV][:,3], data[VEV][:,1]/pow(T,4), ".", c=colors[ii])
+  plt.plot(data[VEV][:,2], data[VEV][:,1]/pow(T,4), ".", c=colors[ii])
   set_label(0, T)
   plt.legend(loc=2)
   plt.xlim(-50,300)
