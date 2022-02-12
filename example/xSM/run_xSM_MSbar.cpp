@@ -50,8 +50,8 @@ int main(int argc, char* argv[]) {
     ms = 65.;
     lambda_s =  0.1;
     lambda_hs = 0.3;
-    Q = 173.;
-    xi = 0;
+    Q = 173.*2;
+    xi = 1;
     daisy_flag = 2;
     use_1L_EWSB_in_0L_mass = false;
     use_Goldstone_resum = true;
@@ -160,6 +160,8 @@ int main(int argc, char* argv[]) {
     std::cout << "lambda_h   = "<< model.get_lambda_h() << std::endl;      
     std::cout << "lambda_s   = "<< model.get_lambda_s() << std::endl;  
     std::cout << "lambda_hs  = "<< model.get_lambda_hs() << std::endl; 
+    std::cout << "tree min   = "<< std::sqrt(-model.get_muh_sq() / model.get_lambda_h()) << std::endl; 
+  
     
     std::cout << std::endl;
     std::cout << "@ EWSB VEV" << std::endl;
@@ -210,6 +212,12 @@ int main(int argc, char* argv[]) {
       } else if (daisy_flag == 2){
         prefix = "ArnoldEspinosa";
       }
+
+      // scale
+      Eigen::VectorXd x1(2), x2(2);
+      x1 << 245, 0;
+      x2 << 275, 0;
+      PhaseTracer::potential_line_plotter(model, 0, x1 , x2, "no_RGE_0_1_"+std::to_string(Q));
 
 //      Eigen::VectorXd x1(2), x2(2);
 //      x1 << 0, 0;
