@@ -130,7 +130,7 @@ def make_plot(plot_type, show):
               d_scheme = abs(fun_gamma_line(data_default[ii]) - fun_gamma_line(data_OSlike[ii]))
               d_daisy = abs(fun_gamma_line(data_default[ii]) - fun_gamma_line(data_Parwani[ii]))
       
-            d_set = [d_xi, d_scale, d_scheme, d_daisy]
+            d_set = [d_xi, d_scheme, d_daisy]
             data_diff.append([ms, lambda_s, lambda_hs, np.where(d_set==np.max(d_set))[0][0], max(d_set)])
         show_data = np.array(data_diff)
        
