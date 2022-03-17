@@ -187,14 +187,17 @@ def make_plot(plot_type, show):
         lab = ["Gauge", "Renormalization scheme", "Daisies"]
         ax.legend(patch, lab, loc="lower right", framealpha=0.95, title="Greatest impact on $T_C$")          
       
-      if not plot_max and cbar:
+
+      if cbar:
           fig = plt.gcf()
           fig.subplots_adjust(right=0.9, wspace=0.3, bottom=0.125)
-          cbar_ax = fig.add_axes([0.915, 0.15, 0.02, 0.7])
-          fig.colorbar(map1, cax=cbar_ax)
-          if plot_daisy and show_deltagamma:
-            clb.set_ticks([0, .05, .1, .15, .2])
-            clb.set_ticklabels(['0%', '5%', '10%', '15%', '20%'])
+          
+          if not plot_max:
+            cbar_ax = fig.add_axes([0.915, 0.15, 0.02, 0.7])
+            fig.colorbar(map1, cax=cbar_ax)
+            if plot_daisy and show_deltagamma:
+              clb.set_ticks([0, .05, .1, .15, .2])
+              clb.set_ticklabels(['0%', '5%', '10%', '15%', '20%'])
 
 
     fig, axs = plt.subplots(1, 3, figsize=(15, 5))
@@ -202,9 +205,6 @@ def make_plot(plot_type, show):
     make_plot(axs[0], par="lhs_ls", legend=True)
     make_plot(axs[1], par="ms_ls")
     make_plot(axs[2], par="ms_lhs", cbar=True)
-
-    if plot_max and show_max_num:
-      fig.tight_layout()
 
     figname = '2d_scan_'+figure_name
 
