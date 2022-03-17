@@ -4,6 +4,7 @@
 """
 
 import click
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from plot_fun import fun_diff, fun_gamma_line
@@ -56,7 +57,7 @@ def make_plot(plot_type, show):
       if plot_max:
         title=r"$\Delta T_C ^{\rm max}$ (GeV)"
         if show_max_num:
-          title=r"Source of $\Delta T_C ^{\rm max}$ (GeV)"
+          title=r""
       cm = 'rainbow'
     else:
       title=r"$T_C{(\xi=0)}$ (GeV)"
@@ -64,7 +65,7 @@ def make_plot(plot_type, show):
 
     labels=[r'$M_s$ (GeV)', r'$\lambda_{S}$', r'$\lambda_{hs}$']
 
-    def make_plot(ax, par, cbar=False):
+    def make_plot(ax, par, cbar=False, legend=False):
       #############################
       if plot_xi:
         data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
@@ -179,7 +180,14 @@ def make_plot(plot_type, show):
       ax.set_title(title, fontsize=14)
       ax.text(xmin+0.1*(xmax-xmin),ymax-0.1*(ymax-ymin),label)
 
-      if cbar:
+      if plot_max and show_max_num and legend:
+        unique = np.linspace(0, 1, 5)[:3]
+        colors = matplotlib.cm.get_cmap(cm)(unique)
+        patch = [matplotlib.patches.Rectangle((0, 0), 1, 1, fc=c, ec=c) for c in colors]
+        lab = ["Gauge", "Renormalization scheme", "Daisies"]
+        ax.legend(patch, lab, loc="lower right", framealpha=0.95, title="Greatest impact on $T_C$")          
+      
+      if not plot_max and cbar:
           fig = plt.gcf()
           fig.subplots_adjust(right=0.9, wspace=0.3, bottom=0.125)
           cbar_ax = fig.add_axes([0.915, 0.15, 0.02, 0.7])
@@ -191,13 +199,12 @@ def make_plot(plot_type, show):
 
     fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
-    make_plot(axs[0], par="lhs_ls")
+    make_plot(axs[0], par="lhs_ls", legend=True)
     make_plot(axs[1], par="ms_ls")
     make_plot(axs[2], par="ms_lhs", cbar=True)
 
-    #fig.tight_layout()
-
-    #plt.subplots_adjust(hspace=0.2)
+    if plot_max and show_max_num:
+      fig.tight_layout()
 
     figname = '2d_scan_'+figure_name
 
