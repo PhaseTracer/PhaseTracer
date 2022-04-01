@@ -54,36 +54,43 @@ def make_plot(plot_type):
     plt.savefig('3d_mu_scatter.pdf')
   
   else:
-    diff_for_gamma = fun_diff(data_mu_2, data_mu_05, data_mu_1, show_gamma=True, norm =False, use_abs = False)
-    diff_gamma = diff_for_gamma[:,4]
-    diff_for_TC = fun_diff(data_mu_2, data_mu_05, data_mu_1, show_gamma=False, norm =False, use_abs = False)
-    diff_TC = diff_for_TC[:,4]
-    
-    label_TC = r'$T_C(Q=\frac{1}{2}m_t)-T_C(Q=2m_t)$'
-    label_gamma = r'$\gamma(Q=\frac{1}{2}m_t)-\gamma(Q=2m_t)$'
+    show_gamma = plot_type == "gamma"
+
   
     ax = axs[0]
+    diff = fun_diff(data_mu_2, data_mu_05, data_mu_1, show_gamma=show_gamma, norm =False, use_abs = False)
     ax.grid(axis='y', alpha=0.75)
-    ax.hist(x=diff_TC, bins=30, color='seagreen', log=True, alpha=1, rwidth=0.85)
-    ax.set_xlabel(label_TC)
+    ax.hist(x=diff[:,4], bins=30, color='seagreen', log=True, alpha=1, rwidth=0.85)
+    if show_gamma:
+      ax.set_xlabel(r'$\gamma(Q=\frac{1}{2}m_t)-\gamma(Q=2m_t)$')
+    else:
+      ax.set_xlabel(r'$T_C(Q=\frac{1}{2}m_t)-T_C(Q=2m_t)$')
+      
     ax.set_ylabel("Number of samples")
     
     ax = axs[1]
+    diff = fun_diff(data_mu_2, data_mu_05, data_mu_1, show_gamma=show_gamma, norm =True, use_abs = False)
     ax.grid(axis='y', alpha=0.75)
-    ax.hist(x=diff_gamma, bins=30, color='seagreen', log=True, alpha=1, rwidth=0.85)
-    ax.set_xlabel(label_gamma)
+    ax.hist(x=diff[:,4], bins=30, color='seagreen', log=True, alpha=1, rwidth=0.85)
+    if show_gamma:
+      ax.set_xlabel(r'$[\gamma(Q=\frac{1}{2}m_t)-\gamma(Q=2m_t)]/\gamma(Q=m_t)$')
+    else:
+      ax.set_xlabel(r'$[T_C(Q=\frac{1}{2}m_t)-T_C(Q=2m_t)]/T_C(Q=m_t)$')
     ax.set_ylabel("Number of samples")
-  
+    
     ax = axs[2]
     ax.grid(axis='x', alpha=0.75)
     ax.grid(axis='y', alpha=0.75)
-    ax.scatter(diff_for_TC[:,5], diff_TC, c='seagreen', alpha=1, edgecolor='none', rasterized=True)
-    ax.set_xlabel(r'$T_C(Q=m_t)$')
-    ax.set_ylabel(label_TC)
-#    ax.set_xlim(-0.1,0.15)
-#    ax.set_ylim(-1,2)
-
-    plt.savefig('3d_mu_hist.pdf')
+    ax.scatter(diff[:,5], diff[:,4], c='seagreen', alpha=1, edgecolor='none', rasterized=True)
+    if show_gamma:
+      ax.set_xlabel(r'$\gamma(Q=m_t)$')
+      ax.set_ylabel(r'$[\gamma(Q=\frac{1}{2}m_t)-\gamma(Q=2m_t)]/\gamma(Q=m_t)$')
+    else:
+      ax.set_xlabel(r'$T_C(Q=m_t)$')
+      ax.set_ylabel(r'$[T_C(Q=\frac{1}{2}m_t)-T_C(Q=2m_t)]/T_C(Q=m_t)$')
+    
+    fig.tight_layout()
+    plt.savefig('3d_mu_hist'+ ('_gamma' if show_gamma else '_TC') +'.pdf')
   
   plt.show()
  
