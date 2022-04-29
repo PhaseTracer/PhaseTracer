@@ -62,11 +62,12 @@ def make_plot(plot_type):
         ax.set_xlabel(r'$T_C(Q=m_t)$')
         ax.set_ylabel(r'$[T_C(Q=\frac{1}{2}m_t)-T_C(Q=2m_t)]/T_C(Q=m_t)$')
       else:
-        diff = fun_diff(data_mu_2, data_mu_05, data_mu_1, show_gamma=True, norm =True, use_abs = False)
+        diff = fun_diff(data_mu_2, data_mu_05, data_mu_1, show_gamma=True, norm =False, use_abs = False)
         ax.scatter(diff[:,5], diff[:,4], c='seagreen', alpha=1, edgecolor='none', rasterized=True)
         ax.set_xlabel(r'$\gamma(Q=m_t)$')
-        ax.set_ylabel(r'$[\gamma(Q=\frac{1}{2}m_t)-\gamma(Q=2m_t)]/\gamma(Q=m_t)$')
-
+        ax.set_ylabel(r'$\gamma(Q=\frac{1}{2}m_t)-\gamma(Q=2m_t)$')
+        ax.set_ylim(-5,0.1)
+        ax.set_xlim(-0.1,7)
             
     make_plot(axs[0,0], 1, 2)
     make_plot(axs[0,1], 0, 1)
