@@ -7,7 +7,6 @@ Plot phases
 import re
 import os
 import sys
-from StringIO import StringIO
 from scipy.interpolate import interp1d
 import numpy as np
 import matplotlib
