@@ -185,6 +185,53 @@ int main(int argc, char* argv[]) {
       x1 << 245, 0;
       x2 << 275, 0;
       PhaseTracer::potential_line_plotter(model, 0, x1 , x2, "0_1_"+std::to_string(Q));
+      
+
+      //      x1 << 245, 0;
+      //      x2 << 275, 0;
+      //      PhaseTracer::potential_line_plotter(model, 0, x1 , x2, prefix+"_0_1_Q_"+std::to_string(Q));
+            
+
+//            x1 << 0, 0;
+//            x2 << 275, 0;
+//            PhaseTracer::potential_line_plotter(model, 100, x1 , x2, prefix+"_100_1_Q_"+std::to_string(Q));
+//
+//            x1 << 0, 0;
+//            x2 << 0, 275;
+//            PhaseTracer::potential_line_plotter(model, 100, x1 , x2, prefix+"_100_2_Q_"+std::to_string(Q));
+//
+//            x1 << 0, 0;
+//            x2 << 275, 0;
+//            PhaseTracer::potential_line_plotter(model, 150, x1 , x2, prefix+"_150_1_Q_"+std::to_string(Q));
+//
+//            x1 << 0, 0;
+//            x2 << 0, 275;
+//            PhaseTracer::potential_line_plotter(model, 150, x1 , x2, prefix+"_150_2_Q_"+std::to_string(Q));
+//
+//            x1 << 0, 0;
+//            x2 << 275, 0;
+//            PhaseTracer::potential_line_plotter(model, 1000, x1 , x2, prefix+"_1000_1_Q_"+std::to_string(Q));
+//
+//            x1 << 0, 0;
+//            x2 << 0, 275;
+//            PhaseTracer::potential_line_plotter(model, 1000, x1 , x2, prefix+"_1000_2_Q_"+std::to_string(Q));
+//
+//            x1 << -1, 0;
+//            x2 << 10, 0;
+//            PhaseTracer::potential_line_plotter(model, 0, x1 , x2, prefix+"_0_1_1_Q_"+std::to_string(Q));
+//
+//            x1 << 240, 0;
+//            x2 << 260, 0;
+//            PhaseTracer::potential_line_plotter(model, 0, x1 , x2, prefix+"_0_1_2_Q_"+std::to_string(Q));
+//
+//            x1 << 0, -1;
+//            x2 << 0, 10;
+//            PhaseTracer::potential_line_plotter(model, 0, x1 , x2, prefix+"_0_2_1_Q_"+std::to_string(Q));
+//
+//            x1 << 0, 215;
+//            x2 << 0, 230;
+//            PhaseTracer::potential_line_plotter(model, 0, x1 , x2, prefix+"_0_2_2_Q_"+std::to_string(Q));
+      
     }
 //    return 0;
   }
