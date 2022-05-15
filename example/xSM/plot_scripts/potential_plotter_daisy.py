@@ -85,7 +85,7 @@ for ii in range(3):
   VEV = data[:,1] == min(data[:,1])
   plt.plot(data[VEV][:,2], data[VEV][:,1]/pow(T,4), ".", c=colors[ii])
   set_label(0, T)
-  plt.xlim(244.5,247.5)
+  plt.xlim(244.5,250.5)
   data = np.loadtxt("potential_line/"+str(T)+"_3_"+name[ii].replace(" ", "")+"_potential_line.dat")
   plt.subplot(6,4,19)
   plt.plot(data[:,3], data[:,1]/pow(T,4), c=colors[ii], **LINE)
@@ -97,7 +97,7 @@ for ii in range(3):
   VEV = data[:,1] == min(data[:,1])
   plt.plot(data[VEV][:,3], data[VEV][:,1]/pow(T,4), ".", c=colors[ii])
   set_label(1, T)
-  plt.xlim(216.5,219.5)
+  plt.xlim(217.5,223.5)
 
 fig.tight_layout()
 
