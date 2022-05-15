@@ -7,7 +7,6 @@ Plot phases
 import re
 import os
 import sys
-from StringIO import StringIO
 from scipy.interpolate import interp1d
 import numpy as np
 import matplotlib
@@ -48,7 +47,7 @@ def find_loc(data, value):
 for ii in range(3):
   T = 0
   
-  tree_min = [242.98498, 259.62229, 276.41735]  
+  tree_min = [242.9644987251219, 259.672598075815, 276.555894966469]  
   data = np.loadtxt("potential_line/"+str(T)+"_1_"+name[ii].replace(" ", "")+"_potential_line.dat")
   plt.subplot(1,2,1)
   plt.plot(data[:,2], data[:,1], label = "Q="+name[ii][0:4]+" GeV", c=colors[ii], **LINE)
@@ -63,7 +62,7 @@ for ii in range(3):
   plt.legend(loc=2)
   plt.xlim(237,282)
   
-  tree_min = [243.3731362896345, 259.4444281087366, 279.1590955719373]  
+  tree_min = [243.3873771875804, 259.3881307737823, 278.9974402653135]
   data = np.loadtxt("potential_line/no_RGE_"+str(T)+"_1_"+name[ii].replace(" ", "")+"_potential_line.dat")
   plt.subplot(1,2,2)
   

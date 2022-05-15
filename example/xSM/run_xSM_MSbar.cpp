@@ -50,33 +50,12 @@ int main(int argc, char* argv[]) {
     ms = 65.;
     lambda_s =  0.1;
     lambda_hs = 0.3;
-    Q = 173.*2;
+    Q = 173;
     xi = 1;
     daisy_flag = 2;
     use_1L_EWSB_in_0L_mass = false;
     use_Goldstone_resum = true;
     use_covariant_gauge = false;
-      
-//    SM_parameters.resize(7);
-//    SM_parameters[0] = 125.;
-//    SM_parameters[1] = 245.5782292532188;
-//    SM_parameters[2] = 0.3576323374899369;
-//    SM_parameters[3] = 0.6508510850302707;
-//    SM_parameters[4] = square(-0.9962566593729878);
-//    SM_parameters[5] = square(0.01644365628566979);
-//    SM_parameters[6] = square(0.01023316833028443);
-
-//    // Match choices in 1808.01098
-//    lambda_hs = 0.24;
-//    ms = 0.5 * SM::mh;
-//    double lambda_s_min = 2. / square(SM::mh * SM::v) *
-//                          square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-//    lambda_s =  lambda_s_min + 0.1;
-//    
-//    // BK point
-//    lambda_hs = 0.4;
-//    ms = 60;
-//    lambda_s =  0.15;
     
   } else if ( argc >= 9 ) {
     ms = atof(argv[1]);
