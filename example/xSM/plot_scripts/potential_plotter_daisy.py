@@ -40,7 +40,7 @@ def set_label(jj, T):
   plt.title(r"T="+str(T)+" GeV, "+t)
 
 for ii in range(3):
-  T = 150
+  T = 160
   data = np.loadtxt("potential_line/"+str(T)+"_1_"+name[ii].replace(" ", "")+"_potential_line.dat")
   plt.subplot(3,2,1)
   plt.plot(data[:,2], data[:,1]/pow(T,4), label = name[ii], c=colors[ii], **LINE)
