@@ -77,4 +77,7 @@ Basically, I use one cpp main file for each scheme, and the c++ codes only calcu
 
 
 
-
+### For FS
+./createmodel --name=ScalarSingletZ2DMMhInputMsInput
+./configure --with-models=ScalarSingletZ2DMMhInputMsInput --disable-threads --disable-sqlite
+make -j8

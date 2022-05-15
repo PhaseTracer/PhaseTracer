@@ -34,14 +34,14 @@ namespace SM
 //    const double yb = 0.01644374858393946;
 //    const double ytau = 0.01023322576907503;
 
-    const double v = 247.4554441277994;
-    const double mh = 125;
+    const double v = 247.4544243292407;
+    const double mh = 125.25;
 //
-    const double g = 0.6477108911331643;
-    const double gp = 0.3585642676423744;
-    const double yt = 0.9341420067357675;
-    const double yb = 0.01547368604435034;
-    const double ytau = 0.01001414937355005;
+    const double g = 0.6477096097526751;
+    const double gp = 0.3585644903737741;
+    const double yt = 0.9341361105006658;
+    const double yb = 0.0154737491181327;
+    const double ytau = 0.01001419077147658;
 
 
 

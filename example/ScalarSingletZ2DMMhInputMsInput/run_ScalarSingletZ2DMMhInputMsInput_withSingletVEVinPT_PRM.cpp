@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
   bool use_tree_level_tadpoles = false;
   bool use_tree_level_beta = false;
   const double Qin = 173;
-  const double MhInput = 125;
+  const double MhInput = 125.25;
   
   if ( argc == 1 ) {
     debug_mode = true;

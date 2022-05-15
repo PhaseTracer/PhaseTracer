@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
   bool use_tree_level_beta = false;
 
   double Qin = 173;
-  const double MhInput = 125;
+  const double MhInput = 125.25;
   
   if ( argc == 1 ) {
     debug_mode = true;
@@ -137,23 +137,21 @@ int main(int argc, char* argv[]) {
   
     std::cout << "tree min   = "<< std::sqrt(-model.get_muh_sq() / model.get_lambda_h()) << std::endl; 
   
-//  std::cout << "gp = " << gp << std::endl;
-//  std::cout << "g = " << g << std::endl;
-//  std::cout << "yt = " << yt << std::endl;
-//  std::cout << "ytau = " << ytau << std::endl;
-//  std::cout << "yb = " << yb << std::endl;
-  
     std::cout << std::endl;
-    std::cout << "@ EWSB VEV" << std::endl;
     Eigen::VectorXd test(2);
-    test <<  model.get_EW_VEV(), 0;
+    test <<  sqrt(-model.get_muh_sq()/model.get_lambda_h()), 0;
+//    test <<  model.get_EW_VEV(), 0;
+    std::cout << "@ VEV = "<< test << std::endl;
     double Ttest = 100;
     
     auto mh_check =  model.get_scalar_masses_sq(test,1);
     auto mV_check = model.get_vector_masses_sq(test);
     auto mf_check = model.get_fermion_masses_sq(test);
-    std::cout << "ms = "<< std::sqrt(mh_check[0]) << std::endl;
-    std::cout << "mh = "<< std::sqrt(mh_check[4]) << std::endl;
+    std::cout << "ms^2 = "<< mh_check[0] << std::endl;
+    std::cout << "mh^2 = "<< mh_check[1] << std::endl;
+    std::cout << "mg1^2 = "<< mh_check[2] << std::endl;
+    std::cout << "mg2^2 = "<< mh_check[3] << std::endl;
+    std::cout << "mg3^2 = "<< mh_check[4] << std::endl;
     std::cout << "MW = "<< std::sqrt(mV_check[0]) << std::endl;
     std::cout << "MZ = "<< std::sqrt(mV_check[1]) << std::endl;
     std::cout << "Mphoton = "<< std::sqrt(mV_check[2]) << std::endl;
@@ -166,7 +164,9 @@ int main(int argc, char* argv[]) {
     double V1T = model.V1T(test, Ttest);
     double Vtot = model.V(test, Ttest);
     std::cout << "Vtree      = "<< Vtree << std::endl;
-    std::cout << "VCW        = "<< VCW << std::endl;   
+    std::cout << "VCW        = "<< VCW << std::endl;
+//    std::cout << "daisy        = "<< model.daisy(test,Ttest) << std::endl;
+//    std::cout << "VCW(T=100) = "<< model.V1(test,Ttest) << std::endl;
     std::cout << "V1T(T=100) = "<< V1T << std::endl;      
     std::cout << "V(T=100)   = "<< Vtot << std::endl;  
     std::cout << std::endl;
@@ -254,6 +254,7 @@ int main(int argc, char* argv[]) {
   std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
   
   output_file << toString(in, out, flags) << std::endl;
-  output_file.close();  
+  output_file.close();
+//  PhaseTracer::phase_plotter(tf, "2D_test_model");
   return 0;
 }
