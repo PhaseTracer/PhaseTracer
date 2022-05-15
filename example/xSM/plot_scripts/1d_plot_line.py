@@ -141,7 +141,7 @@ def scale_line():
 def xi(zoom_in=False):
     fig, ax = plt.subplots(2, 2, figsize=(10, 6), sharey='row', sharex='col')
     ax_styling(ax)
-    plt.subplots_adjust(hspace=0.1, wspace=0.1)
+    plt.subplots_adjust(hspace=0.3, wspace=0.1)
 
     add_name = '_zoom_in' if zoom_in else ''
 

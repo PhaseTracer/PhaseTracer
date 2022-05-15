@@ -99,7 +99,7 @@ def make_plot(plot_type):
         raise RuntimeError("unknown plot type")
 
     fig, axs = plt.subplots(4, 3, figsize=(11, 12), sharey="row", sharex="col")
-    plt.subplots_adjust(hspace=0.015, wspace=0.015)
+    plt.subplots_adjust(hspace=0.1, wspace=0.1)
 
     for name in [["m_s", 0, 2], ["lambda_s", 1, 1], ["lambda_hs", 2, 0]]:
 
