@@ -94,10 +94,10 @@ use_Goldstone_resum = 0
 #scan(cmd, file_name)
 
 
-#####################################
-#scheme = "ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-#cmd = "./../../../bin/run_"+scheme
-#
+####################################
+scheme = "ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+cmd = "./../../../bin/run_"+scheme
+
 #file_name = scheme + "_mt"
 #Q = mt
 #scan(cmd, file_name)
@@ -106,23 +106,23 @@ use_Goldstone_resum = 0
 #Q = mt*2.
 #scan(cmd, file_name)
 
-#file_name = scheme + "_05mt"
-#Q = 173./2.
-#scan(cmd, file_name)
+file_name = scheme + "_05mt"
+Q = 173./2.
+scan(cmd, file_name)
 
 
 #####################################
-scheme = "xSM_OSlike"
-cmd = "./../../../bin/run_"+scheme
-use_Goldstone_resum = 1
+#scheme = "xSM_OSlike"
+#cmd = "./../../../bin/run_"+scheme
+#use_Goldstone_resum = 1
 
 #file_name = scheme + "_xi_0"
 #xi = 0
 #scan(cmd, file_name)
 
-file_name = scheme + "_xi_1"
-xi = 1
-scan(cmd, file_name)
+#file_name = scheme + "_xi_1"
+#xi = 1
+#scan(cmd, file_name)
 #
 #file_name = scheme + "_xi_3"
 #xi = 3
