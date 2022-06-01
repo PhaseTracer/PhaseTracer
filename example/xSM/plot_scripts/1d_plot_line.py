@@ -167,6 +167,11 @@ def xi(zoom_in=False):
     ax[0, 1].set_title(r"Covariant gauge")
 
     handles, labels = ax[1, 1].get_legend_handles_labels()
+
+    if zoom_in:
+        handles = handles[:-2]
+        labels = labels[:-2]
+
     plt.figlegend(handles, labels, ncol=2, loc="upper center", bbox_to_anchor=(0.115, 0.75, 0.795, 0.2))
     plt.subplots_adjust(top=0.7)
 
