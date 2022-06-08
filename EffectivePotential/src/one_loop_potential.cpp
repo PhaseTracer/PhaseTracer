@@ -160,10 +160,11 @@ double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
   }
 
   // gauge dependent vector correction
+  // hack - i know only first 3 are longitudinal in xSM model
   if (xi != 0.) {
-    for (size_t i = 0; i < vector_masses_sq.size(); ++i) {
+    for (size_t i = 0; i < 3; ++i) {
       const double x = xi * vector_masses_sq[i] / square(renormalization_scale);
-      correction -= vector_dofs[i] / 3. * xi * vector_masses_sq[i] *
+      correction -= vector_dofs[i] * xi * vector_masses_sq[i] *
         (square(renormalization_scale) * xlogx(x) - xi * vector_masses_sq[i] * 3. / 2.);
     }
   }
@@ -230,9 +231,10 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
   }
 
   // gauge dependent vector correction
+  // hack - i know only first 3 are longitudinal in xSM model
   if (xi != 0.) {
-    for (size_t i = 0; i < vector_masses_sq.size(); ++i) {
-      correction -= vector_dofs[i] / 3. * J_B(xi * vector_masses_sq[i] / square(T));
+    for (size_t i = 0; i < 3; ++i) {
+      correction -= vector_dofs[i] * J_B(xi * vector_masses_sq[i] / square(T));
     }
   }
 
@@ -284,8 +286,9 @@ double OneLoopPotential::daisy(std::vector<double> scalar_masses_sq,
                     - std::pow(std::max(0., scalar_masses_sq[i]), 1.5));
   }
 
-  for (size_t i = 0; i < vector_debye_sq.size(); ++i) {
-    correction += vector_dofs[i] / 3. * (std::pow(std::max(0., vector_debye_sq[i]), 1.5)
+  // hack - i know only first 3 are longitudinal in xSM model
+  for (size_t i = 0; i < 3; ++i) {
+    correction += vector_dofs[i] * (std::pow(std::max(0., vector_debye_sq[i]), 1.5)
                     - std::pow(std::max(0., vector_masses_sq[i]), 1.5));
   }
 
