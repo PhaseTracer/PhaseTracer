@@ -73,7 +73,9 @@ Basically, I use one cpp main file for each scheme, and the c++ codes only calcu
   python 1d_plot_scale.py
   
 
-
+  python3 2d_plot.py xi deltaT
+  python3 2d_plot.py xi T
+  
 
 
 

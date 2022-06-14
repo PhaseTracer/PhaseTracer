@@ -37,7 +37,7 @@ def ax_styling(ax):
     ax[0, 0].set_ylim(40, 170)
     ax[1, 0].set_ylim(0, 5)
 
-    ax[0, 0].set_ylabel(r"$T_C$ (GeV)")
+    ax[0, 0].set_ylabel(r"$T_c$ (GeV)")
     ax[1, 0].set_ylabel(r"Strength, $\gamma_{\rm EW}$")
 
 def schemes():
@@ -80,16 +80,16 @@ def daisy():
         data2 = np.loadtxt(f"../1d_bks/{name}_Parwani.txt")
         show_data1 = fun_diff(data1, data0, data0, show_gamma=False, sort=False)
         show_data2 = fun_diff(data2, data0, data0, show_gamma=False, sort=False)
-        show_data3 = fun_diff(data2, data1, data1, show_gamma=False, sort=False)
+        show_data3 = fun_diff(data1, data2, data1, show_gamma=False, sort=False)
 
         a = ax[0, ii]
         a.plot(show_data1[:, 2-ii], show_data1[:, 4], label=r"${\rm AE}-{\rm ND}$", alpha=1)
         a.plot(show_data2[:, 2-ii], show_data2[:, 4], label=r"${\rm PW}-{\rm ND}$", alpha=1)
-        a.plot(show_data3[:, 2-ii], show_data3[:, 4], label=r"${\rm PW}-{\rm AE}$", alpha=1)
+        a.plot(show_data3[:, 2-ii], show_data3[:, 4], label=r"${\rm AE}-{\rm PW}$", alpha=1)
 
         show_data1 = fun_diff(data1, data0, data0, show_gamma=True, sort=False)
         show_data2 = fun_diff(data2, data0, data0, show_gamma=True, sort=False)
-        show_data3 = fun_diff(data2, data1, data1, show_gamma=True, sort=False)
+        show_data3 = fun_diff(data1, data2, data1, show_gamma=True, sort=False)
 
         a = ax[1, ii]
         a.plot(show_data1[:, 2-ii], show_data1[:, 4],
@@ -97,10 +97,10 @@ def daisy():
         a.plot(show_data2[:, 2-ii], show_data2[:, 4],
                label=r"${\rm PW}-{\rm ND}$", alpha=1)
         a.plot(show_data3[:, 2-ii], show_data3[:, 4],
-               label=r"${\rm PW}-{\rm AE}$", alpha=1)
+               label=r"${\rm AE}-{\rm PW}$", alpha=1)
 
 
-    ax[0, 0].set_ylabel(r"$\Delta T_C$ (GeV)")
+    ax[0, 0].set_ylabel(r"$\Delta T_c$ (GeV)")
     ax[1, 0].set_ylabel(r"$\Delta \gamma_{\rm EW}$")
 
     ax[1, 0].set_xlabel(r"$\lambda_{hs}$")
@@ -111,7 +111,7 @@ def daisy():
     ax[1, 1].set_xlim(0.04, 0.2)
     ax[1, 2].set_xlim(40, 100)
 
-    ax[0, 0].legend(loc=3)
+    ax[1, 0].legend(loc=3)
 
     ax[0, 0].autoscale()
     ax[1, 0].autoscale()
@@ -195,7 +195,7 @@ def xi(zoom_in=False):
 
     for a in ax[1, :]:
         a.set_xlim(0, 60)
-    ax[0, 0].set_ylim(30, 120)
+    ax[0, 0].set_ylim(30, 130)
     ax[1, 0].set_ylim(1.5, 5)
 
     return fig, ax
@@ -204,8 +204,8 @@ def xi_zoom_in():
     fig, ax = xi(True)
     for a in ax[1, :]:
         a.set_xlim(0, 0.2)
-    ax[0, 0].set_ylim(110, 114)
-    ax[1, 0].set_ylim(1.75, 2.01)
+    ax[0, 0].set_ylim(113, 117)
+    ax[1, 0].set_ylim(1.70, 2.01)
     return fig, ax
 
 @click.command()
