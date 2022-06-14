@@ -276,7 +276,7 @@ int main(int argc, char* argv[]) {
   double gamme_max = 0.;
   for (int i=0; i<t.size(); i++) {
     double gamma = t[i].gamma;
-    if (gamme_max < gamma and abs(t[i].false_vacuum[0])<1. and abs(t[i].true_vacuum[1])<1.){
+    if (gamme_max < gamma and abs(t[i].true_vacuum[1])<1.){
       jj = i;
       gamme_max = gamma;
     }
