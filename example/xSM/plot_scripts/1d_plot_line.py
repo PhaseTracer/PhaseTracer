@@ -10,6 +10,15 @@ import numpy as np
 from plot_fun import fun_gamma, fun_diff
 from style import style
 
+def plot_for_1d_sel(ax, data, x_num, label, column):
+    sel_TC = (data[:, 3] > 0) &(data[:, 8] > 1) 
+    sel_gamma = (fun_gamma(data) > 0)
+    sel = sel_TC &  sel_gamma
+    x = data[:, x_num]
+    TC = data[:, 4]
+    gamma = fun_gamma(data)
+    ax[0, column].plot(x[sel], TC[sel], label=label, alpha=1)
+    ax[1, column].plot(x[sel], gamma[sel], label=label, alpha=1)
 
 def plot_for_1d(ax, data, x_num, label, column):
     sel_TC = (data[:, 3] >= 0) 
@@ -114,7 +123,7 @@ def scale_line():
     ax_styling(ax)
 
     ax[0, 0].set_ylim(0, 60)
-    ax[1, 0].set_ylim(0, 40)
+    ax[1, 0].set_ylim(0, 30)
     
     names = {"lowT_05mt": r"$(Q=\frac{1}{2}m_t)$",
              "lowT_mt": r"$(Q=m_t)$",
@@ -132,9 +141,9 @@ def scale_line():
     ax[1, 1].set_xlabel(r"$\lambda_{s}$")
     ax[1, 2].set_xlabel(r"$m_s$ (GeV)")
 
-    ax[1, 0].set_xlim(0.36, 0.3715)
-    ax[1, 1].set_xlim(0.048, 0.054)
-    ax[1, 2].set_xlim(44.8, 50)
+    ax[1, 0].set_xlim(0.363, 0.38)
+    ax[1, 1].set_xlim(0.045, 0.051)
+    ax[1, 2].set_xlim(43, 46)
 
     return fig, ax
 
@@ -147,8 +156,14 @@ def xi(zoom_in=False):
 
     names = {"MSbar"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_self\_energy}",
              "MSbar_1L_EWSB"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_tadpole}",
-             "MSbar_no"+add_name: r"$\overline{\rm MS}$ + \texttt{catastrophe}",
-             "PRM"+add_name: r"PRM + \texttt{1l\_tadpole}",
+             "MSbar_no"+add_name: r"$\overline{\rm MS}$ + \texttt{catastrophe}"}
+
+    for k, v in names.items():
+        plot_for_1d_sel(ax, np.loadtxt(f"../1d_bks/Rxi_{k}.txt"), 10, v, 0)
+        plot_for_1d_sel(ax, np.loadtxt(f"../1d_bks/covariant_{k}.txt"), 10, v, 1)
+
+
+    names = {"PRM"+add_name: r"PRM + \texttt{1l\_tadpole}",
              "PRM_0L"+add_name: r"PRM"}
 
     for k, v in names.items():
@@ -158,10 +173,10 @@ def xi(zoom_in=False):
     data = np.loadtxt("../1d_bks/Rxi_HT.txt")
     TC = data[:, 4]
     gamma = fun_gamma(data)
-    ax[0, 0].plot([0, 10], [TC[0], TC[-1]], label="HT", alpha=1)
-    ax[0, 1].plot([0, 10], [TC[0], TC[-1]], label="HT", alpha=1)
-    ax[1, 0].plot([0, 10], [gamma[0], gamma[-1]], label="HT", alpha=1)
-    ax[1, 1].plot([0, 10], [gamma[0], gamma[-1]], label="HT", alpha=1)
+    ax[0, 0].plot([0, 100], [TC[0], TC[-1]], label="HT", alpha=1)
+    ax[0, 1].plot([0, 100], [TC[0], TC[-1]], label="HT", alpha=1)
+    ax[1, 0].plot([0, 100], [gamma[0], gamma[-1]], label="HT", alpha=1)
+    ax[1, 1].plot([0, 100], [gamma[0], gamma[-1]], label="HT", alpha=1)
 
     ax[0, 0].set_title(r"$R_\xi$ gauge")
     ax[0, 1].set_title(r"Covariant gauge")
@@ -174,9 +189,9 @@ def xi(zoom_in=False):
     ax[1, 1].set_xlabel(r"$\xi_W=\xi_B$")
 
     for a in ax[1, :]:
-        a.set_xlim(0, 10)
-    ax[0, 0].set_ylim(80, 120)
-    ax[1, 0].set_ylim(1.5, 2.5)
+        a.set_xlim(0, 60)
+    ax[0, 0].set_ylim(30, 120)
+    ax[1, 0].set_ylim(1.5, 5)
 
     return fig, ax
 
