@@ -24,21 +24,19 @@ def selection(for_TC, x_num, data, PRM=False):
     x = data[:, x_num][sel]
     return x, y
 
-def line_for_1d(axs, data, x_num, color, column, label="", linestyle="-", alpha=1, PRM=False):
+def line_for_1d(axs, data, x_num, color, column, label="_nolegend_", linestyle="-", alpha=1, PRM=False):
     x_TC, TC = selection(True, x_num, data, PRM)
     x_gamma, gamma = selection(False, x_num, data)
 
     ax = axs[0, column]
-    if label == "":
-       ax.plot(x_TC, TC, color=color, linestyle=linestyle, alpha=alpha)
-    else:
-        ax.plot(x_TC, TC, color=color, linestyle=linestyle, alpha=alpha, label=label)
+    ax.plot(x_TC, TC, color=color, linestyle=linestyle, alpha=alpha, label=label)
 
     ax = axs[2, column]
-    if label == "":
-        ax.plot(x_gamma, gamma, color=color, linestyle=linestyle, alpha=alpha)
-    else:
-        ax.plot(x_gamma, gamma, color=color, linestyle=linestyle, alpha=alpha, label=label)
+    ax.plot(x_gamma, gamma, color=color, linestyle=linestyle, alpha=alpha, label=label)
+
+    fTC = interp1d(x_TC, TC, kind='linear', bounds_error=False, fill_value='extrapolate')
+    fgamma = interp1d(x_gamma, gamma, kind='linear', bounds_error=False, fill_value='extrapolate')
+    return fTC, fgamma
 
 def interpolate(x1, y1, x2, y2):
     if min(x1) < min(x2):
@@ -58,7 +56,14 @@ def interpolate(x1, y1, x2, y2):
     f2 = interp1d(x2, y2, kind='linear')
     return f1, f2
 
-def range_for_1d(axs, data1, data2, x_num, label, column, color, PRM=False):
+def lucd(x, f1, f2, f):
+    f1x = f1(x)
+    f2x = f2(x)
+    fx = f(x)
+    f2x[f2x < fx] = fx[f2x < fx]
+    return f1x, f2x, fx, f1x - f2x
+
+def range_for_1d(axs, data1, data2, x_num, label, column, color, fTC, fgamma, PRM=False):
 
     x_TC1, TC1 = selection(True, x_num, data1, PRM)
     x_TC2, TC2 = selection(True, x_num, data2, PRM)
@@ -72,20 +77,19 @@ def range_for_1d(axs, data1, data2, x_num, label, column, color, PRM=False):
     x_TC = np.linspace(min(min(x_TC1), min(x_TC2)), max(max(x_TC1),max(x_TC2)), num=100, endpoint=True)
     x_gamma = np.linspace(min(min(x_gamma1), min(x_gamma2)), max(max(x_gamma1), max(x_gamma2)), num=100, endpoint=True)
 
+    lTC, uTC, cTC, dTC = lucd(x_TC, fTC1, fTC2, fTC)
     ax = axs[0,column]
-    ax.fill_between(x_TC,fTC1(x_TC),fTC2(x_TC), color=color, alpha=0.3, linewidth=0, label=label)
+    ax.fill_between(x_TC, lTC, uTC, color=color, alpha=0.3, linewidth=0, label=label)
 
+    lgamma, ugamma, cgamma, dgamma = lucd(x_gamma, fgamma1, fgamma2, fgamma)
     ax = axs[2,column]
-    ax.fill_between(x_gamma,fgamma1(x_gamma),fgamma2(x_gamma), color=color, alpha=0.3, linewidth=0, label=label)
+    ax.fill_between(x_gamma, lgamma, ugamma, color=color, alpha=0.3, linewidth=0, label=label)
 
-    x_TC = np.linspace(max(min(x_TC1), min(x_TC2)), min(max(x_TC1), max(x_TC2)), num=100, endpoint=True)
     ax = axs[1,column]
-    ax.plot(x_TC,(fTC1(x_TC)-fTC2(x_TC)), color=color, label=label)
-
-    x_gamma = np.linspace(max(min(x_gamma1), min(x_gamma2)), min(max(x_gamma1), max(x_gamma2)), num=100, endpoint=True)
+    ax.plot(x_TC, dTC / cTC, color=color, label=label)
+ 
     ax = axs[3,column]
-    ax.plot(x_gamma,(fgamma1(x_gamma)-fgamma2(x_gamma)), color=color, label=label)
-
+    ax.plot(x_gamma, dgamma / cgamma, color=color, label=label)
 
 @click.command()
 @click.argument("plot_type")
@@ -105,54 +109,54 @@ def make_plot(plot_type):
 
       if plot_scale:
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_mt.txt"), name[1], "purple", name[2])
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_mt.txt"), name[1], "purple", name[2])
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_2mt.txt"),
-                     name[1], r"$\overline{\rm MS}$ w AE", name[2], 'purple')
+                     name[1], r"$\overline{\rm MS}$ w AE", name[2], 'purple', fTC, fgamma)
                      
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PW_mt.txt"), name[1], "g", name[2])
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PW_mt.txt"), name[1], "g", name[2])
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PW_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_PW_2mt.txt"),
-                     name[1], r"$\overline{\rm MS}$ w PW", name[2], 'g')
+                     name[1], r"$\overline{\rm MS}$ w PW", name[2], 'g', fTC, fgamma)
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noD_mt.txt"), name[1], "b", name[2])
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noD_mt.txt"), name[1], "b", name[2])
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noD_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_noD_2mt.txt"),
-                     name[1], r"$\overline{\rm MS}$ w/o daisy", name[2], 'b')
+                     name[1], r"$\overline{\rm MS}$ w/o daisy", name[2], 'b', fTC, fgamma)
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noRGE_woFS_mt.txt"), name[1], "gray", name[2])
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noRGE_woFS_mt.txt"), name[1], "gray", name[2])
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noRGE_woFS_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_noRGE_woFS_2mt.txt"),
-                     name[1], r"$\overline{\rm MS}$ w/o RGE", name[2], 'gray')
+                     name[1], r"$\overline{\rm MS}$ w/o RGE", name[2], 'gray', fTC, fgamma)
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_mt.txt"), name[1], "r", name[2], PRM=True)
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_mt.txt"), name[1], "r", name[2], PRM=True)
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_PRM_0L_2mt.txt"),
-                     name[1], r"PRM", name[2], 'r', PRM=True)
+                     name[1], r"PRM", name[2], 'r', fTC, fgamma, PRM=True)
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_mt.txt"), name[1], "orange", name[2], PRM=True)
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_mt.txt"), name[1], "orange", name[2], PRM=True)
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"),
-                     name[1], r"PRM w/o RGE", name[2], 'orange', PRM=True)
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"), name[1], "purple", name[2], linestyle="--", alpha=0.4, PRM=True)
+                     name[1], r"PRM w/o RGE", name[2], 'orange', fTC, fgamma, PRM=True)
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"), name[1], "purple", name[2], linestyle="--", alpha=0.4, PRM=True)
 
       else:
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_xi1.txt"), name[1], "g", name[2])
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_xi1.txt"), name[1], "g", name[2])
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_xi0.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_xi3.txt"),
-                     name[1], r"MS, $xi\in[0,3]$", name[2], 'g')
+                     name[1], r"MS, $xi\in[0,3]$", name[2], 'g', fTC, fgamma)
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noD_xi1.txt"), name[1], "r", name[2])
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noD_xi1.txt"), name[1], "r", name[2])
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_noD_xi0.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_noD_xi3.txt"),
-                     name[1], r"MS(no daisy), $xi\in[0,3]$", name[2], 'r')
+                     name[1], r"MS(no daisy), $xi\in[0,3]$", name[2], 'r', fTC, fgamma)
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_xi1.txt"), name[1], "b", name[2])
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_xi1.txt"), name[1], "b", name[2])
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_xi0.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_xi3.txt"),
-                     name[1], r"PRM(1L), $xi\in[0,3]$", name[2], 'b')
+                     name[1], r"PRM(1L), $xi\in[0,3]$", name[2], 'b', fTC, fgamma)
 
-        line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_0L.txt"), name[1], "k", name[2], r"PRM(0L)")
+        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_0L.txt"), name[1], "k", name[2], r"PRM(0L)")
 
 
     for ii in range(4):
@@ -167,11 +171,11 @@ def make_plot(plot_type):
           axs[ii, jj].set_ylim(0, 6)
           axs[ii, 0].set_ylabel(r"$\gamma_{\rm EW}$")
         elif ii == 1:
-          axs[ii, jj].set_ylim(-30, 30)
-          axs[ii, 0].set_ylabel(r"$\Delta_Q T_c$ (GeV)")
+          axs[ii, jj].set_ylim(-1, 1)
+          axs[ii, 0].set_ylabel(r"$\Delta_Q T_c/ T_c$")
         elif ii == 3:
-          axs[ii, jj].set_ylim(-5, 2)
-          axs[ii, 0].set_ylabel(r"$\Delta_Q \gamma$")
+          axs[ii, jj].set_ylim(-1, 1)
+          axs[ii, 0].set_ylabel(r"$\Delta_Q \gamma / \gamma$")
 
         if jj == 0:
           axs[-1, jj].set_xlabel(r"$\lambda_{hs}$")
