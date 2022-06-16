@@ -44,23 +44,23 @@ def make_plot(plot_type, show):
 
     if show_deltaT:
       if plot_xi:
-        title=r"$\left|T_C{(\xi=3)}-T_C{(\xi=0)}\right|$ (GeV)"
+        title=r"$T_c{(\xi=15)}-T_c{(\xi=0)}$ (GeV)"
       if plot_scale:
-        title=r"$\left|T_C{(Q=\frac{1}{2}m_t)}-T_C{(Q=2m_t)}\right|$ (GeV)"
+        title=r"$T_c{(Q=2m_t)}-T_c{(Q=\frac{1}{2}m_t)}$ (GeV)"
       if plot_scheme:
-        title=r"$\left|T_C^{\overline{\rm MS}}-T_C^{\rm OS-like}\right|$ (GeV)"
+        title=r"$T_c^{\overline{\rm MS}}-T_c^{\rm OS-like}$ (GeV)"
       if plot_daisy:
         if show_deltagamma:
           title=r"$\left|\gamma_{\rm EW}^{\rm AE}-\gamma_{\rm EW}^{\rm PW}|/\gamma_{\rm EW}^{\rm AE}\right|$"
         else: 
-          title=r"$\left|T_C^{\rm PW}-T_C^{\rm AE}\right|$ (GeV)"
+          title=r"$\left|T_c^{\rm PW}-T_c^{\rm AE}\right|$ (GeV)"
       if plot_max:
-        title=r"$\Delta T_C ^{\rm max}$ (GeV)"
+        title=r"$\Delta_{\rm max}|T_c| $ (GeV)"
         if show_max_num:
           title=r""
       cm = 'rainbow'
     else:
-      title=r"$T_C{(\xi=0)}$ (GeV)"
+      title=r"$T_c{(\xi=0)}$ (GeV)"
       cm = 'cool'
 
     labels=[r'$M_s$ (GeV)', r'$\lambda_{S}$', r'$\lambda_{hs}$']
@@ -68,38 +68,39 @@ def make_plot(plot_type, show):
     def make_plot(ax, par, cbar=False, legend=False):
       #############################
       if plot_xi:
-        data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
-        data2 = np.loadtxt("../2d_scan/"+par+"_xi3.txt")
+        data2 = np.loadtxt("../2d_scan/"+par+"_default.txt")
+        data1 = np.loadtxt("../2d_scan/"+par+"_xi15.txt")
+        show_data = fun_diff(data1,data2,data1,show_gamma=show_deltagamma) 
         vmax = 10
       if plot_scale:
-        data1 = np.loadtxt("../2d_scan/"+par+"_05mt.txt")
-        data2 = np.loadtxt("../2d_scan/"+par+"_2mt.txt")
-        vmax = 16
+        data2 = np.loadtxt("../2d_scan/"+par+"_05mt.txt")
+        data1 = np.loadtxt("../2d_scan/"+par+"_2mt.txt")
+        show_data = fun_diff(data1,data2,data1,show_gamma=show_deltagamma) 
       if plot_scheme:
         data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
         data2 = np.loadtxt("../2d_scan/"+par+"_OSlike.txt")
         vmax = 6
+        show_data = fun_diff(data1,data2,data1,show_gamma=show_deltagamma,norm =False, use_abs=False, gamma_min = 0, sort=True) 
       if plot_daisy:
         data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
         data2 = np.loadtxt("../2d_scan/"+par+"_Parwani.txt")
         vmax = 20
+        show_data = fun_diff(data1,data2,data1,show_gamma=show_deltagamma) 
       
       if plot_max:
         vmax = 16
 
         data_default = np.loadtxt("../2d_scan/"+par+"_default.txt")
-        data_xi3 = np.loadtxt("../2d_scan/"+par+"_xi3.txt")
+        data_xi3 = np.loadtxt("../2d_scan/"+par+"_xi25.txt")
         data_05mt = np.loadtxt("../2d_scan/"+par+"_05mt.txt")
         data_2mt = np.loadtxt("../2d_scan/"+par+"_2mt.txt")
-        data_Parwani = np.loadtxt("../2d_scan/"+par+"_Parwani.txt")
-        data_OSlike = np.loadtxt("../2d_scan/"+par+"_OSlike.txt")
-        
-        data_set = [data_default, data_xi3, data_05mt, data_2mt, data_Parwani, data_OSlike]
+
+        data_set = [data_default, data_xi3, data_05mt, data_2mt]
         
         len_data = len(data_default)
         for ii in range(len(data_set)): 
           if len(data_set[ii]) != len_data:
-            print("Length of data file is wrong.")
+            print("Length of data file " +par + str(ii) +" is wrong.")
             sys.exit()
          
         data_diff=[]
@@ -109,8 +110,9 @@ def make_plot(plot_type, show):
           lambda_hs = data_default[ii][2]
           flag_sel = True
           for jj in range(len(data_set)): 
-            if data_set[jj][ii][0] != ms:
-              print("Content of data file is wrong.")
+            if abs( data_set[jj][ii][0] - ms) > 0.01:
+              print(data_set[jj][ii][0], ms)
+              print("Content of data file " +par  + str(jj) +" is wrong.")
               sys.exit()
             
             TCjj = data_set[jj][ii][4]
@@ -123,15 +125,11 @@ def make_plot(plot_type, show):
             if show_deltaT:
               d_xi = abs(data_default[ii][4] - data_xi3[ii][4])
               d_scale = abs(data_05mt[ii][4] - data_2mt[ii][4])
-              d_scheme = abs(data_default[ii][4] - data_OSlike[ii][4])
-              d_daisy = abs(data_default[ii][4] - data_Parwani[ii][4])
             else: 
               d_xi = abs(fun_gamma_line(data_default[ii]) - fun_gamma_line(data_xi3[ii]))
               d_scale = abs(fun_gamma_line(data_05mt[ii]) - fun_gamma_line(data_2mt[ii]))
-              d_scheme = abs(fun_gamma_line(data_default[ii]) - fun_gamma_line(data_OSlike[ii]))
-              d_daisy = abs(fun_gamma_line(data_default[ii]) - fun_gamma_line(data_Parwani[ii]))
       
-            d_set = [d_xi, d_scheme, d_daisy]
+            d_set = [d_scale, d_xi]
             data_diff.append([ms, lambda_s, lambda_hs, np.where(d_set==np.max(d_set))[0][0], max(d_set)])
         show_data = np.array(data_diff)
        
@@ -163,13 +161,17 @@ def make_plot(plot_type, show):
           if show_deltagamma:
             map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,4]), cmap=cm, edgecolor='none', s=5, vmin=0, vmax=.2, alpha=1, rasterized=True)
           else:
-            map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=-0.1, vmax=2, alpha=1, rasterized=True)
+            map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=-0.1, vmax=4, alpha=1, rasterized=True)
         elif plot_scheme:
-          map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=-show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=-1, vmax=10, alpha=1, rasterized=True)
+          map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=-1, vmax=10, alpha=1, rasterized=True)
         elif plot_max and show_max_num:
           map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,3]), cmap=cm, edgecolor='none', s=5, vmin=0, vmax=4, alpha=1, rasterized=True)
-        else:
-          map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=abs(show_data[:,4]), cmap=cm, edgecolor='none', s=5, vmax=vmax, alpha=1, rasterized=True)
+        elif plot_max and not show_max_num:
+          map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=5, vmax=30, alpha=1, rasterized=True)
+        elif plot_scale: 
+          map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=8, vmax=16, alpha=1, rasterized=True)
+        elif plot_xi:
+          map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,4], cmap=cm, edgecolor='none', s=5, vmin=-20, vmax=20, alpha=1, rasterized=True)
       else:
         map1 = ax.scatter(show_data[:,nx], show_data[:,ny], c=show_data[:,5], cmap=cm, s=2, vmax=150, alpha=1, rasterized=True)
         
@@ -184,15 +186,15 @@ def make_plot(plot_type, show):
         unique = np.linspace(0, 1, 5)[:3]
         colors = matplotlib.cm.get_cmap(cm)(unique)
         patch = [matplotlib.patches.Rectangle((0, 0), 1, 1, fc=c, ec=c) for c in colors]
-        lab = ["Gauge", "Renormalization scheme", "Daisies"]
-        ax.legend(patch, lab, loc="lower right", framealpha=0.95, title="Greatest impact on $T_C$")          
+        lab = ["Scale", "Gauge"]
+        ax.legend(patch, lab, loc="lower right", framealpha=0.95, title="Greatest impact on $T_c$")          
       
 
       if cbar:
           fig = plt.gcf()
           fig.subplots_adjust(right=0.9, wspace=0.3, bottom=0.125)
           
-          if not plot_max:
+          if not show_max_num:
             cbar_ax = fig.add_axes([0.915, 0.15, 0.02, 0.7])
             fig.colorbar(map1, cax=cbar_ax)
             if plot_daisy and show_deltagamma:

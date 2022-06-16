@@ -161,13 +161,13 @@ def make_plot(plot_type):
         axs[ii, jj].grid(axis='y', alpha=0.5)
 
         if ii == 0:
-          axs[ii, jj].set_ylim(20, 210)
+          axs[ii, jj].set_ylim(20, 170)
           axs[ii, 0].set_ylabel(r"$T_c$ (GeV)")
         elif ii == 2:
           axs[ii, jj].set_ylim(0, 6)
           axs[ii, 0].set_ylabel(r"$\gamma_{\rm EW}$")
         elif ii == 1:
-          axs[ii, jj].set_ylim(-30, 30)
+          axs[ii, jj].set_ylim(-20, 30)
           axs[ii, 0].set_ylabel(r"$\Delta_Q T_c$ (GeV)")
         elif ii == 3:
           axs[ii, jj].set_ylim(-5, 2)
