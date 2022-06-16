@@ -45,58 +45,10 @@ daisy_flag = 2
 use_1L_EWSB_in_0L_mass = 0
 use_Goldstone_resum = 0
 
-######################################
-#scheme = "xSM_MSbar"
-#cmd = "./../../../bin/run_"+scheme
-
-#xi = 1
-#file_name = scheme + "_xi_1"
-#scan(cmd, file_name)
-
-#xi = 1
-#use_1L_EWSB_in_0L_mass = 1
-#file_name = scheme + "_xi_1_use_1L_EWSB_in_0L_mass"
-#scan(cmd, file_name)
-
-
-#xi = 0.1
-#file_name = scheme + "_xi_01"
-#scan(cmd, file_name)
-
-#xi = 0
-#file_name = scheme + "_xi_0"
-#scan(cmd, file_name)
-
-#xi = 0
-#use_1L_EWSB_in_0L_mass = 1
-#file_name = scheme + "_xi_0_use_1L_EWSB_in_0L_mass"
-#scan(cmd, file_name)
-
-#xi = 3
-#file_name = scheme + "_xi_3"
-#scan(cmd, file_name)
-
-#xi = 3
-#use_1L_EWSB_in_0L_mass = 1
-#file_name = scheme + "_xi_3_use_1L_EWSB_in_0L_mass"
-#scan(cmd, file_name)
-
-#####################################
-#scheme = "xSM_MSbar"
-#cmd = "./../../../bin/run_"+scheme
-
-#daisy_flag = 1
-#file_name = scheme + "_daisy_Parwani"
-#scan(cmd, file_name)
-
-#daisy_flag = 2
-#file_name = scheme + "_daisy_ArnoldEspinosa"
-#scan(cmd, file_name)
-
 
 ####################################
-scheme = "ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-cmd = "./../../../bin/run_"+scheme
+#scheme = "ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#cmd = "./../../../bin/run_"+scheme
 
 #file_name = scheme + "_mt"
 #Q = mt
@@ -106,25 +58,24 @@ cmd = "./../../../bin/run_"+scheme
 #Q = mt*2.
 #scan(cmd, file_name)
 
-file_name = scheme + "_05mt"
-Q = 173./2.
-scan(cmd, file_name)
+#file_name = scheme + "_05mt"
+#Q = 173./2.
+#scan(cmd, file_name)
 
 
 #####################################
-#scheme = "xSM_OSlike"
-#cmd = "./../../../bin/run_"+scheme
-#use_Goldstone_resum = 1
+scheme = "xSM_MSbar"
+cmd = "./../../../bin/run_xSM_MSbar"
+use_1L_EWSB_in_0L_mass = 0
+use_Goldstone_resum = 1
 
-#file_name = scheme + "_xi_0"
+#file_name = scheme+"xi0"
 #xi = 0
 #scan(cmd, file_name)
 
-#file_name = scheme + "_xi_1"
-#xi = 1
-#scan(cmd, file_name)
-#
-#file_name = scheme + "_xi_3"
-#xi = 3
-#scan(cmd, file_name)
+file_name = scheme+"xi25"
+xi = 25
+scan(cmd, file_name)
+
+
 
