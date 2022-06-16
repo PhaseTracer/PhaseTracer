@@ -90,7 +90,7 @@ class ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT : public OneLoopPotenti
 
   // W, Z and photon
   std::vector<double> get_vector_dofs() const override {
-    return {6., 3., 3.};
+    return {2., 1., 1., 4., 2., 2.};
   }
 
   // 1 complex doublet plus 1 real scalar singlet = 5
@@ -291,25 +291,25 @@ std::vector<double> ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT::get_scal
 
 
 std::vector<double> ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT::get_vector_debye_sq(Eigen::VectorXd phi, double T) const {
-  
-  const double h_sq = square(phi[0]);
-  const double T2 = T * T;
   //squared gauge couplings
   const double g_sq = square(g);
-  const double gp_sq = square(gp); 
-  const double MW_sq = 0.25 * g_sq * h_sq;
-  // Use Debeye coefficients fromlachlan for now, these are different to thdm,
-  const double MW_sq_T = MW_sq + 11.0/6.0 * g_sq * T2;
-  /// Z and photon thermal corrections come from diagonalsing 2 by 2 
-  const double a = ( g_sq + gp_sq ) * ( 3 * h_sq + 22 * T2 );
-  const double b = std::sqrt( 9.0 * square(g_sq + gp_sq) * square(h_sq)
-			     + 132.0 * square(g_sq - gp_sq) * h_sq * T2
-			     + 484.0 * square(g_sq - gp_sq) * T2 * T2 );
-  
-  const double mZSq_T = (a + b) / 24.0;
-  const double mPhotonSq_T = (a - b) / 24.0;
+  const double gp_sq = square(gp);   
+  const double h_sq = square(phi[0]);
+  const double T_sq = T * T;
+  const double MW_T_sq = 0.25 * g_sq * h_sq;
+  const double MZ_T_sq = 0.25 * (g_sq + gp_sq) * h_sq;
+  const double Mphoton_T_sq = 0.;
 
-  return {MW_sq_T, mZSq_T,  mPhotonSq_T};
+
+  const double MW_L_sq = 0.25 * g_sq * h_sq + 11. / 6. * g_sq * T_sq;
+	const double a_L = (g_sq + gp_sq) * (3. * h_sq + 22. * T_sq);
+	const double b_L = std::sqrt(9. * square(g_sq + gp_sq) * square(h_sq)
+                     + 132. * square(g_sq - gp_sq) * h_sq * T_sq
+                     + 484. * square(g_sq - gp_sq) * T_sq * T_sq);
+	const double MZ_L_sq = (a_L + b_L) / 24.;
+	const double Mphoton_L_sq = (a_L - b_L) / 24.;
+
+  return {MW_L_sq, MZ_L_sq, Mphoton_L_sq, MW_T_sq, MZ_T_sq, Mphoton_T_sq};
 }
 
 std::vector<double> ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT::get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const {
