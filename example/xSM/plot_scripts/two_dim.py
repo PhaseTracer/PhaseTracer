@@ -50,7 +50,7 @@ def make_plot(plot_type, show):
         if plot_scale:
             title = r"$T_c{(Q=2m_t)}-T_c{(Q=\frac{1}{2}m_t)}$ (GeV)"
         if plot_scheme:
-            title = r"$T_c^{\overline{\rm MS}}-T_c^{\rm OS-like}$ (GeV)"
+            title = r"$T_c(\overline{\rm MS})-T_c({\text{OS-like}})$ (GeV)"
         if plot_daisy:
             if show_deltagamma:
                 title = r"$\left|\gamma_{\rm EW}^{\rm AE}-\gamma_{\rm EW}^{\rm PW}|/\gamma_{\rm EW}^{\rm AE}\right|$"
