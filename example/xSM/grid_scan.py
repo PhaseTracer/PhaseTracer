@@ -6,22 +6,22 @@ import time
 
 cwd = os.getcwd()
 
-scan_1d_bks = False
-scan_ms = False
-scan_ls = False
-scan_lhs = False
+scan_1d_bks = True
+scan_ms = True
+scan_ls = True
+scan_lhs = True
 scan_1d_xi = False
 xi_zoom_in = False
-lowT_zoom_in = False
 
+lowT_zoom_in = True
 lowT_zoom_in_mt = False
 lowT_zoom_in_05mt = False
-lowT_zoom_in_2mt = False
+lowT_zoom_in_2mt = True
 
-scan_2d_scan = True 
+scan_2d_scan = False 
 scan_ls_lhs = False
 scan_ms_ls = False
-scan_ms_lhs = True
+scan_ms_lhs = False
 
 
 
@@ -131,17 +131,17 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 #####  file_name = file_name_+"PRM_2mt"
 #####  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], [1], "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_PRM"
-  file_name = file_name_+"PRM_0L_mt"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], [1], "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
-  
-  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_PRM"
-  file_name = file_name_+"PRM_0L_05mt"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], [1], "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
-  
-  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_PRM"
-  file_name = file_name_+"PRM_0L_2mt"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], [1], "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_PRM"
+#  file_name = file_name_+"PRM_0L_mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], [1], "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
+#  
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_PRM"
+#  file_name = file_name_+"PRM_0L_05mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], [1], "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
+#  
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_PRM"
+#  file_name = file_name_+"PRM_0L_2mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], [1], "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "1")
 
 
 ######  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT_PRM"
@@ -156,17 +156,17 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
 ######  file_name = file_name_+"PRM_0L_noRGE_2mt"
 ######  scan(cmd, file_name, ms, lambda_s, lambda_hs, [2*173], [1], "0", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in, "3")
 
-  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-  file_name = file_name_+"mt"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#  file_name = file_name_+"mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-  file_name = file_name_+"2mt"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173*2], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#  file_name = file_name_+"2mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173*2], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-  file_name = file_name_+"05mt"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#  file_name = file_name_+"05mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
   if lowT_zoom_in and lowT_zoom_in_mt:
     cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
@@ -183,17 +183,17 @@ def perfrom_1d_scan(ms, lambda_s, lambda_hs, file_name_):
     file_name = file_name_+"05mt"
     scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], [1], daisy_flag_in, use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-  file_name = file_name_+"PW_mt"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], [1], "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#  file_name = file_name_+"PW_mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173], [1], "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-  file_name = file_name_+"PW_2mt"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173*2], [1], "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#  file_name = file_name_+"PW_2mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [173*2], [1], "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
-  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
-  file_name = file_name_+"PW_05mt"
-  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], [1], "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
+#  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
+#  file_name = file_name_+"PW_05mt"
+#  scan(cmd, file_name, ms, lambda_s, lambda_hs, [0.5*173], [1], "1", use_1L_EWSB_in_0L_mass_in, use_Goldstone_resum_in)
 
 #######  cmd = "./../../../bin/run_ScalarSingletZ2DMMhInputMsInput_withSingletVEVinPT"
 #######  file_name = file_name_+"noRGE_mt"
