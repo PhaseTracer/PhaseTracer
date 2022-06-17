@@ -64,7 +64,7 @@ for ii in range(3):
   plt.scatter(data[VEV][:,2], data[VEV][:,1], marker="x", s=40, c="black",
       label="One-loop minimum" if ii == 0 else None, zorder=10)
 
-  plt.plot(data[:,2], data[:,1], label = "$Q="+label[ii]+"$\,GeV", c=colors[ii], **LINE)
+  plt.plot(data[:,2], data[:,1], label = "$Q="+label[ii]+"$", c=colors[ii], **LINE)
     
   set_label(0, T, "w RGE")
   plt.legend(loc=2)
