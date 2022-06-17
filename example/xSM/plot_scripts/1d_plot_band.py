@@ -77,19 +77,35 @@ def range_for_1d(axs, data1, data2, x_num, label, column, color, fTC, fgamma, PR
     x_TC = np.linspace(min(min(x_TC1), min(x_TC2)), max(max(x_TC1),max(x_TC2)), num=100, endpoint=True)
     x_gamma = np.linspace(min(min(x_gamma1), min(x_gamma2)), max(max(x_gamma1), max(x_gamma2)), num=100, endpoint=True)
 
-    lTC, uTC, cTC, dTC = lucd(x_TC, fTC1, fTC2, fTC)
+#    lTC, uTC, cTC, dTC = lucd(x_TC, fTC1, fTC2, fTC)
+#    ax = axs[0,column]
+#    ax.fill_between(x_TC, lTC, uTC, color=color, alpha=0.3, linewidth=0, label=label)
+
+#    lgamma, ugamma, cgamma, dgamma = lucd(x_gamma, fgamma1, fgamma2, fgamma)
+#    ax = axs[2,column]
+#    ax.fill_between(x_gamma, lgamma, ugamma, color=color, alpha=0.3, linewidth=0, label=label)
+
+#    ax = axs[1,column]
+#    ax.plot(x_TC, dTC, color=color, label=label)
+# 
+#    ax = axs[3,column]
+#    ax.plot(x_gamma, dgamma / cgamma, color=color, label=label)
+
     ax = axs[0,column]
-    ax.fill_between(x_TC, lTC, uTC, color=color, alpha=0.3, linewidth=0, label=label)
+    ax.fill_between(x_TC,fTC1(x_TC),fTC2(x_TC), color=color, alpha=0.3, linewidth=0, label=label)
 
-    lgamma, ugamma, cgamma, dgamma = lucd(x_gamma, fgamma1, fgamma2, fgamma)
     ax = axs[2,column]
-    ax.fill_between(x_gamma, lgamma, ugamma, color=color, alpha=0.3, linewidth=0, label=label)
+    ax.fill_between(x_gamma,fgamma1(x_gamma),fgamma2(x_gamma), color=color, alpha=0.3, linewidth=0, label=label)
 
+    x_TC = np.linspace(max(min(x_TC1), min(x_TC2)), min(max(x_TC1), max(x_TC2)), num=100, endpoint=True)
     ax = axs[1,column]
-    ax.plot(x_TC, dTC / cTC, color=color, label=label)
- 
+    ax.plot(x_TC,(fTC1(x_TC)-fTC2(x_TC))/fTC(x_TC), color=color, label=label)
+
+    x_gamma = np.linspace(max(min(x_gamma1), min(x_gamma2)), min(max(x_gamma1), max(x_gamma2)), num=100, endpoint=True)
     ax = axs[3,column]
-    ax.plot(x_gamma, dgamma / cgamma, color=color, label=label)
+    ax.plot(x_gamma,(fgamma1(x_gamma)-fgamma2(x_gamma)), color=color, label=label)
+
+
 
 @click.command()
 @click.argument("plot_type")
@@ -171,10 +187,10 @@ def make_plot(plot_type):
           axs[ii, jj].set_ylim(0, 6)
           axs[ii, 0].set_ylabel(r"$\gamma_{\rm EW}$")
         elif ii == 1:
-          axs[ii, jj].set_ylim(-1, 1)
+          axs[ii, jj].set_ylim(-0.5, 0.5)
           axs[ii, 0].set_ylabel(r"$\Delta_Q T_c/ T_c$")
         elif ii == 3:
-          axs[ii, jj].set_ylim(-1, 1)
+          axs[ii, jj].set_ylim(-1.5, 1)
           axs[ii, 0].set_ylabel(r"$\Delta_Q \gamma / \gamma$")
 
         if jj == 0:
