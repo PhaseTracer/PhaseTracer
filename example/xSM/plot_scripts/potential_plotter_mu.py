@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib import rc
 from matplotlib.legend_handler import HandlerPatch
+from style import style
+
 
 ARROW_DELTA_T = 10.
 QUIVER_ARROW = {"zorder": 10, "angles": 'xy', "scale_units": 'xy', "scale": 1, "units": 'dots', "width": 4, "minlength": 3.}
@@ -22,11 +24,12 @@ GEV = ""
 FONTSIZE = "x-small"
 
 
-LINE = {"lw": 1, "alpha": 0.8}
+LINE = {"lw": 2, "alpha": 1}
 prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']
 
-fig = plt.figure(figsize=(9,5))
+style()
+fig = plt.figure(figsize=(12, 5))
 name = ["86.500000", "173.000000", "346.000000"]
 
 def set_label(jj, T, title=""):
@@ -36,8 +39,8 @@ def set_label(jj, T, title=""):
   else:
     plt.xlabel(r"$\phi_s$ [GeV]")
     t = r"$\phi_h=0$"
-  plt.ylabel(r"$V_{\rm eff}$")
-  plt.title(r"T="+str(T)+" GeV, "+t+", "+title)
+  plt.ylabel(r"$V_{\rm eff}$ [GeV${}^4$]")
+  plt.title(r"$T="+str(T)+"$, "+t+", "+title)
 
 def find_loc(data, value):
   diff = abs(data-value)
@@ -50,33 +53,39 @@ for ii in range(3):
   tree_min = [242.9644987251219, 259.672598075815, 276.555894966469]  
   data = np.loadtxt("potential_line/"+str(T)+"_1_"+name[ii].replace(" ", "")+"_potential_line.dat")
   plt.subplot(1,2,1)
-  plt.plot(data[:,2], data[:,1], label = "Q="+name[ii][0:4]+" GeV", c=colors[ii], **LINE)
+
   
   min_loc = find_loc(data[:,2],tree_min[ii])
-  plt.plot(data[min_loc][:,2], data[min_loc][:,1], marker="+", markersize=20, c=colors[ii])
+  plt.scatter(data[min_loc][:,2], data[min_loc][:,1], marker="+", s=80, c="black",
+    label="Tree-level minimum" if ii == 0 else None, zorder=10)
   
   VEV = data[:,1] == min(data[:,1])
-  plt.plot(data[VEV][:,2], data[VEV][:,1], marker="x", markersize=10, c=colors[ii])
-  
+  plt.scatter(data[VEV][:,2], data[VEV][:,1], marker="x", s=40, c="black",
+      label="One-loop minimum" if ii == 0 else None, zorder=10)
+
+  plt.plot(data[:,2], data[:,1], label = "$Q="+name[ii][0:4].strip(".")+"$\,GeV", c=colors[ii], **LINE)
+    
   set_label(0, T, "w RGE")
   plt.legend(loc=2)
   plt.xlim(237,282)
-  
+  plt.ylim(-1.3e8, -1.15e8)
+
   tree_min = [243.3873771875804, 259.3881307737823, 278.9974402653135]
   data = np.loadtxt("potential_line/no_RGE_"+str(T)+"_1_"+name[ii].replace(" ", "")+"_potential_line.dat")
   plt.subplot(1,2,2)
   
-  plt.plot(data[:,2], data[:,1], label = "Q="+name[ii][0:4]+" GeV", c=colors[ii], **LINE)
+  plt.plot(data[:,2], data[:,1], label = "$Q="+name[ii][0:4]+"$ GeV", c=colors[ii], **LINE)
   
   min_loc = find_loc(data[:,2],tree_min[ii])
-  plt.plot(data[min_loc][:,2], data[min_loc][:,1], marker="+", markersize=20, c=colors[ii])
+  plt.scatter(data[min_loc][:,2], data[min_loc][:,1], marker="+", s=80, c="black", zorder=10)
   
   VEV = data[:,1] == min(data[:,1])
-  plt.plot(data[VEV][:,2], data[VEV][:,1], marker="x", markersize=10, c=colors[ii])
+  plt.scatter(data[VEV][:,2], data[VEV][:,1], marker="x", s=40, c="black", zorder=10)
   
   set_label(0, T, "w/o RGE")
 
   plt.xlim(237,282)
+  plt.ylim(-1.3e8, -1.15e8)
   
  
 
