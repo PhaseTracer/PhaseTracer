@@ -161,9 +161,9 @@ def hist_plot(axs, nn, diff):
     ax.hist(x=diff[:, 4]/diff[:, 5], bins=30,
             color='seagreen', log=True, alpha=1, rwidth=0.85)
     if show_gamma:
-        ax.set_xlabel(r'$\Delta_{\rm max} |\gamma_{\rm EW}|/\gamma_{\rm EW}$')
+        ax.set_xlabel(r'$\max |\Delta\gamma_{\rm EW}|/\gamma_{\rm EW}$')
     else:
-        ax.set_xlabel(r"$\Delta_{\rm max}|T_c|/T_c $")
+        ax.set_xlabel(r"$\max |\Delta T_c|/T_c $")
     ax.set_ylabel("Number of samples")
 
 
