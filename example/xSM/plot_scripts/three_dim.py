@@ -51,26 +51,30 @@ def data():
                 raise RuntimeError("Content of data file " +
                                    str(jj) + " is wrong.")
 
-            vsjj = data_set[jj][ii][8]
+            nflag = data_set[jj][ii][3]
+            vh_ljj = data_set[jj][ii][5]
+            vs_ljj = data_set[jj][ii][6]
+            vh_hjj = data_set[jj][ii][7]
+            vs_hjj = data_set[jj][ii][8]
             gammajj = fun_gamma_line(data_set[jj][ii])
-            if gammajj <= 0 or vsjj < 10:
+            if nflag < 0 or gammajj <= 0 or abs(vh_hjj) > 10 or abs(vs_hjj) < 10 or abs(vs_ljj) > 10 or abs(vh_ljj) < 10:
                 flag_sel = False
 
-            if flag_sel:
-                d_xi = abs(data_xi_25[ii][4] - data_xi_0[ii][4])
-                d_scale = abs(data_mu_05[ii][4] - data_mu_2[ii][4])
-                gamma_xi = abs(fun_gamma_line(
-                    data_xi_25[ii]) - fun_gamma_line(data_xi_0[ii]))
-                gamma_scale = abs(fun_gamma_line(
-                    data_mu_05[ii]) - fun_gamma_line(data_mu_2[ii]))
+        if flag_sel:
+          d_xi = abs(data_xi_25[ii][4] - data_xi_0[ii][4])
+          d_scale = abs(data_mu_05[ii][4] - data_mu_2[ii][4])
+          gamma_xi = abs(fun_gamma_line(
+            data_xi_25[ii]) - fun_gamma_line(data_xi_0[ii]))
+          gamma_scale = abs(fun_gamma_line(
+            data_mu_05[ii]) - fun_gamma_line(data_mu_2[ii]))
 
-                d_set = [d_scale, d_xi]
-                data_diff.append([ms, lambda_s, lambda_hs, np.where(
-                    d_set == np.max(d_set))[0][0], max(d_set), Tc_default])
+          d_set = [d_scale, d_xi]
+          data_diff.append([ms, lambda_s, lambda_hs, np.where(
+            d_set == np.max(d_set))[0][0], max(d_set), Tc_default])
 
-                gamma_set = [gamma_scale, gamma_xi]
-                data_gamma.append(
-                    [ms, lambda_s, lambda_hs, 0, max(gamma_set), gamma_default])
+          gamma_set = [gamma_scale, gamma_scale]
+          data_gamma.append(
+            [ms, lambda_s, lambda_hs, 0, max(gamma_set), gamma_default])
 
     data_diff.sort(key=(lambda x: -x[4]))
     diff = np.array(data_diff)
