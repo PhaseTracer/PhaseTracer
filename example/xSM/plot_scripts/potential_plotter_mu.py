@@ -31,6 +31,7 @@ colors = prop_cycle.by_key()['color']
 style()
 fig = plt.figure(figsize=(12, 5))
 name = ["86.500000", "173.000000", "346.000000"]
+label = [r"\frac12 m_t", "m_t", "2 m_t"]
 
 def set_label(jj, T, title=""):
   if jj == 0:
@@ -63,7 +64,7 @@ for ii in range(3):
   plt.scatter(data[VEV][:,2], data[VEV][:,1], marker="x", s=40, c="black",
       label="One-loop minimum" if ii == 0 else None, zorder=10)
 
-  plt.plot(data[:,2], data[:,1], label = "$Q="+name[ii][0:4].strip(".")+"$\,GeV", c=colors[ii], **LINE)
+  plt.plot(data[:,2], data[:,1], label = "$Q="+label[ii]+"$\,GeV", c=colors[ii], **LINE)
     
   set_label(0, T, "w RGE")
   plt.legend(loc=2)
