@@ -97,8 +97,8 @@ def scatter_max_num(ax, diff, diff_gamma, nn):
     """
     ax.grid(axis='x', alpha=0.75)
     ax.grid(axis='y', alpha=0.75)
-    style = dict(c=abs(diff[:, 3]), cmap=max_num_cmap, alpha=1,
-                 edgecolor='none', rasterized=True)
+    style = dict(c=abs(diff[:, 3]), cmap=max_num_cmap, alpha=0.5,
+                 edgecolor='none', rasterized=True, s=10)
 
     if nn == 0:
         ax.scatter(diff[:, 5], diff[:, 4], **style)
