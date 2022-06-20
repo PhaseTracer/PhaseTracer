@@ -25,10 +25,27 @@ data_xi_25 = np.loadtxt("../random_scan_results/xSM_MSbarxi25.txt")
 max_num_cmap = matplotlib.cm.get_cmap('rainbow', 2)
 
 
+def frac_fail(default, *other):
+    """
+    @returns Fraction of points that fail when the default is successful
+    """
+    default_success = default[:, 3] >= 0
+    fail = np.array([d[:, 3][default_success] < 0 for d in other])
+    any_fail = np.any(fail, axis=0)
+    return any_fail.sum() / default_success.sum()
+
+def fopt_frac(d):
+    """
+    @returns Fraction of points that have a fopt
+    """
+    success = d[:, 3] >= 0
+    return success.sum() / len(d[:, 3])
+
 def data():
     """
     @brief Parses data from disk
     """
+    n_vetoed = 0
     data_set = [data_default, data_mu_05, data_mu_2, data_xi_0, data_xi_25]
     len_data = len(data_default)
     for i, d in enumerate(data_set):
@@ -36,8 +53,14 @@ def data():
             raise RuntimeError("Length of data file " +
                                str(i) + " is wrong.")
 
+    print("all fails", frac_fail(data_default, *data_set[1:]))
+    print("q fails", frac_fail(data_default, *data_set[1:3]))
+    print("xi fails", frac_fail(data_default, *data_set[3:]))
+    print("fopt frac", fopt_frac(data_default))
+
     data_diff = []
     data_gamma = []
+
     for ii in range(len_data):
         ms = data_default[ii][0]
         lambda_s = data_default[ii][1]
