@@ -46,7 +46,7 @@ def make_plot(plot_type, show):
 
     if show_deltaT:
         if plot_xi:
-            title = r"$T_c{(\xi=15)}-T_c{(\xi=0)}$ (GeV)"
+            title = r"$T_c{(\xi=25)}-T_c{(\xi=0)}$ (GeV)"
         if plot_scale:
             title = r"$T_c{(Q=2m_t)}-T_c{(Q=\frac{1}{2}m_t)}$ (GeV)"
         if plot_scheme:
@@ -71,9 +71,11 @@ def make_plot(plot_type, show):
         #############################
         if plot_xi:
             data2 = np.loadtxt("../2d_scan/"+par+"_default.txt")
-            data1 = np.loadtxt("../2d_scan/"+par+"_xi15.txt")
+            data1 = np.loadtxt("../2d_scan/"+par+"_xi25.txt")
             show_data = fun_diff(data1, data2, data1,
                                  show_gamma=show_deltagamma)
+            print("max=",max(show_data[:, 4]))
+            print("min=",min(show_data[:, 4]))
             vmax = 10
         if plot_scale:
             data2 = np.loadtxt("../2d_scan/"+par+"_05mt.txt")
@@ -185,12 +187,34 @@ def make_plot(plot_type, show):
             elif plot_scale:
                 map1 = ax.scatter(show_data[:, nx], show_data[:, ny], c=show_data[:, 4],
                                   cmap=cm, edgecolor='none', s=5, vmin=8, vmax=16, alpha=1, rasterized=True)
+                print("max",max(show_data[:, 4]))
+                print("par",show_data[np.where(show_data[:, 4] == np.max(show_data[:, 4]))[0][0]])
             elif plot_xi:
                 map1 = ax.scatter(show_data[:, nx], show_data[:, ny], c=show_data[:, 4],
-                                  cmap=cm, edgecolor='none', s=5, vmin=-20, vmax=20, alpha=1, rasterized=True)
+                                  cmap=cm, edgecolor='none', s=5, vmin=-60, vmax=50, alpha=1, rasterized=True)
+                if par == "ms_ls":
+                  xmin = 10.0
+                  xmax = 90.7035
+                  ymin = 0.01
+                  ymax = 0.3
+                if par == "ms_lhs":
+                  xmin = 10.0
+                  xmax = 115.025
+                  ymin = 0.1
+                  ymax = 0.5
         else:
+            data2 = np.loadtxt("../2d_scan/"+par+"_default.txt")
+            data1 = np.loadtxt("../2d_scan/"+par+"_default.txt")
+            show_data = fun_diff(data1, data2, data1,
+                                 show_gamma=show_deltagamma)
+            xmin = min(show_data[:, nx])
+            xmax = max(show_data[:, nx])
+            ymin = min(show_data[:, ny])
+            ymax = max(show_data[:, ny])
             map1 = ax.scatter(show_data[:, nx], show_data[:, ny], c=show_data[:, 5],
                               cmap=cm, s=2, vmax=150, alpha=1, rasterized=True)
+            print("xmin",xmin,"xmax",xmax)
+            print("ymin",ymin,"ymax",ymax)
 
         ax.set_xlabel(labels[nx])
         ax.set_ylabel(labels[ny])

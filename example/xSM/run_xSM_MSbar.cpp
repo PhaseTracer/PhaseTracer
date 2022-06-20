@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
     lambda_s =  0.1;
     lambda_hs = 0.3;
     Q = 173;
-    xi = 1;
+    xi = 0;
     daisy_flag = 2;
     use_1L_EWSB_in_0L_mass = false;
     use_Goldstone_resum = true;
@@ -327,6 +327,12 @@ int main(int argc, char* argv[]) {
   
   
   std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
+  
+  std::cout <<  std::fixed << std::setprecision(4) << model.get_muh_sq() << " & "<< model.get_mus_sq() << " & " << model.get_lambda_h()
+  << " & " << t[jj].TC << " & " << t[jj].true_vacuum[0]/t[jj].TC << " & " << t[jj].false_vacuum[1] << " & " <<  t[jj].true_vacuum[0] << std::endl;
+
+  std::cout <<  std::fixed << std::setprecision(8) << model.get_muh_sq() << " & "<< model.get_mus_sq() << " & " << model.get_lambda_h()
+  << " & " << t[jj].TC<< " & " << t[jj].true_vacuum[0]/t[jj].TC << " & " << t[jj].false_vacuum[1] << " & " <<  t[jj].true_vacuum[0] << std::endl;
   
   output_file << toString(in, out, flags) << std::endl;
   output_file.close();  
