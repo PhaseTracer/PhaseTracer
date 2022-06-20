@@ -25,12 +25,18 @@ data_xi_25 = np.loadtxt("../random_scan_results/xSM_MSbarxi25.txt")
 max_num_cmap = matplotlib.cm.get_cmap('rainbow', 2)
 
 
+def fopt(d):
+    """
+    @returns where points have FOPT
+    """
+    return (d[:, 3] > 0) & (d[:, 5] > 1) & (d[:, 6] < 1) & (d[:, 7] < 1) & (d[:, 8] > 1) 
+
 def frac_fail(default, *other):
     """
     @returns Fraction of points that fail when the default is successful
     """
-    default_success = default[:, 3] >= 0
-    fail = np.array([d[:, 3][default_success] < 0 for d in other])
+    default_success = fopt(default)
+    fail = np.logical_not([fopt(d[default_success]) for d in other])
     any_fail = np.any(fail, axis=0)
     return any_fail.sum() / default_success.sum()
 
@@ -38,8 +44,8 @@ def fopt_frac(d):
     """
     @returns Fraction of points that have a fopt
     """
-    success = d[:, 3] >= 0
-    return success.sum() / len(d[:, 3])
+    success = fopt(d)
+    return success.sum() / len(d)
 
 def data():
     """
