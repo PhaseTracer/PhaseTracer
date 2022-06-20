@@ -203,8 +203,8 @@ def xi(zoom_in=False):
 def xi_zoom_in():
     fig, ax = xi(True)
     for a in ax[1, :]:
-        a.set_xlim(0, 0.2)
-    ax[0, 0].set_ylim(113, 117)
+        a.set_xlim(0, 1.)
+    ax[0, 0].set_ylim(97.5, 117.5)
     ax[1, 0].set_ylim(1.70, 2.01)
     return fig, ax
 
