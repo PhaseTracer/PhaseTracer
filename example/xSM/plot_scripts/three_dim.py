@@ -35,13 +35,8 @@ def frac_fail(default, *other):
     """
     @returns Fraction of points that fail when the default is successful
     """
-<<<<<<< HEAD
     default_success = fopt(default)
     fail = np.logical_not([fopt(d[default_success]) for d in other])
-=======
-    default_success = default[:, 3] > 0
-    fail = np.array([d[:, 3][default_success] < 0 for d in other])
->>>>>>> 3d0ac8c9c6ac36cd37eb8f968d47f37f59d00bf0
     any_fail = np.any(fail, axis=0)
     return any_fail.sum() / default_success.sum()
 
@@ -49,13 +44,8 @@ def fopt_frac(d):
     """
     @returns Fraction of points that have a fopt
     """
-<<<<<<< HEAD
     success = fopt(d)
     return success.sum() / len(d)
-=======
-    success = d[:, 3] > 0
-    return success.sum() / len(d[:, 3])
->>>>>>> 3d0ac8c9c6ac36cd37eb8f968d47f37f59d00bf0
 
 def data():
     """
