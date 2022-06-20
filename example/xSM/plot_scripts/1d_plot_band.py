@@ -60,7 +60,18 @@ def lucd(x, f1, f2, f):
     f1x = f1(x)
     f2x = f2(x)
     fx = f(x)
-    f2x[f2x < fx] = fx[f2x < fx]
+    for i in range(len(fx)):
+      if f2x[i] > f1x[i]:
+        if f2x[i] < fx[i]:
+          f2x[i] = fx[i]
+        if f1x[i] > fx[i]:
+          f1x[i] = fx[i]
+      else:
+        if f2x[i] > fx[i]:
+          f2x[i] = fx[i]
+        if f1x[i] < fx[i]:
+          f1x[i] = fx[i]
+          
     return f1x, f2x, fx, f1x - f2x
 
 def range_for_1d(axs, data1, data2, x_num, label, column, color, fTC, fgamma, PRM=False):
@@ -85,11 +96,31 @@ def range_for_1d(axs, data1, data2, x_num, label, column, color, fTC, fgamma, PR
     ax = axs[2,column]
     ax.fill_between(x_gamma, lgamma, ugamma, color=color, alpha=0.3, linewidth=0, label=label)
 
+    x_TC = np.linspace(max(min(x_TC1), min(x_TC2)), min(max(x_TC1), max(x_TC2)), num=100, endpoint=True)
+    lTC, uTC, cTC, dTC = lucd(x_TC, fTC1, fTC2, fTC)
     ax = axs[1,column]
-    ax.plot(x_TC, dTC / cTC, color=color, label=label)
- 
+    ax.plot(x_TC, dTC/cTC, color=color, label=label)
+
+    x_gamma = np.linspace(max(min(x_gamma1), min(x_gamma2)), min(max(x_gamma1), max(x_gamma2)), num=100, endpoint=True)
+    lgamma, ugamma, cgamma, dgamma = lucd(x_gamma, fgamma1, fgamma2, fgamma)
     ax = axs[3,column]
     ax.plot(x_gamma, dgamma / cgamma, color=color, label=label)
+
+#    ax = axs[0,column]
+#    ax.fill_between(x_TC,fTC1(x_TC),fTC2(x_TC), color=color, alpha=0.3, linewidth=0, label=label)
+#
+#    ax = axs[2,column]
+#    ax.fill_between(x_gamma,fgamma1(x_gamma),fgamma2(x_gamma), color=color, alpha=0.3, linewidth=0, label=label)
+#
+#    x_TC = np.linspace(max(min(x_TC1), min(x_TC2)), min(max(x_TC1), max(x_TC2)), num=100, endpoint=True)
+#    ax = axs[1,column]
+#    ax.plot(x_TC,(fTC1(x_TC)-fTC2(x_TC))/fTC(x_TC), color=color, label=label)
+#
+#    x_gamma = np.linspace(max(min(x_gamma1), min(x_gamma2)), min(max(x_gamma1), max(x_gamma2)), num=100, endpoint=True)
+#    ax = axs[3,column]
+#    ax.plot(x_gamma,(fgamma1(x_gamma)-fgamma2(x_gamma))/fgamma(x_gamma), color=color, label=label)
+
+
 
 @click.command()
 @click.argument("plot_type")
@@ -171,10 +202,10 @@ def make_plot(plot_type):
           axs[ii, jj].set_ylim(0, 6)
           axs[ii, 0].set_ylabel(r"$\gamma_{\rm EW}$")
         elif ii == 1:
-          axs[ii, jj].set_ylim(-1, 1)
+          axs[ii, jj].set_ylim(-0.5, 0.5)
           axs[ii, 0].set_ylabel(r"$\Delta_Q T_c/ T_c$")
         elif ii == 3:
-          axs[ii, jj].set_ylim(-1, 1)
+          axs[ii, jj].set_ylim(-1.5, 1)
           axs[ii, 0].set_ylabel(r"$\Delta_Q \gamma / \gamma$")
 
         if jj == 0:
