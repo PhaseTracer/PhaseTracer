@@ -15,18 +15,23 @@ from style import style
 style()
 
 def selection(for_TC, x_num, data, PRM=False):
+    x = data[:, x_num]
+
     if for_TC:
         sel = ( (data[:,3]>0) | (PRM&(data[:, 3]>=0)) ) & (data[:, 4] < 200.) 
-        y = data[:, 4][sel]
+        y = data[:, 4]
     else:
-        sel = (data[:, 3] > 0) & (fun_gamma(data) > 0)
-        y = fun_gamma(data)[sel]
-    x = data[:, x_num][sel]
-    return x, y
+        sel = ( (data[:,3]>0) | (PRM &(data[:, 3]>=0)) )
+        y = fun_gamma(data)
+        # allow points with one minima in PRM method
+        if PRM:
+            where = y == 0
+            y[where] = np.maximum(abs(data[:, 7][where]), abs(data[:, 5][where])) / data[:, 4][where]
+    return x[sel], y[sel]
 
 def line_for_1d(axs, data, x_num, color, column, label="_nolegend_", linestyle="-", alpha=1, PRM=False):
     x_TC, TC = selection(True, x_num, data, PRM)
-    x_gamma, gamma = selection(False, x_num, data)
+    x_gamma, gamma = selection(False, x_num, data, PRM)
 
     ax = axs[0, column]
     ax.plot(x_TC, TC, color=color, linestyle=linestyle, alpha=alpha, label=label)
@@ -79,8 +84,8 @@ def range_for_1d(axs, data1, data2, x_num, label, column, color, fTC, fgamma, PR
     x_TC1, TC1 = selection(True, x_num, data1, PRM)
     x_TC2, TC2 = selection(True, x_num, data2, PRM)
 
-    x_gamma1, gamma1 = selection(False, x_num, data1)
-    x_gamma2, gamma2 = selection(False, x_num, data2)
+    x_gamma1, gamma1 = selection(False, x_num, data1, PRM)
+    x_gamma2, gamma2 = selection(False, x_num, data2, PRM)
 
     fTC1, fTC2 = interpolate(x_TC1, TC1, x_TC2, TC2)
     fgamma1, fgamma2 = interpolate(x_gamma1, gamma1, x_gamma2, gamma2)
