@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import click
 
-from plot_fun import fun_gamma_line
+from plot_fun import fun_gamma_line,fun_gamma
 from style import style
 
 
@@ -35,8 +35,13 @@ def frac_fail(default, *other):
     """
     @returns Fraction of points that fail when the default is successful
     """
+<<<<<<< HEAD
     default_success = fopt(default)
     fail = np.logical_not([fopt(d[default_success]) for d in other])
+=======
+    default_success = default[:, 3] > 0
+    fail = np.array([d[:, 3][default_success] < 0 for d in other])
+>>>>>>> 3d0ac8c9c6ac36cd37eb8f968d47f37f59d00bf0
     any_fail = np.any(fail, axis=0)
     return any_fail.sum() / default_success.sum()
 
@@ -44,8 +49,13 @@ def fopt_frac(d):
     """
     @returns Fraction of points that have a fopt
     """
+<<<<<<< HEAD
     success = fopt(d)
     return success.sum() / len(d)
+=======
+    success = d[:, 3] > 0
+    return success.sum() / len(d[:, 3])
+>>>>>>> 3d0ac8c9c6ac36cd37eb8f968d47f37f59d00bf0
 
 def data():
     """
@@ -85,7 +95,7 @@ def data():
             vh_hjj = data_set[jj][ii][7]
             vs_hjj = data_set[jj][ii][8]
             gammajj = fun_gamma_line(data_set[jj][ii])
-            if nflag < 0 or gammajj <= 0 or abs(vh_hjj) > 10 or abs(vs_hjj) < 10 or abs(vs_ljj) > 10 or abs(vh_ljj) < 10:
+            if nflag <= 0 or abs(vh_hjj) > 1 or abs(vs_hjj) < 1 or abs(vs_ljj) > 1 or abs(vh_ljj) < 1:
                 flag_sel = False
 
         if flag_sel:
@@ -104,6 +114,7 @@ def data():
           data_gamma.append(
             [ms, lambda_s, lambda_hs, 0, max(gamma_set), gamma_default])
 
+    print("Numbers in the plots:",len(data_diff))
     data_diff.sort(key=(lambda x: -x[4]))
     diff = np.array(data_diff)
     diff_gamma = np.array(data_gamma)
