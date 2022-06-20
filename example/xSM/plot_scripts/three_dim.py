@@ -45,7 +45,6 @@ def data():
     """
     @brief Parses data from disk
     """
-    n_vetoed = 0
     data_set = [data_default, data_mu_05, data_mu_2, data_xi_0, data_xi_25]
     len_data = len(data_default)
     for i, d in enumerate(data_set):
