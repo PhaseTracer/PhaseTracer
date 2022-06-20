@@ -6,22 +6,22 @@ import time
 
 cwd = os.getcwd()
 
-scan_1d_bks = False
+scan_1d_bks = True
 scan_ms = False
 scan_ls = False
 scan_lhs = False
-scan_1d_xi = False
-xi_zoom_in = False
+scan_1d_xi = True
+xi_zoom_in = True
 lowT_zoom_in = False
 
 lowT_zoom_in_mt = False
 lowT_zoom_in_05mt = False
 lowT_zoom_in_2mt = False
 
-scan_2d_scan = True 
+scan_2d_scan = False
 scan_ls_lhs = False
 scan_ms_ls = False
-scan_ms_lhs = True
+scan_ms_lhs = False
 
 
 
@@ -373,7 +373,7 @@ if scan_1d_bks:
     lambda_s = [0.1]
     lambda_hs = [0.3]
     if xi_zoom_in:
-      xi = np.linspace(0,0.2,n_total)
+      xi = np.linspace(0, 0.2, n_total).tolist() + np.linspace(0.2, 1, n_total).tolist()
       add_file_name = "_zoom_in"
     else:
       xi = np.linspace(0,60,n_total)
