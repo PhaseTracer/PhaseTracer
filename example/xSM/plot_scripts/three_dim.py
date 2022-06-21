@@ -100,13 +100,16 @@ def data():
           data_diff.append([ms, lambda_s, lambda_hs, np.where(
             d_set == np.max(d_set))[0][0], max(d_set), Tc_default])
 
-          gamma_set = [gamma_scale, gamma_scale]
+          gamma_set = [gamma_scale, gamma_xi]
           data_gamma.append(
-            [ms, lambda_s, lambda_hs, 0, max(gamma_set), gamma_default])
+            [ms, lambda_s, lambda_hs, np.where(
+            d_set == np.max(d_set))[0][0], max(gamma_set), gamma_default])
 
     print("Numbers in the plots:",len(data_diff))
+
     data_diff.sort(key=(lambda x: -x[4]))
     diff = np.array(data_diff)
+    print("Fractions", frac_max_num(diff))
     diff_gamma = np.array(data_gamma)
     return diff, diff_gamma
 
@@ -172,16 +175,57 @@ def scatter(ax, diff, nx, ny, title, labels, cbar=False):
         cbar_ax = fig.add_axes([0.915, 0.57, 0.02, 0.3])
         fig.colorbar(s, cax=cbar_ax)
 
+def split_max_num(x, d):
+    """
+    @returns Data split by maximum uncertainty
+    """
+    max_num = d[:, 3]
+    unique = np.unique(max_num)
+    return [x[max_num == u] for u in unique]
 
-def hist_plot(axs, nn, diff):
+def frac_color_hist(ax, x, d, bins):
+    """
+    @returns Color histogram bars
+    """
+    n, bins, patches = ax.hist(x,
+                               bins=bins,
+                               log=True, alpha=1, rwidth=0.85) 
+    split = split_max_num(x, d)
+    frac = np.histogram(split[1], bins=bins)[0] / np.histogram(x, bins=bins)[0]
+    cmap = matplotlib.cm.get_cmap('rainbow')
+    for f, p in zip(frac, patches):
+        p.set_facecolor(cmap(f))
+   
+def frac_max_num(d):
+    """
+    @returns Fraction of points with greatest uncertainty 
+    """
+    split = split_max_num(d, d)
+    return [len(s) / len(d) for s in split]
+
+def add_cbar(fig, ax):
+    """
+    @brief Add a color bar to histogram
+    """
+    fig.subplots_adjust(right=0.9, wspace=0.3, bottom=0.125)
+    norm = matplotlib.colors.Normalize(vmin=0, vmax=100)
+    cmap = matplotlib.cm.get_cmap('rainbow', 10)
+    cax = ax.inset_axes([1.04, 0.1, 0.05, 0.8], transform=ax.transAxes)
+    ticks=[0, 25, 50, 75, 100]
+    cbar = fig.colorbar(matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap), ticks=ticks,
+                 cax=cax, orientation='vertical', label='Gauge dependence greatest uncertainty')
+    cbar.ax.set_yticklabels([f'${t}\%$' for t in ticks])
+
+def hist_plot(axs, nn, diff, bins=30):
     """
     @brief Histogram of data
     """
     show_gamma = nn == 1
     ax = axs[nn, 0]
     ax.grid(axis='y', alpha=0.75)
-    ax.hist(x=diff[:, 4], bins=30, color='seagreen',
-            log=True, alpha=1, rwidth=0.85)
+
+    frac_color_hist(ax, diff[:, 4], diff, bins)
+
     if show_gamma:
         ax.set_xlabel(r'$\max |\Delta \gamma_{\rm EW}|$')
     else:
@@ -191,8 +235,7 @@ def hist_plot(axs, nn, diff):
 
     ax = axs[nn, 1]
     ax.grid(axis='y', alpha=0.75)
-    ax.hist(x=diff[:, 4]/diff[:, 5], bins=30,
-            color='seagreen', log=True, alpha=1, rwidth=0.85)
+    frac_color_hist(ax, diff[:, 4] / diff[:, 5], diff, bins)
     if show_gamma:
         ax.set_xlabel(r'$\max |\Delta\gamma_{\rm EW}|/\gamma_{\rm EW}$')
     else:
@@ -223,6 +266,7 @@ def make_plot(plot_type):
         fig, axs = plt.subplots(2, 2, figsize=(10, 10))
         hist_plot(axs, 0, diff)
         hist_plot(axs, 1, diff_gamma)
+        add_cbar(fig, axs[0, 1])
         fig.tight_layout()
         plt.savefig('3d_mu_hist.pdf')
 
