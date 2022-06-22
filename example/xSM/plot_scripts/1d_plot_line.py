@@ -155,8 +155,8 @@ def xi(zoom_in=False):
     add_name = '_zoom_in' if zoom_in else ''
 
     names = {"MSbar"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_self\_energy}",
-             "MSbar_1L_EWSB"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_tadpole}",
-             "MSbar_no"+add_name: r"$\overline{\rm MS}$ + \texttt{catastrophe}"}
+             "MSbar_1L_EWSB"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_tadpole\_everywhere}",
+             "MSbar_no"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_tadpole}"}
 
     for k, v in names.items():
         plot_for_1d_sel(ax, np.loadtxt(f"../1d_bks/Rxi_{k}.txt"), 10, v, 0)
