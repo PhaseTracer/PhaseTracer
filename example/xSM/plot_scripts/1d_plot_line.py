@@ -154,16 +154,16 @@ def xi(zoom_in=False):
 
     add_name = '_zoom_in' if zoom_in else ''
 
-    names = {"MSbar"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_self\_energy}",
-             "MSbar_1L_EWSB"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_tadpole\_everywhere}",
-             "MSbar_no"+add_name: r"$\overline{\rm MS}$ + \texttt{1l\_tadpole}"}
+    names = {"MSbar"+add_name: r"$\overline{\rm MS}$ + \texttt{GC\_SelfEnergy\_Sol}",
+             "MSbar_1L_EWSB"+add_name: r"$\overline{\rm MS}$ + \texttt{GC\_Tadpole\_Sol}",
+             "MSbar_no"+add_name: r"$\overline{\rm MS}$"}
 
     for k, v in names.items():
         plot_for_1d_sel(ax, np.loadtxt(f"../1d_bks/Rxi_{k}.txt"), 10, v, 0)
         plot_for_1d_sel(ax, np.loadtxt(f"../1d_bks/covariant_{k}.txt"), 10, v, 1)
 
 
-    names = {"PRM"+add_name: r"PRM + \texttt{1l\_tadpole}",
+    names = {"PRM"+add_name: r"PRM + \texttt{1LHiggs\_1LTad}",
              "PRM_0L"+add_name: r"PRM"}
 
     for k, v in names.items():
@@ -191,7 +191,7 @@ def xi(zoom_in=False):
     plt.subplots_adjust(top=0.7)
 
     ax[1, 0].set_xlabel(r"$\xi$")
-    ax[1, 1].set_xlabel(r"$\xi_W=\xi_B$")
+    ax[1, 1].set_xlabel(r"$\xi$")
 
     for a in ax[1, :]:
         a.set_xlim(0, 60)
