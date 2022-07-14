@@ -191,7 +191,7 @@ def make_plot(plot_type, show):
                 print("par",show_data[np.where(show_data[:, 4] == np.max(show_data[:, 4]))[0][0]])
             elif plot_xi:
                 map1 = ax.scatter(show_data[:, nx], show_data[:, ny], c=show_data[:, 4],
-                                  cmap=cm, edgecolor='none', s=5, vmin=-60, vmax=50, alpha=1, rasterized=True)
+                                  cmap=cm, edgecolor='none', s=5, vmin=-73, vmax=55, alpha=1, rasterized=True)
                 if par == "ms_ls":
                   xmin = 10.0
                   xmax = 90.7035
