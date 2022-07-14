@@ -195,7 +195,7 @@ def xi(zoom_in=False):
 
     for a in ax[1, :]:
         a.set_xlim(0, 60)
-    ax[0, 0].set_ylim(30, 130)
+    ax[0, 0].set_ylim(30, 150)
     ax[1, 0].set_ylim(1.5, 5)
 
     return fig, ax
