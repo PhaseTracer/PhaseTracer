@@ -1,6 +1,9 @@
 """
 Band plots for paper
 ====================
+
+"plot_scale" in the first place need to be manually modified.
+
 """
 
 import click
@@ -15,7 +18,7 @@ from style import style
 style()
 
 
-plot_scale = False
+plot_scale = True
 
 def selection(for_TC, x_num, data, PRM=False):
     x = data[:, x_num]
