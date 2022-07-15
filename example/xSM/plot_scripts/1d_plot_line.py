@@ -78,18 +78,18 @@ def daisy():
         data0 = np.loadtxt(f"../1d_bks/{name}_noDaisy.txt")
         data1 = np.loadtxt(f"../1d_bks/{name}_default.txt")
         data2 = np.loadtxt(f"../1d_bks/{name}_Parwani.txt")
-        show_data1 = fun_diff(data1, data0, data0, show_gamma=False, sort=False)
-        show_data2 = fun_diff(data2, data0, data0, show_gamma=False, sort=False)
-        show_data3 = fun_diff(data1, data2, data1, show_gamma=False, sort=False)
+        show_data1 = fun_diff(data1, data0, data0, norm=True, show_gamma=False, sort=False)
+        show_data2 = fun_diff(data2, data0, data0, norm=True, show_gamma=False, sort=False)
+        show_data3 = fun_diff(data1, data2, data1, norm=True, show_gamma=False, sort=False)
 
         a = ax[0, ii]
         a.plot(show_data1[:, 2-ii], show_data1[:, 4], label=r"${\rm AE}-{\rm ND}$", alpha=1)
         a.plot(show_data2[:, 2-ii], show_data2[:, 4], label=r"${\rm PW}-{\rm ND}$", alpha=1)
         a.plot(show_data3[:, 2-ii], show_data3[:, 4], label=r"${\rm AE}-{\rm PW}$", alpha=1)
 
-        show_data1 = fun_diff(data1, data0, data0, show_gamma=True, sort=False)
-        show_data2 = fun_diff(data2, data0, data0, show_gamma=True, sort=False)
-        show_data3 = fun_diff(data1, data2, data1, show_gamma=True, sort=False)
+        show_data1 = fun_diff(data1, data0, data0, norm=True, show_gamma=True, sort=False)
+        show_data2 = fun_diff(data2, data0, data0, norm=True, show_gamma=True, sort=False)
+        show_data3 = fun_diff(data1, data2, data1, norm=True, show_gamma=True, sort=False)
 
         a = ax[1, ii]
         a.plot(show_data1[:, 2-ii], show_data1[:, 4],
@@ -100,8 +100,8 @@ def daisy():
                label=r"${\rm AE}-{\rm PW}$", alpha=1)
 
 
-    ax[0, 0].set_ylabel(r"$\Delta T_c$ (GeV)")
-    ax[1, 0].set_ylabel(r"$\Delta \gamma_{\rm EW}$")
+    ax[0, 0].set_ylabel(r"$\Delta_{\rm daisy} T_c/T_c$")
+    ax[1, 0].set_ylabel(r"$\Delta_{\rm daisy} \gamma/\gamma$")
 
     ax[1, 0].set_xlabel(r"$\lambda_{hs}$")
     ax[1, 1].set_xlabel(r"$\lambda_{s}$")
@@ -111,10 +111,12 @@ def daisy():
     ax[1, 1].set_xlim(0.04, 0.2)
     ax[1, 2].set_xlim(40, 100)
 
-    ax[1, 0].legend(loc=3)
+    ax[1, 0].set_ylim(-0.05, 0.1)
+
+    ax[1, 0].legend(loc=1)
 
     ax[0, 0].autoscale()
-    ax[1, 0].autoscale()
+#    ax[1, 0].autoscale()
 
     return fig, ax
 
