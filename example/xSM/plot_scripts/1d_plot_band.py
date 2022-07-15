@@ -189,7 +189,7 @@ def make_plot(plot_type):
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_05mt.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"),
                      name[1], r"PRM w/o RGE", name[2], 'orange', fTC, fgamma, PRM=True)
-        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"), name[1], "purple", name[2], linestyle="--", alpha=0.4, PRM=True)
+#        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2mt.txt"), name[1], "purple", name[2], linestyle="--", alpha=0.4, PRM=True)
 
       else:
       
@@ -222,7 +222,7 @@ def make_plot(plot_type):
         range_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_05T.txt"),
                      np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2piT.txt"),
                      name[1], r"PRM w/o RGE", name[2], 'orange', fTC, fgamma, PRM=True)
-        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2piT.txt"), name[1], "purple", name[2], linestyle="--", alpha=0.4, PRM=True)
+#        fTC, fgamma = line_for_1d(axs, np.loadtxt("../1d_bks/"+name[0]+"_PRM_woFS_noRGE_2piT.txt"), name[1], "purple", name[2], linestyle="--", alpha=0.4, PRM=True)
 
 
     for ii in range(4 if plot_scale else 2):

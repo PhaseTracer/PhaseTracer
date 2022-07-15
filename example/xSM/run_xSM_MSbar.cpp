@@ -47,12 +47,12 @@ int main(int argc, char* argv[]) {
   if ( argc == 1 ) {
     debug_mode = true;
     // Compare with run_ScalarSingletZ2DMMhInput_withSingletVEVinPT
-    ms = 65.;
+    ms = 84.6733668341708;
     lambda_s =  0.1;
     lambda_hs = 0.3;
-    Q = 173;
-    xi = 0;
-    daisy_flag = 2;
+    Q = 86.5;
+    xi = 0.;
+    daisy_flag = 1;
     use_1L_EWSB_in_0L_mass = false;
     use_Goldstone_resum = true;
     use_covariant_gauge = false;
@@ -276,7 +276,7 @@ int main(int argc, char* argv[]) {
   double gamme_max = 0.;
   for (int i=0; i<t.size(); i++) {
     double gamma = t[i].gamma;
-    if (gamme_max < gamma and abs(t[i].true_vacuum[1])<1.){
+    if (gamme_max < gamma and abs(t[i].true_vacuum[1])<1. and abs(t[i].false_vacuum[0])<1.){
       jj = i;
       gamme_max = gamma;
     }
