@@ -58,16 +58,16 @@ TEST_CASE("h-bar expansion method", "[HBarExpansion]") {
   SECTION("covariant gauge") {
     for (double xi : {0., 0.5, 1., 2.}) {
       const auto cov = h_bar_expansion(true, xi);
-      CHECK(cov[0] == Approx(1.9756895848));
-      CHECK(cov[1] == Approx(94.2642482268));
+      CHECK(cov[0] == Approx(1.9653276239));
+      CHECK(cov[1] == Approx(94.6132178548));
     }
   }
 
   SECTION("R_xi gauge") {
     for (double xi : {0., 0.5, 1., 2.}) {
       const auto rxi = h_bar_expansion(false, xi);
-      CHECK(rxi[0] == Approx(1.9756895848));
-      CHECK(rxi[1] == Approx(94.264247631));
+      CHECK(rxi[0] == Approx(1.9653276251));
+      CHECK(rxi[1] == Approx(94.6132177564));
     }
   }
 }
