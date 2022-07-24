@@ -114,7 +114,7 @@ def data():
     return diff, diff_gamma
 
 
-def add_max_num_legend(ax, **kwargs):
+def add_max_num_legend(ax, for_Tc=True, **kwargs):
     """
     @brief Add legend for source of maximum change
     """
@@ -124,7 +124,7 @@ def add_max_num_legend(ax, **kwargs):
         (0, 0), 1, 1, fc=c, ec=c) for c in colors]
     labels = ["Scale", "Gauge"]
     ax.legend(patch, labels, framealpha=0.95,
-              title="Greatest impact on $T_c$", **kwargs)
+              title="Greatest impact on $T_c$" if for_Tc else r"Greatest impact on $\gamma_{\rm EW}$", **kwargs)
 
 
 def scatter_max_num(ax, diff, diff_gamma, nn):
@@ -146,10 +146,14 @@ def scatter_max_num(ax, diff, diff_gamma, nn):
         ax.scatter(diff[:, 5], diff[:, 4] / diff[:, 5], **style)
         ax.set_xlabel(r'$T_c$')
         ax.set_ylabel(r'$\max |\Delta T_c| / T_c$')
+        add_max_num_legend(ax)
     else:
-        ax.scatter(diff_gamma[:, 5], diff_gamma[:, 4], **style)
+        style = dict(c=abs(diff_gamma[:, 3]), cmap=max_num_cmap, alpha=0.5,
+                 edgecolor='none', rasterized=True, s=10)
+        ax.scatter(diff_gamma[:, 5], diff_gamma[:, 4]/diff_gamma[:, 5], **style)
         ax.set_xlabel(r'$\gamma_{\rm EW}$')
-        ax.set_ylabel(r'$\max |\Delta \gamma_{\rm EW}|$')
+        ax.set_ylabel(r'$\max |\Delta \gamma_{\rm EW}|/\gamma_{\rm EW}$')
+        add_max_num_legend(ax,for_Tc=False)
 
 
 def scatter(ax, diff, nx, ny, title, labels, cbar=False):
