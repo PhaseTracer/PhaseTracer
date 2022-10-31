@@ -56,11 +56,19 @@ class OneLoopPotential : public Potential {
   virtual double V1(std::vector<double> scalar_masses_sq,
                     std::vector<double> fermion_masses_sq,
                     std::vector<double> vector_masses_sq) const;
+  virtual double V1(std::vector<double> scalar_masses_sq,
+                    std::vector<double> fermion_masses_sq,
+                    std::vector<double> vector_masses_sq,
+                    std::vector<double> ghost_masses_sq) const;
   virtual double V1(Eigen::VectorXd phi, double T = 0.) const;
   /** Finite-temperature one-loop correction */
   double V1T(std::vector<double> scalar_masses_sq,
              std::vector<double> fermion_masses_sq,
              std::vector<double> vector_masses_sq, double T) const;
+  double V1T(std::vector<double> scalar_masses_sq,
+             std::vector<double> fermion_masses_sq,
+             std::vector<double> vector_masses_sq,
+             std::vector<double> ghost_masses_sq, double T) const;
   double V1T(Eigen::VectorXd phi, double T) const;
   /** Daisy corrections to potential */
   double daisy(std::vector<double> scalar_masses_sq,
@@ -72,13 +80,11 @@ class OneLoopPotential : public Potential {
   /** Counter-term to potential */
   virtual double counter_term(Eigen::VectorXd phi, double T) const { return 0; }
 
-
   /** High-temperature expansion of potential */
   double VHT(Eigen::VectorXd phi, double T) const;
 
   /** Tree-level scalar masses */
   std::vector<double> get_tree_scalar_masses_sq(Eigen::VectorXd phi) const;
-
 
   /** One-loop scalar masses */
   std::vector<double> get_1l_scalar_masses_sq(Eigen::VectorXd phi, double T) const;
