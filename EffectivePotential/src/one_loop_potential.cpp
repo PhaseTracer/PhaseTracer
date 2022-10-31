@@ -119,7 +119,8 @@ std::vector<double> OneLoopPotential::get_scalar_dofs() const {
 
 double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
                             std::vector<double> fermion_masses_sq,
-                            std::vector<double> vector_masses_sq) const {
+                            std::vector<double> vector_masses_sq,
+                            std::vector<double> ghost_masses_sq) const {
   double correction = 0;
 
   const auto scalar_dofs = get_scalar_dofs();
@@ -159,19 +160,31 @@ double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
       (square(renormalization_scale) * xlogx(x) - vector_masses_sq[i] * 5. / 6.);
   }
 
-  // gauge dependent vector correction
+  // ghost correction
   // hack - i know only first 3 are longitudinal in xSM model
   if (xi != 0.) {
     for (size_t i = 0; i < vector_masses_sq.size(); ++i) {
       if (i < 3) {
-        const double x = xi * vector_masses_sq[i] / square(renormalization_scale);
-        correction -= vector_dofs[i] * xi * vector_masses_sq[i] *
-          (square(renormalization_scale) * xlogx(x) - xi * vector_masses_sq[i] * 3. / 2.);
+        const double x = ghost_masses_sq[i] / square(renormalization_scale);
+        correction -= vector_dofs[i] * ghost_masses_sq[i] *
+          (square(renormalization_scale) * xlogx(x) - ghost_masses_sq[i] * 3. / 2.);
       }
     }
   }
 
   return correction / (64. * M_PI * M_PI);
+}
+
+double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
+                            std::vector<double> fermion_masses_sq,
+                            std::vector<double> vector_masses_sq) const {
+
+    std::vector<double> ghost_masses_sq{vector_masses_sq};
+    for (size_t i = 0; i < ghost_masses_sq.size(); ++i) {
+        ghost_masses_sq[i] = xi * ghost_masses_sq[i];
+    }
+    return V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq);
+
 }
 
 double OneLoopPotential::V1(Eigen::VectorXd phi, double T) const {
@@ -199,6 +212,18 @@ double OneLoopPotential::V1(Eigen::VectorXd phi, double T) const {
 double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
                              std::vector<double> fermion_masses_sq,
                              std::vector<double> vector_masses_sq, double T) const {
+    std::vector<double> ghost_masses_sq{vector_masses_sq};
+    for (size_t i = 0; i < ghost_masses_sq.size(); ++i) {
+        ghost_masses_sq[i] = xi * ghost_masses_sq[i];
+    }
+    return V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq, T);
+
+}
+
+double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
+                             std::vector<double> fermion_masses_sq,
+                             std::vector<double> vector_masses_sq,
+                             std::vector<double> ghost_masses_sq, double T) const {
   double correction = 0;
 
   const auto scalar_dofs = get_scalar_dofs();
@@ -232,12 +257,12 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
     correction += vector_dofs[i] * J_B(vector_masses_sq[i] / square(T));
   }
 
-  // gauge dependent vector correction
+  // ghost correction
   // hack - i know only first 3 are longitudinal in xSM model
   if (xi != 0.) {
     for (size_t i = 0; i < vector_masses_sq.size(); ++i) {
       if (i < 3) {
-        correction -= vector_dofs[i] * J_B(xi * vector_masses_sq[i] / square(T));
+        correction -= vector_dofs[i] * J_B(ghost_masses_sq[i] / square(T));
       }
     }
   }
@@ -246,6 +271,12 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
 }
 
 double OneLoopPotential::V1T(Eigen::VectorXd phi, double T) const {
+
+  std::vector<double> ghost_masses_sq = get_vector_masses_sq(phi);
+  for (size_t i = 0; i < ghost_masses_sq.size(); ++i) {
+      ghost_masses_sq[i] = xi * ghost_masses_sq[i];
+  }
+
   switch (daisy_method) {
     // Arnold-Espinosa method does not alter one-loop finite-temperature potential
     // hence here it is the same as no daisy corrections
@@ -257,7 +288,8 @@ double OneLoopPotential::V1T(Eigen::VectorXd phi, double T) const {
     case DaisyMethod::Parwani:
       return V1T(get_scalar_debye_sq(phi, xi, T),
                  get_fermion_masses_sq(phi),
-                 get_vector_debye_sq(phi, T), T);
+                 get_vector_debye_sq(phi, T),
+                 ghost_masses_sq, T);
     default:
       throw std::runtime_error("unknown daisy method");
   }
@@ -315,6 +347,10 @@ double OneLoopPotential::V(Eigen::VectorXd phi, double T) const {
   if (T > 0) {
     const auto scalar_debye_sq = get_scalar_debye_sq(phi, xi, T);
     const auto vector_debye_sq = get_vector_debye_sq(phi, T);
+    std::vector<double> ghost_masses_sq{vector_masses_sq};
+    for (size_t i = 0; i < ghost_masses_sq.size(); ++i) {
+        ghost_masses_sq[i] = xi * ghost_masses_sq[i];
+    }
     switch (daisy_method) {
       case DaisyMethod::None:
         return V0(phi)
@@ -329,8 +365,8 @@ double OneLoopPotential::V(Eigen::VectorXd phi, double T) const {
                + counter_term(phi, T);
       case DaisyMethod::Parwani:
         return V0(phi)
-               + V1(scalar_debye_sq, fermion_masses_sq, vector_debye_sq)
-               + V1T(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, T)
+               + V1(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, ghost_masses_sq)
+               + V1T(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, ghost_masses_sq, T)
                + counter_term(phi, T);
       default:
         throw std::runtime_error("unknown daisy method");
