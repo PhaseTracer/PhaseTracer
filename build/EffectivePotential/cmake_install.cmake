@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/e/Software/PhaseTracer/EffectivePotential
+# Install script for directory: /mnt/c/Work/Software/PhaseTracer/EffectivePotential
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -37,18 +37,13 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
 endif()
 
-# Set default install directory permissions.
-if(NOT DEFINED CMAKE_OBJDUMP)
-  set(CMAKE_OBJDUMP "/usr/bin/objdump")
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("/mnt/c/Work/Software/PhaseTracer/build/EffectivePotential/src/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/e/Software/PhaseTracer/build/EffectivePotential/src/cmake_install.cmake")
-endif()
-
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for the subdirectory.
-  include("/mnt/e/Software/PhaseTracer/build/EffectivePotential/example/cmake_install.cmake")
+  include("/mnt/c/Work/Software/PhaseTracer/build/EffectivePotential/example/cmake_install.cmake")
 endif()
 

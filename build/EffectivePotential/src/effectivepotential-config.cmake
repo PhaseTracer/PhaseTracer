@@ -4,7 +4,7 @@ if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" LESS 2.5)
    message(FATAL_ERROR "CMake >= 2.6.0 required")
 endif()
 cmake_policy(PUSH)
-cmake_policy(VERSION 2.6...3.17)
+cmake_policy(VERSION 2.6)
 #----------------------------------------------------------------
 # Generated CMake target import file.
 #----------------------------------------------------------------
@@ -45,14 +45,14 @@ unset(_expectedTargets)
 add_library(effectivepotential SHARED IMPORTED)
 
 set_target_properties(effectivepotential PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "/mnt/e/Software/PhaseTracer/EffectivePotential/include/effectivepotential;/mnt/e/Software/PhaseTracer/EffectivePotential/include/"
+  INTERFACE_INCLUDE_DIRECTORIES "/mnt/c/Work/Software/PhaseTracer/EffectivePotential/include/effectivepotential;/mnt/c/Work/Software/PhaseTracer/EffectivePotential/include/"
   INTERFACE_LINK_LIBRARIES "/usr/lib/x86_64-linux-gnu/libalglib.so"
 )
 
 # Import target "effectivepotential" for configuration ""
 set_property(TARGET effectivepotential APPEND PROPERTY IMPORTED_CONFIGURATIONS NOCONFIG)
 set_target_properties(effectivepotential PROPERTIES
-  IMPORTED_LOCATION_NOCONFIG "/mnt/e/Software/PhaseTracer/EffectivePotential/lib/libeffectivepotential.so"
+  IMPORTED_LOCATION_NOCONFIG "/mnt/c/Work/Software/PhaseTracer/EffectivePotential/lib/libeffectivepotential.so"
   IMPORTED_SONAME_NOCONFIG "libeffectivepotential.so"
   )
 

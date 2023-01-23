@@ -82,6 +82,27 @@ struct Phase {
   }
 };
 
+struct PhaseMerge {
+  size_t fromPhase;
+  size_t toPhase;
+  double temperature;
+  bool rejected = false;
+
+  friend std::ostream& operator << (std::ostream& o, const PhaseMerge& pm) {
+    o << (pm.rejected ? "[REJECTED] " : "") << "Merge phases " << pm.fromPhase << " -> " << pm.toPhase << " at T = " <<
+      pm.temperature;
+    return o;
+  }
+
+  friend bool operator < (const PhaseMerge& a, const PhaseMerge& b) {
+    return a.temperature < b.temperature;
+  }
+
+  friend bool operator > (const PhaseMerge& a, const PhaseMerge& b) {
+    return a.temperature > b.temperature;
+  }
+};
+
 class PhaseFinder {
  public:
   //! Find different phases as functions of temperature
@@ -146,6 +167,9 @@ class PhaseFinder {
   /** return minima at T_high*/
   std::vector<Point> get_minima_at_t_high();
 
+  /** Allow the potential to be visible to other classes such as transition_finder (e.g. for checkSubcriticalTransition). */
+  const EffectivePotential::Potential& get_potential() const;
+
  protected:
   EffectivePotential::Potential &P;
 
@@ -193,7 +217,7 @@ class PhaseFinder {
   Eigen::VectorXd dx_min_dt(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const;
 
   /** Check whether two phases are redundant */
-  bool redundant(const Phase& phase1, const Phase& phase2, end_descriptor end = BOTH) const;
+  std::tuple<bool, bool> redundant(const Phase& phase1, const Phase& phase2, end_descriptor end = BOTH) const;
 
   /** Check whether point belongs to a known phase */
   bool belongs_known_phase(const Point& point) const;
@@ -206,6 +230,18 @@ class PhaseFinder {
 
   /** Remove/combine identical phases */
   void remove_redundant();
+
+  /** Split phases that overlap over some subset of their shared temperature range. */
+  void split_overlapping_phases(Phase& phase1, Phase& phase2, bool isRedundantLow, bool isRedundantHigh);
+
+  /** Merge phases separated by a negigible gap in field and temperature. */
+  void merge_phase_gaps();
+
+  bool should_merge_phases(const Phase& phase1, const Phase& phase2);
+
+  int find_deepest_phase(const std::vector<PhaseMerge>& merges, const std::vector<int>& relevantMerges);
+
+  void perform_phase_merge(const PhaseMerge& merge);
 
   /** Check whether Hessian is singular */
   bool hessian_singular(const Eigen::VectorXd& X, double T) const;
@@ -258,6 +294,11 @@ class PhaseFinder {
   /** The starting step-size relative to t_high - t_low */
   PROPERTY(double, dt_start_rel, 0.01)
   /**
+    The minimum temperature interval (relative to t_high - t_low) with which to
+    resolve the splitting of a phase.
+    */
+  PROPERTY(double, dt_min_rel_split_phase, 0.001)
+  /**
      The jump in temperature from the end of one phase to the
      temperature at which we try to trace a new phase. If this is too
      large, intermediate phases may be skipped.
@@ -298,6 +339,10 @@ class PhaseFinder {
   PROPERTY(double, phase_min_length, 0.5)
   /** Guesses for locations of minima */
   PROPERTY(std::vector<Eigen::VectorXd>, guess_points, {})
+
+  PROPERTY(bool, check_merge_phase_gaps, false)
+  PROPERTY(double, dt_merge_phases, 5.)
+  PROPERTY(double, dx_merge_phases, 70.)
 };
 
 }  // namespace PhaseTracer

@@ -1,25 +1,111 @@
-Performing C++ SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
-Change Dir: /mnt/e/Software/PhaseTracer/build/CMakeFiles/CMakeTmp
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: CMAKE_CXX_COMPILER-NOTFOUND 
+Build flags: 
+Id flags:  
 
-Run Build Command(s):/usr/bin/make cmTC_be125/fast && /usr/bin/make  -f CMakeFiles/cmTC_be125.dir/build.make CMakeFiles/cmTC_be125.dir/build
-make[1]: Entering directory '/mnt/e/Software/PhaseTracer/build/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_be125.dir/src.cxx.o
-/usr/bin/c++   -DCMAKE_HAVE_LIBC_PTHREAD -o CMakeFiles/cmTC_be125.dir/src.cxx.o -c /mnt/e/Software/PhaseTracer/build/CMakeFiles/CMakeTmp/src.cxx
-Linking CXX executable cmTC_be125
-/home/Alfie/.local/lib/python2.7/site-packages/cmake/data/bin/cmake -E cmake_link_script CMakeFiles/cmTC_be125.dir/link.txt --verbose=1
-/usr/bin/c++  -DCMAKE_HAVE_LIBC_PTHREAD CMakeFiles/cmTC_be125.dir/src.cxx.o -o cmTC_be125 
-CMakeFiles/cmTC_be125.dir/src.cxx.o: In function `main':
-src.cxx:(.text+0x3c): undefined reference to `pthread_create'
-src.cxx:(.text+0x48): undefined reference to `pthread_detach'
-src.cxx:(.text+0x54): undefined reference to `pthread_cancel'
-src.cxx:(.text+0x65): undefined reference to `pthread_join'
-src.cxx:(.text+0x79): undefined reference to `pthread_atfork'
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: CMAKE_CXX_COMPILER-NOTFOUND 
+Build flags: 
+Id flags: -c 
+
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: CMAKE_CXX_COMPILER-NOTFOUND 
+Build flags: 
+Id flags: --c++ 
+
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: CMAKE_CXX_COMPILER-NOTFOUND 
+Build flags: 
+Id flags: --ec++ 
+
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: CMAKE_CXX_COMPILER-NOTFOUND 
+Build flags: 
+Id flags: --target=arm-arm-none-eabi;-mcpu=cortex-m3 
+
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: CMAKE_CXX_COMPILER-NOTFOUND 
+Build flags: 
+Id flags:  
+
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: CMAKE_CXX_COMPILER-NOTFOUND 
+Build flags: 
+Id flags: -c 
+
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: CMAKE_CXX_COMPILER-NOTFOUND 
+Build flags: 
+Id flags: --c++ 
+
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: CMAKE_CXX_COMPILER-NOTFOUND 
+Build flags: 
+Id flags: --ec++ 
+
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: CMAKE_CXX_COMPILER-NOTFOUND 
+Build flags: 
+Id flags: --target=arm-arm-none-eabi;-mcpu=cortex-m3 
+
+The output was:
+No such file or directory
+
+
+Performing C++ SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /mnt/c/Work/Software/PhaseTracer/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_e3a5b/fast && /usr/bin/make -f CMakeFiles/cmTC_e3a5b.dir/build.make CMakeFiles/cmTC_e3a5b.dir/build
+make[1]: Entering directory '/mnt/c/Work/Software/PhaseTracer/build/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_e3a5b.dir/src.cxx.o
+/usr/bin/c++    -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_e3a5b.dir/src.cxx.o -c /mnt/c/Work/Software/PhaseTracer/build/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_e3a5b
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_e3a5b.dir/link.txt --verbose=1
+/usr/bin/c++   -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_e3a5b.dir/src.cxx.o  -o cmTC_e3a5b 
+/usr/bin/ld: CMakeFiles/cmTC_e3a5b.dir/src.cxx.o: in function `main':
+src.cxx:(.text+0x46): undefined reference to `pthread_create'
+/usr/bin/ld: src.cxx:(.text+0x52): undefined reference to `pthread_detach'
+/usr/bin/ld: src.cxx:(.text+0x63): undefined reference to `pthread_join'
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_be125.dir/build.make:105: recipe for target 'cmTC_be125' failed
-make[1]: *** [cmTC_be125] Error 1
-make[1]: Leaving directory '/mnt/e/Software/PhaseTracer/build/CMakeFiles/CMakeTmp'
-Makefile:140: recipe for target 'cmTC_be125/fast' failed
-make: *** [cmTC_be125/fast] Error 2
+make[1]: *** [CMakeFiles/cmTC_e3a5b.dir/build.make:87: cmTC_e3a5b] Error 1
+make[1]: Leaving directory '/mnt/c/Work/Software/PhaseTracer/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_e3a5b/fast] Error 2
 
 
 Source file was:
@@ -35,7 +121,6 @@ int main(void)
   pthread_t thread;
   pthread_create(&thread, NULL, test_func, NULL);
   pthread_detach(thread);
-  pthread_cancel(thread);
   pthread_join(thread, NULL);
   pthread_atfork(NULL, NULL, NULL);
   pthread_exit(NULL);
@@ -44,22 +129,20 @@ int main(void)
 }
 
 Determining if the function pthread_create exists in the pthreads failed with the following output:
-Change Dir: /mnt/e/Software/PhaseTracer/build/CMakeFiles/CMakeTmp
+Change Dir: /mnt/c/Work/Software/PhaseTracer/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make cmTC_abbd3/fast && /usr/bin/make  -f CMakeFiles/cmTC_abbd3.dir/build.make CMakeFiles/cmTC_abbd3.dir/build
-make[1]: Entering directory '/mnt/e/Software/PhaseTracer/build/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_abbd3.dir/CheckFunctionExists.cxx.o
-/usr/bin/c++   -DCHECK_FUNCTION_EXISTS=pthread_create -o CMakeFiles/cmTC_abbd3.dir/CheckFunctionExists.cxx.o -c /mnt/e/Software/PhaseTracer/build/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
-Linking CXX executable cmTC_abbd3
-/home/Alfie/.local/lib/python2.7/site-packages/cmake/data/bin/cmake -E cmake_link_script CMakeFiles/cmTC_abbd3.dir/link.txt --verbose=1
-/usr/bin/c++  -DCHECK_FUNCTION_EXISTS=pthread_create CMakeFiles/cmTC_abbd3.dir/CheckFunctionExists.cxx.o -o cmTC_abbd3  -lpthreads 
+Run Build Command(s):/usr/bin/make cmTC_9b4da/fast && /usr/bin/make -f CMakeFiles/cmTC_9b4da.dir/build.make CMakeFiles/cmTC_9b4da.dir/build
+make[1]: Entering directory '/mnt/c/Work/Software/PhaseTracer/build/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_9b4da.dir/CheckFunctionExists.cxx.o
+/usr/bin/c++    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_9b4da.dir/CheckFunctionExists.cxx.o -c /mnt/c/Work/Software/PhaseTracer/build/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
+Linking CXX executable cmTC_9b4da
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_9b4da.dir/link.txt --verbose=1
+/usr/bin/c++   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_9b4da.dir/CheckFunctionExists.cxx.o  -o cmTC_9b4da  -lpthreads 
 /usr/bin/ld: cannot find -lpthreads
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_abbd3.dir/build.make:105: recipe for target 'cmTC_abbd3' failed
-make[1]: *** [cmTC_abbd3] Error 1
-make[1]: Leaving directory '/mnt/e/Software/PhaseTracer/build/CMakeFiles/CMakeTmp'
-Makefile:140: recipe for target 'cmTC_abbd3/fast' failed
-make: *** [cmTC_abbd3/fast] Error 2
+make[1]: *** [CMakeFiles/cmTC_9b4da.dir/build.make:87: cmTC_9b4da] Error 1
+make[1]: Leaving directory '/mnt/c/Work/Software/PhaseTracer/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_9b4da/fast] Error 2
 
 
 

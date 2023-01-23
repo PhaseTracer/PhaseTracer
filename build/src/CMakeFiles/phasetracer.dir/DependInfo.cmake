@@ -4,14 +4,23 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/mnt/e/Software/PhaseTracer/src/h_bar_expansion.cpp" "/mnt/e/Software/PhaseTracer/build/src/CMakeFiles/phasetracer.dir/h_bar_expansion.cpp.o"
-  "/mnt/e/Software/PhaseTracer/src/phase_finder.cpp" "/mnt/e/Software/PhaseTracer/build/src/CMakeFiles/phasetracer.dir/phase_finder.cpp.o"
-  "/mnt/e/Software/PhaseTracer/src/transition_finder.cpp" "/mnt/e/Software/PhaseTracer/build/src/CMakeFiles/phasetracer.dir/transition_finder.cpp.o"
+  "/mnt/c/Work/Software/PhaseTracer/src/h_bar_expansion.cpp" "/mnt/c/Work/Software/PhaseTracer/build/src/CMakeFiles/phasetracer.dir/h_bar_expansion.cpp.o"
+  "/mnt/c/Work/Software/PhaseTracer/src/phase_finder.cpp" "/mnt/c/Work/Software/PhaseTracer/build/src/CMakeFiles/phasetracer.dir/phase_finder.cpp.o"
+  "/mnt/c/Work/Software/PhaseTracer/src/transition_finder.cpp" "/mnt/c/Work/Software/PhaseTracer/build/src/CMakeFiles/phasetracer.dir/transition_finder.cpp.o"
+  "/mnt/c/Work/Software/PhaseTracer/src/transition_graph_util.cpp" "/mnt/c/Work/Software/PhaseTracer/build/src/CMakeFiles/phasetracer.dir/transition_graph_util.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
 # Preprocessor definitions for this target.
 set(CMAKE_TARGET_DEFINITIONS_CXX
+  "BOOST_ALL_NO_LIB"
+  "BOOST_ATOMIC_DYN_LINK"
+  "BOOST_CHRONO_DYN_LINK"
+  "BOOST_DATE_TIME_DYN_LINK"
+  "BOOST_FILESYSTEM_DYN_LINK"
+  "BOOST_LOG_DYN_LINK"
+  "BOOST_REGEX_DYN_LINK"
+  "BOOST_THREAD_DYN_LINK"
   "phasetracer_EXPORTS"
   )
 
@@ -25,7 +34,7 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
-  "/mnt/e/Software/PhaseTracer/build/EffectivePotential/src/CMakeFiles/effectivepotential.dir/DependInfo.cmake"
+  "/mnt/c/Work/Software/PhaseTracer/build/EffectivePotential/src/CMakeFiles/effectivepotential.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

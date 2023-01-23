@@ -17,6 +17,8 @@
 
 #include <Eigen/Eigenvalues>
 #include <boost/math/special_functions/sign.hpp>
+#include <limits.h>
+#include <iostream>
 
 #include "phase_finder.hpp"
 #include "logger.hpp"
@@ -52,6 +54,11 @@ PhaseFinder::PhaseFinder(EffectivePotential::Potential &potential) : P(potential
   upper_bounds = std::vector<double>(n_scalars, bound);
   lower_bounds = std::vector<double>(n_scalars, -bound);
   set_seed(seed);
+}
+
+const EffectivePotential::Potential& PhaseFinder::get_potential() const
+{
+  return P;
 }
 
 std::vector<Eigen::VectorXd> PhaseFinder::generate_test_points() const {
@@ -335,6 +342,11 @@ void PhaseFinder::find_phases() {
   // Remove any redundant phases - we only checked that the guess didn't belong
   // to a known phase. The phases might overlap
   remove_redundant();
+
+  if (check_merge_phase_gaps) {
+    merge_phase_gaps();
+  }
+  
   LOG(debug) << "Finished finding phases";
 }
 
@@ -658,7 +670,7 @@ Point PhaseFinder::phase_at_T(const Phase& phase, double T) const {
   return {X.back(), V.back(), T};
 }
 
-bool PhaseFinder::redundant(const Phase& phase1, const Phase& phase2, end_descriptor end) const {
+std::tuple<bool, bool> PhaseFinder::redundant(const Phase& phase1, const Phase& phase2, end_descriptor end) const {
   const double tmax_1 = phase1.T.back();
   const double tmin_1 = phase1.T.front();
   const double tmax_2 = phase2.T.back();
@@ -668,19 +680,43 @@ bool PhaseFinder::redundant(const Phase& phase1, const Phase& phase2, end_descri
   const double tmin = std::max(tmin_1, tmin_2);
 
   if (tmin > tmax) {
-    return false;
+    return std::make_tuple(false, false);
   }
 
   Eigen::VectorXd x1, x2;
 
+  LOG(debug) << "Checking whether phases " << phase1.key << " and " << phase2.key << " are redundant at endpoint(s) " << end;
+
+  bool low = false;
+  bool high = false;
+
   if (end != LOW) {
+    // Check the high temperature endpoint.
+    x1 = phase_at_T(phase1, tmax).x;
+    x2 = phase_at_T(phase2, tmax).x;
+
+    high = identical_within_tol(x1, x2);
+  }
+
+  if (end != HIGH) {
+    // Check the low temperature endpoint.
+    x1 = phase_at_T(phase1, tmin).x;
+    x2 = phase_at_T(phase2, tmin).x;
+    
+    low = identical_within_tol(x1, x2);
+  }
+
+  return std::make_tuple(low, high);
+
+  /*if (end != LOW) {
     x1 = phase_at_T(phase1, tmax).x;
     x2 = phase_at_T(phase2, tmax).x;
 
     if (!identical_within_tol(x1, x2)) {
-      return false;
+      return false, false;
     } else if (end == HIGH) {
-      return true;
+      LOG(debug) << "Phase " << phase1.key << " is identical to Phase " << phase2.key << " at Tmax: " << tmax;
+      return false, true;
     }
   }
 
@@ -691,11 +727,253 @@ bool PhaseFinder::redundant(const Phase& phase1, const Phase& phase2, end_descri
     if (!identical_within_tol(x1, x2)) {
       return false;
     } else if (end == LOW) {
+      LOG(debug) << "Phase " << phase1.key << " is identical to Phase " << phase2.key << " at Tmin: " << tmin;
       return true;
     }
   }
 
+  return true;*/
+}
+
+void PhaseFinder::merge_phase_gaps() {
+  std::vector<PhaseMerge> merges;
+
+  LOG(debug) << "Searching for small gaps between phases...";
+
+  // Loop through the phases and determine if these phases should be merged into the same phase. The phase tracing can
+  // treat a second-order phase transition as two separate phases, with a small temperature gap between the phases. This
+  // prevents some valid transitions paths from being found. Merging these equivalent phases prevents such issues.
+  for (size_t i = 0; i < phases.size(); ++i) {
+    // Use this as a flag for whether a phase should be deleted after merging has been performed.
+    phases[i].redundant = false;
+    
+    for (size_t j = 0; j < phases.size(); ++j) {
+      if (i != j && should_merge_phases(phases[i], phases[j])) {
+        // Always merge the higher temperature phase into the lower temperature phase. This convention was chosen
+        // because we observe phases that split as the Universe cools, and do not observe phases that merge as the
+        // Universe cools. If the phase splits, we can merge it into the low temperature phase that is deeper just below
+        // the splitting temperature, assuming they are not exactly degenerate.
+        /*if (phases[i].T.back() < phases[j].T.back()) {
+          merges.push_back({j, i, phases[j].T.front(), false});
+        } else {
+          merges.push_back({i, j, phases[i].T.front(), false});
+        }*/
+        // We guarantee that the merge should be i->j in should_merge_phases.
+        merges.push_back({i, j, phases[i].T.front(), false});
+      }
+    }
+  }
+
+  // Check whether there are any phase splittings, where a single phase splits into two phases as the Universe cools.
+  // This can be found by two PhaseMerges having the same 'from' phase and having very similar temperatures.
+  std::vector<int> splitMultiplicity(phases.size());
+  for (size_t i = 0; i < merges.size(); ++i) {
+    ++splitMultiplicity[merges[i].fromPhase];
+    LOG(debug) << "Identified possible merge: " << merges[i];
+  }
+
+  for (size_t i = 0; i < splitMultiplicity.size(); ++i) {
+    if (splitMultiplicity[i] > 1) {
+      // Need to handle this case! Find the deepest toPhase and only keep that merge. The rest should be converted to
+      // subcritical transitions (which will be handled automatically by append_subcritical_transitions).
+      LOG(debug) << "Detected split multiplicity " << splitMultiplicity[i] << " > 1 for Phase " << i;
+
+      // Search through the merges to find those that have this phase (i) as the from phase. Also find the lowest energy
+      // phase out of those.
+      std::vector<int> relevantMerges;
+      int lowestEnergyPhaseIndex;
+      double lowestEnergy = std::numeric_limits<double>::max();
+      double energy;
+      for (size_t j = 0; j < merges.size(); ++j) {
+        if (merges[j].fromPhase == i) {
+          relevantMerges.push_back(j);
+          LOG(debug) << "Relevant merge: " << relevantMerges.back();
+        }
+      }
+
+      // Note that if find_deepest_phase fails, it returns -1, in which case we reject all relevantMerges.
+      lowestEnergyPhaseIndex = find_deepest_phase(merges, relevantMerges);
+
+      if (lowestEnergyPhaseIndex >= 0) {
+        LOG(debug) << "The deepest 'to' phase is Phase " << lowestEnergyPhaseIndex;
+        LOG(debug) << "Removing all other relevant merges...";
+      }
+      else {
+        LOG(debug) << "Unable to determine the deepest 'to' phase, removing all relevant merges...";
+      }
+
+      // Now loop through other merges in relevantMerges and flag for deletion those that aren't the lowest energy one.
+      for (size_t j = 0; j < relevantMerges.size(); ++j) {
+        if (merges[relevantMerges[j]].toPhase != lowestEnergyPhaseIndex) {
+          merges[relevantMerges[j]].rejected = true;
+        }
+      }
+    }
+  }
+
+  // Remove the rejected merges using the erase-remove idiom.
+  merges.erase(std::remove_if(merges.begin(), merges.end(), [&](const PhaseMerge& pm) {return pm.rejected;}),
+    merges.end());
+
+  // We need to sort the merges in descending temperature order so that we don't merge into a phase that will be removed
+  // later. For instance if we had merges 1->2 and 2->3, doing them in the order 2->3 then 1->2 would not save the data
+  // from phase 1 in phase 3, the only phase remaining at the end.
+  std::sort(merges.begin(), merges.end());
+  std::reverse(merges.begin(), merges.end());
+
+  for (size_t i = 0; i < merges.size(); ++i) {
+    LOG(debug) << "Performing phase merge: " << merges[i];
+    perform_phase_merge(merges[i]);
+  }
+
+  // Remove the merged fromPhases using the erase-remove idiom.
+  phases.erase(std::remove_if(phases.begin(), phases.end(), [&](const Phase& p) {return p.redundant;}), phases.end());
+
+  // Update phase keys to match their position in the array.
+  // TODO: will this break any assumptions throughout the code?
+  for (size_t i = 0; i < phases.size(); ++i) {
+    phases[i].key = i;
+  }
+}
+
+bool PhaseFinder::should_merge_phases(const Phase& phase1, const Phase& phase2) {
+  if (phase1.key == phase2.key) {
+    return false;
+  }
+
+  double deltaT = phase1.T.front() - phase2.T.back();
+  double deltaPhi = (phase1.X.front() - phase2.X.back()).norm();
+
+  // If phase1 is the higher temperature phase, it's minimum temperature is just above the maximum temperature of
+  // phase2, and the phases are close to each in field-space at their almost shared temperature, then we could merge
+  // these phases. If this is not true, we can return false now.
+  if (!(deltaT >= 0. && deltaT < dt_merge_phases && deltaPhi < dx_merge_phases)) {
+    return false;
+  }
+
+  // Before saying that we should merge these phases, we need to check if there are any phases existing between the
+  // two merge candidates. If a phase is present between the merge candidates, the merging should not take place. It
+  // is not correct to merge across another phase. Check at both ends of the temperature interval where the gap exists.
+  for (const Phase& phaseMid : phases) {
+    if (phaseMid.contains_t(phase1.T.front())) {
+        Eigen::VectorXd x = phase_at_T(phaseMid, phase1.T.front()).x;
+
+        if ((phase1.X.front() - x).norm() < deltaPhi && (phase2.X.back() - x).norm() < deltaPhi) {
+          return false;
+        }
+    }
+
+    if (phaseMid.contains_t(phase2.T.back())) {
+      Eigen::VectorXd x = phase_at_T(phaseMid, phase2.T.back()).x;
+
+      if ((phase1.X.front() - x).norm() < deltaPhi && (phase2.X.back() - x).norm() < deltaPhi) {
+        return false;
+      }
+    }
+  }
+
   return true;
+}
+
+int PhaseFinder::find_deepest_phase(const std::vector<PhaseMerge>& merges, const std::vector<int>& relevantMerges) {
+  // Search through the high-T energy of the toPhases in relevantMerges to determine which phase would be transitioned
+  // to. The expected scenario is that a phase splits into multiple phases as the Universe cools, and this splitting
+  // should occur at a particular temperature. Thus we expect the low-T phases to all have a very similar maximum
+  // temperature and it is then safe to evaluate all low-T phases at the lowest maximum temperature (where they should
+  // all coexist).
+
+  double minTemp = std::numeric_limits<double>::max();
+  int minTempIndex = -1;
+  double toPhaseMaxTemp;
+
+  for (size_t i = 0; i < relevantMerges.size(); ++i) {
+    toPhaseMaxTemp = phases[merges[relevantMerges[i]].toPhase].T.back();
+
+    if (toPhaseMaxTemp < minTemp) {
+      if (minTempIndex >= 0 && toPhaseMaxTemp < minTemp*0.95) {
+        LOG(debug) << "When finding deepest phase for merging, encountered sizable gap between maximum temperature of "
+          "'to' phases: Phase " << minTempIndex << " has Tmax=" << phases[minTempIndex].T.back() << " and Phase " <<
+          merges[relevantMerges[i]].toPhase << " has Tmax=" << toPhaseMaxTemp;
+      }
+
+      // Make sure that all relevant phases exist at this temperature. If a phase doesn't exist at this new lowest
+      // temperature, keep the old temperature and ignore this merge. The toPhase for this merge is assumed to be
+      // not directly accessible from the fromPhase through a SOPT, since a SOPT would occur to a higher temperature
+      // toPhase first.
+      for (size_t j = 0; j < relevantMerges.size(); ++j) {
+        if (phases[merges[relevantMerges[j]].toPhase].T.front() > minTemp) {
+          LOG(debug) << "When finding deepest phase for merging, encountered toPhase (" <<
+            merges[relevantMerges[i]].toPhase << ") with a maximum temperature (Tmax=" << toPhaseMaxTemp << ") where "
+            "another toPhase (" << merges[relevantMerges[j]].toPhase << ") no longer exists.";
+          continue;
+        }
+      }
+
+      minTemp = toPhaseMaxTemp;
+      minTempIndex = merges[relevantMerges[i]].toPhase;
+    }
+  }
+
+  if (minTempIndex == -1) {
+    // TODO: Hopefully this won't happen! Needs testing.
+    std::cerr << "Unable to find deepest phase to merge to from Phase " << merges[relevantMerges[0]].fromPhase <<
+        std::endl;
+    return -1;
+  }
+
+  // We now have the temperature at which we should sample the toPhases, to compare their energies. It is now a matter
+  // of finding the lowest energy toPhase at that sample temperature.
+  double minEnergy = std::numeric_limits<double>::max();
+  // This is the index in the phases array corresponding to the lowest energy phase out of the toPhases from the
+  // relevantMerges.
+  int minEnergyIndex = -1;
+  double toPhaseEnergy;
+  //Phase& toPhase;
+
+  // Find which toPhase has the lowest energy at minTemp.
+  for (size_t i = 0; i < relevantMerges.size(); ++i) {
+    Phase* toPhase = &phases[merges[relevantMerges[i]].toPhase];
+
+    // Ignore any phases that don't exist at this temperature (we are already guaranteed that T.front() is smaller).
+    if (toPhase->T.back() < minTemp) {
+      continue;
+    }
+    
+    toPhaseEnergy = phase_at_T(*toPhase, minTemp).potential;
+
+    if (toPhaseEnergy < minEnergy) {
+      minEnergy = toPhaseEnergy;
+      minEnergyIndex = merges[relevantMerges[i]].toPhase;
+    }
+  }
+
+  return minEnergyIndex;
+}
+
+void PhaseFinder::perform_phase_merge(const PhaseMerge& merge) {
+  if (phases[merge.fromPhase].redundant) {
+    LOG(debug) << "While performing merge " << merge << ", fromPhase " << merge.fromPhase << " is already redundant!";
+  }
+
+  if (phases[merge.toPhase].redundant) {
+    LOG(debug) << "While performing merge " << merge << ", toPhase " << merge.toPhase << " is redundant!";
+  }
+
+  Phase& fromPhase = *&phases[merge.fromPhase];
+  Phase& toPhase = *&phases[merge.toPhase];
+
+  toPhase.X.insert(toPhase.X.end(), fromPhase.X.begin(),
+    fromPhase.X.end());
+  toPhase.T.insert(toPhase.T.end(), fromPhase.T.begin(),
+    fromPhase.T.end());
+  toPhase.dXdT.insert(toPhase.dXdT.end(), fromPhase.dXdT.begin(),
+    fromPhase.dXdT.end());
+  toPhase.V.insert(toPhase.V.end(), fromPhase.V.begin(),
+    fromPhase.V.end());
+  
+  toPhase.end_high = fromPhase.end_low;
+  
+  fromPhase.redundant = true;
 }
 
 void PhaseFinder::remove_redundant() {
@@ -704,8 +982,8 @@ void PhaseFinder::remove_redundant() {
   while (changed) {
     changed = false;
 
-    for (const auto &phase1 : phases) {
-      for (const auto &phase2 : phases) {
+    for (auto &phase1 : phases) {
+      for (auto &phase2 : phases) {
         // Don't investigate transitions more than once
         if (phase1.key >= phase2.key) {
           continue;
@@ -718,7 +996,11 @@ void PhaseFinder::remove_redundant() {
 
         LOG(debug) << "Checking redundancy between phases " << phase1.key << " and " << phase2.key;
 
-        if (redundant(phase1, phase2)) {
+        bool isRedundantLow, isRedundantHigh;
+        std::tie(isRedundantLow, isRedundantHigh) = redundant(phase1, phase2);
+
+        // If the phases have the same field location at both the high and low temperatures that they share, mark one as redundant.
+        if (isRedundantLow && isRedundantHigh) {
           LOG(debug) << "Phases " << phase1.key << " and " << phase2.key
                      << " are redundant";
           changed = true;
@@ -750,13 +1032,191 @@ void PhaseFinder::remove_redundant() {
                        << high_key << " redundant";
           }
         }
+        else if (isRedundantLow || isRedundantHigh) {
+            split_overlapping_phases(phase1, phase2, isRedundantLow, isRedundantHigh);
+        }
       }
     }
   }
+
+  std::vector<int> prunedKeys;
+
+  LOG(debug) << "Tracking keys of redundant phases...";
+
+  // Track the keys of the redundant phases so we know how to decrement the surviving phases' keys after pruning.
+  for(const auto &phase : phases) {
+    if(phase.redundant) {
+      prunedKeys.push_back(phase.key);
+    }
+  }
+
+  LOG(debug) << "Pruning redundant phases...";
+
   // Finally, prune redundant phases
   phases.erase(std::remove_if(phases.begin(), phases.end(), [](Phase phase) {return phase.redundant;}), phases.end());
+
+  LOG(debug) << "Determing amount to decrement remaining keys...";
+  std::vector<int> decrementAmount(phases.size(), 0);
+
+  // Determine how much each phase key needs to be decremented based on the keys of removed phases.
+  for(int i = 0; i < prunedKeys.size(); ++i) {
+    for(int j = 0; j < phases.size(); ++j) {
+      if(phases[j].key > prunedKeys[i]) {
+        ++decrementAmount[j];
+      }
+    }
+  }
+
+  LOG(debug) << "Decrementing keys...";
+
+  // Decrement phase keys that come after any removed phase keys.
+  for(int i = 0; i < phases.size(); ++i) {
+    phases[i].key -= decrementAmount[i];
+  }
+
+  LOG(debug) << "Done.";
 }
 
+void PhaseFinder::split_overlapping_phases(Phase& phase1, Phase& phase2, bool isRedundantLow, bool isRedundantHigh) {
+  if (isRedundantLow && isRedundantHigh) {
+    LOG(debug) << "Attempted to split overlapping phases that are redundant at both temperature endpoints";
+    return;
+  }
+
+  if (isRedundantLow) {
+    std::cerr << "Detected two phases merging as temperature decreases! This is not yet supported and requires further"
+      " investigation." << std::endl;
+    return;
+  }
+
+  // Do the splitting. Determine the shared temperature interval, then bisect it to find where the phases split.
+  double Tmax = std::min(phase1.T.back(), phase2.T.back());
+  double Tmin = std::max(phase1.T.front(), phase2.T.front());
+  double Tmid;
+  Point point1, point2, lastNonIdenticalPoint1, lastNonIdenticalPoint2;
+  bool identical;
+  double lastNonIdenticalT = Tmin;
+
+  LOG(debug) << "Splitting overlapping phases " << phase1.key << " and " << phase2.key;
+  LOG(debug) << "Tmin: " << Tmin << ", Tmax: " << Tmax;
+
+  // TODO: this was an attempt to get the optimiser to not jump to the nearby deeper phase, but it still doesn't work...
+  double minimisationStepSize = get_find_min_trace_abs_step();
+  set_find_min_trace_abs_step(0.01*minimisationStepSize);
+
+  while (Tmax - Tmin > dt_min_rel_split_phase)
+  {
+    Tmid = 0.5*(Tmin + Tmax);
+    point1 = phase_at_T(phase1, Tmid);
+    point2 = phase_at_T(phase2, Tmid);
+    identical = identical_within_tol(point1.x*10.0, point2.x*10.0);
+    LOG(debug) << "Tmid: " << Tmid << ", dist: " << (point1.x - point2.x).norm() << ", identical: " << identical;
+
+    if (identical)
+    {
+      Tmax = Tmid;
+    }
+    else
+    {
+      Tmin = Tmid;
+      lastNonIdenticalT = Tmid;
+      lastNonIdenticalPoint1.x = point1.x;
+      lastNonIdenticalPoint1.t = point1.t;
+      lastNonIdenticalPoint1.potential = point1.potential;
+      lastNonIdenticalPoint2.x = point2.x;
+      lastNonIdenticalPoint2.t = point2.t;
+      lastNonIdenticalPoint2.potential = point2.potential;
+    }
+  }
+
+  set_find_min_trace_abs_step(minimisationStepSize);
+
+  LOG(debug) << "Last non-identical T: " << lastNonIdenticalT;
+
+  /*if (Tmid != lastNonIdenticalT)
+  {
+    point1 = phase_at_T(phase1, lastNonIdenticalT);
+    point2 = phase_at_T(phase2, lastNonIdenticalT);
+  }*/
+
+  // We now have a good estimate of where the phase splitting occurs. Now we want to split the phases.
+  // Currently we have two phases that overlap at high temperature and diverge at some lower temperature.
+  // Just like we handle phase splitting when we merge phase gaps, we want to determine which phase is
+  // deeper just below the split point.
+  Phase& shallowPhase = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? phase2 : phase1;
+  Phase& deeperPhase = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? phase1 : phase2;
+  Point& shallowPoint = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? lastNonIdenticalPoint2 : lastNonIdenticalPoint1;
+  Point& deeperPoint = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? lastNonIdenticalPoint1 : lastNonIdenticalPoint2;
+
+  LOG(debug) << "Shallow point: " << shallowPoint;
+  LOG(debug) << "Deep point:    " << deeperPoint;
+
+  // This method isn't sufficient to guarantee we pick the correct shallow and deeper phase. Due to numerical errors in
+  // both the phase locations and the potential at those locations, it is possible to make the wrong choice. We should
+  // double-check at a slightly lower temperature to ensure we have made the correct choice.
+
+  LOG(debug) << "Identified phase " << shallowPhase.key << " as the shallow phase.";
+  LOG(debug) << "Identified phase " << deeperPhase.key << " as the deep phase.";
+
+  // The deeper phase should be left mostly unchanged. However, we want to add this new phase sample to the phases's
+  // stored data. This is necessary to avoid spurious transitions between these two phases directly below the splitting.
+  // The shallower phase will have precise data at the split point, including the potential energy, whereas the deeper
+  // phase would otherwise rely on interpolation between samples surrounding this split point. This can lead to the
+  // shallow phase appearing to have lower energy for a short temperature interval (which is not correct).
+
+  // Find the insertion point in the deeper phase's data arrays, where this new sample should be inserted.
+  int i = 0;
+
+  LOG(debug) << "============================================================================";
+  LOG(debug) << "Comparing against lastNonIdenticalT = " << lastNonIdenticalT;
+
+  while (deeperPhase.T[i] < lastNonIdenticalT)
+  {
+    LOG(debug) << "T[" << i << "] = " << deeperPhase.T[i];
+    ++i;
+  }
+
+  // i now contains the first index above the split point. This is precisely the element we want to insert before.
+  // Insert the new deeper phase sample at this position in the data arrays of the deeper phase.
+  deeperPhase.T.insert(deeperPhase.T.begin()+i, deeperPoint.t);
+  deeperPhase.X.insert(deeperPhase.X.begin()+i, deeperPoint.x);
+  deeperPhase.V.insert(deeperPhase.V.begin()+i, deeperPoint.potential);
+  deeperPhase.dXdT.insert(deeperPhase.dXdT.begin()+i, dx_min_dt(deeperPoint.x, deeperPoint.t));
+
+  LOG(debug) << "Adding point {T: " << deeperPhase.T[i] << ", X: " << deeperPhase.X[i] << ", V: " <<
+    deeperPhase.V[i] << ", dXdT: " << deeperPhase.dXdT[i] << "} to the deep phase.";
+  
+  // The shallower phase should have all of the overlapping data removed. The split will be handled by merge_phase_gaps.
+  i = 0;
+
+  // Find the split point in the shallow phase's data arrays.
+  while (shallowPhase.T[i] < lastNonIdenticalT)
+  {
+    ++i;
+  }
+
+  // i now contains the first index above the split point. Subtract 1 to find the last index below the split point.
+  --i;
+
+  // Remove all data stored in the shallow phase above this split point. This is the overlap region with the deeper phase.
+  shallowPhase.T.resize(i+1);
+  shallowPhase.X.resize(i+1);
+  shallowPhase.V.resize(i+1);
+  shallowPhase.dXdT.resize(i+1);
+
+  // Add the closest sampled point below the split to the shallow phase. This provides the phase with accurate
+  // knowledge of its high temperature endpoint, which might otherwise be significantly below the split.
+  //Point closestPointBelowSplit = point1.potential < point2.potential ? point1 : point2;
+  shallowPhase.T.push_back(shallowPoint.t);
+  shallowPhase.X.push_back(shallowPoint.x);
+  shallowPhase.V.push_back(shallowPoint.potential);
+  shallowPhase.dXdT.push_back(dx_min_dt(shallowPoint.x, shallowPoint.t));
+
+  LOG(debug) << "Adding point {T: " << shallowPhase.T.back() << ", X: " << shallowPhase.X.back() << ", V: " <<
+    shallowPhase.V.back() << ", dXdT: " << shallowPhase.dXdT.back() << "} to the shallow phase.";
+
+  // TODO: should update the HIGH phase end descriptor for the phase.
+}
 
 bool PhaseFinder::out_of_bounds(const Eigen::VectorXd& x) const {
   std::vector<double> vector_x(x.data(), x.data() + x.rows() * x.cols());

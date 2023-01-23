@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/e/Software/PhaseTracer
+# Install script for directory: /mnt/c/Work/Software/PhaseTracer
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -37,17 +37,12 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
 endif()
 
-# Set default install directory permissions.
-if(NOT DEFINED CMAKE_OBJDUMP)
-  set(CMAKE_OBJDUMP "/usr/bin/objdump")
-endif()
-
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/mnt/e/Software/PhaseTracer/build/EffectivePotential/cmake_install.cmake")
-  include("/mnt/e/Software/PhaseTracer/build/src/cmake_install.cmake")
-  include("/mnt/e/Software/PhaseTracer/build/example/cmake_install.cmake")
-  include("/mnt/e/Software/PhaseTracer/build/unit_tests/cmake_install.cmake")
+  include("/mnt/c/Work/Software/PhaseTracer/build/EffectivePotential/cmake_install.cmake")
+  include("/mnt/c/Work/Software/PhaseTracer/build/src/cmake_install.cmake")
+  include("/mnt/c/Work/Software/PhaseTracer/build/example/cmake_install.cmake")
+  include("/mnt/c/Work/Software/PhaseTracer/build/unit_tests/cmake_install.cmake")
 
 endif()
 
@@ -59,5 +54,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/mnt/e/Software/PhaseTracer/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/mnt/c/Work/Software/PhaseTracer/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

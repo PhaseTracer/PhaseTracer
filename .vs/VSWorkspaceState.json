@@ -1,7 +1,10 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\build",
+    "\\example",
+    "\\include",
+    "\\src"
   ],
-  "SelectedNode": "\\ChangeLog.md",
   "PreviewInSolutionExplorer": false
 }

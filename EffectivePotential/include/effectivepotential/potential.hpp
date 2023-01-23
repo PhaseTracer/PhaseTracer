@@ -38,10 +38,25 @@ class Potential {
   virtual bool forbidden(Eigen::VectorXd phi) const { return false; };
   /** Apply symmetry operation on field */
   virtual std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const { return {}; };
+  /**
+    * Returns the symmetry axes of the potential. Each element of the list is a list of reflections that must all be
+    * applied simulatenously. E.g. for a potential with fields x1, ..., xn;
+    * If the potential has the symmetry xi -> -xi, then the symmetry axes are {{i}}. If the potential possesses the symmetry
+    * (xi, xj) -> (-xi, -xj) and not xi -> -xi or xj -> -xj, the symmetry axes are {{i, j}}. If the potential
+    * possesses the symmetries xi -> -xi and xj -> -xj, the symmetry axes are {{i}, {j}}.
+    * TODO: this only handles Z2 symmetries!
+    */
+  virtual std::vector<std::vector<int>> get_symmetry_axes() const { return {}; };
   /** The derivative of the gradient of potential with respect to temperature */
   virtual Eigen::VectorXd d2V_dxdt(Eigen::VectorXd phi, double T) const;
   /** The Hessian matrix of the one-loop potential at finite temperature */
   virtual Eigen::MatrixXd d2V_dx2(Eigen::VectorXd phi, double T) const;
+
+  /** Returns the expected low temperature global vacua. If this list is populated, the potential will be considered
+    * physically invalid if the global minimum of the potential does not match an element of this list. This is used
+    * in analysing the phase history of the potential.
+    */
+  virtual std::vector<Eigen::VectorXd> get_low_t_phases() const { return {}; };
 
   /** Functor that returns potential */
   double operator () (Eigen::VectorXd phi, double T) const { return V(phi, T); }
@@ -59,6 +74,13 @@ class Potential {
   /** The step-size in all numerical derivatives */
   PROTECTED_PROPERTY(double, h, 0.1);
 
+  /**
+    * Used to determine the overall scale of the problem. This is used to determine what is a reasonable error
+    * or step size in field or temperature values.
+    */
+  PROTECTED_PROPERTY(double, field_scale, 1.0);
+  PROTECTED_PROPERTY(double, temperature_scale, 1.0);
+  
   /** Whether to use a fourth-order approximation */
   PROTECTED_PROPERTY_CUSTOM_SETTER(bool, h_4, false);
 

@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/mnt/e/Software/PhaseTracer/example/test_symmetry.cpp
+/mnt/c/Work/Software/PhaseTracer/example/test_symmetry.cpp
 iostream
 -
 iomanip
