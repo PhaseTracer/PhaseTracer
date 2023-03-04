@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC -O3  -shared -Wl,-soname,libeffectivepotential.so -o ../../../EffectivePotential/lib/libeffectivepotential.so CMakeFiles/effectivepotential.dir/one_loop_potential.cpp.o CMakeFiles/effectivepotential.dir/potential.cpp.o CMakeFiles/effectivepotential.dir/thermal_function.cpp.o  /usr/lib/x86_64-linux-gnu/libalglib.so 
