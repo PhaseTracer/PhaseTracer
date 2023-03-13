@@ -131,7 +131,7 @@ def plane_phi_phi_one(pi, pj, phases, transitions, pdf_name="plane.pdf"):
 
     # Get size of legend
     plt.gcf().canvas.draw()
-    extent = leg.get_window_extent().inverse_transformed(ax.transAxes)
+    extent = leg.get_window_extent().transformed(ax.transAxes.inverted())
     dy = extent.y1 - extent.y0
 
     # Add it to axis limit
