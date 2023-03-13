@@ -9,7 +9,7 @@ option(BUILD_WITH_EXAMPLE "Build example programs" OFF)
 # packages
 
 find_package(Eigen3 3.1 REQUIRED)
-find_package(Alglib REQUIRED)
+find_package(ALGLIB REQUIRED)
 
 # flags
 
