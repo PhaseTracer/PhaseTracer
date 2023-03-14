@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/PhaseTracer/PhaseTracer.svg?branch=master)](https://travis-ci.org/PhaseTracer/PhaseTracer)
+[![Build Status](https://travis-ci.org/PhaseTracer/PhaseTracer.svg?branch=master)](https://travis-ci.org/PhaseTracer/PhaseTracer) ![License](https://img.shields.io/github/license/PhaseTracer/PhaseTracer) [![arXiv](https://img.shields.io/badge/arXiv-2003.02859-b31b1b.svg)](https://arxiv.org/abs/2003.02859)
 
 # PhaseTracer
 
@@ -8,14 +8,19 @@
 
 If you use `PhaseTracer`, please cite the accompanying manual
 
-    @article{PhaseTracer,
-      author         = "Athron, Peter and Balazs, Csaba and Fowlie, Andrew and Zhang, Yang",
-      title          = "{PhaseTracer: tracing cosmological phases and calculating transition properties}",
-      year           = "2020",
-      eprint         = "2003.02859",
-      archivePrefix  = "arXiv",
-      primaryClass   = "hep-ph",
-      reportNumber   = "CoEPP-MN-20-3",
+    @article{Athron:2020sbe,
+        author = "Athron, Peter and Bal\'azs, Csaba and Fowlie, Andrew and Zhang, Yang",
+        title = "{PhaseTracer: tracing cosmological phases and calculating transition properties}",
+        eprint = "2003.02859",
+        archivePrefix = "arXiv",
+        primaryClass = "hep-ph",
+        reportNumber = "CoEPP-MN-20-3",
+        doi = "10.1140/epjc/s10052-020-8035-2",
+        journal = "Eur. Phys. J. C",
+        volume = "80",
+        number = "6",
+        pages = "567",
+        year = "2020"
     }
     
 
