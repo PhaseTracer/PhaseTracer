@@ -12,7 +12,7 @@
 
 int main(int argc, char* argv[]) {
 
-  const bool debug_mode = argc > 1 and strcmp(argv[1],"-d")==0;
+  const bool debug_mode = argc > 1 && strcmp(argv[1], "-d") == 0;
   
   // Set level of screen  output
   if (debug_mode) {

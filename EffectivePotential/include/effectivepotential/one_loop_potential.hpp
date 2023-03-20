@@ -40,6 +40,7 @@ class OneLoopPotential : public Potential {
   virtual std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const { return {}; }
   virtual std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const { return {}; }
   virtual std::vector<double> get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const { return {}; }
+  virtual std::vector<double> get_scalar_thermal_sq(double T) const { return {}; }
   virtual std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const { return {}; }
   virtual std::vector<double> get_scalar_dofs() const;
   virtual std::vector<double> get_fermion_dofs() const { return {}; }
@@ -71,13 +72,36 @@ class OneLoopPotential : public Potential {
   /** Counter-term to potential */
   virtual double counter_term(Eigen::VectorXd phi, double T) const { return 0; }
 
+
+  /** High-temperature expansion of potential */
+  double VHT(Eigen::VectorXd phi, double T) const;
+
+  /** Tree-level scalar masses */
+  std::vector<double> get_tree_scalar_masses_sq(Eigen::VectorXd phi) const;
+
+
+  /** One-loop scalar masses */
+  std::vector<double> get_1l_scalar_masses_sq(Eigen::VectorXd phi, double T) const;
+
+  /** The renormalization scale for the effective potential */
+  void set_renormalization_scale(double Q) { renormalization_scale = Q; }
+  double get_renormalization_scale() const { return renormalization_scale; }
+
+  /** The gauge parameter \xi */
+  void set_xi(double xi_in ) { xi=xi_in; }
+  double get_xi() const { return xi; }
+
+  /** Treatment of the thermal masses */
+  void set_daisy_method(DaisyMethod dm ) { daisy_method = dm; }
+  DaisyMethod get_daisy_method() const { return daisy_method; }
+
  private:
   /** The renormalization scale for the effective potential */
-  PROPERTY(double, renormalization_scale, 246.)
+  double renormalization_scale = 246.;
   /** The gauge parameter \xi */
-  PROPERTY(double, xi, 0.)
+  double xi = 0.;
   /** Treatment of the thermal masses */
-  PROPERTY(DaisyMethod, daisy_method, DaisyMethod::ArnoldEspinosa)
+  DaisyMethod daisy_method = DaisyMethod::ArnoldEspinosa;
 };
 
 }  // namespace EffectivePotential
