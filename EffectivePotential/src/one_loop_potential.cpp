@@ -38,15 +38,32 @@ std::vector<double> OneLoopPotential::get_scalar_masses_sq(Eigen::VectorXd phi, 
   if (xi != 0.) {
     throw std::runtime_error("Default implementation of scalar masses assumes xi = 0.");
   }
-  static const auto scalar_dofs = get_scalar_dofs();
-  static const bool identical = std::all_of(scalar_dofs.begin(), scalar_dofs.end(),
-    [](double e){ return e == scalar_dofs.front(); });
+  const auto scalar_dofs = get_scalar_dofs();
+  const bool identical = std::all_of(scalar_dofs.begin(), scalar_dofs.end(),
+    [scalar_dofs](double e){ return e == scalar_dofs.front(); });
   if (!identical) {
     throw std::runtime_error("Default implementation of scalar masses assumes scalar dof are equal.");
   }
   const Eigen::MatrixXd hessian = d2V0_dx2(phi);
   const Eigen::VectorXd m_sq = hessian.eigenvalues().real();
   std::vector<double> m_sq_vector(m_sq.data(), m_sq.data() + m_sq.rows() * m_sq.cols());
+  std::sort(m_sq_vector.begin(), m_sq_vector.end());
+  return m_sq_vector;
+}
+
+std::vector<double> OneLoopPotential::get_1l_scalar_masses_sq(Eigen::VectorXd phi, double T) const {
+  const Eigen::MatrixXd hessian = d2V_dx2(phi, T);
+  const Eigen::VectorXd m_sq = hessian.eigenvalues().real();
+  std::vector<double> m_sq_vector(m_sq.data(), m_sq.data() + m_sq.rows() * m_sq.cols());
+  std::sort(m_sq_vector.begin(), m_sq_vector.end());
+  return m_sq_vector;
+}
+
+std::vector<double> OneLoopPotential::get_tree_scalar_masses_sq(Eigen::VectorXd phi) const {
+  const Eigen::MatrixXd hessian = d2V0_dx2(phi);
+  const Eigen::VectorXd m_sq = hessian.eigenvalues().real();
+  std::vector<double> m_sq_vector(m_sq.data(), m_sq.data() + m_sq.rows() * m_sq.cols());
+  std::sort(m_sq_vector.begin(), m_sq_vector.end());
   return m_sq_vector;
 }
 
@@ -96,7 +113,7 @@ Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const 
 }
 
 std::vector<double> OneLoopPotential::get_scalar_dofs() const {
-  static const std::vector<double> dof(get_n_scalars(), 1.);
+  const std::vector<double> dof(get_n_scalars(), 1.);
   return dof;
 }
 
@@ -105,9 +122,9 @@ double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
                             std::vector<double> vector_masses_sq) const {
   double correction = 0;
 
-  static const auto scalar_dofs = get_scalar_dofs();
-  static const auto fermion_dofs = get_fermion_dofs();
-  static const auto vector_dofs = get_vector_dofs();
+  const auto scalar_dofs = get_scalar_dofs();
+  const auto fermion_dofs = get_fermion_dofs();
+  const auto vector_dofs = get_vector_dofs();
 
   if (scalar_dofs.size() != scalar_masses_sq.size()) {
     throw std::runtime_error("Scalar dofs and masses do not match");
@@ -143,11 +160,14 @@ double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
   }
 
   // gauge dependent vector correction
+  // hack - i know only first 3 are longitudinal in xSM model
   if (xi != 0.) {
     for (size_t i = 0; i < vector_masses_sq.size(); ++i) {
-      const double x = xi * vector_masses_sq[i] / square(renormalization_scale);
-      correction -= vector_dofs[i] / 3. * xi * vector_masses_sq[i] *
-        (square(renormalization_scale) * xlogx(x) - xi * vector_masses_sq[i] * 3. / 2.);
+      if (i < 3) {
+        const double x = xi * vector_masses_sq[i] / square(renormalization_scale);
+        correction -= vector_dofs[i] * xi * vector_masses_sq[i] *
+          (square(renormalization_scale) * xlogx(x) - xi * vector_masses_sq[i] * 3. / 2.);
+      }
     }
   }
 
@@ -181,9 +201,9 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
                              std::vector<double> vector_masses_sq, double T) const {
   double correction = 0;
 
-  static const auto scalar_dofs = get_scalar_dofs();
-  static const auto fermion_dofs = get_fermion_dofs();
-  static const auto vector_dofs = get_vector_dofs();
+  const auto scalar_dofs = get_scalar_dofs();
+  const auto fermion_dofs = get_fermion_dofs();
+  const auto vector_dofs = get_vector_dofs();
 
   if (scalar_dofs.size() != scalar_masses_sq.size()) {
     throw std::runtime_error("Scalar dofs and masses do not match");
@@ -213,9 +233,12 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
   }
 
   // gauge dependent vector correction
+  // hack - i know only first 3 are longitudinal in xSM model
   if (xi != 0.) {
     for (size_t i = 0; i < vector_masses_sq.size(); ++i) {
-      correction -= vector_dofs[i] / 3. * J_B(xi * vector_masses_sq[i] / square(T));
+      if (i < 3) {
+        correction -= vector_dofs[i] * J_B(xi * vector_masses_sq[i] / square(T));
+      }
     }
   }
 
@@ -240,6 +263,15 @@ double OneLoopPotential::V1T(Eigen::VectorXd phi, double T) const {
   }
 }
 
+double OneLoopPotential::VHT(Eigen::VectorXd phi, double T) const {
+  const auto thermal_sq = get_scalar_thermal_sq(T);
+  double V = V0(phi);
+  for (int i = 0; i < thermal_sq.size(); i++) {
+    V += 0.5 * thermal_sq[i] * square(phi(i));
+  }
+  return V;
+}
+
 double OneLoopPotential::daisy(std::vector<double> scalar_masses_sq,
                                std::vector<double> scalar_debye_sq,
                                std::vector<double> vector_masses_sq,
@@ -250,16 +282,17 @@ double OneLoopPotential::daisy(std::vector<double> scalar_masses_sq,
 
   double correction = 0.;
 
-  static const auto scalar_dofs = get_scalar_dofs();
-  static const auto vector_dofs = get_vector_dofs();
+  const auto scalar_dofs = get_scalar_dofs();
+  const auto vector_dofs = get_vector_dofs();
 
   for (size_t i = 0; i < scalar_debye_sq.size(); ++i) {
     correction += scalar_dofs[i] * (std::pow(std::max(0., scalar_debye_sq[i]), 1.5)
                     - std::pow(std::max(0., scalar_masses_sq[i]), 1.5));
   }
 
-  for (size_t i = 0; i < vector_debye_sq.size(); ++i) {
-    correction += vector_dofs[i] / 3. * (std::pow(std::max(0., vector_debye_sq[i]), 1.5)
+  // hack - i know only first 3 are longitudinal in xSM model
+  for (size_t i = 0; i < vector_masses_sq.size(); ++i) {
+    correction += vector_dofs[i] * (std::pow(std::max(0., vector_debye_sq[i]), 1.5)
                     - std::pow(std::max(0., vector_masses_sq[i]), 1.5));
   }
 

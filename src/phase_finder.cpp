@@ -65,8 +65,9 @@ std::vector<Eigen::VectorXd> PhaseFinder::generate_test_points() const {
   return test_points;
 }
 
-std::vector<Point> PhaseFinder::find_minima_at_t(const std::vector<Eigen::VectorXd>& test_points, double T) const {
+std::vector<Point> PhaseFinder::find_minima_at_t(double T) const {
   std::vector<Point> minima;
+  const std::vector<Eigen::VectorXd> test_points = generate_test_points();
 
   for (const auto& p : test_points) {
     const auto polished = find_min(p, T, find_min_locate_abs_step);
@@ -177,18 +178,16 @@ bool PhaseFinder::belongs_known_phase(const Point& point) const {
 
 std::vector<Point> PhaseFinder::get_minima_at_t_low() {
   if (minima_at_t_low.empty()) {
-    const std::vector<Eigen::VectorXd> test_points = generate_test_points();
     LOG(debug) << "Check potential at T = t_low = " << t_low;
-    minima_at_t_low = find_minima_at_t(test_points, t_low);
+    minima_at_t_low = find_minima_at_t(t_low);
   }
   return minima_at_t_low;
 }
 
 std::vector<Point> PhaseFinder::get_minima_at_t_high() {
   if (minima_at_t_high.empty()) {
-    const std::vector<Eigen::VectorXd> test_points = generate_test_points();
     LOG(debug) << "Check potential at T = t_high = " << t_high;
-    minima_at_t_high = find_minima_at_t(test_points, t_high);
+    minima_at_t_high = find_minima_at_t(t_high);
   }
   return minima_at_t_high;
 }
@@ -224,11 +223,8 @@ void PhaseFinder::find_phases() {
     }
   }
 
-  const std::vector<Eigen::VectorXd> test_points = generate_test_points();
-
   LOG(debug) << "Check potential at T = t_low = " << t_low;
-
-  minima_at_t_low = find_minima_at_t(test_points, t_low);
+  minima_at_t_low = find_minima_at_t(t_low);
 
   if (check_vacuum_at_low) {
       const minima_descriptor location = get_minima_descriptor(minima_at_t_low, t_low);
@@ -239,8 +235,7 @@ void PhaseFinder::find_phases() {
     }
   }
   LOG(debug) << "Check potential at T = t_high = " << t_high;
-
-  minima_at_t_high = find_minima_at_t(test_points, t_high);
+  minima_at_t_high = find_minima_at_t(t_high);
   if (check_vacuum_at_high && !origin_unique_minima(minima_at_t_high)) {
     throw std::runtime_error("Found minimum other than the origin at T = t_high");
   }
@@ -318,7 +313,8 @@ void PhaseFinder::find_phases() {
     dXdT.insert(dXdT.end(), dXdT_up.begin() + 1, dXdT_up.end());
     V.insert(V.end(), V_up.begin() + 1, V_up.end());
 
-    if (std::abs(T.front() - T.back()) > phase_min_length) {
+//  Ignore short phase may cause endless loop. 
+//    if (std::abs(T.front() - T.back()) > phase_min_length) {
       Phase new_;
       new_.key = phases.size();
       new_.X = X;
@@ -329,9 +325,9 @@ void PhaseFinder::find_phases() {
       new_.end_high = end_high;
       phases.push_back(new_);
       LOG(debug) << "Added new phase:" << std::endl << new_;
-    } else {
-      LOG(warning) << "Did not add short phase";
-    }
+//    } else {
+//      LOG(warning) << "Did not add short phase";
+//    }
 
     if (end_high == JUMP_INDICATED_END || end_high == HESSIAN_SINGULAR || end_high == HESSIAN_NOT_POSITIVE_DEFINITE) {
       Point top;
@@ -585,6 +581,13 @@ Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, double abs_s
   return find_min(guess, T, Eigen::VectorXd::Constant(n_scalars, abs_step));
 }
 
+std::function<double(Eigen::VectorXd)> PhaseFinder::make_objective(double T) const {
+  std::function<double(Eigen::VectorXd)> objective = [this, T](Eigen::VectorXd x) {
+    return this->P.V(x, T);
+  };
+  return objective;
+}
+
 Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, Eigen::VectorXd step) const {
   if (out_of_bounds(guess)) {
     LOG(fatal) << "guess = " << guess << " was out of bounds";
@@ -607,10 +610,7 @@ Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, Eigen::Vecto
 
   opt.set_initial_step(step_vector);
 
-  std::function<double(const Eigen::VectorXd&)> objective = [this, T](const Eigen::VectorXd& x) {
-    return this->P.V(x, T);
-  };
-
+  auto objective = make_objective(T);
   opt.set_min_objective(wrap_nlopt, &objective);
   std::vector<double> minima(guess.data(), guess.data() + guess.rows() * guess.cols());
   double potential_at_minima;

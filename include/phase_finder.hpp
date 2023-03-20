@@ -96,15 +96,15 @@ class PhaseFinder {
      over a uniform interval in field space
   */
   std::vector<Eigen::VectorXd> generate_test_points() const;
-  std::vector<Point> find_minima_at_t(const std::vector<Eigen::VectorXd>& test_points, double T) const;
+  std::vector<Point> find_minima_at_t(double T) const;
 
-  void find_phases();
+  virtual void find_phases();
 
   double delta_potential_at_T(const Phase& phase1, const Phase& phase2, double T) const {
     return phase_at_T(phase1, T).potential - phase_at_T(phase2, T).potential;
   }
 
-  Point phase_at_T(const Phase& phase, double T) const;
+  virtual Point phase_at_T(const Phase& phase, double T) const;
 
   /** Pretty-printer for a collection of phases */
   friend std::ostream& operator << (std::ostream& o, const PhaseFinder& pf) {
@@ -152,15 +152,17 @@ class PhaseFinder {
   /** return the deepest phase at T */
   Phase get_deepest_phase_at_T(double T);
 
- private:
+ protected:
+
   EffectivePotential::Potential &P;
 
   /**
      Find local minima at a particular temperature. The overloads define
      different ways of passing an initial step.
   */
-  Point find_min(const Eigen::VectorXd& X, double T, double step) const;
+  virtual std::function<double(Eigen::VectorXd)> make_objective(double T) const;
   Point find_min(const Eigen::VectorXd& X, double T, Eigen::VectorXd step) const;
+  Point find_min(const Eigen::VectorXd& X, double T, double step) const;
   Point find_min(const Eigen::VectorXd& X, double T) const;
 
   /** Check for a jump discontinuity between two phases*/
@@ -223,6 +225,7 @@ class PhaseFinder {
   bool hessian_positive_definite(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const;
 
   /** Default bound on fields */
+ protected:
   const double bound = 1600.;
 
   /** Absolute error below which field values are considered identical */
@@ -256,9 +259,9 @@ class PhaseFinder {
   /** Upper bounds on fields */
   PROPERTY(std::vector<double>, upper_bounds, {})
   /** Lowest temperature to consider */
-  PROPERTY(double, t_low, 0.)
+  PROTECTED_PROPERTY(double, t_low, 0.)
   /** Highest temperature to consider */
-  PROPERTY(double, t_high, 1000.)
+  PROTECTED_PROPERTY(double, t_high, 1000.)
   /** The starting step-size relative to t_high - t_low */
   PROPERTY(double, dt_start_rel, 0.01)
   /**
@@ -277,9 +280,9 @@ class PhaseFinder {
   /** The smallest absolute step-size in temperature */
   PROPERTY(double, dt_min_abs, 1.e-10)
   /** Container for the phases */
-  PROPERTY(std::vector<Phase>, phases, {})
+  PROTECTED_PROPERTY(std::vector<Phase>, phases, {})
   /** Number of scalar fields */
-  PROPERTY_CUSTOM_SETTER(size_t, n_scalars, 0)
+  PROTECTED_PROPERTY_CUSTOM_SETTER(size_t, n_scalars, 0)
   /** Number of scalar fields that could break electroweak symmetry */
   PROPERTY(size_t, n_ew_scalars, 0)
   /** Zero-temperature vacuum expectation value of electroweak charged scalars */
@@ -299,7 +302,8 @@ class PhaseFinder {
   /** Maximum number of iterations when tracing a minimum */
   PROPERTY(unsigned int, trace_max_iter, 100000)
   /** Minimum length of a phase in temperature */
-  PROPERTY(double, phase_min_length, 0.5)
+  // Discard short phase checking, because it may cause endless loop. 
+  // PROPERTY(double, phase_min_length, 0.5)
   /** Guesses for locations of minima */
   PROPERTY(std::vector<Eigen::VectorXd>, guess_points, {})
 };

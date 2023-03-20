@@ -77,8 +77,7 @@ class THDMIISNMSSMBC : public OneLoopPotential {
   const double mt = 173.1;
   double m1, m2, m3, m4, m5;
   double l1, l2, l3, l4, l5, l6, l7, l8;
-  double g1, g2;
-  double gp, g;
+  double gp, g, yt, yb, ytau;
   double c_hu, c_hd, c_s;
 };
 
@@ -139,9 +138,9 @@ void THDMIISNMSSMBC::set_input(std::vector<double> x) {
 
   // Calculate Debye coefficients
 
-  const double yt = model.get_Yu(2, 2);
-  const double yb = model.get_Yd(2, 2);
-  const double ytau = model.get_Ye(2, 2);
+  yt = model.get_Yu(2, 2);
+  yb = model.get_Yd(2, 2);
+  ytau = model.get_Ye(2, 2);
 
   c_hu = 1. / 48. * (3. * square(gp)
                      + 9. * square(g)

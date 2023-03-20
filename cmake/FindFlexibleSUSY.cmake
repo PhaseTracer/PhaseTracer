@@ -18,11 +18,15 @@ if(NOT EXISTS ${FS})
 		  )
 endif()
 
+if(NOT DEFINED FS_PARALLEL_MAKE)
+  set(FS_PARALLEL_MAKE "1")
+endif()
+
 # Compile model
 if(NOT EXISTS ${FS}/models/${FS_model_name}/lib${FS_model_name}.a)
   if(NOT EXISTS ${FS}/models/${FS_model_name})
     message(STATUS "Creating ${FS_model_name} model files")
-    execute_process(COMMAND git checkout tags/v2.4.2
+    execute_process(COMMAND git checkout tags/${FS_version}
                     WORKING_DIRECTORY ${FS}
                    )
     execute_process(COMMAND cp -r ${FS_model_name} ${FS}/models/
@@ -31,12 +35,14 @@ if(NOT EXISTS ${FS}/models/${FS_model_name}/lib${FS_model_name}.a)
   endif()
 
   message(STATUS "Making ${FS_model_name} model")
-  execute_process(COMMAND ./configure --with-models=${FS_model_name} --disable-threads --disable-meta
+  execute_process(COMMAND ./configure --with-models=${FS_model_name} --disable-threads --disable-meta --disable-sqlite
                   WORKING_DIRECTORY ${FS}
   )
-  execute_process(COMMAND ${CMAKE_MAKE_PROGRAM}
-                  WORKING_DIRECTORY ${FS}
+  	
+  execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} -j${FS_PARALLEL_MAKE}
+                    WORKING_DIRECTORY ${FS}
   )
+ 
 endif()
 
 # find includes

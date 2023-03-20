@@ -12,6 +12,8 @@ paper/paper\.bbl
 paper/paper\.blg
 paper/paper\.spl
 paper/paper\.toc
+*__pycache__*
+build
 
 
 
