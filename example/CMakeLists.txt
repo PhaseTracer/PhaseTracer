@@ -11,6 +11,7 @@ add_executable(scan_Z2_scalar_singlet_model scan_Z2_scalar_singlet_model.cpp)
 add_executable(time time.cpp)
 add_executable(h_bar_expansion h_bar_expansion.cpp)
 add_executable(run_ToyModel run_ToyModel.cpp)
+add_executable(run_RSS run_RSS.cpp)
 
 # add any subdirs that might contain programs
 

@@ -2,6 +2,7 @@
 *.o
 bin/
 lib/
+build/
 paper/paper\.synctex\.gz
 paper/paper\.pdf
 paper/paper\.log
