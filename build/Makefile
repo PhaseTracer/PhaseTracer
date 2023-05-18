@@ -188,6 +188,19 @@ phasetracer/fast:
 .PHONY : phasetracer/fast
 
 #=============================================================================
+# Target rules for targets named run_RSS
+
+# Build rule for target.
+run_RSS: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 run_RSS
+.PHONY : run_RSS
+
+# fast build rule for target.
+run_RSS/fast:
+	$(MAKE) -f example/CMakeFiles/run_RSS.dir/build.make example/CMakeFiles/run_RSS.dir/build
+.PHONY : run_RSS/fast
+
+#=============================================================================
 # Target rules for targets named run_ToyModel
 
 # Build rule for target.
@@ -292,6 +305,7 @@ help:
 	@echo "... edit_cache"
 	@echo "... effectivepotential"
 	@echo "... phasetracer"
+	@echo "... run_RSS"
 	@echo "... run_ToyModel"
 	@echo "... h_bar_expansion"
 	@echo "... time"

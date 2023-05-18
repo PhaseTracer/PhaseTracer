@@ -33,6 +33,7 @@
 /mnt/c/Work/Software/PhaseTracer/build/example/CMakeFiles/install.dir
 /mnt/c/Work/Software/PhaseTracer/build/example/CMakeFiles/list_install_components.dir
 /mnt/c/Work/Software/PhaseTracer/build/example/CMakeFiles/rebuild_cache.dir
+/mnt/c/Work/Software/PhaseTracer/build/example/CMakeFiles/run_RSS.dir
 /mnt/c/Work/Software/PhaseTracer/build/example/CMakeFiles/run_ToyModel.dir
 /mnt/c/Work/Software/PhaseTracer/build/example/CMakeFiles/edit_cache.dir
 /mnt/c/Work/Software/PhaseTracer/build/example/CMakeFiles/h_bar_expansion.dir

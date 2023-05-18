@@ -157,6 +157,21 @@ depend:
 .PHONY : depend
 
 # Convenience name for target.
+example/CMakeFiles/run_RSS.dir/rule:
+	cd /mnt/c/Work/Software/PhaseTracer/build && $(MAKE) -f CMakeFiles/Makefile2 example/CMakeFiles/run_RSS.dir/rule
+.PHONY : example/CMakeFiles/run_RSS.dir/rule
+
+# Convenience name for target.
+run_RSS: example/CMakeFiles/run_RSS.dir/rule
+
+.PHONY : run_RSS
+
+# fast build rule for target.
+run_RSS/fast:
+	cd /mnt/c/Work/Software/PhaseTracer/build && $(MAKE) -f example/CMakeFiles/run_RSS.dir/build.make example/CMakeFiles/run_RSS.dir/build
+.PHONY : run_RSS/fast
+
+# Convenience name for target.
 example/CMakeFiles/run_ToyModel.dir/rule:
 	cd /mnt/c/Work/Software/PhaseTracer/build && $(MAKE) -f CMakeFiles/Makefile2 example/CMakeFiles/run_ToyModel.dir/rule
 .PHONY : example/CMakeFiles/run_ToyModel.dir/rule
@@ -327,6 +342,33 @@ run_2D_test_model.cpp.s:
 	cd /mnt/c/Work/Software/PhaseTracer/build && $(MAKE) -f example/CMakeFiles/run_2D_test_model.dir/build.make example/CMakeFiles/run_2D_test_model.dir/run_2D_test_model.cpp.s
 .PHONY : run_2D_test_model.cpp.s
 
+run_RSS.o: run_RSS.cpp.o
+
+.PHONY : run_RSS.o
+
+# target to build an object file
+run_RSS.cpp.o:
+	cd /mnt/c/Work/Software/PhaseTracer/build && $(MAKE) -f example/CMakeFiles/run_RSS.dir/build.make example/CMakeFiles/run_RSS.dir/run_RSS.cpp.o
+.PHONY : run_RSS.cpp.o
+
+run_RSS.i: run_RSS.cpp.i
+
+.PHONY : run_RSS.i
+
+# target to preprocess a source file
+run_RSS.cpp.i:
+	cd /mnt/c/Work/Software/PhaseTracer/build && $(MAKE) -f example/CMakeFiles/run_RSS.dir/build.make example/CMakeFiles/run_RSS.dir/run_RSS.cpp.i
+.PHONY : run_RSS.cpp.i
+
+run_RSS.s: run_RSS.cpp.s
+
+.PHONY : run_RSS.s
+
+# target to generate assembly for a file
+run_RSS.cpp.s:
+	cd /mnt/c/Work/Software/PhaseTracer/build && $(MAKE) -f example/CMakeFiles/run_RSS.dir/build.make example/CMakeFiles/run_RSS.dir/run_RSS.cpp.s
+.PHONY : run_RSS.cpp.s
+
 run_ToyModel.o: run_ToyModel.cpp.o
 
 .PHONY : run_ToyModel.o
@@ -417,6 +459,7 @@ help:
 	@echo "... install"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... run_RSS"
 	@echo "... run_ToyModel"
 	@echo "... edit_cache"
 	@echo "... h_bar_expansion"
@@ -435,6 +478,9 @@ help:
 	@echo "... run_2D_test_model.o"
 	@echo "... run_2D_test_model.i"
 	@echo "... run_2D_test_model.s"
+	@echo "... run_RSS.o"
+	@echo "... run_RSS.i"
+	@echo "... run_RSS.s"
 	@echo "... run_ToyModel.o"
 	@echo "... run_ToyModel.i"
 	@echo "... run_ToyModel.s"
