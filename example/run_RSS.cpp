@@ -113,11 +113,7 @@ void getCriticalTemperatureDataForPoint(std::string inputFileName, std::string o
 
 	inputFile.close();
 
-	std::cout << "Creating model." << std::endl;
-
 	EffectivePotential::RSS& model = getModel(bHighTempExpansion, data);
-
-	std::cout << "Created model." << std::endl;
 
 	model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
 	model.set_xi(0);
@@ -219,13 +215,6 @@ int main(int argc, char* argv[])
 	// can't then handle maxT easily.
 	std::vector<std::string> args;
 
-	std::cout << "argc: " << argc << std::endl;
-
-	for (int i = 0; i < argc; ++i)
-	{
-		std::cout << "argv[" << i << "] = " << argv[i] << std::endl;
-	}
-
 	if(argc > 1)
 	{
 		// See https://stackoverflow.com/questions/15344714/convert-command-line-argument-to-string
@@ -235,13 +224,8 @@ int main(int argc, char* argv[])
 	std::string inputFileName = args[1];
 	std::string outputFolderName = args[2];
 
-	std::cout << "Input file name:" << inputFileName << std::endl;
-	std::cout << "Output folder name:" << outputFolderName << std::endl;
-
 	for(int i = 3; i < argc; ++i)
 	{
-		std::cout << i << ": " << argv[i] << " " << args[i] << std::endl;
-
 		if(!bDebug && !bTrace && strcmp(argv[i], "-debug") == 0)
 		{
 			LOGGER(debug);
@@ -316,8 +300,6 @@ int main(int argc, char* argv[])
 			continue;
 		}
 	}
-
-	std::cout << "Finished reading input." << std::endl;
 
 	// Set level of screen output
 	if(!bDebug && !bTrace)

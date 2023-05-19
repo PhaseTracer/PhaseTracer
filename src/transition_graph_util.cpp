@@ -472,6 +472,7 @@ PhaseStructureData extractPhaseStructureData(const EffectivePotential::Potential
 
 		if(!phaseMatchesExpected)
 		{
+			LOG(debug) << "phase " << lowTPhaseIndices[i] << " does not match any expected low temperature phase." << std::endl;
 			valid = false;
 			break;
 		}

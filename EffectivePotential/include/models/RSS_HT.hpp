@@ -134,6 +134,19 @@ class RSS_HT : public RSS
 		std::cout.precision(precisionPrev);
 	}
 
+	std::vector<Eigen::VectorXd> get_low_t_phases() const
+	{
+		return {get_EW_VEV(), apply_symmetry(get_EW_VEV())[0]};
+	}
+
+	Eigen::VectorXd get_EW_VEV() const
+	{
+		Eigen::VectorXd vev(2);
+		vev << vh, vs;
+
+		return vev;
+	}
+
 	double V(Eigen::VectorXd phi, double T) const override
 	{
 		double h = phi[0];
