@@ -49,16 +49,16 @@ int main(int argc, char* argv[])
 	{
 		// See https://stackoverflow.com/questions/15344714/convert-command-line-argument-to-string
 		// +1 for the starting pointer so we skip over the executable name argv[0].
-		args.assign(argv + 1, argv + argc);
+		args.assign(argv, argv + argc);
 	}
 
-	std::string inputFileName = args[0];
-	std::string outputFolderName = args[1];
+	std::string inputFileName = args[1];
+	std::string outputFolderName = args[2];
 
 	// Check for additional input configuration settings.
 	for(int i = 3; i < argc; ++i)
 	{
-		std::cout << i << ": " << argv[i] << " " << args[i] << std::endl;
+		//std::cout << i << ": " << argv[i] << std::endl;
 
 		if(!bDebug && !bTrace && strcmp(argv[i], "-debug") == 0)
 		{
