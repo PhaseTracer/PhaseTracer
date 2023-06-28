@@ -119,16 +119,21 @@ int main(int argc, char* argv[])
 	
 	// Construct model
 	EffectivePotential::SuperCoolModel model(inputFileName);
+	model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
+	model.set_xi(0);
 	
 	Eigen::VectorXd origin(1);
 	origin << 0.;
 	LOG(debug) << "V(0 , 0)     : " << model.V(origin, 0.) << std::endl;
+	LOG(debug) << "V0(0 , 0)    : " << model.V0(origin) << std::endl;
 	Eigen::VectorXd vev(1);
 	vev << 246.;
 	LOG(debug) << "V(v , 0)     : " << model.V(vev, 0.) << std::endl;
+	LOG(debug) << "V0(v , 0)    : " << model.V0(vev) << std::endl;
 	Eigen::VectorXd ten(1);
-	vev << 10.;
-	LOG(debug) << "V(10 , 10)     : " << model.V(ten, 10.) << std::endl;
+	ten << 10.;
+	LOG(debug) << "V(10 , 10)   : " << model.V(ten, 10.) << std::endl;
+	LOG(debug) << "V0(10 , 10)  : " << model.V0(ten) << std::endl;
 	
 	// Make PhaseFinder object and find the phases
 	PhaseTracer::PhaseFinder pf(model);

@@ -110,11 +110,11 @@ class SuperCoolModel : public OneLoopPotential
 		return elements;
 	}
 	
-	double V(Eigen::VectorXd phi, double T) const override
+	/*double V(Eigen::VectorXd phi, double T) const override
 	{
 		// Subtract off the radiation energy density from the light particles that are not included explicitly in the one-loop corrections.
 		return OneLoopPotential::V(phi, T) - M_PI*M_PI/90.*raddof*pow(T, 4);
-	}
+	}*/
 	
 	double V0(Eigen::VectorXd phi) const override
 	{
@@ -130,12 +130,16 @@ class SuperCoolModel : public OneLoopPotential
 
 	std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const override
 	{
-		return {3. * lambda * pow(phi[0], 2) + 2. * kappa * phi[0] - mu0_sq};
+		const double higgsSq = 3. * lambda * pow(phi[0], 2) + 2. * kappa * phi[0] - mu0_sq;
+		//LOG(debug) << "higgs mass: " << higgsSq << std::endl;
+		return {higgsSq};
 	}
 	
 	std::vector<double> get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const override
 	{
-		return {3. * lambda * pow(phi[0], 2) + 2. * kappa * phi[0] - mu0_sq + T*T*(lambda/4. + g*g + (g*g + g1*g1)/16. + yt*yt/4.)};
+		const double higgsSq = 3. * lambda * pow(phi[0], 2) + 2. * kappa * phi[0] - mu0_sq + T*T*(lambda/4. + g*g + (g*g + g1*g1)/16. + yt*yt/4.);
+		//LOG(debug) << "higgs mass (debye) (x=" << phi[0] << ", T=" << T << "): " << higgsSq << std::endl;
+		return {higgsSq};
 	}
 
 	std::vector<double> get_scalar_dofs() const override
@@ -148,7 +152,7 @@ class SuperCoolModel : public OneLoopPotential
 		const double hSq = phi[0]*phi[0]/vSq;
 		
 		// Mass values from PDG.
-		const double topSq = 162.5*hSq;
+		const double topSq = 162.5*162.5*hSq;
 		const double upSq = 0.00216*0.00216*hSq;
 		const double downSq = 0.00467*0.00467*hSq;
 		const double strangeSq = 0.0934*0.0934*hSq;
@@ -156,6 +160,9 @@ class SuperCoolModel : public OneLoopPotential
 		const double bottomSq = 4.18*4.18*hSq;
 		const double muonSq = 0.10566*0.10566*hSq;
 		const double tauonSq = 1.777*1.777*hSq;
+		
+		//LOG(debug) << "fermions: " << topSq << " " << upSq << " " << downSq << " " << strangeSq << " " <<
+		//	charmSq << " " << bottomSq << " " << muonSq << " " << tauonSq << std::endl;
 		
 		return {topSq, upSq, downSq, strangeSq, charmSq, bottomSq, muonSq, tauonSq};
 	}
@@ -172,6 +179,9 @@ class SuperCoolModel : public OneLoopPotential
 		const double MZ2_T = (pow(g, 2) + pow(g1, 2)) / 4. * pow(phi[0], 2);
 		const double MZ2_L = MZ2_T;
 		const double MPh2_L = 0.;
+		
+		//LOG(debug) << "bosons: " << MW2_T << " " << MW2_L << " " << MZ2_T << " " << MZ2_L << " " << MPh2_L << std::endl;
+		
 		return {MW2_T, MW2_L, MZ2_T, MZ2_L, MPh2_L};
 	}
 	
@@ -188,12 +198,15 @@ class SuperCoolModel : public OneLoopPotential
 		const double MZ2_L = (a + b) / 24.;
 		const double MPh2_L = (a - b) / 24.;
 		
+		//LOG(debug) << "bosons (debye) (x=" << phi[0] << ", T=" << T << "): " << MW2_T << " " << MW2_L << " " <<
+		//	MZ2_T << " " << MZ2_L << " " << MPh2_L << std::endl;
+		
 		return {MW2_T, MW2_L, MZ2_T, MZ2_L, MPh2_L};
 	}
 
 	std::vector<double> get_vector_dofs() const override
 	{
-		return {2, 4, 1, 2, 1};
+		return {4, 2, 2, 1, 1};
 	}
 
 	private:
