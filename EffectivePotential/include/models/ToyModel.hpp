@@ -82,7 +82,7 @@ class ToyModel : public Potential
 			return;
 		}
 
-		// Keep only the first 4 values, in case is other data stored in the file.
+		// Keep only the first 4 values, in case there is other data stored in the file.
 		data = split(line, ' ', dataValues);
 
 		inputFile.close();
