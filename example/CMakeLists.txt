@@ -12,6 +12,7 @@ add_executable(time time.cpp)
 add_executable(h_bar_expansion h_bar_expansion.cpp)
 add_executable(run_ToyModel run_ToyModel.cpp)
 add_executable(run_RSS run_RSS.cpp)
+add_executable(run_supercool run_supercool.cpp)
 
 # add any subdirs that might contain programs
 
