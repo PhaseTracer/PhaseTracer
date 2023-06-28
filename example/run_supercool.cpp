@@ -49,17 +49,17 @@ int main(int argc, char* argv[])
 	{
 		// See https://stackoverflow.com/questions/15344714/convert-command-line-argument-to-string
 		// +1 for the starting pointer so we skip over the executable name argv[0].
-		args.assign(argv + 1, argv + argc);
+		args.assign(argv, argv + argc);
 	}
 
-	std::string inputFileName = args[0];
-	std::string outputFolderName = args[1];
+	std::string inputFileName = args[1];
+	std::string outputFolderName = args[2];
 
 	// Check for additional input configuration settings.
 	for(int i = 3; i < argc; ++i)
 	{
-		std::cout << i << ": " << argv[i] << " " << args[i] << std::endl;
-
+		//std::cout << i << ": " << argv[i] << std::endl;
+		
 		if(!bDebug && !bTrace && strcmp(argv[i], "-debug") == 0)
 		{
 			LOGGER(debug);
@@ -119,6 +119,16 @@ int main(int argc, char* argv[])
 	
 	// Construct model
 	EffectivePotential::SuperCoolModel model(inputFileName);
+	
+	Eigen::VectorXd origin(1);
+	origin << 0.;
+	LOG(debug) << "V(0 , 0)     : " << model.V(origin, 0.) << std::endl;
+	Eigen::VectorXd vev(1);
+	vev << 246.;
+	LOG(debug) << "V(v , 0)     : " << model.V(vev, 0.) << std::endl;
+	Eigen::VectorXd ten(1);
+	vev << 10.;
+	LOG(debug) << "V(10 , 10)     : " << model.V(ten, 10.) << std::endl;
 	
 	// Make PhaseFinder object and find the phases
 	PhaseTracer::PhaseFinder pf(model);

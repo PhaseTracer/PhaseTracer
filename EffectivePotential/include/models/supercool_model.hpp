@@ -22,6 +22,7 @@
 #include "one_loop_potential.hpp"
 #include "property.hpp"
 #include "pow.hpp"
+#include "logger.hpp"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -81,6 +82,9 @@ class SuperCoolModel : public OneLoopPotential
 		inputFile.close();
 
 		init(data[0], data[1], data[2], data[3]);
+		
+		LOG(debug) << "Params: "<< std::endl;
+		LOG(debug) << mu_sq << " " << kappa << " " << lambda << " " << mu0_sq << std::endl;
 	}
 	
 	// Based on https://stackoverflow.com/questions/236129/how-do-i-iterate-over-the-words-of-a-string
