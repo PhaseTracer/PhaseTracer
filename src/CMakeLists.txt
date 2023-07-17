@@ -8,6 +8,14 @@ link_libraries(
   effectivepotential
 )
 
+if(BUILD_WITH_BP)
+  link_libraries(
+    ${BubbleProfiler_LIB}
+    GSL::gsl
+    GSL::gslcblas
+  )
+endif(BUILD_WITH_BP)
+
 if(THREADS_HAVE_PTHREAD_ARG)
   target_compile_options(phasetracer "-pthread")
 endif()

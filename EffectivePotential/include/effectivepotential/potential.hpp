@@ -38,6 +38,8 @@ class Potential {
   virtual bool forbidden(Eigen::VectorXd phi) const { return false; };
   /** Apply symmetry operation on field */
   virtual std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const { return {}; };
+  /** The gradient of potential*/
+  virtual Eigen::VectorXd dV_dx(Eigen::VectorXd phi, double T) const;
   /** The derivative of the gradient of potential with respect to temperature */
   virtual Eigen::VectorXd d2V_dxdt(Eigen::VectorXd phi, double T) const;
   /** The Hessian matrix of the one-loop potential at finite temperature */

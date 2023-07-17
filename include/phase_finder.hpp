@@ -151,10 +151,10 @@ class PhaseFinder {
   
   /** return the deepest phase at T */
   Phase get_deepest_phase_at_T(double T);
-
- protected:
-
+  
   EffectivePotential::Potential &P;
+  
+ protected:
 
   /**
      Find local minima at a particular temperature. The overloads define

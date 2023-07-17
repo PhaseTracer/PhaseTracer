@@ -52,7 +52,9 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
     std::vector<Transition> unique_transitions;
     // Fix false_vacuum, and loop all possible symmetric partners of true_vacuum
     const auto false_vacuum = false_vacua[0];
-    for (const auto true_vacuum : true_vacua) {
+    auto true_vacuum = true_vacua[0];
+    for (int i_unique; i_unique < true_vacua.size(); i_unique++) {
+      true_vacuum = true_vacua[i_unique];
       bool duplicate = false;
       const auto fv = pf.symmetric_partners(false_vacuum);
       const auto tv = pf.symmetric_partners(true_vacuum);
@@ -75,13 +77,71 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
         unique_transitions.push_back({SUCCESS, TC, phase1, phase2,
           true_vacuum, false_vacuum, gamma_, changed_,
           delta_potential, unique_transitions.size()});
+
+        if (true){ // Need BubbleProfiler
+          
+          for (double Ttry = TC ; Ttry > TC-10; Ttry--){
+          
+            const auto phase1_at_Ttry = pf.phase_at_T(phase1, Ttry);
+            const auto phase2_at_Ttry = pf.phase_at_T(phase2, Ttry);
+            const auto true_vacua_at_Ttry = pf.symmetric_partners(phase1_at_Ttry.x);
+            const auto false_vacua_at_Ttry =  pf.symmetric_partners(phase2_at_Ttry.x);
+          
+            get_action(false_vacua_at_Ttry[0], true_vacua_at_Ttry[i_unique], Ttry);
+            
+          }
+        }
       }
     }
+
+
     return unique_transitions;
   } catch (const std::exception& e) {
     LOG(debug) << e.what() << " - probably no sign change between T = " << T1 << " and " << T2;
     return {{ERROR}};
   }
+}
+
+double TransitionFinder::get_action(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, double T) const{
+  
+  double action;
+  
+  if (pf.P.get_n_scalars() == 1) {
+  
+    const double false_min = false_vacuum[0];
+    const double true_min = true_vacuum[0];
+    const double barrier = 0.5*(false_min+true_min);
+
+    const auto potential = [this, false_vacuum, T] (double phi) {
+      const Eigen::VectorXd vector_phi = Eigen::VectorXd::Constant(1, phi);
+      return pf.P.V(vector_phi,T);
+    };
+
+    const auto potential_first = [this, false_vacuum, T] (double phi) {
+      const Eigen::VectorXd vector_phi = Eigen::VectorXd::Constant(1, phi);
+      const auto dV_dx = pf.P.dV_dx(vector_phi,T);
+      return dV_dx.coeff(0);
+    };
+
+    const auto potential_second = [this, false_vacuum, T] (double phi) {
+      const Eigen::VectorXd vector_phi = Eigen::VectorXd::Constant(1, phi);
+      const auto d2V_dx2 = pf.P.d2V_dx2(vector_phi,T);
+      return d2V_dx2.coeff(0, 0);
+    };
+
+    BubbleProfiler::Shooting one_dim;
+    one_dim.solve(potential, potential_first, potential_second,
+                  false_min, true_min, barrier,
+                  4, BubbleProfiler::Shooting::Solver_options::Compute_action);
+    action =one_dim.get_euclidean_action();
+  } else {
+    LOG(fatal) << "Action calculation for n_scalars != 1 is not ready!";
+  }
+  
+  std::cout << "Action at T = " << T << " is " << action << std::endl;
+  std::cout << "S/T = " << action/T << std::endl;
+  
+  return action;
 }
 
 std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2) const {
