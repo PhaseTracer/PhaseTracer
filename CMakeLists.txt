@@ -13,6 +13,9 @@ option(BUILD_WITH_FS_ScalarSingletZ2DMEWSBoutputlamHEFTHiggs "Build FlexibleSUSY
 # option for building models with BSMPT
 option(BUILD_WITH_BSMPT "Build BSMPT example programs" OFF)
 
+# option for including BubbleProfiler
+option(BUILD_WITH_BP "Build example programs including BubbleProfiler" On)
+
 # packages
 
 find_package(Boost 1.53.0 REQUIRED
@@ -29,6 +32,11 @@ find_package(Threads REQUIRED)
 find_package(Git)
 # find_package(EffPotential REQUIRED)
 add_subdirectory(EffectivePotential)
+
+if(BUILD_WITH_BP)
+  find_package(GSL REQUIRED)
+  find_package(BubbleProfiler REQUIRED)
+endif(BUILD_WITH_BP)
 
 # flags
 
@@ -47,6 +55,12 @@ include_directories(
   ${EFFPOTENTIAL_INCLUDE_DIRS}
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 )
+
+if(BUILD_WITH_BP)
+  include_directories(
+    ${BubbleProfiler_INCLUDES}
+  )
+endif(BUILD_WITH_BP)
 
 # add relevant dirs
 

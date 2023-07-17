@@ -1,5 +1,6 @@
 *~
 *.o
+*.DS_Store
 bin/
 lib/
 paper/paper\.synctex\.gz

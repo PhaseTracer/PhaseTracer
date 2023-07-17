@@ -26,6 +26,13 @@
 
 #include "phase_finder.hpp"
 #include "overload.hpp"
+#include "potential.hpp"
+
+// Include .hpp of BubbleProfiler
+#include "action.hpp"
+#include "error.hpp"
+#include "logging_manager.hpp"
+#include "shooting.hpp"
 
 namespace PhaseTracer {
 
@@ -80,6 +87,8 @@ class TransitionFinder {
   /** Retrieve all transitions between all phases */
   std::vector<Transition> get_transitions() const { return transitions; }
 
+  double get_action(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, double T) const;
+  
   /** Retrieve all phases */
   std::vector<Phase> get_phases() const { return pf.get_phases(); }
 

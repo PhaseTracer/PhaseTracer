@@ -20,6 +20,19 @@
 
 namespace EffectivePotential {
 
+Eigen::VectorXd Potential::dV_dx(Eigen::VectorXd phi, double T) const {
+  Eigen::VectorXd gradient = Eigen::VectorXd::Zero(phi.size());
+  
+  for (int ii = 0; ii < phi.size(); ++ii) {
+    Eigen::VectorXd phi_shifted = phi;
+    for (int jj = 0; jj < n_h_xy.size(); ++jj) {
+      phi_shifted(ii) = phi(ii) + n_h_xy[jj] * h;
+      gradient(ii) += V(phi_shifted, T) * coeff_xy[jj] / h;
+    }
+  }
+  return gradient;
+}
+
 Eigen::VectorXd Potential::d2V_dxdt(Eigen::VectorXd phi, double T) const {
   Eigen::VectorXd gradient = Eigen::VectorXd::Zero(phi.size());
 
