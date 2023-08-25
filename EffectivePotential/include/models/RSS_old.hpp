@@ -18,9 +18,10 @@
 #ifndef POTENTIAL_RSS_HPP_INCLUDED
 #define POTENTIAL_RSS_HPP_INCLUDED
 
+//TODO:
 /**
-  * Set check_vacuum_at_high to false, otherwise we'll get errors for minima away from the origin at T>>Tc.
-  * The origin is not a minimum at high temperature due to explicit Z2-symmetry-breaking terms.
+  * Set check_vacuum_at_high to false, otherwise we'll get errors for minima away from the origin at T>>Tc (which
+  * happens).
   */
 
 /**
@@ -64,7 +65,7 @@ class RSS : public OneLoopPotential
 
 	/**
 	  * Default constructor. Use at your own risk. There are no checks when using the potential that it has been
-	  * properly initialised with parameter values. If using this default constructor, it is assumed you will use
+	  * properly initialised with parameter values. If using this default constructor, it is assumed you will Use
 	  * setParameters afterwards.
 	  */
 	RSS()
@@ -214,22 +215,8 @@ class RSS : public OneLoopPotential
 		double s = phi[1];
 		double h2 = h*h;
 		double s2 = s*s;
-		
-		/*std::cout << "vh: " << vh << std::endl;
-		std::cout << "muh_sq*h2 " << muh_sq*h2 << std::endl;
-		std::cout << "mus_sq*s2 " << mus_sq*s2 << std::endl;
-		std::cout << "lh*h2*h2  " << lh*h2*h2  << std::endl;
-		std::cout << "ls*s2*s2  " << ls*s2*s2  << std::endl;
-		std::cout << "c1*h2*s   " << c1*h2*s   << std::endl;
-		std::cout << "c2*h2*s2  " << c2*h2*s2  << std::endl;
-		std::cout << "b3*s2*s   " << b3*s2*s   << std::endl;*/
 
 		return muh_sq*h2 + mus_sq*s2 + lh*h2*h2 + ls*s2*s2 + c1*h2*s + c2*h2*s2 + b3*s2*s;
-	}
-	
-	double get_Boltzmann_suppression(double massSq, double TSq) const
-	{
-		return bUseBoltzmannSuppression ? (TSq == 0. || abs(massSq/TSq) > MAX_BOLTZ_EXP ? 0. : exp(-abs(massSq/TSq))) : 1.;
 	}
 
 	std::vector<double> get_scalar_thermal_sq(double T) const override
@@ -244,6 +231,7 @@ class RSS : public OneLoopPotential
 
 	std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const override
 	{
+		// TODO: Need to add xi dependence!
 		double h = phi[0];
 		double s = phi[1];
 		double h2 = h*h;
@@ -259,6 +247,7 @@ class RSS : public OneLoopPotential
 
 	std::vector<double> get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const override
 	{
+		// TODO: Need to add xi dependence!
 		double h = phi[0];
 		double s = phi[1];
 		double h2 = h*h;
@@ -276,6 +265,7 @@ class RSS : public OneLoopPotential
 
 	std::vector<double> get_scalar_eigenvalues(Eigen::VectorXd phi, double xi) const
 	{
+		// TODO: Need to add xi dependence! (is there xi dependence in the eigenvalues???)
 		double mhh = d2V0mdh2(phi);
 		double mhs = d2V0mdhds(phi);
 		double mss = d2V0mds2(phi);
@@ -294,32 +284,28 @@ class RSS : public OneLoopPotential
 
 	std::vector<double> get_scalar_eigenvalues_thermal(Eigen::VectorXd phi, double xi, double T) const
 	{
-		std::vector<double> thermal_corrections = get_scalar_thermal_sq(T);
+		auto thermal_corrections = get_scalar_thermal_sq(T);
 		
-		double mhh = d2V0mdh2(phi);// + thermal_corrections[0];
-		const double mhs = d2V0mdhds(phi);
-		double mss = d2V0mds2(phi);// + thermal_corrections[1];
-		const double T2 = T*T;
-		
-		//mhh += bUseBoltzmannSuppression ? (T2 == 0. || mhh/T2 > MAX_BOLTZ_EXP ? 0. : thermal_corrections[0]*exp(-mhh/T2)) : thermal_corrections[0];
-		//mss += bUseBoltzmannSuppression ? (T2 == 0. || mss/T2 > MAX_BOLTZ_EXP ? 0. : thermal_corrections[1]*exp(-mss/T2)) : thermal_corrections[1];
-		mhh += thermal_corrections[0]*get_Boltzmann_suppression(mhh, T2);
-		mss += thermal_corrections[1]*get_Boltzmann_suppression(mss, T2);
-		
-		const double theta = get_mixing_angle_supplied(mhh, mhs, mss);
-		const double cosSqTheta = square(std::cos(theta));
-		const double sinSqTheta = 1 - cosSqTheta;
-		const double sin2Theta = std::sin(2*theta);
+		// TODO: Need to add xi dependence! (is there xi dependence in the eigenvalues???)
+		double mhh = d2V0mdh2(phi) + thermal_corrections[0];
+		double mhs = d2V0mdhds(phi);
+		double mss = d2V0mds2(phi) + thermal_corrections[1];
+		double theta = get_mixing_angle_supplied(mhh, mhs, mss);
 
-		const double mh = mhh*cosSqTheta + mhs*sin2Theta + mss*sinSqTheta;
-		const double ms = mhh*sinSqTheta - mhs*sin2Theta + mss*cosSqTheta;
+		double cosSqTheta = std::cos(theta);
+		cosSqTheta *= cosSqTheta;
+		double sinSqTheta = 1 - cosSqTheta;
+		double sin2Theta = std::sin(2*theta);
+
+		double mh = mhh*cosSqTheta + mhs*sin2Theta + mss*sinSqTheta;
+		double ms = mhh*sinSqTheta - mhs*sin2Theta + mss*cosSqTheta;
 
 		return {mh, ms};
 	}
 
 	double get_goldstone_massSq(Eigen::VectorXd phi, double xi) const
 	{
-		return get_goldstone_mass_thermal(phi, xi, 0.0);
+		return bIgnoreGoldstone ? 0.0 : get_goldstone_mass_thermal(phi, xi, 0.0);
 	}
 
 	double get_goldstone_mass_thermal(Eigen::VectorXd phi, double xi, double T) const
@@ -358,7 +344,6 @@ class RSS : public OneLoopPotential
 			phi_left << phi[0]-goldstoneStepSize, phi[1];
 			phi_right << phi[0]+goldstoneStepSize, phi[1];
 
-			// Temporarily ignore the Goldstone contribution when calculating the Goldstone resummation.
 			bool prevIgnoreGoldstone = bIgnoreGoldstone;
 			bIgnoreGoldstone = true;
 			dVCWdh = (V1(phi_right, 0.0) - V1(phi_left, 0.0)) / (2*goldstoneStepSize);
@@ -368,15 +353,24 @@ class RSS : public OneLoopPotential
 		double mass = 1/phi[0] * (dV0mdh(phi) + dVCWdh);
 
 		phi[0] = hCopy;
-		
-		//thermal_corrections[0] = bUseBoltzmannSuppression ? (T2 == 0. || mass/T2 > MAX_BOLTZ_EXP ? 0. : thermal_corrections[0]*exp(-mass/T2))
-		//	: thermalCorrections[0];
-		return mass + thermal_corrections[0]*get_Boltzmann_suppression(mass, T*T);
+
+		return mass + thermal_corrections[0];
 	}
 
 	double get_mixing_angle_supplied(double mhh, double mhs, double mss) const
 	{
 		return 0.5*std::atan2(2*mhs, mhh - mss);
+	}
+
+	double get_mixing_angle_tree(Eigen::VectorXd phi, double T) const
+	{
+		auto thermal_corrections = get_scalar_thermal_sq(T);
+
+		double mhh = d2V0mdh2(phi) + thermal_corrections[0];
+		double mhs = d2V0mdhds(phi);
+		double mss = d2V0mds2(phi) + thermal_corrections[1];
+
+		return get_mixing_angle_supplied(mhh, mhs, mss);
 	}
 
 	std::vector<double> get_scalar_dofs() const override
@@ -387,74 +381,43 @@ class RSS : public OneLoopPotential
 	std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const override
 	{
 		const double h2 = phi[0]*phi[0];
-		const double mWSq_T = 0.25*g2*h2;
-		const double mWSq_L = mWSq_T;
-		const double mZSq_T = 0.25*(g2 + gp2)*h2;
-		const double mZSq_L = mZSq_T;
-		const double mPhSq_L = 0.;
+		const double mWSq = 0.25*g2*h2;
+		const double mZSq = 0.25*(g2 + gp2)*h2;
+		const double mPhSq = 0;
 		
-		return {mWSq_L, mWSq_T, mZSq_L, mZSq_T, mPhSq_L};
+		return {mWSq, mZSq, mPhSq};
 	}
 
 	std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override
 	{
 		const double h2 = phi[0]*phi[0];
 		const double T2 = T*T;
-		
-		const double mWSq_T = 0.25*g2*h2;
-		const double mWSq_L = mWSq_T + 11./6.*g2*T2*get_Boltzmann_suppression(0.25*g2*h2, T2);
-		const double mZSq_T = 0.25*(g2 + gp2)*h2;
-		
-		double a, b;
-		
-		if(bUseBoltzmannSuppression && T2 > 0)
-		{
-			const double TSqForZ = T2*get_Boltzmann_suppression(mZSq_T, T2);
-			a = (g2 + gp2)*(3*h2 + 22*TSqForZ);
-			b = std::sqrt(9*square((g2 + gp2)*h2) + 132*square(g2 - gp2)*h2*TSqForZ + 484*square((g2 - gp2)*TSqForZ));
-		}
-		else
-		{
-			a = (g2 + gp2)*(3*h2 + 22*T2);
-			b = std::sqrt(9*square((g2 + gp2)*h2) + 132*square(g2 - gp2)*h2*T2 + 484*square((g2 - gp2)*T2));
-		}
 
-		const double mZSq_L = (a + b)/24.;
-		const double mPhSq_L = (a - b)/24.;
+		const double mWSq = 0.25*g2*h2 + 11./6.*g2*T2;
+		
+		const double a = (g2 + gp2)*(3*h2 + 22*T2);
+		const double b = std::sqrt(9*square(g2 + gp2)*h2*h2 + 132*square(g2 - gp2)*h2*T2 + 484*square(g2 - gp2)
+			*T2*T2);
 
-		return {mWSq_L, mWSq_T, mZSq_L, mZSq_T, mPhSq_L};
+		const double mZSq = (a + b)/24.;
+		const double mPhSq = (a - b)/24.;
+
+		return {mWSq, mZSq, mPhSq};
 	}
 
 	std::vector<double> get_vector_dofs() const override
 	{
-		return {2., 4., 1., 2., 1.};
+		return {6., 3., 3.};
 	}
 
-	/*std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const override
-	{
-		return {0.5*yt2*phi[0]*phi[0]};
-	}*/
-	
 	std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const override
 	{
-		const double hSq = phi[0]*phi[0]/(vh*vh);
-		
-		// Mass values from PDG.
-		const double topSq = 162.5*162.5*hSq;
-		const double upSq = 0.00216*0.00216*hSq;
-		const double downSq = 0.00467*0.00467*hSq;
-		const double strangeSq = 0.0934*0.0934*hSq;
-		const double charmSq = 1.27*1.27*hSq;
-		const double bottomSq = 4.18*4.18*hSq;
-		const double muonSq = 0.10566*0.10566*hSq;
-		const double tauonSq = 1.777*1.777*hSq;
-		
-		return {topSq, upSq, downSq, strangeSq, charmSq, bottomSq, muonSq, tauonSq};
+		return {0.5*yt2*phi[0]*phi[0]};
 	}
 
 	std::vector<double> get_fermion_dofs() const override
 	{
-		return {12., 12., 12., 12., 12., 12., 4., 4.};
+		return {12.};
 	}
 
 	size_t get_n_scalars() const override
@@ -657,10 +620,6 @@ class RSS : public OneLoopPotential
 	// This flag is used to ignore the Goldstone contribution to the Coleman-Weinberg potential, specifically for the
 	// Goldstone one-loop self-energy to avoid the IR divergence.
 	mutable bool bIgnoreGoldstone;
-	
-	PROPERTY(bool, bUseBoltzmannSuppression, false)
-	PROPERTY(double, MAX_BOLTZ_EXP, 12.)
-	PROPERTY(bool, DEBUG, false)
 }; // class RSS
 }  // namespace EffectivePotential
 

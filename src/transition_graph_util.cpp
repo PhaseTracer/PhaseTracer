@@ -490,6 +490,7 @@ std::vector<Path> getTransitionPathsFromHighTPhase(const std::vector<Vertex>& ve
 
 	if(initialFrontierSize == 0)
 	{
+		LOG(debug) << "Initial frontier is empty." << std::endl;
 		return {};
 	}
 
@@ -693,6 +694,15 @@ std::vector<Path> getTransitionPathsFromHighTPhase(const std::vector<Vertex>& ve
 	{
 		validPaths.insert(validPaths.end(), terminalSubpaths.begin(), terminalSubpaths.end());
 	}
+	
+	LOG(debug) << "Transition paths from high-T phase:" << std::endl;
+	LOG(debug) << "=============================" << std::endl;
+	for(int i = 0; i < validPaths.size(); ++i)
+	{
+		LOG(debug) << validPaths[i] << std::endl;
+	}
+	LOG(debug) << "=============================" << std::endl;
+	
 
 	return validPaths;
 }
@@ -700,27 +710,29 @@ std::vector<Path> getTransitionPathsFromHighTPhase(const std::vector<Vertex>& ve
 std::vector<Path> getTransitionPaths(const std::vector<PhaseTracer::Phase>& phases,
 	const std::vector<PhaseTracer::Transition>& transitions, const PhaseStructureData& phaseStructureData)
 {
-	if(transitions.size() == 0)
-	{
-		//std::vector<std::vector<Path>> paths(phaseStructureData.highTPhaseIndices.size());
-		std::vector<Path> paths;
+	LOG(debug) << "TransitionGraph::getTransitionPaths" << std::endl;
+	
+	//std::vector<std::vector<Path>> paths(phaseStructureData.highTPhaseIndices.size());
+	std::vector<Path> paths;
 
-		// If there are no transitions, but one of the high temperature phases becomes a global minimum at T=0, then
-		// we have a valid 'path' between the phases.
-		for(int i = 0; i < phaseStructureData.highTPhaseIndices.size(); ++i)
+	// If there are no transitions, but one of the high temperature phases becomes a global minimum at T=0, then
+	// we have a valid 'path' between the phases.
+	for(int i = 0; i < phaseStructureData.highTPhaseIndices.size(); ++i)
+	{
+		for(int j = 0; j < phaseStructureData.lowTPhaseIndices.size(); ++j)
 		{
-			for(int j = 0; j < phaseStructureData.lowTPhaseIndices.size(); ++j)
+			//if(phaseStructureData.highTPhaseIndices[i] == phaseStructureData.EWVEVIndex)
+			if(phaseStructureData.highTPhaseIndices[i] == phaseStructureData.lowTPhaseIndices[j])
 			{
-				//if(phaseStructureData.highTPhaseIndices[i] == phaseStructureData.EWVEVIndex)
-				if(phaseStructureData.highTPhaseIndices[i] == phaseStructureData.lowTPhaseIndices[j])
-				{
-					//paths[i].push_back(Path(phaseStructureData.highTPhaseIndices[i]));
-					paths.push_back(Path(phaseStructureData.highTPhaseIndices[i]));
-					break;
-				}
+				//paths[i].push_back(Path(phaseStructureData.highTPhaseIndices[i]));
+				paths.push_back(Path(phaseStructureData.highTPhaseIndices[i]));
+				break;
 			}
 		}
-		
+	}
+	
+	if(transitions.size() == 0)
+	{	
 		return paths;
 	}
 	
@@ -753,10 +765,11 @@ std::vector<Path> getTransitionPaths(const std::vector<PhaseTracer::Phase>& phas
 
 	std::cout << "============================================" << std::endl;*/
 
-	std::vector<Path> paths;
+	//::vector<Path> paths;
 
 	for(int i = 0; i < phaseStructureData.highTPhaseIndices.size(); ++i)
 	{
+		LOG(debug) << "Finding transition paths from high-temperature phase: " << phaseStructureData.highTPhaseIndices[i] << std::endl;
 		std::vector<Path> newPaths = getTransitionPathsFromHighTPhase(vertices, phaseStructureData.highTPhaseIndices[i],
 			phaseStructureData);
 		paths.insert(paths.end(), newPaths.begin(), newPaths.end());

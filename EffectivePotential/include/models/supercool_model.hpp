@@ -137,8 +137,10 @@ class SuperCoolModel : public OneLoopPotential
 	
 	std::vector<double> get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const override
 	{
-		const double higgsSq = 3. * lambda * pow(phi[0], 2) + 2. * kappa * phi[0] - mu0_sq + T*T*(lambda/4. + g*g + (g*g + g1*g1)/16. + yt*yt/4.);
-		//LOG(debug) << "higgs mass (debye) (x=" << phi[0] << ", T=" << T << "): " << higgsSq << std::endl;
+		const double higgsSqZeroT = get_scalar_masses_sq(phi, xi)[0];
+		const double T2 = T*T;
+		const double T2forH = bUseBoltzmannSuppression ? (T2 == 0. || higgsSqZeroT/T2 > MAX_BOLTZ_EXP ? 0. : T2*exp(-higgsSqZeroT/T2)) : T2;
+		const double higgsSq = higgsSqZeroT	+ T2forH*(lambda/4. + g*g + (g*g + g1*g1)/16. + yt*yt/4.);
 		return {higgsSq};
 	}
 
@@ -161,20 +163,17 @@ class SuperCoolModel : public OneLoopPotential
 		const double muonSq = 0.10566*0.10566*hSq;
 		const double tauonSq = 1.777*1.777*hSq;
 		
-		//LOG(debug) << "fermions: " << topSq << " " << upSq << " " << downSq << " " << strangeSq << " " <<
-		//	charmSq << " " << bottomSq << " " << muonSq << " " << tauonSq << std::endl;
-		
 		return {topSq, upSq, downSq, strangeSq, charmSq, bottomSq, muonSq, tauonSq};
 	}
 
 	std::vector<double> get_fermion_dofs() const override
 	{
-		return {12, 12, 12, 12, 12, 12, 4, 4};
+		return {12., 12., 12., 12., 12., 12., 4., 4.};
 	}
 	
 	std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const override
 	{
-		const double MW2_T = pow(0.5 * g * phi[0], 2);
+		const double MW2_T = pow(0.5*g*phi[0], 2);
 		const double MW2_L = MW2_T;
 		const double MZ2_T = (pow(g, 2) + pow(g1, 2)) / 4. * pow(phi[0], 2);
 		const double MZ2_L = MZ2_T;
@@ -187,16 +186,21 @@ class SuperCoolModel : public OneLoopPotential
 	
 	std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override
 	{
+		const std::vector<double> massesZeroT = get_vector_masses_sq(phi);
+		
 		const double h2 = phi[0]*phi[0];
 		const double T2 = T*T;
 		
-		const double MW2_T = pow(0.5 * g * phi[0], 2);
-		const double MW2_L = MW2_T + 11./6. * g*g*T2;
-		const double a = (g*g + g1*g1)*(3*h2 + 22*T2);
-		const double b = std::sqrt(9*pow(g*g + g1*g1, 2)*h2*h2 + 44*T2*pow(g*g - g1*g1, 2)*(3*h2 + 11*T2));
+		const double MW2_T = pow(0.5*g*phi[0], 2);
+		const double T2forW = bUseBoltzmannSuppression ? (T2 == 0. || massesZeroT[1]/T2 > MAX_BOLTZ_EXP ? 0. : T2*exp(-massesZeroT[1]/T2)) : T2;
+		const double MW2_L = MW2_T + 11./6. * g*g*T2forW;
+		//const double T2forZ = T2 * (bUseBoltzmannSuppression && T2 > 0. ? exp(-massesZeroT[3]/T2) : 1.);
+		const double T2forZ = bUseBoltzmannSuppression ? (T2 == 0. || massesZeroT[3]/T2 > MAX_BOLTZ_EXP ? 0. : T2*exp(-massesZeroT[3]/T2)) : T2;
+		const double a = (g*g + g1*g1)*(3*h2 + 22*T2forZ);
+		const double b = std::sqrt(9*pow(g*g + g1*g1, 2)*h2*h2 + 44*T2forZ*pow(g*g - g1*g1, 2)*(3*h2 + 11*T2forZ));
 		const double MZ2_T = (pow(g, 2) + pow(g1, 2)) / 4. * pow(phi[0], 2);
 		const double MZ2_L = (a + b) / 24.;
-		const double MPh2_L = (a - b) / 24.;
+		const double MPh2_L = (a - b) / 24. + (T == 0. ? 1e-10 : 0.);
 		
 		//LOG(debug) << "bosons (debye) (x=" << phi[0] << ", T=" << T << "): " << MW2_T << " " << MW2_L << " " <<
 		//	MZ2_T << " " << MZ2_L << " " << MPh2_L << std::endl;
@@ -206,7 +210,7 @@ class SuperCoolModel : public OneLoopPotential
 
 	std::vector<double> get_vector_dofs() const override
 	{
-		return {4, 2, 2, 1, 1};
+		return {4., 2., 2., 1., 1.};
 	}
 
 	private:
@@ -231,6 +235,8 @@ class SuperCoolModel : public OneLoopPotential
 	PROPERTY(double, g, 0.6535)
 	PROPERTY(double, g1, 0.35)
 	PROPERTY(double, raddof, 25.75)
+	PROPERTY(bool, bUseBoltzmannSuppression, false)
+	PROPERTY(double, MAX_BOLTZ_EXP, 12.);
 };
 
 }  // namespace EffectivePotential
