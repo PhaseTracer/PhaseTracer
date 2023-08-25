@@ -556,6 +556,9 @@ Eigen::VectorXd PhaseFinder::dx_min_dt(const Eigen::MatrixXd& hessian, const Eig
   const bool check = b.isApprox(hessian * dxdt, linear_algebra_rel_tol);
 
   if (!check) {
+	  std::cout << "Can't find dxdt!!!" << std::endl;
+	  std::cout << X << " " << T << std::endl;
+	  std::cout << b << " vs. " << hessian*dxdt << std::endl;
     throw std::runtime_error("Failed to find dxdt");
   }
 

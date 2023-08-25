@@ -21,17 +21,18 @@ from matplotlib import rc, rcParams
 from matplotlib.legend_handler import HandlerPatch
 
 ARROW_DELTA_T = 10.
-QUIVER_ARROW = {"zorder": 10, "angles": 'xy', "scale_units": 'xy', "scale": 1, "units": 'dots', "width": 1.5, "minlength": 3.}
-LINE = {"lw": 2, "alpha": 0.8}
+QUIVER_ARROW = {"zorder": 10, "angles": 'xy', "scale_units": 'xy', "scale": 1, "units": 'dots', "width": 2.5, "minlength": 3.}
+LINE = {"lw": 2.5, "alpha": 0.8}
 GEV = ""
 FONTSIZE = "x-small"
 subcriticalTransitionArrowColour = '0.5'
 criticalTransitionArrowColour = '0'
 
 def make_legend_arrow(legend, orig_handle, xdescent, ydescent, width, height, fontsize):
-    width = 17
-    p = mpatches.FancyArrow(0, 0.5*height, width, 0,
-                            head_width=5, head_length=4, alpha=0.9, color="k")
+    #width = 17
+    tail_length = 60
+    p = mpatches.FancyArrow(0, 0.5*height, tail_length, 0, width=2,
+                            head_width=7, head_length=6, alpha=0.9, color="k")
     return p
 
 
@@ -49,7 +50,8 @@ def add_arrows_to_leg(ax, legends_to_add):
         labels.append(legends_to_add[i][0])
         handlerMap[handles[-1]] = handlerPatch
 
-    return ax.legend(handles, labels, handler_map=handlerMap, loc='upper left')
+    #return ax.legend(handles, labels, handler_map=handlerMap, loc='upper left')
+    return ax.legend(handles, labels, handler_map=handlerMap, fontsize=32, loc=(0.62, 0.05))
 
 
 def annotate_arrow(a, b, text=None, offset=10., color="k", **kwargs):
@@ -158,7 +160,7 @@ def plane_phi_phi_one(pi, pj, phases, transitions, folderName="", fileName="plan
         extra_legends.append(("  FOPT(black arrow)", criticalTransitionArrowColour))
 
     if subcritical:
-        extra_legends.append(("  SCPT(grey arrow)", subcriticalTransitionArrowColour))
+        extra_legends.append(("  ScPT(grey arrow)", subcriticalTransitionArrowColour))
 
     if len(extra_legends) > 0:
         leg = add_arrows_to_leg(ax, extra_legends)
@@ -281,7 +283,9 @@ def plane_T_V(phases, pdf_name="plane.pdf", forced_Tmin=-1.0, forced_Tmax=-1.0):
 
 def plane_phi_T(phases, transitions, pdf_name="plane.pdf", forced_Tmin=-1.0, forced_Tmax=-1.0):
     print("Plotting phases against temperature for {} figure".format(pdf_name))
-    rcParams['figure.figsize'] = (20, 10)
+    rcParams['figure.figsize'] = (15, 10)
+    rcParams["text.usetex"] = True
+    rcParams['text.latex.preamble'] = [r"\usepackage{bm}"]
     n_field = phases[0].n_field
     fig, axs = plt.subplots(nrows=1, ncols=n_field)
 
@@ -305,7 +309,9 @@ def plane_phi_T(phases, transitions, pdf_name="plane.pdf", forced_Tmin=-1.0, for
             # Plot phase
             phi = p.phi[i]
             T = p.T
-            ax.plot(phi, T, "-o", markersize=1, label="Phase ${0}$ ".format(j), **LINE)
+            #ax.plot(phi, T, "-o", markersize=1, label="Phase ${0}$ ".format(j), **LINE)
+            ax.plot(phi, T, label=f'$\\mathrm{{Phase}}$ \\boldmath$\\phi_{j+1}$ ', **LINE)
+            ax.tick_params(size=8, labelsize=28)
 
             # Update minimum and maximum field values
             phi_min = min(phi_min, min(phi))
@@ -361,19 +367,23 @@ def plane_phi_T(phases, transitions, pdf_name="plane.pdf", forced_Tmin=-1.0, for
         ax.set_xlim(phi_min-phi_shift, phi_max+phi_shift)
 
         if len(axs) == 1:
-            ax.set_xlabel(r"Field $x$ (GeV)")
+            #ax.set_xlabel(r"Field $x$ (GeV)")
+            ax.set_xlabel('$\\mathrm{Field}$ $\\phi$ $\\mathrm{[GeV]}$', fontsize=32)
         else:
-            ax.set_xlabel(r"Field $x_{0}$ (GeV)".format(i+1))
+            #ax.set_xlabel(r"Field $x_{0}$ (GeV)".format(i+1))
+            ax.set_xlabel('$\\mathrm{Field}$ ' + ('$\\phi_h$' if i == 0 else '$\\phi_s$') + ' $\\mathrm{[GeV]}$',
+                fontsize=32)
         if i == 0:
-            ax.set_ylabel("Temperature, $T$ (GeV)")
+            #ax.set_ylabel("Temperature, $T$ (GeV)")
+            ax.set_ylabel('$\\mathrm{Temperature}$, $T$ $\\mathrm{[GeV]}$', fontsize=32)
 
     extra_legends = []
 
-    if transitions:
-        extra_legends.append(("  FOPT", criticalTransitionArrowColour))
+    #if transitions:
+    #    extra_legends.append(("  $\\mathrm{FOPT}$", criticalTransitionArrowColour))
 
     if subcritical:
-        extra_legends.append(("  SCPT", subcriticalTransitionArrowColour))
+        extra_legends.append(("  $\\mathrm{ScPT}$", subcriticalTransitionArrowColour))
 
     if len(extra_legends) > 0:
         add_arrows_to_leg(axs[-1], extra_legends)

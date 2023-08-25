@@ -80,7 +80,7 @@ EffectivePotential::RSS& getModel(bool bHighTempExpansion, const std::vector<dou
 
 void getCriticalTemperatureDataForPoint(std::string inputFileName, std::string outputFolderName, bool check_subcrit,
 	bool allow_phase_oscillation, bool bPlot, bool bDebug, bool bNoTransitionPathFinding, bool check_Hessian,
-	bool bNoGSResum, bool bHighTempExpansion, bool bModStep, bool bMergeGaps, double maxT)
+	bool bNoGSResum, bool bUseBoltzmannSuppression, bool bHighTempExpansion, bool bModStep, bool bMergeGaps, double maxT)
 {
 	std::ifstream inputFile(inputFileName);
 
@@ -122,10 +122,27 @@ void getCriticalTemperatureDataForPoint(std::string inputFileName, std::string o
 	{
 		model.set_useGSResummation(!bNoGSResum);
 	}
+	
+	model.set_bUseBoltzmannSuppression(bUseBoltzmannSuppression);
 
 	Eigen::VectorXd origin(2);
 	origin << 0.0, 0.0;
 	Eigen::VectorXd vev = model.get_EW_VEV();
+	
+	auto prevPrecision = std::cout.precision(std::numeric_limits<double>::max_digits10);
+	
+	model.set_DEBUG(true);
+	std::cout << "V0(0 , 0)     : " << model.V0(origin) << std::endl;
+	std::cout << "V0(vh, vs)    : " << model.V0(vev) << std::endl;
+	std::cout << "V(0 , 0 , 0)  : " << model.V(origin, 0.) << std::endl;
+	std::cout << "V(vh, vs, 0)  : " << model.V(vev, 0.) << std::endl;
+	std::cout << "V(0 , 0 , 100): " << model.V(origin, 100.) << std::endl;
+	std::cout << "V(vh, vs, 100): " << model.V(vev, 100.) << std::endl;
+	model.set_DEBUG(false);
+	
+	//return;
+
+	std::cout.precision(prevPrecision);
 
 	std::vector<PhaseTracer::Transition> transitions;
 	
@@ -204,6 +221,7 @@ int main(int argc, char* argv[])
 	bool bTrace = false;
 	bool bPlot = false;
 	bool bNoTransitionPathFinding = false;
+	bool bUseBoltzmannSuppression = false;
 	bool check_Hessian = false;
 	bool bNoGSResum = false;
 	bool bHighTempExpansion = false;
@@ -263,6 +281,12 @@ int main(int argc, char* argv[])
 			bNoTransitionPathFinding = true;
 			continue;
 		}
+		
+		if(!bUseBoltzmannSuppression && strcmp(argv[i], "-boltz") == 0)
+		{
+			bUseBoltzmannSuppression = true;
+			continue;
+		}
 
 		if(!check_Hessian && strcmp(argv[i], "-hessian") == 0)
 		{
@@ -308,6 +332,6 @@ int main(int argc, char* argv[])
 	}
 
 	getCriticalTemperatureDataForPoint(inputFileName, outputFolderName, check_subcrit, allow_phase_oscillation, bPlot,
-		bDebug || bTrace, bNoTransitionPathFinding, check_Hessian, bNoGSResum, bHighTempExpansion, bModStep,
-		bMergeGaps, maxT);
+		bDebug || bTrace, bNoTransitionPathFinding, check_Hessian, bNoGSResum, bUseBoltzmannSuppression,
+		bHighTempExpansion, bModStep, bMergeGaps, maxT);
 }

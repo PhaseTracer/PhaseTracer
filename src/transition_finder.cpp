@@ -265,8 +265,8 @@ void TransitionFinder::append_subcritical_transitions()
       // The last parameter is whether we should consider transitions from the new phase. We want to check for this if
       // this new phase has lower energy than some other phase, because there is a subcritical transition to it so there
       // could be a transition from it, following that.
-      if (checkSubcriticalTransition(phases, i, j, Tmax, energyAtTmax, firstSubcriticalIndex > -1, isTransitionedTo)
-        && firstSubcriticalIndex == -1)
+      if (firstSubcriticalIndex == -1 && checkSubcriticalTransition(phases, i, j, Tmax, energyAtTmax,
+	    firstSubcriticalIndex > -1, isTransitionedTo))
       {
         firstSubcriticalIndex = j;
         LOG(debug) << "firstSubcriticalIndex j = " << firstSubcriticalIndex << " for phase i = " << i;
@@ -289,7 +289,7 @@ void TransitionFinder::append_subcritical_transitions()
 }
 
 bool TransitionFinder::checkSubcriticalTransition(const std::vector<PhaseTracer::Phase>& phases, int i, int j,
-  double Tmax, double energyAtTmax, bool checkFromNewPhase, const std::vector<bool>& isTransitionedTo)
+  double Tmax, double energyAtTmax, bool checkFromNewPhase, std::vector<bool>& isTransitionedTo)
 {
   // If the phases do not overlap in temperature, there cannot be a transition between them.
   //if(abs(phasejAtTmax.t - Tmax) > 1)
@@ -354,6 +354,7 @@ bool TransitionFinder::checkSubcriticalTransition(const std::vector<PhaseTracer:
       LOG(debug) << "Adding subcritical transition " << j << " -(" << Tmax << ")-> " << i;
       transitions.push_back({PhaseTracer::SUCCESS, Tmax, phases[i], phases[j], trueVacuum, falseVacuum,
         gamma, vevChanged, deltaPotential, 0, true, transitions.size()});
+	  isTransitionedTo[i] = true;
     }
     else
     {
@@ -371,6 +372,7 @@ bool TransitionFinder::checkSubcriticalTransition(const std::vector<PhaseTracer:
     {
       transitions.push_back({PhaseTracer::SUCCESS, Tmax, phases[j], phases[i], falseVacuum, trueVacuum,
         -gamma, vevChanged, -deltaPotential, 0, true, transitions.size()});
+	  isTransitionedTo[j] = true;
     }
   }
 

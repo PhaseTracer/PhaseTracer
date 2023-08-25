@@ -1,11 +1,10 @@
 /**
-	Generates and outputs the phase structure for a toy model.
+  1D example program for PhaseTracer.
 */
 
 #include <iostream>
-#include <string.h>
 
-#include "models/supercool_model.hpp"
+#include "models/ConcurrentThreePhaseTransition_scaled.hpp"
 #include "phase_finder.hpp"
 #include "transition_finder.hpp"
 #include "logger.hpp"
@@ -13,6 +12,37 @@
 #include "transition_graph_util.hpp"
 
 #include <Eigen/Eigenvalues>
+
+/*void printPaths(std::vector<std::vector<TransitionGraph::Path>> paths)
+{
+	int numPaths = 0;
+
+	for(int i = 0; i < paths.size(); ++i)
+	{
+		for(int j = 0; j < paths[i].size(); ++j)
+		{
+			numPaths += 1;
+		}
+	}
+
+	std::cout << "Found " << numPaths << " paths:" << std::endl;
+
+	int pathID = 1;
+	//bool constrainedLowTPhases = model.get_low_t_phases().size() > 0;
+
+	for(int i = 0; i < paths.size(); ++i)
+	{
+		for(int j = 0; j < paths[i].size(); ++j)
+		{
+			//std::cout << (valid ? "[Valid]  " : "[Invalid]") << " Path " << pathID++  << ": " << paths[i][j]
+			//	<< std::endl;
+			std::cout << "Path " << pathID++ << ": " << paths[i][j] << std::endl;
+			//std::cout << paths[i] << std::endl;
+		}
+	}
+
+	std::cout << std::endl;
+}*/
 
 void printPaths(std::vector<TransitionGraph::Path> paths)
 {
@@ -52,15 +82,11 @@ int main(int argc, char* argv[])
 		// +1 for the starting pointer so we skip over the executable name argv[0].
 		args.assign(argv, argv + argc);
 	}
+	
+	std::string outputFolderName = args[1];
 
-	std::string inputFileName = args[1];
-	std::string outputFolderName = args[2];
-
-	// Check for additional input configuration settings.
-	for(int i = 3; i < argc; ++i)
+	for(int i = 2; i < argc; ++i)
 	{
-		//std::cout << i << ": " << argv[i] << std::endl;
-		
 		if(!bDebug && !bTrace && strcmp(argv[i], "-debug") == 0)
 		{
 			LOGGER(debug);
@@ -93,18 +119,6 @@ int main(int argc, char* argv[])
 			continue;
 		}
 
-		if(!bNoTransitionPathFinding && strcmp(argv[i], "-no_tpf") == 0)
-		{
-			bNoTransitionPathFinding = true;
-			continue;
-		}
-		
-		if(!bUseBoltzmannSuppression && strcmp(argv[i], "-boltz") == 0)
-		{
-			bUseBoltzmannSuppression = true;
-			continue;
-		}
-
 		if(dx < 0 && args[i].compare(0, 3, "dx=") == 0)
 		{
 			dx = std::stod(args[i].substr(3, args[i].size()-3));
@@ -116,6 +130,9 @@ int main(int argc, char* argv[])
 			dt = std::stod(args[i].substr(3, args[i].size()-3));
 			continue;
 		}
+
+		std::cout << "Unsupported parameter flag: " << args[i] << std::endl;
+		break;
 	}
 	
 	// Set level of screen output
@@ -125,29 +142,19 @@ int main(int argc, char* argv[])
 	}
 	
 	// Construct model
-	EffectivePotential::SuperCoolModel model(inputFileName);
-	model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
-	model.set_xi(0);
-	model.set_bUseBoltzmannSuppression(bUseBoltzmannSuppression);
-	
-	Eigen::VectorXd origin(1);
-	origin << 0.;
-	std::cout << "V(0 , 0)     : " << model.V(origin, 0.) << std::endl;
-	std::cout << "V0(0 , 0)    : " << model.V0(origin) << std::endl;
-	Eigen::VectorXd vev(1);
-	vev << 246.;
-	std::cout << "V(v , 0)     : " << model.V(vev, 0.) << std::endl;
-	std::cout << "V0(v , 0)    : " << model.V0(vev) << std::endl;
-	Eigen::VectorXd ten(1);
-	ten << 10.;
-	std::cout << "V(10 , 10)   : " << model.V(ten, 10.) << std::endl;
-	std::cout << "V0(10 , 10)  : " << model.V0(ten) << std::endl;
+	EffectivePotential::ConcurrentThreePhaseTransition_scaled model;
 	
 	// Make PhaseFinder object and find the phases
 	PhaseTracer::PhaseFinder pf(model);
 	pf.set_t_high(140);
 	pf.set_check_vacuum_at_high(false);
 	pf.set_check_hessian_singular(false);
+	/*pf.set_x_abs_identical(0.01);
+	pf.set_x_abs_jump(dx); // 0.05, 0.02
+	pf.set_dt_max_abs(dt); // 0.05, 0.03
+	pf.set_phase_min_length(0.01);
+	pf.set_find_min_trace_abs_step(0.01);
+	pf.set_find_min_locate_abs_step(0.01);*/
 	pf.find_phases();
 	
 	// Make TransitionFinder object and find the transitions
@@ -156,9 +163,6 @@ int main(int argc, char* argv[])
 	tf.set_assume_only_one_transition(!allow_phase_oscillation);
 	tf.find_transitions();
 	tf.find_transition_paths(model, false);
-
-	//std::cout << pf;
-	//std::cout << tf;
 
 	if(!bNoTransitionPathFinding)
 	{
@@ -177,7 +181,7 @@ int main(int argc, char* argv[])
 			printPaths(tf.get_transition_paths());
 		}
 	}
-
+	
 	PhaseTracer::phase_plotter(tf, outputFolderName, "phase_structure", bPlot);
 	
 	return 0;

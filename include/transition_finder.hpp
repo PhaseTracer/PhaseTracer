@@ -97,7 +97,7 @@ class TransitionFinder {
 
   /** Called from append_subcritical_transitions; checks whether there is a subcritical transition between two phases. */
   bool checkSubcriticalTransition(const std::vector<PhaseTracer::Phase>& phases, int i, int j, double Tmax,
-    double energyAtTmax, bool checkFromNewPhase, const std::vector<bool>& isTransitionedTo);
+    double energyAtTmax, bool checkFromNewPhase, std::vector<bool>& isTransitionedTo);
 
   /** Called from find_transitions; checks whether the transition should be kept or rejected. */
   bool validateTransition(const Transition& transition) const;
