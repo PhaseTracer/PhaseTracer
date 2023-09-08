@@ -27,12 +27,7 @@
 #include "phase_finder.hpp"
 #include "overload.hpp"
 #include "potential.hpp"
-
-// Include .hpp of BubbleProfiler
-#include "action.hpp"
-#include "error.hpp"
-#include "logging_manager.hpp"
-#include "shooting.hpp"
+#include "bprofiler.hpp"
 
 namespace PhaseTracer {
 
@@ -50,6 +45,10 @@ struct Transition {
   double gamma;
   std::vector<bool> changed;
   double delta_potential;
+  double TN;
+  Eigen::VectorXd true_vacuum_TN;
+  Eigen::VectorXd false_vacuum_TN;
+  double action_TN;
   size_t key;
 
   /** Pretty-printer for single transition */
@@ -62,12 +61,16 @@ struct Transition {
         o << " to symmetric partner " << a.key
           << " of phase " << a.true_phase.key << " ===" << std::endl;
       }
-      o << "false vacuum = " << a.false_vacuum << std::endl
-        << "true vacuum = " << a.true_vacuum << std::endl
-        << "changed = " << a.changed << std::endl
+      o << "changed = " << a.changed << std::endl
         << "TC = " << a.TC << std::endl
-        << "gamma = " << a.gamma << std::endl
-        << "delta potential = " << a.delta_potential  << std::endl;
+        << "false vacuum (TC) = " << a.false_vacuum << std::endl
+        << "true vacuum (TC) = " << a.true_vacuum << std::endl
+        << "gamma (TC) = " << a.gamma << std::endl
+        << "delta potential (TC) = " << a.delta_potential << std::endl
+        << "TN = " << a.TN << std::endl
+        << "false vacuum (TN) = " << a.false_vacuum_TN << std::endl
+        << "true vacuum (TN) = " << a.true_vacuum_TN << std::endl
+        << "action (TN) = " << a.action_TN << std::endl;
     } else {
       o << "=== failure. message =  " << a.message << " ===" << std::endl;
     }
@@ -78,7 +81,8 @@ struct Transition {
 
 class TransitionFinder {
  public:
-  explicit TransitionFinder(PhaseFinder& pf_) : pf(pf_) {}
+  explicit TransitionFinder(PhaseFinder& pf_) : pf(pf_), V_BP(pf_) {
+  }
   virtual ~TransitionFinder() = default;
 
   /** Find all transitions between all phases */
@@ -87,7 +91,25 @@ class TransitionFinder {
   /** Retrieve all transitions between all phases */
   std::vector<Transition> get_transitions() const { return transitions; }
 
-  double get_action(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, double T) const;
+  double get_action(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, double T) const{
+    return  V_BP.get_action(false_vacuum, true_vacuum, T);
+  }
+  
+  std::vector<Eigen::VectorXd> get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique=0)const{
+    const auto phase1_at_T = pf.phase_at_T(phase1, T);
+    const auto phase2_at_T = pf.phase_at_T(phase2, T);
+    const auto true_vacua_at_T = pf.symmetric_partners(phase1_at_T.x);
+    const auto false_vacua_at_T =  pf.symmetric_partners(phase2_at_T.x);
+    
+    return {false_vacua_at_T[0], true_vacua_at_T[i_unique]};
+  }
+  
+  double get_action(Phase phase1, Phase phase2, double T, size_t i_unique=0) const{
+    const auto vacua = get_vacua_at_T(phase1, phase2, T, i_unique=0);
+    return get_action(vacua[0], vacua[1], T);
+  }
+  
+  double get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const;
   
   /** Retrieve all phases */
   std::vector<Phase> get_phases() const { return pf.get_phases(); }
@@ -98,7 +120,9 @@ class TransitionFinder {
  private:
   /** Object with phases and potential */
   PhaseFinder &pf;
-
+    
+  V_BubbleProfiler V_BP;
+  
   /** Whether already calculated all transitions */
   bool calculated_transitions = false;
 

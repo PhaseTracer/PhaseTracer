@@ -53,7 +53,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
     // Fix false_vacuum, and loop all possible symmetric partners of true_vacuum
     const auto false_vacuum = false_vacua[0];
     auto true_vacuum = true_vacua[0];
-    for (int i_unique; i_unique < true_vacua.size(); i_unique++) {
+    for (size_t i_unique=0; i_unique < true_vacua.size(); i_unique++) {
       true_vacuum = true_vacua[i_unique];
       bool duplicate = false;
       const auto fv = pf.symmetric_partners(false_vacuum);
@@ -74,74 +74,92 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
         LOG(trace) << "are not duplicate";
         const auto gamma_ = gamma(true_vacuum, false_vacuum, TC);
         const auto changed_ = changed(true_vacuum, false_vacuum);
-        unique_transitions.push_back({SUCCESS, TC, phase1, phase2,
-          true_vacuum, false_vacuum, gamma_, changed_,
-          delta_potential, unique_transitions.size()});
 
+        double TN = std::numeric_limits<double>::quiet_NaN();
+        auto true_vacuum_TN = true_vacuum;
+        auto false_vacuum_TN = false_vacuum;
+        double action_TN = std::numeric_limits<double>::quiet_NaN();
         if (true){ // Need BubbleProfiler
-          
-          for (double Ttry = TC ; Ttry > TC-10; Ttry--){
-          
-            const auto phase1_at_Ttry = pf.phase_at_T(phase1, Ttry);
-            const auto phase2_at_Ttry = pf.phase_at_T(phase2, Ttry);
-            const auto true_vacua_at_Ttry = pf.symmetric_partners(phase1_at_Ttry.x);
-            const auto false_vacua_at_Ttry =  pf.symmetric_partners(phase2_at_Ttry.x);
-          
-            get_action(false_vacua_at_Ttry[0], true_vacua_at_Ttry[i_unique], Ttry);
-            
-          }
+          TN = get_Tnuc(phase1, phase2, i_unique, TC, T1);
+          auto vacua = get_vacua_at_T(phase1, phase2, TN, i_unique);
+          true_vacuum_TN = vacua[1];
+          false_vacuum_TN = vacua[0];
+//          false_vacuum_TN(0) = -1E-4;
+          action_TN = get_action(true_vacuum_TN,false_vacuum_TN,TN);
         }
+        unique_transitions.push_back({SUCCESS, TC, phase1, phase2,
+          true_vacuum, false_vacuum, gamma_, changed_, delta_potential,
+          TN, true_vacuum_TN, false_vacuum_TN, action_TN,
+          unique_transitions.size()});
+
+
       }
     }
 
 
     return unique_transitions;
   } catch (const std::exception& e) {
+    // TODO
     LOG(debug) << e.what() << " - probably no sign change between T = " << T1 << " and " << T2;
     return {{ERROR}};
   }
 }
 
-double TransitionFinder::get_action(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, double T) const{
+double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const{
   
-  double action;
+//    print("Tunneling from phase %s to phase %s at T=%0.4g"
   
-  if (pf.P.get_n_scalars() == 1) {
-  
-    const double false_min = false_vacuum[0];
-    const double true_min = true_vacuum[0];
-    const double barrier = 0.5*(false_min+true_min);
-
-    const auto potential = [this, false_vacuum, T] (double phi) {
-      const Eigen::VectorXd vector_phi = Eigen::VectorXd::Constant(1, phi);
-      return pf.P.V(vector_phi,T);
-    };
-
-    const auto potential_first = [this, false_vacuum, T] (double phi) {
-      const Eigen::VectorXd vector_phi = Eigen::VectorXd::Constant(1, phi);
-      const auto dV_dx = pf.P.dV_dx(vector_phi,T);
-      return dV_dx.coeff(0);
-    };
-
-    const auto potential_second = [this, false_vacuum, T] (double phi) {
-      const Eigen::VectorXd vector_phi = Eigen::VectorXd::Constant(1, phi);
-      const auto d2V_dx2 = pf.P.d2V_dx2(vector_phi,T);
-      return d2V_dx2.coeff(0, 0);
-    };
-
-    BubbleProfiler::Shooting one_dim;
-    one_dim.solve(potential, potential_first, potential_second,
-                  false_min, true_min, barrier,
-                  4, BubbleProfiler::Shooting::Solver_options::Compute_action);
-    action =one_dim.get_euclidean_action();
-  } else {
-    LOG(fatal) << "Action calculation for n_scalars != 1 is not ready!";
+  if (T_begin < T_end) {
+    LOG(fatal) << "T_begin < T_end, so swith the values. ";
+    T_begin = T_begin + T_end;
+    T_end   = T_begin - T_end;
+    T_begin = T_begin - T_end;
   }
   
-  std::cout << "Action at T = " << T << " is " << action << std::endl;
-  std::cout << "S/T = " << action/T << std::endl;
+  LOG(debug) << "Find Tnuc between " << phase1.key << " and " << phase2.key << " in [" << T_begin << ", "<< T_end <<"]. ";
   
-  return action;
+  
+  const auto fun_nucleation = [this, phase1, phase2, i_unique](double Ttry) {
+    return this->get_action(phase1, phase2, Ttry, i_unique)/Ttry - 140.;
+  };
+  
+  LOG(debug) << "fun_nucleation(T_begin)= " << fun_nucleation(T_begin) ;
+  LOG(debug) << "fun_nucleation(T_end)= " << fun_nucleation(T_end) ;
+  
+  if ( fun_nucleation(T_begin) < 0 ) {
+    LOG(debug) << "The tunneling possibility at T_begin satisfys the nucleation condition." ;
+    return T_begin;
+  }
+  
+  if ( fun_nucleation(T_end) > 0 ) {
+    // find min of fun_nucleation start from T_end
+    // if min >0
+    // return nan
+    // else
+    // return min
+    LOG(fatal) << "Not ready"; // TODO
+  }
+  
+  try{
+    const double root_bits = 1. - std::log2(TC_tol_rel);
+    boost::math::tools::eps_tolerance<double> stop(root_bits);
+    boost::uintmax_t non_const_max_iter = max_iter;
+    const auto result = boost::math::tools::bisect(fun_nucleation, T_end, T_begin, stop, non_const_max_iter);
+    const double Tnuc = (result.first + result.second) * 0.5;
+    LOG(debug) << "Found nucleation temperature = " << Tnuc;
+    return Tnuc;
+  } catch(char *str){
+    std::cout << str << std::endl; // TODO
+    // find the first
+  }
+  
+
+//
+//
+//  for (double Ttry = T_begin ; Ttry > T_end; Ttry--){
+//    LOG(debug) << "Cal action at " << Ttry << ". ";
+//
+//  }
 }
 
 std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2) const {
@@ -239,6 +257,7 @@ void TransitionFinder::find_transitions() {
       if (T_range.size() == 0) continue;
       if (T_range.size() == 3) {
         const auto TC = T_range[2];
+        const auto TN = T_range[2];
         LOG(debug) << "Phases " << phase1.key << " and " << phase2.key << " cross at T=" << TC;
         const auto phase1_at_critical = pf.phase_at_T(phase1, TC);
         const auto phase2_at_critical = pf.phase_at_T(phase2, TC);
@@ -247,7 +266,9 @@ void TransitionFinder::find_transitions() {
         Transition f = {SUCCESS, TC, phase1, phase2,
                         phase1_at_critical.x, phase2_at_critical.x,
                         gamma_, changed_,
-                        phase1_at_critical.potential - phase2_at_critical.potential};
+                        phase1_at_critical.potential - phase2_at_critical.potential,
+                        TC, phase1_at_critical.x, phase2_at_critical.x, 0
+        };
         transitions.push_back(f);
       }
 
