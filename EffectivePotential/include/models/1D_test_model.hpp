@@ -32,6 +32,12 @@ class OneDimModel : public Potential {
   }
   size_t get_n_scalars() const override { return 1; }
   bool forbidden(Eigen::VectorXd x) const override { return x[0] < -0.1; }
+
+  Eigen::VectorXd dV_dx(Eigen::VectorXd phi, double T) const override {
+    Eigen::VectorXd d(1);
+    d(0) = 2. * (c * square(T) - m2) * phi[0] + 3. * kappa * square(phi[0]) + 4. * lambda * cube(phi[0]);
+    return d;
+  }
   
   Eigen::VectorXd d2V_dxdt(Eigen::VectorXd phi, double T) const override {
     return 4. * c * T * phi;

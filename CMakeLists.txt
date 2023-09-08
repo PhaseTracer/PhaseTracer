@@ -58,7 +58,7 @@ include_directories(
 
 if(BUILD_WITH_BP)
   include_directories(
-    ${BubbleProfiler_INCLUDES}
+    ${PROJECT_SOURCE_DIR}
   )
 endif(BUILD_WITH_BP)
 
