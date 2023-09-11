@@ -81,7 +81,10 @@ struct Transition {
 
 class TransitionFinder {
  public:
-  explicit TransitionFinder(PhaseFinder& pf_) : pf(pf_), V_BP(pf_) {
+  explicit TransitionFinder(PhaseFinder& pf_) :
+    pf(pf_),
+    V_BP(pf_),
+    n_fields(pf_.P.get_n_scalars()){
   }
   virtual ~TransitionFinder() = default;
 
@@ -91,8 +94,48 @@ class TransitionFinder {
   /** Retrieve all transitions between all phases */
   std::vector<Transition> get_transitions() const { return transitions; }
 
-  double get_action(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, double T) const{
-    return  V_BP.get_action(false_vacuum, true_vacuum, T);
+  double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
+    double action=std::numeric_limits<double>::quiet_NaN();
+    
+    V_BP.set_T(T); // This is necessary!!
+    
+    Eigen::VectorXd true_vacuum = vacuum_1;
+    Eigen::VectorXd false_vacuum = vacuum_2;
+    if ( pf.P.V(true_vacuum,T) > pf.P.V(false_vacuum,T) ) true_vacuum.swap(false_vacuum);
+    
+    bool use_perturbative = false ;
+    if (n_fields == 1  && !use_perturbative) {
+
+      double false_min = false_vacuum[0];
+      double true_min = true_vacuum[0];
+      auto barrier_ = V_BP.find_one_dimensional_barrier( true_vacuum, false_vacuum, T);
+      double barrier = barrier_[0];
+
+      LOG(debug) << "Calculate action at " << T << ", with false, true, barrier = " << false_min << ", " << true_min << ", " << barrier;
+
+      try{
+        BubbleProfiler::Shooting one_dim;
+        one_dim.solve(V_BP, false_min,
+                      true_min,barrier, 4, BubbleProfiler::Shooting::Solver_options::Compute_action);
+        action =one_dim.get_euclidean_action();
+      }catch (const std::exception& e) {
+        LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: "   << e.what(); // TODO return something, or recal 
+      }
+    } else {
+//
+////      BubbleProfiler::RK4_perturbative_profiler profiler;
+////
+////      initialize_extrema(potential, input, true_vacuum, false_vacuum);
+//
+      LOG(fatal) << "Action calculation for n_scalars != 1 is not ready!";
+    }
+    
+    LOG(debug) << "S = " << action << ", S/T = " << action/T << std::endl;
+    
+    return action;
+
+    
+    
   }
   
   std::vector<Eigen::VectorXd> get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique=0)const{
@@ -122,6 +165,8 @@ class TransitionFinder {
   PhaseFinder &pf;
     
   V_BubbleProfiler V_BP;
+  
+  size_t n_fields{0};
   
   /** Whether already calculated all transitions */
   bool calculated_transitions = false;

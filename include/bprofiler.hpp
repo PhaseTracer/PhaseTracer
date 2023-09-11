@@ -110,7 +110,7 @@ public:
                                          false_vacuum_loc(0)));
      optimizer.set_upper_bounds(std::max(true_vacuum_loc(0),
                                          false_vacuum_loc(0)));
-     optimizer.set_max_time(10);
+     optimizer.set_max_time(100);
 
      Eigen::VectorXd initial_guess(0.5 * (true_vacuum_loc + false_vacuum_loc));
      const auto status = optimizer.optimize(initial_guess);
@@ -123,64 +123,7 @@ public:
 
      return optimizer.get_extremum_location();
   }
-  
-  double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
     
-    double action;
-    
-    Eigen::VectorXd true_vacuum = vacuum_1;
-    Eigen::VectorXd false_vacuum = vacuum_2;
-    if ( pf.P.V(true_vacuum,T) > pf.P.V(false_vacuum,T) ) true_vacuum.swap(false_vacuum);
-//    LOG(debug) << "true vacuum";
-    
-    if (n_fields == 1) {
-    
-      double false_min = false_vacuum[0];
-      double true_min = true_vacuum[0];
-      auto barrier_ = find_one_dimensional_barrier( true_vacuum, false_vacuum, T);
-      double barrier = barrier_[0];
-      
-      LOG(debug) << "Calculate action at " << T << ", with false, true, barrier = " << false_min << ", " << true_min << ", " << barrier;
-      
-      const auto potential = [this, T] (double phi) {
-        const Eigen::VectorXd vector_phi = Eigen::VectorXd::Constant(1, phi);
-        return pf.P.V(vector_phi,T);
-      };
-
-  //    std::cout << "potential 1  = " << potential(true_min) << std::endl;
-  //    V_BP.set_T(T);
-  //    std::cout << "potential 1  = " << V_BP(true_vacuum) << std::endl;
-      
-      const auto potential_first = [this, T] (double phi) {
-        const Eigen::VectorXd vector_phi = Eigen::VectorXd::Constant(1, phi);
-        const auto dV_dx = pf.P.dV_dx(vector_phi,T);
-        return dV_dx.coeff(0);
-      };
-
-      const auto potential_second = [this, T] (double phi) {
-        const Eigen::VectorXd vector_phi = Eigen::VectorXd::Constant(1, phi);
-        const auto d2V_dx2 = pf.P.d2V_dx2(vector_phi,T);
-        return d2V_dx2.coeff(0, 0);
-      };
-
-      try{
-        BubbleProfiler::Shooting one_dim;
-        one_dim.solve(potential, potential_first, potential_second,
-                      false_min, true_min+1E-6, barrier,
-                      4, BubbleProfiler::Shooting::Solver_options::Compute_action);
-        action =one_dim.get_euclidean_action();
-      }catch (const std::exception& e) {
-        LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: "   << e.what();
-      }
-    } else {
-      LOG(fatal) << "Action calculation for n_scalars != 1 is not ready!";
-    }
-    
-    LOG(debug) << "S = " << action << ", S/T = " << action/T << std::endl;
-    
-    return action;
-  }
-  
 private:
   mutable double T;
   
