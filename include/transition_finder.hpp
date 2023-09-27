@@ -29,6 +29,8 @@
 #include "potential.hpp"
 #include "bprofiler.hpp"
 
+
+
 namespace PhaseTracer {
 
 /** Information about root-finding for a transition */
@@ -96,37 +98,67 @@ class TransitionFinder {
 
   double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
     double action=std::numeric_limits<double>::quiet_NaN();
-    
-    V_BP.set_T(T); // This is necessary!!
+    V_BubbleProfiler V_BP_=V_BP; // perturbative_profiler only accept non-const potential
+    V_BP_.set_T(T); // This is necessary!!
     
     Eigen::VectorXd true_vacuum = vacuum_1;
     Eigen::VectorXd false_vacuum = vacuum_2;
     if ( pf.P.V(true_vacuum,T) > pf.P.V(false_vacuum,T) ) true_vacuum.swap(false_vacuum);
     
-    bool use_perturbative = false ;
+    size_t n_dims = 4;
+    
+    bool use_perturbative = false;
     if (n_fields == 1  && !use_perturbative) {
 
       double false_min = false_vacuum[0];
       double true_min = true_vacuum[0];
-      auto barrier_ = V_BP.find_one_dimensional_barrier( true_vacuum, false_vacuum, T);
+      auto barrier_ = V_BP_.find_one_dimensional_barrier( true_vacuum, false_vacuum, T);
       double barrier = barrier_[0];
 
       LOG(debug) << "Calculate action at " << T << ", with false, true, barrier = " << false_min << ", " << true_min << ", " << barrier;
 
       try{
         BubbleProfiler::Shooting one_dim;
-        one_dim.solve(V_BP, false_min,
-                      true_min,barrier, 4, BubbleProfiler::Shooting::Solver_options::Compute_action);
+        one_dim.solve(V_BP_, false_min,
+                      true_min,barrier, n_dims, BubbleProfiler::Shooting::Solver_options::Compute_action);
         action =one_dim.get_euclidean_action();
       }catch (const std::exception& e) {
-        LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: "   << e.what(); // TODO return something, or recal 
+        LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: "   << e.what(); // TODO return something, or recal
       }
     } else {
-//
-////      BubbleProfiler::RK4_perturbative_profiler profiler;
-////
-////      initialize_extrema(potential, input, true_vacuum, false_vacuum);
-//
+      LOG(fatal) << "Calculate action at " << T << ", between \n [" << false_vacuum << "] \n and \n [" << true_vacuum << "]";
+      BubbleProfiler::RK4_perturbative_profiler profiler;
+      
+//      profiler.set_domain_start(input.domain_start);
+//      profiler.set_domain_end(input.domain_end);
+      profiler.set_initial_step_size(1.e-2);
+      profiler.set_interpolation_points_fraction(1.0);
+      
+//      false_vacuum(0)=0;
+//      false_vacuum(1)=0;
+//      true_vacuum(0)=1.04637;
+//      true_vacuum(1)=1.66349;
+      
+      profiler.set_false_vacuum_loc(false_vacuum);
+      profiler.set_true_vacuum_loc(true_vacuum);
+      n_dims = 3;
+      profiler.set_number_of_dimensions(n_dims);
+//      auto root_finder = std::make_shared<BubbleProfiler::GSL_root_finder<Eigen::Dynamic> >();
+//      profiler.set_root_finder(root_finder);
+      std::shared_ptr<BubbleProfiler::Profile_guesser> guesser;
+      guesser = std::make_shared<BubbleProfiler::Kink_profile_guesser>();
+//      profiler.set_initial_guesser(guesser);
+      auto convergence_tester = std::make_shared<BubbleProfiler::Relative_convergence_tester>(
+                                1.e-3, 1.e-3);
+      profiler.set_convergence_tester(convergence_tester);
+      
+      profiler.calculate_bubble_profile(V_BP_);
+
+      action = profiler.get_euclidean_action();
+      LOG(fatal) << "S = " << action << ", S/T = " << action/T << std::endl;
+      
+///      initialize_extrema(potential, input, true_vacuum, false_vacuum);
+
       LOG(fatal) << "Action calculation for n_scalars != 1 is not ready!";
     }
     

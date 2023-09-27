@@ -34,6 +34,11 @@
 #include "BubbleProfiler/include/logging_manager.hpp"
 #include "BubbleProfiler/include/shooting.hpp"
 #include "BubbleProfiler/include/nlopt_optimizer.hpp"
+#include "BubbleProfiler/include/perturbative_profiler.hpp"
+#include "BubbleProfiler/include/generic_perturbative_profiler.hpp"
+#include "BubbleProfiler/include/shooting_profile_guesser.hpp"
+#include "BubbleProfiler/include/gsl_root_finder.hpp"
+#include "BubbleProfiler/include/relative_convergence_tester.hpp"
 
 namespace PhaseTracer {
 
@@ -57,15 +62,21 @@ public:
   };
   
   double operator()(const Eigen::VectorXd& coords) const override{
-    return pf.P.V(coords,T);
+    Eigen::VectorXd transformed_coords =
+       (basis_transform * coords) + origin_translation;
+    return pf.P.V(transformed_coords,T);
   }
   
   double partial(const Eigen::VectorXd& coords, int i) const override{
-    auto const dV = pf.P.dV_dx(coords,T);
+    Eigen::VectorXd transformed_coords =
+       (basis_transform * coords) + origin_translation;
+    auto const dV = pf.P.dV_dx(transformed_coords,T);
     return dV.coeff(i);
   }
   double partial(const Eigen::VectorXd& coords, int i, int j) const override{
-    auto const d2V =  pf.P.d2V_dx2(coords,T);
+    Eigen::VectorXd transformed_coords =
+       (basis_transform * coords) + origin_translation;
+    auto const d2V =  pf.P.d2V_dx2(transformed_coords,T);
     return d2V.coeff(i, j);
   }
   std::size_t get_number_of_fields() const override{
@@ -96,21 +107,23 @@ public:
      }
 
      const auto v = [this,TT](const Eigen::VectorXd& coords) {
-      return pf.P.V(coords,TT);
+      Eigen::VectorXd transformed_coords =
+          (basis_transform * coords) + origin_translation;
+      return pf.P.V(transformed_coords,TT);
      };
 
      BubbleProfiler::NLopt_optimizer optimizer(v, n_fields);
 
      // Don't need much precision for location of barrier
-     optimizer.set_xtol_rel(1.e-2);
-     optimizer.set_ftol_rel(1.e-2);
+     optimizer.set_xtol_rel(1.e-5); // TODO: need lower than the one used to calcualte dV_dx and d2V_dx2
+     optimizer.set_ftol_rel(1.e-5);
 
      optimizer.set_extremum_type(BubbleProfiler::NLopt_optimizer::Extremum_type::MAX);
      optimizer.set_lower_bounds(std::min(true_vacuum_loc(0),
                                          false_vacuum_loc(0)));
      optimizer.set_upper_bounds(std::max(true_vacuum_loc(0),
                                          false_vacuum_loc(0)));
-     optimizer.set_max_time(100);
+     optimizer.set_max_time(1E6);
 
      Eigen::VectorXd initial_guess(0.5 * (true_vacuum_loc + false_vacuum_loc));
      const auto status = optimizer.optimize(initial_guess);
