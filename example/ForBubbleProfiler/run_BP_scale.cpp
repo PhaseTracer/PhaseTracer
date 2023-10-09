@@ -1,6 +1,6 @@
 /**
  The scale example BubbleProfiler
- ./run_BP_scale 1. 0.1 2.
+ ./run_BP_scale 1. 0.6 200.
 */
 
 #include <fstream>

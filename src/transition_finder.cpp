@@ -130,14 +130,13 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
     LOG(debug) << "The tunneling possibility at T_begin satisfys the nucleation condition." ;
     return T_begin;
   }
-  
-  if ( fun_nucleation(T_end) > 0 ) {
-    // find min of fun_nucleation start from T_end
-    // if min >0
-    // return nan
-    // else
-    // return min
-    LOG(fatal) << "Not ready"; // TODO
+  double Tnuc = std::numeric_limits<double>::quiet_NaN();
+  if ( fun_nucleation(T_end) > 0) {
+    double Tnuc_try = T_begin;
+    while (Tnuc_try>T_end) {
+      Tnuc_try -= Tnuc_step;
+      while (fun_nucleation(Tnuc_try) < 0) break;
+    }
   }
   
   try{
@@ -145,7 +144,7 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
     boost::math::tools::eps_tolerance<double> stop(root_bits);
     boost::uintmax_t non_const_max_iter = max_iter;
     const auto result = boost::math::tools::bisect(fun_nucleation, T_end, T_begin, stop, non_const_max_iter);
-    const double Tnuc = (result.first + result.second) * 0.5;
+    Tnuc = (result.first + result.second) * 0.5;
     LOG(debug) << "Found nucleation temperature = " << Tnuc;
     return Tnuc;
   } catch(char *str){
@@ -163,6 +162,11 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
 }
 
 std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2) const {
+
+#ifdef CAL_TNUC
+  LOG(warning) << "When assume_only_one_transition is set to false, the calculation of Tnuc will not be performed. " << std::endl;
+#endif
+  
   std::vector<Transition> roots;
   for (double T = T1; T <= T2; T += separation) {
     const auto bs = find_transition(phase1, phase2, T, std::min(T + separation, T2));
@@ -172,6 +176,87 @@ std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase
   }
   return roots;
 }
+
+std::vector<Eigen::VectorXd> TransitionFinder::get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique)const{
+  const auto phase1_at_T = pf.phase_at_T(phase1, T);
+  const auto phase2_at_T = pf.phase_at_T(phase2, T);
+  const auto true_vacua_at_T = pf.symmetric_partners(phase1_at_T.x);
+  const auto false_vacua_at_T =  pf.symmetric_partners(phase2_at_T.x);
+  
+  return {false_vacua_at_T[0], true_vacua_at_T[i_unique]};
+}
+
+double TransitionFinder::get_action(Phase phase1, Phase phase2, double T, size_t i_unique) const{
+  const auto vacua = get_vacua_at_T(phase1, phase2, T, i_unique);
+  return get_action(vacua[0], vacua[1], T);
+}
+
+double TransitionFinder::get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
+    double action=std::numeric_limits<double>::quiet_NaN();
+    V_BubbleProfiler V_BP_=V_BP; // perturbative_profiler only accept non-const potential
+    V_BP_.set_T(T); // This is necessary!!
+    
+    Eigen::VectorXd true_vacuum = vacuum_1;
+    Eigen::VectorXd false_vacuum = vacuum_2;
+    if ( pf.P.V(true_vacuum,T) > pf.P.V(false_vacuum,T) ) true_vacuum.swap(false_vacuum);
+    
+    size_t n_dims = 4;
+    
+    bool use_perturbative = false;
+    if (n_fields == 1  && !use_perturbative) {
+
+      double false_min = false_vacuum[0];
+      double true_min = true_vacuum[0];
+      auto barrier_ = V_BP_.find_one_dimensional_barrier( true_vacuum, false_vacuum, T);
+      double barrier = barrier_[0];
+
+      LOG(debug) << "Calculate action at T=" << T << ", with false, true, barrier = " << false_min << ", " << true_min << ", " << barrier;
+
+      try{
+        BubbleProfiler::Shooting one_dim;
+        one_dim.solve(V_BP_, false_min,
+                      true_min,barrier, n_dims, BubbleProfiler::Shooting::Solver_options::Compute_action);
+        action = one_dim.get_euclidean_action();
+      }catch (const std::exception& e) {
+        LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: "   << e.what() << std::endl;
+      }
+    } else {
+      LOG(debug) << "Calculate action at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
+      BubbleProfiler::RK4_perturbative_profiler profiler;
+      
+//      profiler.set_domain_start(input.domain_start);
+//      profiler.set_domain_end(input.domain_end);
+      profiler.set_initial_step_size(1.e-2);
+      profiler.set_interpolation_points_fraction(1.0);
+      
+      
+      profiler.set_false_vacuum_loc(false_vacuum);
+      profiler.set_true_vacuum_loc(true_vacuum);
+      n_dims = 3;
+      profiler.set_number_of_dimensions(n_dims);
+      auto root_finder = std::make_shared<BubbleProfiler::GSL_root_finder<Eigen::Dynamic> >();
+      profiler.set_root_finder(root_finder);
+      std::shared_ptr<BubbleProfiler::Profile_guesser> guesser;
+      guesser = std::make_shared<BubbleProfiler::Kink_profile_guesser>();
+      profiler.set_initial_guesser(guesser);
+      auto convergence_tester = std::make_shared<BubbleProfiler::Relative_convergence_tester>(
+                                1.e-3, 1.e-3);
+      profiler.set_convergence_tester(convergence_tester);
+      
+      try{
+        profiler.calculate_bubble_profile(V_BP_);
+        action = profiler.get_euclidean_action();
+      }catch (const std::exception& e) {
+        LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what() << std::endl;
+      }
+    }
+    
+    LOG(debug) << " S = " << action << std::endl;
+    
+    return action;
+    
+  }
+
 
 double TransitionFinder::gamma(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, const double TC) const {
   const int b = true_vacuum.size() + 1;

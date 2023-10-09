@@ -59,7 +59,7 @@ class Potential {
 
  protected:
   /** The step-size in all numerical derivatives */
-  PROTECTED_PROPERTY(double, h, 0.1);
+  PROTECTED_PROPERTY(double, h, 0.001);
 
   /** Whether to use a fourth-order approximation */
   PROTECTED_PROPERTY_CUSTOM_SETTER(bool, h_4, false);

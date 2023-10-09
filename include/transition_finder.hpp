@@ -29,8 +29,6 @@
 #include "potential.hpp"
 #include "bprofiler.hpp"
 
-
-
 namespace PhaseTracer {
 
 /** Information about root-finding for a transition */
@@ -96,93 +94,10 @@ class TransitionFinder {
   /** Retrieve all transitions between all phases */
   std::vector<Transition> get_transitions() const { return transitions; }
 
-  double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
-    double action=std::numeric_limits<double>::quiet_NaN();
-    V_BubbleProfiler V_BP_=V_BP; // perturbative_profiler only accept non-const potential
-    V_BP_.set_T(T); // This is necessary!!
-    
-    Eigen::VectorXd true_vacuum = vacuum_1;
-    Eigen::VectorXd false_vacuum = vacuum_2;
-    if ( pf.P.V(true_vacuum,T) > pf.P.V(false_vacuum,T) ) true_vacuum.swap(false_vacuum);
-    
-    size_t n_dims = 4;
-    
-    bool use_perturbative = false;
-    if (n_fields == 1  && !use_perturbative) {
-
-      double false_min = false_vacuum[0];
-      double true_min = true_vacuum[0];
-      auto barrier_ = V_BP_.find_one_dimensional_barrier( true_vacuum, false_vacuum, T);
-      double barrier = barrier_[0];
-
-      LOG(debug) << "Calculate action at " << T << ", with false, true, barrier = " << false_min << ", " << true_min << ", " << barrier;
-
-      try{
-        BubbleProfiler::Shooting one_dim;
-        one_dim.solve(V_BP_, false_min,
-                      true_min,barrier, n_dims, BubbleProfiler::Shooting::Solver_options::Compute_action);
-        action =one_dim.get_euclidean_action();
-      }catch (const std::exception& e) {
-        LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: "   << e.what(); // TODO return something, or recal
-      }
-    } else {
-      LOG(fatal) << "Calculate action at " << T << ", between \n [" << false_vacuum << "] \n and \n [" << true_vacuum << "]";
-      BubbleProfiler::RK4_perturbative_profiler profiler;
-      
-//      profiler.set_domain_start(input.domain_start);
-//      profiler.set_domain_end(input.domain_end);
-      profiler.set_initial_step_size(1.e-2);
-      profiler.set_interpolation_points_fraction(1.0);
-      
-//      false_vacuum(0)=0;
-//      false_vacuum(1)=0;
-//      true_vacuum(0)=1.04637;
-//      true_vacuum(1)=1.66349;
-      
-      profiler.set_false_vacuum_loc(false_vacuum);
-      profiler.set_true_vacuum_loc(true_vacuum);
-      n_dims = 3;
-      profiler.set_number_of_dimensions(n_dims);
-//      auto root_finder = std::make_shared<BubbleProfiler::GSL_root_finder<Eigen::Dynamic> >();
-//      profiler.set_root_finder(root_finder);
-      std::shared_ptr<BubbleProfiler::Profile_guesser> guesser;
-      guesser = std::make_shared<BubbleProfiler::Kink_profile_guesser>();
-//      profiler.set_initial_guesser(guesser);
-      auto convergence_tester = std::make_shared<BubbleProfiler::Relative_convergence_tester>(
-                                1.e-3, 1.e-3);
-      profiler.set_convergence_tester(convergence_tester);
-      
-      profiler.calculate_bubble_profile(V_BP_);
-
-      action = profiler.get_euclidean_action();
-      LOG(fatal) << "S = " << action << ", S/T = " << action/T << std::endl;
-      
-///      initialize_extrema(potential, input, true_vacuum, false_vacuum);
-
-      LOG(fatal) << "Action calculation for n_scalars != 1 is not ready!";
-    }
-    
-    LOG(debug) << "S = " << action << ", S/T = " << action/T << std::endl;
-    
-    return action;
-
-    
-    
-  }
+  std::vector<Eigen::VectorXd> get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique=0)const;
   
-  std::vector<Eigen::VectorXd> get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique=0)const{
-    const auto phase1_at_T = pf.phase_at_T(phase1, T);
-    const auto phase2_at_T = pf.phase_at_T(phase2, T);
-    const auto true_vacua_at_T = pf.symmetric_partners(phase1_at_T.x);
-    const auto false_vacua_at_T =  pf.symmetric_partners(phase2_at_T.x);
-    
-    return {false_vacua_at_T[0], true_vacua_at_T[i_unique]};
-  }
-  
-  double get_action(Phase phase1, Phase phase2, double T, size_t i_unique=0) const{
-    const auto vacua = get_vacua_at_T(phase1, phase2, T, i_unique=0);
-    return get_action(vacua[0], vacua[1], T);
-  }
+  double get_action(Phase phase1, Phase phase2, double T, size_t i_unique=0) const;
+  double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const;
   
   double get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const;
   
@@ -239,6 +154,8 @@ class TransitionFinder {
   PROPERTY(double, change_rel_tol, 1.e-3)
   /** Absolute tolerance for judging whether a field is changed during a transition */
   PROPERTY(double, change_abs_tol, 1.e-3)
+  PROPERTY(double, Tnuc_step, 1.)
+  
 };
 
 }  // namespace PhaseTracer
