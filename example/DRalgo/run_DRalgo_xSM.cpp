@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
   
   if ( argc == 1 ) {
     debug_mode = true;
-    lambda_hs = 1.6;
+    lambda_hs = 1.3;
     lambda_s = 1.0;
     Ms = 160;
   } else if ( argc >= 4 ) {
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
     phi[0]=100;
     phi[1]=100;
     std::cout << "V(100,100;T=300)=" << model.V(phi,300/2.) << std::endl;
-    return 0;
+//    return 0;
   }
 
   // Make PhaseFinder object and find the phases
@@ -84,12 +84,12 @@ int main(int argc, char* argv[]) {
     output_file << toString(in, out) << std::endl;
     return 0;
   }
-  if (debug_mode) std::cout << pf;
+  std::cout << pf;
 
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf);
   tf.find_transitions();
-  if (debug_mode) std::cout << tf;
+  std::cout << tf;
 
   auto t = tf.get_transitions();
   if (t.size()==0){
