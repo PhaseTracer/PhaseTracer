@@ -26,6 +26,7 @@ find_package(Boost 1.53.0 REQUIRED
 )
 set(Boost_USE_MULTITHREADED ON)
 
+find_package(ALGLIB REQUIRED)
 find_package(Eigen3 3.1 REQUIRED)
 find_package(NLopt REQUIRED)
 find_package(Threads REQUIRED)
@@ -53,6 +54,7 @@ include_directories(
   ${EIGEN3_INCLUDE_DIR}
   ${NLopt_INCLUDE_DIRS}
   ${EFFPOTENTIAL_INCLUDE_DIRS}
+  ${ALGLIB_INCLUDES}
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 )
 

@@ -30,8 +30,6 @@
 
 #include <vector>
 #include <cmath>
-#include <boost/numeric/odeint.hpp>
-#include <boost/multiprecision/cpp_complex.hpp>
 #include <interpolation.h>
 
 #include "pow.hpp"
@@ -44,10 +42,10 @@ class DR_ah: public Potential {
  public:
 
   DR_ah(double M_input,
-            double gsq_input,
-            double lam_input){
-      double muhsq_input = -0.5*square(M_input);
-      solveBetas({gsq_input,muhsq_input,lam_input});
+        double gsq_input,
+        double lam_input){
+        double muhsq_input = -0.5*square(M_input);
+      solveBetas({gsq_input,muhsq_input,lam_input}); // The order is same to `Betas'
     }
 
   size_t get_n_scalars() const override {return 1;}
@@ -77,52 +75,51 @@ class DR_ah: public Potential {
                       pow(g1sq*phisq*Yphisq,1.5)/(6.*M_PI);
 
     std::complex<double> veffNNLO = (3.*lam*(msq + lam*phisq))/(64.*pow(M_PI,2)) +
-       (lam*sqrt(msq + lam*phisq)*sqrt(msq + 3.*lam*phisq))/(32.*pow(M_PI,2)) +
-       (3.*lam*(msq + 3.*lam*phisq))/(64.*pow(M_PI,2)) +
-       (g1sq*sqrt(msq + lam*phisq)*Yphisq*sqrt(g1sq*phisq*Yphisq))/
-        (16.*pow(M_PI,2)) + (g1sq*sqrt(msq + 3.*lam*phisq)*Yphisq*
-          sqrt(g1sq*phisq*Yphisq))/(16.*pow(M_PI,2)) -
-       (3.*pow(lam,2)*phisq*(0.5 + log(mu3US/(3.*sqrt(msq + 3.*lam*phisq)))))/
-        (16.*pow(M_PI,2)) - (pow(lam,2)*phisq*
-          (0.5 + log(mu3US/(2.*sqrt(msq + lam*phisq) + sqrt(msq + 3.*lam*phisq)))))/
-        (16.*pow(M_PI,2)) + ((g1sq*phisq*sqrt(msq + lam*phisq)*
-             sqrt(msq + 3.*lam*phisq)*Yphisq)/(16.*pow(M_PI,2)) +
-          (sqrt(msq + 3.*lam*phisq)*sqrt(g1sq*phisq*Yphisq)*
-             (-2.*lam*phisq - g1sq*phisq*Yphisq))/(16.*pow(M_PI,2)) +
-          (sqrt(msq + lam*phisq)*sqrt(g1sq*phisq*Yphisq)*
-             (2.*lam*phisq - g1sq*phisq*Yphisq))/(16.*pow(M_PI,2)) +
-          (pow(lam,2)*pow(phisq,2)*
-             (0.5 + log(mu3US/(sqrt(msq + lam*phisq) + sqrt(msq + 3.*lam*phisq)))))/
-           (4.*pow(M_PI,2)) - ((pow(msq + lam*phisq,2) -
-               2.*(msq + lam*phisq)*(msq + 3.*lam*phisq) + pow(msq + 3.*lam*phisq,2) -
-               2.*g1sq*phisq*(msq + lam*phisq)*Yphisq -
-               2.*g1sq*phisq*(msq + 3.*lam*phisq)*Yphisq +
-               pow(g1sq,2)*pow(phisq,2)*pow(Yphisq,2))*
-             (0.5 + log(mu3US/
-                 (sqrt(msq + lam*phisq) + sqrt(msq + 3.*lam*phisq) +
-                   sqrt(g1sq*phisq*Yphisq)))))/(16.*pow(M_PI,2)))/(2.*phisq) +
-       pow(g1sq,2)*phisq*pow(Yphisq,2)*
-        (1/(32.*pow(M_PI,2)) - (0.5 +
-             log(mu3US/(sqrt(msq + 3.*lam*phisq) + 2.*sqrt(g1sq*phisq*Yphisq))))/
-           (16.*pow(M_PI,2)) + ((g1sq*phisq*sqrt(msq + 3.*lam*phisq)*Yphisq*
-                sqrt(g1sq*phisq*Yphisq))/(8.*pow(M_PI,2)) +
-             (g1sq*phisq*Yphisq*(msq + 3.*lam*phisq - 2.*g1sq*phisq*Yphisq))/
-              (16.*pow(M_PI,2)) - (pow(msq + 3.*lam*phisq,2)*
-                (0.5 + log(mu3US/sqrt(msq + 3.*lam*phisq))))/(16.*pow(M_PI,2)) +
-             (pow(-msq - 3.*lam*phisq + g1sq*phisq*Yphisq,2)*
-                (0.5 + log(mu3US/(sqrt(msq + 3.*lam*phisq) + sqrt(g1sq*phisq*Yphisq))))
-                )/(8.*pow(M_PI,2)) -
-             (pow(-msq - 3.*lam*phisq + 2.*g1sq*phisq*Yphisq,2)*
-                (0.5 + log(mu3US/
-                    (sqrt(msq + 3.*lam*phisq) + 2.*sqrt(g1sq*phisq*Yphisq)))))/
-              (16.*pow(M_PI,2)))/(4.*pow(g1sq,2)*pow(Yphisq,2)*pow(phisq,2)));
-
+            (lam*sqrt(msq + lam*phisq)*sqrt(msq + 3.*lam*phisq))/(32.*pow(M_PI,2)) +
+            (3.*lam*(msq + 3.*lam*phisq))/(64.*pow(M_PI,2)) +
+            (g1sq*sqrt(msq + lam*phisq)*Yphisq*sqrt(g1sq*phisq*Yphisq))/
+            (16.*pow(M_PI,2)) + (g1sq*sqrt(msq + 3.*lam*phisq)*Yphisq*
+            sqrt(g1sq*phisq*Yphisq))/(16.*pow(M_PI,2)) -
+            (3.*pow(lam,2)*phisq*(0.5 + log(mu3US/(3.*sqrt(msq + 3.*lam*phisq)))))/
+            (16.*pow(M_PI,2)) - (pow(lam,2)*phisq*
+            (0.5 + log(mu3US/(2.*sqrt(msq + lam*phisq) + sqrt(msq + 3.*lam*phisq)))))/
+            (16.*pow(M_PI,2)) + ((g1sq*phisq*sqrt(msq + lam*phisq)*
+            sqrt(msq + 3.*lam*phisq)*Yphisq)/(16.*pow(M_PI,2)) +
+            (sqrt(msq + 3.*lam*phisq)*sqrt(g1sq*phisq*Yphisq)*
+            (-2.*lam*phisq - g1sq*phisq*Yphisq))/(16.*pow(M_PI,2)) +
+            (sqrt(msq + lam*phisq)*sqrt(g1sq*phisq*Yphisq)*
+            (2.*lam*phisq - g1sq*phisq*Yphisq))/(16.*pow(M_PI,2)) +
+            (pow(lam,2)*pow(phisq,2)*
+            (0.5 + log(mu3US/(sqrt(msq + lam*phisq) + sqrt(msq + 3.*lam*phisq)))))/
+            (4.*pow(M_PI,2)) - ((pow(msq + lam*phisq,2) -
+            2.*(msq + lam*phisq)*(msq + 3.*lam*phisq) + pow(msq + 3.*lam*phisq,2) -
+            2.*g1sq*phisq*(msq + lam*phisq)*Yphisq -
+            2.*g1sq*phisq*(msq + 3.*lam*phisq)*Yphisq +
+            pow(g1sq,2)*pow(phisq,2)*pow(Yphisq,2))*
+            (0.5 + log(mu3US/
+            (sqrt(msq + lam*phisq) + sqrt(msq + 3.*lam*phisq) +
+            sqrt(g1sq*phisq*Yphisq)))))/(16.*pow(M_PI,2)))/(2.*phisq) +
+            pow(g1sq,2)*phisq*pow(Yphisq,2)*
+            (1/(32.*pow(M_PI,2)) - (0.5 +
+            log(mu3US/(sqrt(msq + 3.*lam*phisq) + 2.*sqrt(g1sq*phisq*Yphisq))))/
+            (16.*pow(M_PI,2)) + ((g1sq*phisq*sqrt(msq + 3.*lam*phisq)*Yphisq*
+            sqrt(g1sq*phisq*Yphisq))/(8.*pow(M_PI,2)) +
+            (g1sq*phisq*Yphisq*(msq + 3.*lam*phisq - 2.*g1sq*phisq*Yphisq))/
+            (16.*pow(M_PI,2)) - (pow(msq + 3.*lam*phisq,2)*
+            (0.5 + log(mu3US/sqrt(msq + 3.*lam*phisq))))/(16.*pow(M_PI,2)) +
+            (pow(-msq - 3.*lam*phisq + g1sq*phisq*Yphisq,2)*
+            (0.5 + log(mu3US/(sqrt(msq + 3.*lam*phisq) + sqrt(g1sq*phisq*Yphisq))))
+            )/(8.*pow(M_PI,2)) -
+            (pow(-msq - 3.*lam*phisq + 2.*g1sq*phisq*Yphisq,2)*
+            (0.5 + log(mu3US/
+            (sqrt(msq + 3.*lam*phisq) + 2.*sqrt(g1sq*phisq*Yphisq)))))/
+            (16.*pow(M_PI,2)))/(4.*pow(g1sq,2)*pow(Yphisq,2)*pow(phisq,2)));
 
 //    std::cout << std::endl << "veffLO=" << veffLO << "veffNLO=" << veffNLO << "veffNNLO=" << veffNNLO << std::endl;
     return veffLO.real() + veffNLO.real() + veffNNLO.real();
   }
   
-  static void Betas(const std::vector<double>& x, std::vector<double>& dxdt, const double t){
+  void Betas(const std::vector<double>& x, std::vector<double>& dxdt, const double t) override{
     double gsq   = x[0];
     double muhsq = x[1];
     double lam   = x[2];
@@ -133,79 +130,13 @@ class DR_ah: public Potential {
                       -(3.*Yphisq * gsq*lam )/ (4.*square(M_PI))
                       +(5.*square(lam) )/ (4.*square(M_PI)) );
   }
-  
-  alglib::spline1dinterpolant make_cubic_spline(alglib::real_1d_array x, alglib::real_1d_array y) {
-    alglib::spline1dinterpolant spline_;
-    alglib::spline1dbuildcubic(x, y, spline_);
-    return spline_;
-  }
-  
-  void solveBetas(std::vector<double> x0, double t0=100., double dt = 1., double t_start = 20.0, double t_end = 5000.0){
-    // Define the type for odeint
-    using state_type = std::vector<double>;
-    // Define the state variables
-    state_type x;
-    std::vector<double> t_vec;   // Store the values of t
-    std::vector<state_type> x_vec;  // Store the values of x
-    
-    // Define the stepper
-    x = x0;
-    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_down;    // Solve the ODEs and print the results
-    for (double t = t0; t >= t_start; t -= dt)
-    {
-        stepper_down.do_step(Betas, x, t, -dt);  // Solve the ODEs
-        t_vec.push_back(t);
-        x_vec.push_back(x);
-    }
-    std::reverse(t_vec.begin(), t_vec.end());
-    std::reverse(x_vec.begin(), x_vec.end());
-    
-    // Define the stepper
-    x=x0;
-    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_up;    // Solve the ODEs and print the results
-    for (double t = t0; t <= t_end; t += dt)
-    {
-        stepper_up.do_step(Betas, x, t, dt);  // Solve the ODEs
-        if (t == t0) continue;
-        t_vec.push_back(t);
-        x_vec.push_back(x);
-    }
-    
-//    TODO: checking the result. For example, x= -inf when t_start = 10
-//    TODO: dynamically adjust the range
-    for (const auto& element : t_vec) {
-        std::cout << element << " ";
-    }
-    std::cout << std::endl;
-    for (const auto& element : x_vec) {
-        std::cout << element[0] << " ";
-    }
-    std::cout << std::endl;
-    
-    
-    int n = t_vec.size();
-    alglib::real_1d_array t_array;
-    t_array.setlength(n);
-    alglib::real_1d_array x_array;
-    x_array.setlength(n);
-    
-    for (int j = 0; j < x0.size(); j++) {
-      for (int i = 0; i < t_vec.size(); i++) {
-        t_array[i] = t_vec[i];
-        x_array[i] = x_vec[i][j];
-      }
-      auto RGE = make_cubic_spline(t_array, x_array);
-      RGEs.push_back(RGE);
-    }
-  }
 
-  
   std::vector<double> DRstep(double T) const {
     double scale = scaleFactor * M_PI * T;
     
-    double gsq=alglib::spline1dcalc(RGEs[0], scale);
-    double muhsq=alglib::spline1dcalc(RGEs[1], scale);
-    double lamh=alglib::spline1dcalc(RGEs[2], scale);
+    double gsq   = alglib::spline1dcalc(RGEs[0], scale);
+    double muhsq = alglib::spline1dcalc(RGEs[1], scale);
+    double lamh  = alglib::spline1dcalc(RGEs[2], scale);
     
     double Lb = -2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T);
     
@@ -213,114 +144,114 @@ class DR_ah: public Potential {
     (48.*pow(M_PI,2));
     
     double barlamh3 = (T*(6.*gsq*lamh*Yphisq*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)) +
-                          pow(gsq,2)*pow(Yphisq,2)*
-                           (2 - 3.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
-                          2.*lamh*(8.*pow(M_PI,2) - 5.*lamh*
-                              (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/(16.*pow(M_PI,2))\
+                      pow(gsq,2)*pow(Yphisq,2)*
+                      (2 - 3.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
+                      2.*lamh*(8.*pow(M_PI,2) - 5.*lamh*
+                      (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/(16.*pow(M_PI,2))\
                       - (pow(gsq,2)*pow(T,2)*pow(Yphisq,2)*
-                        pow(24.*lamh + 48.*pow(M_PI,2) -
-                          gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)),2))/
+                      pow(24.*lamh + 48.*pow(M_PI,2) -
+                      gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)),2))/
                       (18432.*pow(M_PI,5)*sqrt((gsq*pow(T,2)*Yphisq)/3. +
-                          (gsq*Yphisq*(72.*muhsq + pow(T,2)*
-                                (24.*lamh - 2.*gsq*Yphisq*
-                                   (-7 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
-                                               (288.*pow(M_PI,2))));
+                      (gsq*Yphisq*(72.*muhsq + pow(T,2)*
+                      (24.*lamh - 2.*gsq*Yphisq*
+                      (-7 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
+                      (288.*pow(M_PI,2))));
     double mu3US=bargsq3;
     
     double barmuhsq3 = muhsq + (pow(T,2)*(4.*lamh + 3.*gsq*Yphisq))/12. +
-    (gsq*T*Yphisq*(24.*lamh + 48.*pow(M_PI,2) -
-         gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))*
-       ((pow(gsq,2)*T*pow(Yphisq,2))/pow(M_PI,2) -
-         (gsq*T*Yphisq*(24.*lamh + 48.*pow(M_PI,2) -
-              gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))))/
-          (12.*pow(M_PI,2)) + (gsq*T*Yphisq*log(2)*
-            (24.*lamh + 48.*pow(M_PI,2) -
-              gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))))/
-          (6.*pow(M_PI,2))))/(3072.*pow(M_PI,4)) -
-    (gsq*T*Yphisq*(24.*lamh + 48.*pow(M_PI,2) -
-         gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))*
-       sqrt((gsq*pow(T,2)*Yphisq)/3. +
-         (gsq*Yphisq*(72.*muhsq + pow(T,2)*
-               (24.*lamh - 2.*gsq*Yphisq*
-                  (-7 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
-          (288.*pow(M_PI,2))))/(192.*pow(M_PI,3)) +
-    ((pow(Yphisq,2)*(gsq*T - (pow(gsq,2)*T*Yphisq*
-               (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))/(48.*pow(M_PI,2)))\
-          - 2.*Yphisq*(gsq*T - (pow(gsq,2)*T*Yphisq*
-               (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))/(48.*pow(M_PI,2)))*
-          ((T*(6.*gsq*lamh*Yphisq*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)) +
-                 pow(gsq,2)*pow(Yphisq,2)*
-                  (2 - 3.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
-                 2.*lamh*(8.*pow(M_PI,2) -
-                    5.*lamh*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
-             (16.*pow(M_PI,2)) - (pow(gsq,2)*pow(T,2)*pow(Yphisq,2)*
-               pow(24.*lamh + 48.*pow(M_PI,2) -
-                 gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)),2))
-              /(18432.*pow(M_PI,5)*
-               sqrt((gsq*pow(T,2)*Yphisq)/3. +
-                 (gsq*Yphisq*(72.*muhsq +
+                      (gsq*T*Yphisq*(24.*lamh + 48.*pow(M_PI,2) -
+                      gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))*
+                      ((pow(gsq,2)*T*pow(Yphisq,2))/pow(M_PI,2) -
+                      (gsq*T*Yphisq*(24.*lamh + 48.*pow(M_PI,2) -
+                      gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))))/
+                      (12.*pow(M_PI,2)) + (gsq*T*Yphisq*log(2)*
+                      (24.*lamh + 48.*pow(M_PI,2) -
+                      gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))))/
+                      (6.*pow(M_PI,2))))/(3072.*pow(M_PI,4)) -
+                      (gsq*T*Yphisq*(24.*lamh + 48.*pow(M_PI,2) -
+                      gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))*
+                      sqrt((gsq*pow(T,2)*Yphisq)/3. +
+                      (gsq*Yphisq*(72.*muhsq + pow(T,2)*
+                      (24.*lamh - 2.*gsq*Yphisq*
+                      (-7 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
+                      (288.*pow(M_PI,2))))/(192.*pow(M_PI,3)) +
+                      ((pow(Yphisq,2)*(gsq*T - (pow(gsq,2)*T*Yphisq*
+                      (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))/(48.*pow(M_PI,2)))\
+                      - 2.*Yphisq*(gsq*T - (pow(gsq,2)*T*Yphisq*
+                      (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))/(48.*pow(M_PI,2)))*
+                      ((T*(6.*gsq*lamh*Yphisq*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)) +
+                      pow(gsq,2)*pow(Yphisq,2)*
+                      (2 - 3.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
+                      2.*lamh*(8.*pow(M_PI,2) -
+                      5.*lamh*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
+                      (16.*pow(M_PI,2)) - (pow(gsq,2)*pow(T,2)*pow(Yphisq,2)*
+                      pow(24.*lamh + 48.*pow(M_PI,2) -
+                      gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)),2))
+                      /(18432.*pow(M_PI,5)*
+                      sqrt((gsq*pow(T,2)*Yphisq)/3. +
+                      (gsq*Yphisq*(72.*muhsq +
                       pow(T,2)*(24.*lamh -
-                         2.*gsq*Yphisq*
-                          (-7 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
-                  (288.*pow(M_PI,2))))) +
-         2.*pow((T*(6.*gsq*lamh*Yphisq*
-                  (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)) +
-                 pow(gsq,2)*pow(Yphisq,2)*
-                  (2 - 3.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
-                 2.*lamh*(8.*pow(M_PI,2) -
-                    5.*lamh*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
-             (16.*pow(M_PI,2)) - (pow(gsq,2)*pow(T,2)*pow(Yphisq,2)*
-               pow(24.*lamh + 48.*pow(M_PI,2) -
-                 gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)),2))
-              /(18432.*pow(M_PI,5)*
-               sqrt((gsq*pow(T,2)*Yphisq)/3. +
-                 (gsq*Yphisq*(72.*muhsq +
+                      2.*gsq*Yphisq*
+                      (-7 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
+                      (288.*pow(M_PI,2))))) +
+                      2.*pow((T*(6.*gsq*lamh*Yphisq*
+                      (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)) +
+                      pow(gsq,2)*pow(Yphisq,2)*
+                      (2 - 3.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
+                      2.*lamh*(8.*pow(M_PI,2) -
+                      5.*lamh*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
+                      (16.*pow(M_PI,2)) - (pow(gsq,2)*pow(T,2)*pow(Yphisq,2)*
+                      pow(24.*lamh + 48.*pow(M_PI,2) -
+                      gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)),2))
+                      /(18432.*pow(M_PI,5)*
+                      sqrt((gsq*pow(T,2)*Yphisq)/3. +
+                      (gsq*Yphisq*(72.*muhsq +
                       pow(T,2)*(24.*lamh -
-                         2.*gsq*Yphisq*
-                          (-7 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
-                  (288.*pow(M_PI,2)))),2))*
-       log(mu3US/sqrt((gsq*pow(T,2)*Yphisq)/3. +
-           (gsq*Yphisq*(72.*muhsq +
-                pow(T,2)*(24.*lamh -
-                   2.*gsq*Yphisq*(-7 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))
-                   )))/(288.*pow(M_PI,2)))))/(4.*pow(M_PI,2)) +
-    (pow(gsq,2)*pow(T,2)*pow(Yphisq,2)*
-        (-8 - 108.*EulerGamma + 1296.*log(Glaisher) +
-          69.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
-       12.*gsq*Yphisq*(2.*lamh*pow(T,2)*(1 + 6.*EulerGamma - 72.*log(Glaisher)) +
-          (9.*muhsq - 6.*lamh*pow(T,2))*
-           (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
-       24.*lamh*(-6.*lamh*pow(T,2)*(EulerGamma - 12.*log(Glaisher)) +
-          (-6.*muhsq + lamh*pow(T,2))*
-           (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
-       18.*((pow(gsq,2)*pow(T,2)*pow(Yphisq,2)*
-             pow(24.*lamh + 48.*pow(M_PI,2) -
-               gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)),2))/
-           (576.*pow(M_PI,4)) + 8.*pow(Yphisq,2)*
-           pow(gsq*T - (pow(gsq,2)*T*Yphisq*
-                (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))/(48.*pow(M_PI,2)),
-            2) - (T*Yphisq*(gsq*T -
-               (pow(gsq,2)*T*Yphisq*
-                  (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))/
-                (48.*pow(M_PI,2)))*
-             (6.*gsq*lamh*Yphisq*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)) +
-               pow(gsq,2)*pow(Yphisq,2)*
-                (2 - 3.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
-               2.*lamh*(8.*pow(M_PI,2) -
-                  5.*lamh*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
-           pow(M_PI,2) + (pow(T,2)*
-             pow(6.*gsq*lamh*Yphisq*
-                (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)) +
-               pow(gsq,2)*pow(Yphisq,2)*
-                (2 - 3.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
-               2.*lamh*(8.*pow(M_PI,2) -
-                  5.*lamh*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))),2))/
-           (16.*pow(M_PI,4)))*log(sqrt((gsq*pow(T,2)*Yphisq)/3. +
-            (gsq*Yphisq*(72.*muhsq +
-                 pow(T,2)*(24.*lamh -
-                    2.*gsq*Yphisq*(-7 - 2.*(-EulerGamma + log(4.*M_PI)) +
-                       2.*log(scale/T)))))/(288.*pow(M_PI,2)))/scale))/
-    (576.*pow(M_PI,2));
+                      2.*gsq*Yphisq*
+                      (-7 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
+                      (288.*pow(M_PI,2)))),2))*
+                      log(mu3US/sqrt((gsq*pow(T,2)*Yphisq)/3. +
+                      (gsq*Yphisq*(72.*muhsq +
+                      pow(T,2)*(24.*lamh -
+                      2.*gsq*Yphisq*(-7 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))
+                      )))/(288.*pow(M_PI,2)))))/(4.*pow(M_PI,2)) +
+                      (pow(gsq,2)*pow(T,2)*pow(Yphisq,2)*
+                      (-8 - 108.*EulerGamma + 1296.*log(Glaisher) +
+                      69.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
+                      12.*gsq*Yphisq*(2.*lamh*pow(T,2)*(1 + 6.*EulerGamma - 72.*log(Glaisher)) +
+                      (9.*muhsq - 6.*lamh*pow(T,2))*
+                      (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
+                      24.*lamh*(-6.*lamh*pow(T,2)*(EulerGamma - 12.*log(Glaisher)) +
+                      (-6.*muhsq + lamh*pow(T,2))*
+                      (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
+                      18.*((pow(gsq,2)*pow(T,2)*pow(Yphisq,2)*
+                      pow(24.*lamh + 48.*pow(M_PI,2) -
+                      gsq*Yphisq*(-4 - 2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)),2))/
+                      (576.*pow(M_PI,4)) + 8.*pow(Yphisq,2)*
+                      pow(gsq*T - (pow(gsq,2)*T*Yphisq*
+                      (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))/(48.*pow(M_PI,2)),
+                      2) - (T*Yphisq*(gsq*T -
+                      (pow(gsq,2)*T*Yphisq*
+                      (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))/
+                      (48.*pow(M_PI,2)))*
+                      (6.*gsq*lamh*Yphisq*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)) +
+                      pow(gsq,2)*pow(Yphisq,2)*
+                      (2 - 3.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
+                      2.*lamh*(8.*pow(M_PI,2) -
+                      5.*lamh*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)))))/
+                      pow(M_PI,2) + (pow(T,2)*
+                      pow(6.*gsq*lamh*Yphisq*
+                      (-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T)) +
+                      pow(gsq,2)*pow(Yphisq,2)*
+                      (2 - 3.*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))) +
+                      2.*lamh*(8.*pow(M_PI,2) -
+                      5.*lamh*(-2.*(-EulerGamma + log(4.*M_PI)) + 2.*log(scale/T))),2))/
+                      (16.*pow(M_PI,4)))*log(sqrt((gsq*pow(T,2)*Yphisq)/3. +
+                      (gsq*Yphisq*(72.*muhsq +
+                      pow(T,2)*(24.*lamh -
+                      2.*gsq*Yphisq*(-7 - 2.*(-EulerGamma + log(4.*M_PI)) +
+                      2.*log(scale/T)))))/(288.*pow(M_PI,2)))/scale))/
+                      (576.*pow(M_PI,2));
     
     return {bargsq3, barmuhsq3, barlamh3};
   };
@@ -330,11 +261,7 @@ class DR_ah: public Potential {
   
   static constexpr double Yphisq = 1;
   const double scaleFactor = 1;
-  const double EulerGamma = 0.5772156649;
-  const double Glaisher = 1.2824271291006226369;
-  
-  std::vector<alglib::spline1dinterpolant> RGEs;
-  
+
 };
 
 }  // namespace EffectivePotential

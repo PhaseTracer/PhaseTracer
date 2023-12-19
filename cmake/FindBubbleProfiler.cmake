@@ -22,7 +22,7 @@ if(NOT EXISTS ${BubbleProfiler}/lib/libbubbler.a)
   message(STATUS "Making BubbleProfiler")
   execute_process(COMMAND git checkout tags/v1.0.1
                  WORKING_DIRECTORY ${BubbleProfiler})
-  execute_process(COMMAND cmake .
+  execute_process(COMMAND cmake -DCMAKE_CXX_FLAGS="-fPIC" .
                   WORKING_DIRECTORY ${BubbleProfiler})
   execute_process(COMMAND ${CMAKE_MAKE_PROGRAM}
                  WORKING_DIRECTORY ${BubbleProfiler})
