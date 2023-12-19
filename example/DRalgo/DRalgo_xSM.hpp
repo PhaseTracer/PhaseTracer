@@ -50,21 +50,17 @@ class DR_xSM: public Potential {
       mS_input = mS_input_;
       ms_sq = mS_input * mS_input;
       muSsq_init = -ms_sq + 0.5 * lamdaHS_input * vev_higgs_sq;
-<<<<<<< HEAD
-      solveBetas({g1sq_init, g2sq_init, g3sq_init, lamdaHS_input, lamdaH_init, lamdaS_input, Yt_init, muHsq_init, muSsq_init},246.);
-    std::cout << " Before RGE g1sq = " << g1sq_init << std::endl;
-    std::cout << " Before RGE g2sq = " << g2sq_init << std::endl;
-    std::cout << " Before RGE g3sq = " << g3sq_init << std::endl;
-    std::cout << " Before RGE Yt   = " << Yt_init << std::endl;
-    std::cout << " Before RGE muSsq = " << muSsq_init << std::endl;
-    std::cout << " Before RGE muHsq = " << muHsq_init << std::endl;
-    std::cout << " Before RGE lamdaH = " << lamdaH_init << std::endl;
-    std::cout << " Before RGE lamdaS = " << lamdaS_input << std::endl;
-    std::cout << " Before RGE lamdaHS = " << lamdaHS_input << std::endl;
-=======
+//      std::cout << " Before RGE g1sq = " << g1sq_init << std::endl;
+//      std::cout << " Before RGE g2sq = " << g2sq_init << std::endl;
+//      std::cout << " Before RGE g3sq = " << g3sq_init << std::endl;
+//      std::cout << " Before RGE Yt   = " << Yt_init << std::endl;
+//      std::cout << " Before RGE muSsq = " << muSsq_init << std::endl;
+//      std::cout << " Before RGE muHsq = " << muHsq_init << std::endl;
+//      std::cout << " Before RGE lamdaH = " << lamdaH_init << std::endl;
+//      std::cout << " Before RGE lamdaS = " << lamdaS_input << std::endl;
+//      std::cout << " Before RGE lamdaHS = " << lamdaHS_input << std::endl;
       solveBetas({g1sq_init, g2sq_init, g3sq_init, lamdaHS_input, lamdaH_init, lamdaS_input, Yt_init, muHsq_init, muSsq_init},246.); // The order is same to `Betas'
 //    std::cout << " Before RGE muHsq = " << muHsq_init << std::endl;
->>>>>>> 749ac667f7180d29d07853feac7c185fa63958c2
 //    std::cout << " Before RGE muSsq = " << muSsq_init << std::endl;
     }
   
