@@ -27,7 +27,7 @@
 #include "phase_finder.hpp"
 #include "overload.hpp"
 #include "potential.hpp"
-#include "bprofiler.hpp"
+#include "bubble_profiler.hpp"
 
 namespace PhaseTracer {
 
