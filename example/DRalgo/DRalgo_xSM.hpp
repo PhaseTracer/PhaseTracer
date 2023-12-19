@@ -31,8 +31,6 @@
 
 #include <vector>
 #include <cmath>
-#include <boost/numeric/odeint.hpp>
-#include <boost/multiprecision/cpp_complex.hpp>
 #include <interpolation.h>
 
 #include "pow.hpp"
@@ -45,14 +43,14 @@ class DR_xSM: public Potential {
  public:
 
   DR_xSM(double lamdaHS_input_,
-            double lamdaS_input_,
-            double mS_input_){
+         double lamdaS_input_,
+         double mS_input_){
       lamdaHS_input = lamdaHS_input_;
       lamdaS_input = lamdaS_input_;
       mS_input = mS_input_;
       ms_sq = mS_input * mS_input;
       muSsq_init = -ms_sq + 0.5 * lamdaHS_input * vev_higgs_sq;
-      solveBetas({g1sq_init, g2sq_init, g3sq_init, lamdaHS_input, lamdaH_init, lamdaS_input, Yt_init, muHsq_init, muSsq_init},246.);
+      solveBetas({g1sq_init, g2sq_init, g3sq_init, lamdaHS_input, lamdaH_init, lamdaS_input, Yt_init, muHsq_init, muSsq_init},246.); // The order is same to `Betas'
 //    std::cout << " Before RGE muHsq = " << muHsq_init << std::endl;
 //    std::cout << " Before RGE muSsq = " << muSsq_init << std::endl;
     }
@@ -116,7 +114,7 @@ class DR_xSM: public Potential {
     return veffLO.real() + veffNLO.real();
   }
   
-  static void Betas(const std::vector<double>& x, std::vector<double>& dxdt, const double t){
+  void Betas(const std::vector<double>& x, std::vector<double>& dxdt, const double t) override {
     double g1sq = x[0];
     double g2sq = x[1];
     double g3sq = x[2];
@@ -138,80 +136,6 @@ class DR_xSM: public Potential {
     dxdt[8] = 1./t*(2*lamHS*muHsq + 3*lamS*muSsq)/(8.*pow(M_PI,2));
   }
   
-  alglib::spline1dinterpolant make_cubic_spline(alglib::real_1d_array x, alglib::real_1d_array y) {
-    alglib::spline1dinterpolant spline_;
-    alglib::spline1dbuildcubic(x, y, spline_);
-    return spline_;
-  }
-  
-  void solveBetas(std::vector<double> x0, double t0=100., double t_start = 20.0, double t_end = 5000.0, double dt = 1.){
-    // Define the type for odeint
-    using state_type = std::vector<double>;
-    // Define the state variables
-    state_type x;
-    std::vector<double> t_vec;   // Store the values of t
-    std::vector<state_type> x_vec;  // Store the values of x
-    
-    t_vec.push_back(t0);
-    x_vec.push_back(x0);
-    
-    // Define the stepper
-    x = x0;
-//    std::cout << "x0=" << x0[8] << std::endl;
-    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_down;    // Solve the ODEs and print the results
-    for (double t = t0; t >= t_start; t -= dt)
-    {
-        stepper_down.do_step(Betas, x, t, -dt);  // Solve the ODEs
-        t_vec.push_back(t-dt);
-        x_vec.push_back(x);
-//        std::cout << "t=" << t << std::endl;
-//        std::cout << "x=" << x[8] << std::endl;
-    }
-    std::reverse(t_vec.begin(), t_vec.end());
-    std::reverse(x_vec.begin(), x_vec.end());
-    
-    // Define the stepper
-    x=x0;
-    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_up;    // Solve the ODEs and print the results
-    for (double t = t0; t <= t_end; t += dt)
-    {
-        stepper_up.do_step(Betas, x, t, dt);  // Solve the ODEs
-//      std::cout << "t=" << t << std::endl;
-//      std::cout << "x=" << x[8] << std::endl;
-        if (t == t0) continue;
-        t_vec.push_back(t+dt);
-        x_vec.push_back(x);
-    }
-    
-//    TODO: checking the result. For example, x= -inf when t_start = 10
-//    TODO: dynamically adjust the range
-//    for (const auto& element : t_vec) {
-//        std::cout << element << " ";
-//    }
-//    std::cout << std::endl;
-//    for (const auto& element : x_vec) {
-//        std::cout << element[8] << " ";
-//    }
-//    std::cout << std::endl;
-    
-    
-    int n = t_vec.size();
-    alglib::real_1d_array t_array;
-    t_array.setlength(n);
-    alglib::real_1d_array x_array;
-    x_array.setlength(n);
-    
-    for (int j = 0; j < x0.size(); j++) {
-      for (int i = 0; i < t_vec.size(); i++) {
-        t_array[i] = t_vec[i];
-        x_array[i] = x_vec[i][j];
-      }
-      auto RGE = make_cubic_spline(t_array, x_array);
-      RGEs.push_back(RGE);
-    }
-  }
-
-  
   std::vector<double> DRstep(double T) const {
     
     double Gamma = scaleFactor * T;
@@ -223,10 +147,10 @@ class DR_xSM: public Potential {
     double g3sq = alglib::spline1dcalc(RGEs[2], Gamma);
 
     double lamHS = alglib::spline1dcalc(RGEs[3], Gamma);
-    double lamH = alglib::spline1dcalc(RGEs[4], Gamma);
-    double lamS = alglib::spline1dcalc(RGEs[5], Gamma);
+    double lamH  = alglib::spline1dcalc(RGEs[4], Gamma);
+    double lamS  = alglib::spline1dcalc(RGEs[5], Gamma);
     
-    double yt1 = alglib::spline1dcalc(RGEs[6], Gamma);
+    double yt1   = alglib::spline1dcalc(RGEs[6], Gamma);
     double muHsq = alglib::spline1dcalc(RGEs[7], Gamma);
     double muSsq = alglib::spline1dcalc(RGEs[8], Gamma);
 //    std::cout << std::endl;
@@ -417,11 +341,6 @@ class DR_xSM: public Potential {
   double muSsq_init = -ms_sq + 0.5 * lamdaHS_input * vev_higgs_sq;
   
   double scaleFactor = M_PI;
-  const double EulerGamma = 0.5772156649;
-  const double Glaisher = 1.2824271291006226369;
-  
-  std::vector<alglib::spline1dinterpolant> RGEs;
-  
 };
 
 }  // namespace EffectivePotential

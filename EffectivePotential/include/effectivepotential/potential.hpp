@@ -20,6 +20,9 @@
 
 #include <vector>
 #include <Eigen/Core>
+#include <boost/numeric/odeint.hpp>
+#include <boost/multiprecision/cpp_complex.hpp>
+#include <interpolation.h>
 
 #include "property.hpp"
 
@@ -57,6 +60,9 @@ class Potential {
     coeff_xx = h_4 ? coeff_xx_4 : coeff_xx_2;
   }
 
+  /* For 3D EFT*/
+  virtual void Betas(const std::vector<double>& x, std::vector<double>& dxdt, const double t){};
+  
  protected:
   /** The step-size in all numerical derivatives */
   PROTECTED_PROPERTY(double, h, 0.001);
@@ -92,6 +98,90 @@ class Potential {
     -1. / 12.};
   const std::vector<double> coeff_xy_2 = {-0.5, 0.5};
   PROTECTED_PROPERTY_CUSTOM_SETTER(std::vector<double>, coeff_xy, {});
+  
+  /*For 3d EFT */
+  const double EulerGamma = 0.5772156649;
+  const double Glaisher = 1.2824271291006226369;
+  std::vector<alglib::spline1dinterpolant> RGEs;
+    
+  alglib::spline1dinterpolant make_cubic_spline(alglib::real_1d_array x, alglib::real_1d_array y) {
+    alglib::spline1dinterpolant spline_;
+    alglib::spline1dbuildcubic(x, y, spline_);
+    return spline_;
+  }
+  
+  void solveBetas(std::vector<double> x0, double t0=100., double t_start = 20.0, double t_end = 5000.0, double dt = 1.){
+    // Define the type for odeint
+    using state_type = std::vector<double>;
+    // Define the state variables
+    state_type x;
+    std::vector<double> t_vec;   // Store the values of t
+    std::vector<state_type> x_vec;  // Store the values of x
+    
+    t_vec.push_back(t0);
+    x_vec.push_back(x0);
+    
+    // Define the stepper
+    x = x0;
+    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_down;    // Solve the ODEs and print the results
+    for (double t = t0; t >= t_start; t -= dt)
+    {
+        stepper_down.do_step(
+                [this](const state_type& x, state_type& dxdt, double t) {Betas(x, dxdt, t);},
+                x, t, -dt);  // Solve the ODEs
+        t_vec.push_back(t-dt);
+        x_vec.push_back(x);
+    }
+    std::reverse(t_vec.begin(), t_vec.end());
+    std::reverse(x_vec.begin(), x_vec.end());
+    
+    // Define the stepper
+    x=x0;
+    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_up;    // Solve the ODEs and print the results
+    for (double t = t0; t <= t_end; t += dt)
+    {
+        stepper_up.do_step(
+             [this](const state_type& x, state_type& dxdt, double t) {Betas(x, dxdt, t);}, 
+             x, t, dt);  // Solve the ODEs
+        if (t == t0) continue;
+        t_vec.push_back(t+dt);
+        x_vec.push_back(x);
+    }
+    
+//    TODO: checking the result. For example, x= -inf when t_start = 10
+//    TODO: dynamically adjust the range
+//    for (const auto& element : t_vec) {
+//        std::cout << element << " ";
+//    }
+//    std::cout << std::endl;
+//    for (const auto& element : x_vec) {
+//        std::cout << element[8] << " ";
+//    }
+//    std::cout << std::endl;
+    
+    int n = t_vec.size();
+    alglib::real_1d_array t_array;
+    t_array.setlength(n);
+    alglib::real_1d_array x_array;
+    x_array.setlength(n);
+    
+    for (int j = 0; j < x0.size(); j++) {
+      for (int i = 0; i < t_vec.size(); i++) {
+        t_array[i] = t_vec[i];
+        x_array[i] = x_vec[i][j];
+      }
+      auto RGE = make_cubic_spline(t_array, x_array);
+      RGEs.push_back(RGE);
+    }
+  }
+
+  std::vector<double> run_RGEs_to(double scale) const {
+    std::vector<double> pars;
+    for (auto RGE:RGEs)
+      pars.push_back(alglib::spline1dcalc(RGE, scale));
+    return pars;
+  }
+  
 };
 
 }  // namespace EffectivePotential
