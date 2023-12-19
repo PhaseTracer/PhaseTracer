@@ -13,6 +13,8 @@
 #include "transition_finder.hpp"
 #include "logger.hpp"
 #include "phase_plotter.hpp"
+#include "property_calculator.hpp"
+
 
 std::string toString(std::vector<double> in, std::vector<double> out) {
   std::stringstream data_str;
@@ -101,6 +103,11 @@ int main(int argc, char* argv[]) {
     output_file << toString(in, out) << std::endl;
     return 0;
   }
+  
+  // Make PropertyCalculator object and calculate the transition properties
+  PhaseTracer::PropertyCalculator pc(tf);
+  
+  
   
   std::vector<double> out = {(float)t.size(), t[0].TC, t[0].true_vacuum[0], t[0].false_vacuum[0]};
 
