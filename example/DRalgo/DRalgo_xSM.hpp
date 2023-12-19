@@ -53,7 +53,15 @@ class DR_xSM: public Potential {
       ms_sq = mS_input * mS_input;
       muSsq_init = -ms_sq + 0.5 * lamdaHS_input * vev_higgs_sq;
       solveBetas({g1sq_init, g2sq_init, g3sq_init, lamdaHS_input, lamdaH_init, lamdaS_input, Yt_init, muHsq_init, muSsq_init},246.);
-//    std::cout << " Before RGE muHsq = " << muHsq_init << std::endl;
+    std::cout << " Before RGE g1sq = " << g1sq_init << std::endl;
+    std::cout << " Before RGE g2sq = " << g2sq_init << std::endl;
+    std::cout << " Before RGE g3sq = " << g3sq_init << std::endl;
+    std::cout << " Before RGE Yt   = " << Yt_init << std::endl;
+    std::cout << " Before RGE muSsq = " << muSsq_init << std::endl;
+    std::cout << " Before RGE muHsq = " << muHsq_init << std::endl;
+    std::cout << " Before RGE lamdaH = " << lamdaH_init << std::endl;
+    std::cout << " Before RGE lamdaS = " << lamdaS_input << std::endl;
+    std::cout << " Before RGE lamdaHS = " << lamdaHS_input << std::endl;
 //    std::cout << " Before RGE muSsq = " << muSsq_init << std::endl;
     }
   
@@ -112,6 +120,7 @@ class DR_xSM: public Potential {
               pow(lamHS - 6.*lamS,2.)*pow(Ssq,2.)),1.5)/(96.*M_PI);
     
 //    std::cout << "veffLO = " << veffLO.real() << std::endl;
+//    std::cout << "veffNLO = " << veffNLO.real() << std::endl;
     
     return veffLO.real() + veffNLO.real();
   }
@@ -247,6 +256,10 @@ class DR_xSM: public Potential {
     double g23dsq = g2sq*T + (pow(g2sq,2)*(4 + 43*Lb - 8*Lf)*T)/(96.*pow(M_PI,2));
     double g33dsq = g3sq*T + (pow(g3sq,2)*(3 + 33*Lb - 4*Lf)*T)/(48.*pow(M_PI,2));
     
+//    std::cout << " g13dsq = " << g13dsq << std::endl;
+//    std::cout << " g23dsq = " << g23dsq << std::endl;
+//    std::cout << " g33dsq = " << g33dsq << std::endl;
+    
     double lamH3d = (T*(pow(g2sq,2)*(6 - 9*Lb) + pow(g1sq,2)*(2 - 3*Lb) + 72*g2sq*lamH*Lb - 4*pow(lamHS,2)*Lb +\
                     g1sq*(g2sq*(4 - 6*Lb) + 24*lamH*Lb) +\
                     48*Lf*pow(yt1,4) - 32*lamH*(6*lamH*Lb - 8*pow(M_PI,2) + 3*Lf*pow(yt1,2))))/(256.*pow(M_PI,2));
@@ -287,10 +300,51 @@ class DR_xSM: public Potential {
     
     // ---------------------------------------------------------------------------------
     // 3d ScalarMass
-    double scaleFactor3 = sqrt(g2sq)*T;
     double MuHsq3d_LO = (-3*g1sq*pow(T,2) - 9*g2sq*pow(T,2) - 2*(-24*muHsq + 12*lamH*pow(T,2) + lamHS*pow(T,2) + 6*pow(T,2)*pow(yt1,2)))/48.;
     double MuSsq3d_LO = muSsq - ((2*lamHS + 3*lamS)*pow(T,2))/12.;
-    
+
+//        std::cout << " MuHsq3d_LO = " << MuHsq3d_LO << std::endl;
+//        std::cout << " MuSsq3d_LO = " << MuSsq3d_LO << std::endl;
+//    std::cout << " g1sq = " << g1sq << std::endl;
+//    std::cout << " g2sq = " << g2sq << std::endl;
+//    std::cout << " g3sq = " << g3sq << std::endl;
+//    std::cout << " Lb = " << Lb << std::endl;
+//    std::cout << " Lf = " << Lf << std::endl;
+//    std::cout << " ====================== "<< std::endl;
+//    std::cout << " muHsq = " << muHsq << std::endl;
+//    std::cout << " muSsq = " << muSsq << std::endl;
+//    std::cout << " lamHS = " << lamHS << std::endl;
+//    std::cout << " lamH = " << lamH << std::endl;
+//    std::cout << " lamS = " << lamS << std::endl;
+//    std::cout << " yt1 = " << yt1 << std::endl;
+//    std::cout << " ====================== "<< std::endl;
+//    std::cout << " g13dsq = " << g13dsq << std::endl;
+//    std::cout << " g23dsq = " << g23dsq << std::endl;
+//    std::cout << " g33dsq = " << g33dsq << std::endl;
+//    std::cout << " lamH3d = " << lamH3d << std::endl;
+//    std::cout << " lamHS3d = " << lamHS3d << std::endl;
+//    std::cout << " lamS3d = " << lamS3d << std::endl;
+//    std::cout << " ====================== "<< std::endl;
+//    std::cout << " lambdaVL_1 = " << lambdaVL_1 << std::endl;
+//    std::cout << " lambdaVL_2 = " << lambdaVL_2 << std::endl;
+//    std::cout << " lambdaVL_3 = " << lambdaVL_3 << std::endl;
+//    std::cout << " lambdaVL_4 = " << lambdaVL_4 << std::endl;
+//    std::cout << " lambdaVL_5 = " << lambdaVL_5 << std::endl;
+//    std::cout << " lambdaVL_6 = " << lambdaVL_6 << std::endl;
+//
+//    std::cout << " ====================== "<< std::endl;
+//    std::cout << " lambdaVLL_1 = " << lambdaVLL_1 << std::endl;
+//    std::cout << " lambdaVLL_2 = " << lambdaVLL_2 << std::endl;
+//    std::cout << " lambdaVLL_3 = " << lambdaVLL_3 << std::endl;
+//    std::cout << " lambdaVLL_4 = " << lambdaVLL_4 << std::endl;
+//    std::cout << " lambdaVLL_5 = " << lambdaVLL_5 << std::endl;
+//    std::cout << " lambdaVLL_6 = " << lambdaVLL_6 << std::endl;
+//    std::cout << " lambdaVLL_7 = " << lambdaVLL_7 << std::endl;
+//
+//    std::cout << " ====================== "<< std::endl;
+//    std::cout << " EulerGamma = " << EulerGamma << std::endl;
+//    std::cout << " Glaisher = " << Glaisher << std::endl;
+
     double MuHsq3d_NLO = (-9*(9*g2sq*(-24*Lb*muHsq + pow(T,2)*(lamHS*Lb + (-2 + 7*Lb - Lf)*pow(yt1,2) +
               8*lamH*(1 + 6*EulerGamma - 3*Lb - 72*log(Glaisher)))) -
               4*(16*g3sq*(3 + Lb - 4*Lf)*pow(T,2)*pow(yt1,2) + 3*Lf*(-24*muHsq +
@@ -327,6 +381,9 @@ class DR_xSM: public Potential {
     
 //    std::cout << " MuHsq3d_LO = " << MuHsq3d_LO << std::endl;
 //    std::cout << " MuHsq3d_NLO = " << MuHsq3d_NLO << std::endl;
+//
+//    std::cout << " MuSsq3d_LO = " << MuSsq3d_LO << std::endl;
+//    std::cout << " MuSsq3d_NLO = " << MuSsq3d_NLO << std::endl;
     
     // ---------------------------------------------------------------------------------
     // 3d US Couplings
@@ -345,20 +402,19 @@ class DR_xSM: public Potential {
     double g23dUSsq = g23dsq - pow(g23dsq,2)/(24.*M_PI*sqrt(MusqSU2));
     // ---------------------------------------------------------------------------------
     // 3d US Masses
-    double scaleFactor3dUS = g2sq*T;
     double MuHsq3dUS_LO = MuHsq3d + (8*sqrt(MusqSU3)*lambdaVL_1 + 3*sqrt(MusqSU2)*lambdaVL_3 + sqrt(MusqU1)*lambdaVL_4)/(8.*M_PI);
     double MuSsq3dUS_LO = MuSsq3d + (sqrt(MusqU1)*lambdaVL_5 + 3*sqrt(MusqSU2)*lambdaVL_6)/(8.*M_PI);
     
 //    std::cout << " MuHsq3d = " << MuHsq3d << std::endl;
     
     double MuHsq3dUS_NLO = -0.0078125*(48*g33dsq*lambdaVL_1 +
-            32*log(scaleFactor3/(2.*sqrt(MusqSU3)))*(6*g33dsq - lambdaVL_1)*lambdaVL_1 -
+            32*log(scaleFactor3*T/(2.*sqrt(MusqSU3)))*(6*g33dsq - lambdaVL_1)*lambdaVL_1 -
             16*pow(lambdaVL_1,2) - 12*pow(lambdaVL_2,2) -
-            24*log(scaleFactor3/(sqrt(MusqSU2) + sqrt(MusqU1)))*pow(lambdaVL_2,2) +
+            24*log(scaleFactor3*T/(sqrt(MusqSU2) + sqrt(MusqU1)))*pow(lambdaVL_2,2) +
             12*g23dsq*lambdaVL_3 - 6*pow(lambdaVL_3,2) -
-            6*log(scaleFactor3/(2.*sqrt(MusqSU2)))*(pow(g23dsq,2) - 8*g23dsq*lambdaVL_3 +
+            6*log(scaleFactor3*T/(2.*sqrt(MusqSU2)))*(pow(g23dsq,2) - 8*g23dsq*lambdaVL_3 +
             2*pow(lambdaVL_3,2)) - 2*pow(lambdaVL_4,2) -
-            4*log(scaleFactor3/(2.*sqrt(MusqU1)))*pow(lambdaVL_4,2) + lambdaVL_4*lambdaVLL_1 +
+            4*log(scaleFactor3*T/(2.*sqrt(MusqU1)))*pow(lambdaVL_4,2) + lambdaVL_4*lambdaVLL_1 +
             (3*sqrt(MusqU1)*lambdaVL_3*lambdaVLL_2)/sqrt(MusqSU2) +
             (3*sqrt(MusqSU2)*lambdaVL_4*lambdaVLL_2)/sqrt(MusqU1) + 15*lambdaVL_3*lambdaVLL_3 +
             (8*sqrt(MusqU1)*lambdaVL_1*lambdaVLL_4)/sqrt(MusqSU3) +
@@ -367,9 +423,9 @@ class DR_xSM: public Potential {
             (24*sqrt(MusqSU3)*lambdaVL_3*lambdaVLL_5)/sqrt(MusqSU2) +
             80*lambdaVL_1*lambdaVLL_7)/pow(M_PI,2);
       double MuSsq3dUS_NLO = -0.0078125*
-            (-2*(1 + 2*log(scaleFactor3/(2.*sqrt(MusqU1))))*pow(lambdaVL_5,2) + 12*g23dsq*(1 +
-            4*log(scaleFactor3/(2.*sqrt(MusqSU2))))*lambdaVL_6 -
-            6*(1 + 2*log(scaleFactor3/(2.*sqrt(MusqSU2))))*pow(lambdaVL_6,2) +
+            (-2*(1 + 2*log(scaleFactor3*T/(2.*sqrt(MusqU1))))*pow(lambdaVL_5,2) + 12*g23dsq*(1 +
+            4*log(scaleFactor3*T/(2.*sqrt(MusqSU2))))*lambdaVL_6 -
+            6*(1 + 2*log(scaleFactor3*T/(2.*sqrt(MusqSU2))))*pow(lambdaVL_6,2) +
             (lambdaVL_5*(sqrt(MusqU1)*lambdaVLL_1 + 3*sqrt(MusqSU2)*lambdaVLL_2 +
             8*sqrt(MusqSU3)*lambdaVLL_4))/
             sqrt(MusqU1) + (3*lambdaVL_6*(sqrt(MusqU1)*lambdaVLL_2 + 5*sqrt(MusqSU2)*lambdaVLL_3 +
@@ -382,11 +438,16 @@ class DR_xSM: public Potential {
     double MuHsq3dUS = MuHsq3dUS_LO + MuHsq3dUS_NLO + MuHsq3dUS_beta * log(scaleFactor3dUS / scaleFactor3);
     double MuSsq3dUS = MuSsq3dUS_LO + MuSsq3dUS_NLO + MuSsq3dUS_beta * log(scaleFactor3dUS / scaleFactor3);
 
+    
+//    std::cout << " LambdaH3dUS = " << LambdaH3dUS << std::endl;
+//    std::cout << " LambdaS3dUS = " << LambdaS3dUS << std::endl;
+//    std::cout << " LambdaHS3dUS = " << LambdaHS3dUS << std::endl;
 //    std::cout << " MuHsq3dUS_LO = " << MuHsq3dUS_LO << std::endl;
-//    std::cout << " MuHsq3dUS_NLO = " << MuHsq3dUS_NLO << std::endl;
+//    std::cout << " MuSsq3dUS_LO = " << MuSsq3dUS_LO << std::endl;
 //    std::cout << " MuHsq3dUS_beta = " << MuHsq3dUS_beta << std::endl;
 //    std::cout << " scaleFactor3dUS = " << scaleFactor3dUS << std::endl;
 //    std::cout << " scaleFactor3 = " << scaleFactor3 << std::endl;
+//    std::cout << " scaleFactor = " << scaleFactor << std::endl;
     
     return {g13dUSsq, g23dUSsq, LambdaH3dUS, LambdaHS3dUS, LambdaS3dUS, MuHsq3dUS, MuSsq3dUS};
   };
@@ -417,6 +478,9 @@ class DR_xSM: public Potential {
   double muSsq_init = -ms_sq + 0.5 * lamdaHS_input * vev_higgs_sq;
   
   double scaleFactor = M_PI;
+  double scaleFactor3 = g1sq_init;
+  double scaleFactor3dUS = g1sq_init*g1sq_init;
+  
   const double EulerGamma = 0.5772156649;
   const double Glaisher = 1.2824271291006226369;
   
