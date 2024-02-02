@@ -26,6 +26,7 @@
 #include <boost/cstdint.hpp>
 #include <boost/math/special_functions/bessel.hpp>
 #include <boost/numeric/odeint.hpp>
+#include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <gsl/gsl_sf_bessel.h>
 #include "nlopt.hpp"
 
@@ -468,6 +469,34 @@ public:
   
   }
 
+  double calAction(Profile1D profile){
+    
+    const auto r = profile.R;
+    const auto phi = profile.Phi;
+    const auto dphi = profile.dPhi;
+    size_t n = r.size();
+    double d = alpha + 1;  // Number of dimensions in the integration
+    // And integrate the profile
+    boost::multi_array<double, 1> integrand(boost::extents[n]);
+    for (size_t i = 0; i < n; ++i) {
+        // Find the area of an n-sphere (alpha=n):
+        double area = std::pow(r[i], alpha) * 2 * pow(M_PI, d * 0.5) / tgamma(d * 0.5);
+        integrand[i] = 0.5 * std::pow(dphi[i], 2) + V(phi[i]) - V(phi_metaMin);
+        integrand[i] *= area;
+        std::cout << "integrand = " << integrand[i] << std::endl;
+    }
+    double lower = r[0], upper = r[n - 1];
+    double S = boost::math::quadrature::gauss_kronrod<double, 15>::integrate([&](double x) {
+            size_t index = static_cast<size_t>((x - lower) / (upper - lower) * (integrand.size() - 1));
+            return integrand[index];
+        }, lower, upper);
+    // Find the bulk term in the bubble interior
+    double volume = std::pow(r[0], d) * pow(M_PI, d * 0.5) / tgamma(d * 0.5 + 1);
+    
+    S += volume * (V(phi[0]) - V(phi_metaMin));
+    return S;
+  }
+  
 private:
   
 //  const double NAN = std::numeric_limits<double>::quiet_NaN();

@@ -116,6 +116,9 @@ int main(int argc, char* argv[]) {
   }
   file.close();
   
+  auto action = pc.calAction(profile);
+  std::cout << "action = " << action << std::endl;
+  
   std::vector<double> out = {(float)t.size(), t[0].TC, t[0].true_vacuum[0], t[0].false_vacuum[0]};
 
   output_file << toString(in, out) << std::endl;
