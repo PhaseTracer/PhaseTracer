@@ -27,6 +27,7 @@
 #include <boost/math/special_functions/bessel.hpp>
 #include <boost/numeric/odeint.hpp>
 #include <boost/math/quadrature/gauss_kronrod.hpp>
+#include <boost/math/tools/minima.hpp>
 #include <gsl/gsl_sf_bessel.h>
 #include "nlopt.hpp"
 
@@ -63,7 +64,6 @@ public:
   explicit PropertyCalculator(TransitionFinder& tf_) :
     tf(tf_) {
     std::cout << "PropertyCalculator starts " << std::endl;
-    phi_eps = phi_eps * fabs(phi_absMin - phi_metaMin); // TODO: this should not be forgot
   }
   virtual ~PropertyCalculator() = default;
   
@@ -76,34 +76,74 @@ public:
   
   double V(double phi){
     return 0.25*pow(phi,4) - 0.49*pow(phi,3) + 0.235 * pow(phi,2);
+//    return 0.25*pow(phi,4) - 0.4*pow(phi,3) + 0.1 * pow(phi,2);
   }
   double dV(double phi){
     return phi*(phi-.47)*(phi-1);
+//    return phi*(phi-.2)*(phi-1);
   }
   
   double d2V(double phi){
     return (phi-.47)*(phi-1) + phi*(phi-1) + phi*(phi-.47);
   }
-
-  
-  double phi_bar= 0.837171431429;
-  double phi_absMin= 1.0;
-  double phi_metaMin= 0.0;
-  /*The approximate radial scale of the instanton*/
-  double rscale = 1.6677089434383516;
- 
   
   /*Calculates `dV/dphi` at ``phi = phi_absMin + delta_phi``.*/
   double dV_from_absMin(double delta_phi){
     double phi = phi_absMin + delta_phi;
     double dV_ = dV(phi);
-    if (phi_eps > 0){
+    if (phi_eps_rel > 0){ // This will not be used if phi_eps_rel == 0
+      double phi_eps = phi_eps_rel * fabs(phi_absMin - phi_metaMin);
       double dV_eps = d2V(phi) * delta_phi;
       double blend_factor = exp(-pow((delta_phi/phi_eps),2));
       dV_ = dV_eps*blend_factor + dV_*(1-blend_factor);
     }
       
     return dV_;
+  }
+  
+  /* Find edge of the potential barrier. */
+  double findBarrierLocation() {
+      double phi_tol = fabs(phi_metaMin - phi_absMin) * 1e-12;
+      double V_phimeta = V(phi_metaMin);
+      double phi1 = phi_metaMin;
+      double phi2 = phi_absMin;
+      double phi0 = 0.5 * (phi1 + phi2);
+      while (std::abs(phi1 - phi2) > phi_tol) {
+          double V0 = V(phi0);
+          if (V0 > V_phimeta) {
+              phi1 = phi0;
+          } else {
+              phi2 = phi0;
+          }
+          phi0 = 0.5 * (phi1 + phi2);
+      }
+      return phi0;
+  }
+  
+  /* Find the characteristic length scale for tunneling over the potential barrier. */
+  double findRScale() {
+      double phi_tol = fabs(phi_bar - phi_metaMin) * 1e-6;
+      double x1 = std::min(phi_bar, phi_metaMin);
+      double x2 = std::max(phi_bar, phi_metaMin);
+      
+      int bits = std::ceil(std::log2(1.0 / phi_tol));
+      std::pair<double, double>  result = boost::math::tools::brent_find_minima(
+          [this](double x) { return -V(x); }, x1, x2, bits);
+      double phi_bar_top = result.first;
+    
+      if (phi_bar_top + phi_tol > x2 || phi_bar_top - phi_tol < x1) {
+          throw std::runtime_error(
+              "Minimization is placing the top of the potential barrier outside of the interval defined by phi_bar and phi_metaMin. Assume that the barrier does not exist.");
+      }
+      
+      double Vtop = V(phi_bar_top) - V(phi_metaMin);
+      double xtop = phi_bar_top - phi_metaMin;
+      
+      if (Vtop <= 0) {
+          throw std::runtime_error("Barrier height is not positive, does not exist.");
+      }
+      
+      return std::abs(xtop) / std::sqrt(std::abs(6 * Vtop));
   }
   
   /*Find `phi(r)` given `phi(r=0)`, assuming a quadratic potential.*/
@@ -199,13 +239,12 @@ public:
   }
   
   int integrateProfile(double r0, std::vector<double> y0,
-                        double* rf, std::vector<double>* yf, std::vector<double> epsabs, std::vector<double> epsfrac){
+            double* rf, std::vector<double>* yf,
+            double dr0, std::vector<double> epsabs, std::vector<double> epsfrac,
+            double drmin, double rmax){
     
     int convergence_type;
     int ysign = y0[0] > phi_metaMin ? 1 : -1;
-    double dr0 = 0.00016677089434383516;
-    double rmax = 16717.451579307573;
-    double drmin = 1.6677089434383517e-06;
 
     using state_type = std::vector<double>;
     using error_stepper_type =
@@ -351,7 +390,11 @@ public:
     return profile;
   }
   
-  Profile1D findProfile(double xguess=NAN, int max_interior_pts=0){
+  Profile1D findProfile(double metaMin, double absMin, double xguess=NAN, int max_interior_pts=0){
+    phi_absMin = absMin;
+    phi_metaMin = metaMin;
+    phi_bar = findBarrierLocation();
+    rscale = findRScale();
     
     // Set r parameters
     rmin *= rscale;
@@ -395,7 +438,7 @@ public:
       y0[0] = phi0;
       y0[1] = dphi0;
       std::vector<double> yf(2);
-      int shooting_type = integrateProfile(r0, y0, &rf, &yf, epsabs, epsfrac);
+      int shooting_type = integrateProfile(r0, y0, &rf, &yf, dr0, epsabs, epsfrac, drmin, rmax);
 
       if (shooting_type == 0){
         std::cout << "Converged" << std::endl;
@@ -483,7 +526,7 @@ public:
         double area = std::pow(r[i], alpha) * 2 * pow(M_PI, d * 0.5) / tgamma(d * 0.5);
         integrand[i] = 0.5 * std::pow(dphi[i], 2) + V(phi[i]) - V(phi_metaMin);
         integrand[i] *= area;
-        std::cout << "integrand = " << integrand[i] << std::endl;
+//        std::cout << "integrand = " << integrand[i] << std::endl;
     }
     double lower = r[0], upper = r[n - 1];
     double S = boost::math::quadrature::gauss_kronrod<double, 15>::integrate([&](double x) {
@@ -502,7 +545,13 @@ private:
 //  const double NAN = std::numeric_limits<double>::quiet_NaN();
   const double INF = std::numeric_limits<double>::infinity();
   
-  PROPERTY(double, phi_eps, 1e-3)
+
+  double phi_absMin;
+  double phi_metaMin;
+  double phi_bar;
+  double rscale; // approximate radial scale of the instanton
+  
+  PROPERTY(double, phi_eps_rel, 1e-3)
   PROPERTY(int, alpha, 2)
   
   PROPERTY(double, xtol, 1e-4)
