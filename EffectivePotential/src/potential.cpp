@@ -97,7 +97,7 @@ void Potential::solveBetas(std::vector<double> x0, double t0, double t_start, do
     
     // Define the stepper
     x = x0;
-    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_down;    // Solve the ODEs and print the results
+    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_down;
     for (double t = t0; t >= t_start; t -= dt)
     {
         stepper_down.do_step(
@@ -111,7 +111,7 @@ void Potential::solveBetas(std::vector<double> x0, double t0, double t_start, do
     
     // Define the stepper
     x=x0;
-    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_up;    // Solve the ODEs and print the results
+    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_up;
     for (double t = t0; t <= t_end; t += dt)
     {
         stepper_up.do_step(

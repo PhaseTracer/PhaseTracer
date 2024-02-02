@@ -79,7 +79,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
         auto true_vacuum_TN = true_vacuum;
         auto false_vacuum_TN = false_vacuum;
         double action_TN = std::numeric_limits<double>::quiet_NaN();
-        if (true){ // Need BubbleProfiler
+        if (false){ // Need BubbleProfiler
           TN = get_Tnuc(phase1, phase2, i_unique, TC, T1);
           auto vacua = get_vacua_at_T(phase1, phase2, TN, i_unique);
           true_vacuum_TN = vacua[1];
