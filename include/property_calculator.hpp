@@ -38,24 +38,22 @@ namespace PhaseTracer {
 
 class CubicInterpFunction {
 public:
-  CubicInterpFunction(double y0, double dy0, double y1, double dy1, double c = 0)
-    : y0(y0), dy0(dy0), y1(y1), dy1(dy1), c(c) {
-      y_1 = y0 + dy0 / 3.0;
-      y_2 = y1 - dy1 / 3.0;
-      y_3 = y1;
+  CubicInterpFunction(double y0, double dy0, double y1, double dy1, double c_ = 0)
+    : c(c_) {
+      x0 = y0;
+      x1 = y0 + dy0 / 3.0;
+      x2 = y1 - dy1 / 3.0;
+      x3 = y1;
     }
   double operator()(double t) const {
     double mt = 1. - t;
-    return y0 * pow(mt, 3) + 3.0 * y_1 * mt * mt * t + 3.0 * y_2 * mt * t * t + y_3 * pow(t, 3) - c;
+    return x0 * pow(mt, 3) + 3.0 * x1 * mt * mt * t + 3.0 * x2 * mt * t * t + x3 * pow(t, 3) - c;
   }
 private:
-  double y0;
-  double dy0;
-  double y1;
-  double dy1;
-  double y_1;
-  double y_2;
-  double y_3;
+  double x0;
+  double x1;
+  double x2;
+  double x3;
   double c;
 };
 
@@ -124,7 +122,7 @@ public:
       phi *= 0.25 * std::tgamma(nu+1) * pow(r,2) * dV_ * s;
       dphi *= 0.25 * std::tgamma(nu+1) * r * dV_ * s;
       phi += phi0;
-      std::cout << "here1" << " phi = " << phi << std::endl;
+//      std::cout << "here1" << " phi = " << phi << std::endl;
     }else if (d2V_>0){
       // TODO: ignore the warnings if there is
       phi = (std::tgamma(nu+1)*pow(0.5*beta_r,-nu) * boost::math::cyl_bessel_i(nu, beta_r)-1) * dV_/d2V_;
@@ -133,7 +131,7 @@ public:
               * (boost::math::cyl_bessel_i(nu-1, beta_r)+boost::math::cyl_bessel_i(nu+1, beta_r));
       dphi *= std::tgamma(nu+1) * dV_/d2V_;
       phi += phi0;
-      std::cout << "here2" << " phi = " << phi << std::endl;
+//      std::cout << "here2" << " phi = " << phi << std::endl;
     }else{
       phi = (std::tgamma(nu+1)*pow(0.5*beta_r,-nu) * boost::math::cyl_bessel_j(nu, beta_r)-1) * dV_/d2V_;
       dphi = -nu*(pow(0.5*beta_r,-nu) / r) * boost::math::cyl_bessel_j(nu, beta_r);
@@ -141,7 +139,7 @@ public:
               * (boost::math::cyl_bessel_j(nu-1, beta_r)-boost::math::cyl_bessel_j(nu+1, beta_r));
       dphi *= std::tgamma(nu+1) * dV_/d2V_;
       phi += phi0;
-      std::cout << "here3" << std::endl;
+//      std::cout << "here3" << std::endl;
     }
     *phi_r = phi;
     *dphi_r = dphi;
@@ -293,7 +291,7 @@ public:
 
     std::vector<double> y1 = y0;
     double r1 = r0;
-    double dr = dr0;
+    double dr_ = dr0;
     double Rerr = NAN;
     
     using state_type = std::vector<double>;
@@ -313,15 +311,22 @@ public:
 //      std::cout << "-- r = " << r1 << ", phi = " << y1[0] << ", dphi/dr = " << y1[1] << std::endl;
       while ( stepper.try_step(
             [this](const state_type& y, state_type& dydr, double r) {equationOfMotion(y, dydr, r);},
-                               y1, r1, dr) ) {};
+                               y1, r1, dr_) ) {};
+      double dr = r1 - r0; // This may be different to dr_
       if (dr < drmin) {
         r1 = r0 + drmin;
         y1[0] = y0[0] + (y1[0]-y0[0])*drmin/dr;
         y1[1] = y0[1] + (y1[1]-y0[1])*drmin/dr;
         dr = drmin;
         if ( not std::isnan(Rerr) ) Rerr = r1; // TODO
+        std::cout << "-- r = " << r1 << ", phi = " << y1[0] << ", dphi/dr = " << y1[1] << std::endl;
       }
-
+      
+      std::cout << "-- r = " << r0 << ", phi = " << y0[0] << ", dphi/dr = " << y0[1] << std::endl;
+      std::cout << "== r = " << r1 << ", phi = " << y1[0] << ", dphi/dr = " << y1[1] << std::endl;
+      
+      std::cout << "xxxx dr = " << dr << ", dr = " << r1 - r0 << std::endl;
+      
       if (r0 < R[ii] and R[ii] <= r1) {
         std::vector<double> dydr0 = dY(y0, r0);
         std::vector<double> dydr1 = dY(y1, r1);
@@ -331,6 +336,7 @@ public:
           double x = (R[ii]-r0)/dr;
           Phi[ii] = CF0(x);
           dPhi[ii] = CF1(x);
+          std::cout << "?? r = " << R[ii] << ", x = " << x << ", phi = " << Phi[ii] << ", dphi/dr = " << dPhi[ii] << std::endl;
           ii ++;
         }
       }
