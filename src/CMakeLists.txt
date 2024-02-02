@@ -5,6 +5,7 @@ link_libraries(
   ${Boost_LIBRARIES}
   ${EIGEN3_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
+  ${ALGLIB_LIBRARIES}
   effectivepotential
 )
 

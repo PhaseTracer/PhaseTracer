@@ -107,7 +107,14 @@ int main(int argc, char* argv[]) {
   // Make PropertyCalculator object and calculate the transition properties
   PhaseTracer::PropertyCalculator pc(tf);
   
+  auto profile = pc.findProfile();
   
+  std::ofstream file("test_data.txt");
+  for (int jj=0; jj< profile.R.size(); jj++){
+    std::cout << "R, phi, dphi = " << profile.R[jj] << ", " << profile.Phi(jj) << ", "  << profile.dPhi(jj) << std::endl;
+    file << profile.R[jj] << ", " << profile.Phi(jj) << ", "  << profile.dPhi(jj) << std::endl;
+  }
+  file.close();
   
   std::vector<double> out = {(float)t.size(), t[0].TC, t[0].true_vacuum[0], t[0].false_vacuum[0]};
 
