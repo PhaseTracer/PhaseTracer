@@ -75,16 +75,17 @@ public:
 //  }
   
   double V(double phi){
-    return 0.25*pow(phi,4) - 0.49*pow(phi,3) + 0.235 * pow(phi,2);
-//    return 0.25*pow(phi,4) - 0.4*pow(phi,3) + 0.1 * pow(phi,2);
+//    return 0.25*pow(phi,4) - 0.49*pow(phi,3) + 0.235 * pow(phi,2);
+    return 0.25*pow(phi,4) - 0.4*pow(phi,3) + 0.1 * pow(phi,2);
   }
   double dV(double phi){
-    return phi*(phi-.47)*(phi-1);
-//    return phi*(phi-.2)*(phi-1);
+//    return phi*(phi-.47)*(phi-1);
+    return phi*(phi-.2)*(phi-1);
   }
   
   double d2V(double phi){
-    return (phi-.47)*(phi-1) + phi*(phi-1) + phi*(phi-.47);
+//    return (phi-.47)*(phi-1) + phi*(phi-1) + phi*(phi-.47);
+    return (phi-.2)*(phi-1) + phi*(phi-1) + phi*(phi-.2);
   }
   
   /*Calculates `dV/dphi` at ``phi = phi_absMin + delta_phi``.*/
@@ -462,18 +463,14 @@ public:
     Eigen::VectorXd R = Eigen::VectorXd::LinSpaced(npoints, r0, rf);
     Profile1D profile_final = integrateAndSaveProfile(R, y0, dr0, epsfrac, epsabs, drmin);
     
-    
-    
     // Make points interior to the bubble
     Profile1D profile_int;
     
     if (max_interior_pts <= 0) max_interior_pts = int(R.size()/2);
-    if (max_interior_pts>0){
-      double dx0 = R[1]-R[0];
-      
-      int n;
+    double dx0 = R[1]-R[0];
+    int n = std::ceil(R[0] / dx0);
+    if (max_interior_pts>0 and n > 1){
       if (R[0] / dx0 <= max_interior_pts){
-        n = std::ceil(R[0] / dx0);
         profile_int.R = Eigen::VectorXd::LinSpaced(n, 0.0, R[0]).head(n-1);
       } else {
         n = max_interior_pts;
