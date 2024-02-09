@@ -37,6 +37,13 @@
 namespace PhaseTracer {
 
 
+class PotentialForShooting{
+public:
+  virtual double V(double phi) const = 0;
+  virtual double dV(double phi) const = 0;
+  virtual double d2V(double phi) const = 0;
+};
+
 class CubicInterpFunction {
 public:
   CubicInterpFunction(double y0, double dy0, double y1, double dy1, double c_ = 0)
@@ -68,26 +75,12 @@ struct Profile1D {
 
 class Shooting {
 public:
-  explicit Shooting(TransitionFinder& tf_) :
-    tf(tf_) {
+  explicit Shooting(PotentialForShooting& ps_) :
+    ps(ps_) {
       // TODO Add checking, this olny works for 1d
     }
   virtual ~Shooting() = default;
-  
-  double V(double phi){ // TODO this must be replcaed
-    return 0.25*pow(phi,4) - 0.49*pow(phi,3) + 0.235 * pow(phi,2);
-//    return 0.25*pow(phi,4) - 0.4*pow(phi,3) + 0.1 * pow(phi,2);
-  }
-  double dV(double phi){  // TODO this must be replcaed
-    return phi*(phi-.47)*(phi-1);
-//    return phi*(phi-.2)*(phi-1);
-  }
-  
-  double d2V(double phi){  // TODO this must be replcaed
-    return (phi-.47)*(phi-1) + phi*(phi-1) + phi*(phi-.47);
-//    return (phi-.2)*(phi-1) + phi*(phi-1) + phi*(phi-.2);
-  }
-  
+    
   /*Calculates `dV/dphi` at ``phi = phi_absMin + delta_phi``.*/
   double dV_from_absMin(double delta_phi);
   /* Find edge of the potential barrier. */
@@ -102,7 +95,7 @@ public:
                          double* r0, double* phi_r0, double* dphi_r0);
   void equationOfMotion(const std::vector<double>& y, std::vector<double>& dydr, const double r){
     dydr[0] = y[1];
-    dydr[1] = dV(y[0]) - alpha * y[1] /r ;
+    dydr[1] = ps.dV(y[0]) - alpha * y[1] /r ;
   }
   std::vector<double> dY(const std::vector<double> y, const double r){
     std::vector<double> dydr(2);
@@ -122,7 +115,7 @@ public:
   
 private:
   
-  TransitionFinder& tf;
+  PotentialForShooting& ps;
   
   double phi_absMin;
   double phi_metaMin;
