@@ -21,10 +21,10 @@ namespace PhaseTracer {
 
 double Shooting::dV_from_absMin(double delta_phi){
   const double phi = phi_absMin + delta_phi;
-  double dV_ = dV(phi);
+  double dV_ = ps.dV(phi);
   if (phi_eps_rel > 0){ // This will not be used if phi_eps_rel == 0
     const double phi_eps = phi_eps_rel * fabs(phi_absMin - phi_metaMin);
-    const double dV_eps = d2V(phi) * delta_phi;
+    const double dV_eps = ps.d2V(phi) * delta_phi;
     const double blend_factor = exp(-pow((delta_phi/phi_eps),2));
     dV_ = dV_eps*blend_factor + dV_*(1-blend_factor);
   }
@@ -33,12 +33,12 @@ double Shooting::dV_from_absMin(double delta_phi){
 
 void Shooting::findBarrierLocation(){
   const double phi_tol = fabs(phi_metaMin - phi_absMin) * 1e-12;
-  const double V_phimeta = V(phi_metaMin);
+  const double V_phimeta = ps.V(phi_metaMin);
   double phi1 = phi_metaMin;
   double phi2 = phi_absMin;
   double phi0 = 0.5 * (phi1 + phi2);
   while (std::abs(phi1 - phi2) > phi_tol) {
-    const double V0 = V(phi0);
+    const double V0 = ps.V(phi0);
     if (V0 > V_phimeta) {
       phi1 = phi0;
     } else {
@@ -58,7 +58,7 @@ void Shooting::findRScale() {
     
     int bits = std::ceil(std::log2(1.0 / phi_tol));
     std::pair<double, double>  result = boost::math::tools::brent_find_minima(
-        [this](double x) { return -V(x); }, x1, x2, bits);
+        [this](double x) { return -ps.V(x); }, x1, x2, bits);
     double phi_bar_top = result.first;
   
     if (phi_bar_top + phi_tol > x2 || phi_bar_top - phi_tol < x1) {
@@ -68,7 +68,7 @@ void Shooting::findRScale() {
     
     LOG(debug) << "phi_bar_top = "<< phi_bar_top;
   
-    double Vtop = V(phi_bar_top) - V(phi_metaMin);
+    double Vtop = ps.V(phi_bar_top) - ps.V(phi_metaMin);
     double xtop = phi_bar_top - phi_metaMin;
     
     if (Vtop <= 0) {
@@ -125,7 +125,7 @@ void Shooting::initialConditions(double delta_phi0, double rmin, double delta_ph
 
   const double phi0 = phi_absMin + delta_phi0;
   const double dV_ = dV_from_absMin(delta_phi0);
-  const double d2V_ = d2V(phi0);
+  const double d2V_ = ps.d2V(phi0);
   
   *r0 = rmin;
   
@@ -392,7 +392,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
     profile_int.dPhi[0] = 0.0;
     
     double dV_ = dV_from_absMin(delta_phi0);
-    double d2V_ = d2V(profile_int.Phi[0]);
+    double d2V_ = ps.d2V(profile_int.Phi[0]);
     
     for (int i=1; i < int_size; i++ ){
       exactSolution(profile_int.R[i], profile_int.Phi[0], dV_, d2V_, profile_int.Phi.data() + i, profile_int.dPhi.data() + i);
@@ -424,7 +424,7 @@ double Shooting::calAction(Profile1D profile){
   for (size_t i = 0; i < n; ++i) {
       // Find the area of an n-sphere (alpha=n):
       double area = std::pow(r[i], alpha) * 2 * pow(M_PI, d * 0.5) / tgamma(d * 0.5);
-      integrand[i] = 0.5 * std::pow(dphi[i], 2) + V(phi[i]) - V(phi_metaMin);
+      integrand[i] = 0.5 * std::pow(dphi[i], 2) + ps.V(phi[i]) - ps.V(phi_metaMin);
       integrand[i] *= area;
 //        std::cout << "integrand = " << integrand[i] << std::endl;
   }
@@ -436,7 +436,7 @@ double Shooting::calAction(Profile1D profile){
   // Find the bulk term in the bubble interior
   double volume = std::pow(r[0], d) * pow(M_PI, d * 0.5) / tgamma(d * 0.5 + 1);
   
-  S += volume * (V(phi[0]) - V(phi_metaMin));
+  S += volume * (ps.V(phi[0]) - ps.V(phi_metaMin));
   return S;
 }
 

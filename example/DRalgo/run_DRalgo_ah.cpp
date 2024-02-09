@@ -14,6 +14,7 @@
 #include "logger.hpp"
 #include "phase_plotter.hpp"
 #include "shooting.hpp"
+#include "path_deformation.hpp"
 
 
 std::string toString(std::vector<double> in, std::vector<double> out) {
@@ -104,20 +105,8 @@ int main(int argc, char* argv[]) {
     return 0;
   }
   
-  // Make PropertyCalculator object and calculate the transition properties
-  PhaseTracer::Shooting pc(tf);
-  
-  auto profile = pc.findProfile(0,1);
-  
-//  std::ofstream file("test_data.txt");
-//  for (int jj=0; jj< profile.R.size(); jj++){
-//    std::cout << "R, phi, dphi = " << profile.R[jj] << ", " << profile.Phi(jj) << ", "  << profile.dPhi(jj) << std::endl;
-//    file << profile.R[jj] << ", " << profile.Phi(jj) << ", "  << profile.dPhi(jj) << std::endl;
-//  }
-//  file.close();
-  
-  auto action = pc.calAction(profile);
-  std::cout << "action = " << action << std::endl;
+  PhaseTracer::PathDeformation pd(tf);
+  auto profile = pd.fullTunneling(0);
   
   std::vector<double> out = {(float)t.size(), t[0].TC, t[0].true_vacuum[0], t[0].false_vacuum[0]};
 
