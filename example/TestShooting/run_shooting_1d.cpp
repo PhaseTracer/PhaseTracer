@@ -12,6 +12,7 @@
 #include "transition_finder.hpp"
 #include "logger.hpp"
 #include "shooting.hpp"
+#include "path_deformation.hpp"
 
 
 class Example: public PhaseTracer::PotentialForShooting {
@@ -63,7 +64,8 @@ int main(int argc, char* argv[]) {
   auto action = s.calAction(profile);
   std::cout << "action = " << action << std::endl;
   
-
+  PhaseTracer::PathDeformation pd(0);
+  auto a = pd.fullTunneling(0);
   
   
   
