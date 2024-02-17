@@ -97,13 +97,17 @@ void Shooting::exactSolution(double r, double phi0, double dV_, double d2V_,
     dphi *= 0.25 * std::tgamma(nu+1) * r * dV_ * s;
     phi += phi0;
   }else if (d2V_>0){
-    // TODO: ignore the warnings if there is
-    phi = (std::tgamma(nu+1)*pow(0.5*beta_r,-nu) * boost::math::cyl_bessel_i(nu, beta_r)-1) * dV_/d2V_;
-    dphi = -nu*(pow(0.5*beta_r,-nu) / r) * boost::math::cyl_bessel_i(nu, beta_r);
-    dphi += pow(0.5*beta_r,-nu) * 0.5*beta
-            * (boost::math::cyl_bessel_i(nu-1, beta_r)+boost::math::cyl_bessel_i(nu+1, beta_r));
-    dphi *= std::tgamma(nu+1) * dV_/d2V_;
-    phi += phi0;
+    try {
+      phi = (std::tgamma(nu+1)*pow(0.5*beta_r,-nu) * boost::math::cyl_bessel_i(nu, beta_r)-1) * dV_/d2V_;
+      dphi = -nu*(pow(0.5*beta_r,-nu) / r) * boost::math::cyl_bessel_i(nu, beta_r);
+      dphi += pow(0.5*beta_r,-nu) * 0.5*beta
+              * (boost::math::cyl_bessel_i(nu-1, beta_r)+boost::math::cyl_bessel_i(nu+1, beta_r));
+      dphi *= std::tgamma(nu+1) * dV_/d2V_;
+      phi += phi0;
+    } catch (const boost::wrapexcept<std::overflow_error>& e){
+      phi = std::numeric_limits<double>::infinity();
+      dphi = NAN;
+    }
   }else{
     phi = (std::tgamma(nu+1)*pow(0.5*beta_r,-nu) * boost::math::cyl_bessel_j(nu, beta_r)-1) * dV_/d2V_;
     dphi = -nu*(pow(0.5*beta_r,-nu) / r) * boost::math::cyl_bessel_j(nu, beta_r);
@@ -300,6 +304,8 @@ Profile1D Shooting::integrateAndSaveProfile(Eigen::VectorXd R, std::vector<doubl
 Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, int max_interior_pts){
   phi_absMin = absMin;
   phi_metaMin = metaMin;
+  LOG(debug) << "phi_absMin = " << phi_absMin;
+  LOG(debug) << "phi_metaMin = " << phi_metaMin;
   findBarrierLocation();
   findRScale();
   
@@ -317,6 +323,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
   double xmin = xtol*10;
   double xmax = std::numeric_limits<double>::infinity();
   double x;
+
   if (std::isnan(xguess)){ // TODO check wheather this works
     x =  -log(fabs((phi_bar-phi_absMin)/delta_phi));
   } else {
@@ -440,5 +447,69 @@ double Shooting::calAction(Profile1D profile){
   return S;
 }
 
+
+void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double>* p,std::vector<double>* dp,
+                     size_t npoints, bool fixAbs){
+  
+  Eigen::VectorXd phi = pf.Phi;
+  Eigen::VectorXd dphi = pf.dPhi;
+  
+  //
+  Eigen::VectorXd filtered_phi;
+  Eigen::VectorXd filtered_dphi;
+  filtered_phi.resize(phi.size());
+  filtered_dphi.resize(dphi.size());
+  int filtered_index = 0;
+  for (int i = 1; i < phi.size(); i++){
+    if (std::abs(phi(i) - phi(i - 1)) > 1E-6){
+      filtered_phi(filtered_index) = phi(i);
+      filtered_dphi(filtered_index) = dphi(i);
+      filtered_index++;
+    }
+  }
+  filtered_phi.conservativeResize(filtered_index);
+  filtered_dphi.conservativeResize(filtered_index);
+
+  alglib::real_1d_array phi_arr;
+  alglib::real_1d_array dphi_arr;
+  size_t arr_npoints = filtered_phi.size();
+  if (fixAbs and phi_absMin<filtered_phi[0] ){
+    arr_npoints++;
+  }
+  if (phi_metaMin>filtered_phi[filtered_phi.size()-1]){
+    arr_npoints++;
+  }
+  phi_arr.setlength(arr_npoints);
+  dphi_arr.setlength(arr_npoints);
+  size_t ii=0;
+  if (fixAbs and phi_absMin<filtered_phi[0] ){
+    phi_arr[ii] = phi_absMin;
+    dphi_arr[ii] = 0.;
+    ii++;
+  }
+  for (size_t jj=0; jj<filtered_phi.size(); jj++){
+    phi_arr[ii] = filtered_phi[jj];
+    dphi_arr[ii] = filtered_phi[jj];
+    ii++;
+  }
+  if (phi_metaMin>filtered_phi[filtered_phi.size()-1]){
+    phi_arr[ii] = phi_metaMin;
+    dphi_arr[ii] = 0.;
+  }
+
+  alglib::spline1dinterpolant spl;
+  alglib::spline1dbuildcubic(phi_arr, dphi_arr, spl);
+  std::vector<double> evenly_phi(npoints);
+  std::vector<double> evenly_dphi(npoints);
+  double max = phi_metaMin;
+  double min = fixAbs ? phi_absMin : phi_arr[0];
+  double step = (max-min)/(npoints-1);
+  for (size_t jj=0; jj<npoints; jj++){
+    evenly_phi[jj] = min + jj * step;
+    evenly_dphi[jj] = alglib::spline1dcalc(spl, evenly_phi[jj]);
+  }
+  *p = evenly_phi;
+  *dp = evenly_dphi;
+}
 
 }  // namespace PhaseTracer
