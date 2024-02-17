@@ -113,6 +113,10 @@ public:
   /* Calculate the Euclidean action for the instanton */
   double calAction(Profile1D profile);
   
+  /* Get linearly spaced phi */
+  void evenlySpacedPhi(Profile1D pf, std::vector<double>* p,std::vector<double>* dp,
+                       size_t npoints=100, bool fixAbs=true);
+  
 private:
   
   PotentialForShooting& ps;
