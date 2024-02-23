@@ -22,6 +22,7 @@
 #include <ostream>
 #include <vector>
 #include <Eigen/Core>
+#include <Eigen/Dense>
 #include <algorithm>
 #include <boost/cstdint.hpp>
 #include <nlopt.hpp>
@@ -382,6 +383,263 @@ public:
   
   virtual ~PathDeformation() = default;
   
+  
+  double c=5.;
+  double fx=0.;
+  double fy=2.;
+  
+  double p_V(Eigen::VectorXd phi){
+    double x=phi[0];
+    double y=phi[0];
+    double r1 = x*x+c*y*y;
+    double r2 = c*pow(x-1.,2) + pow(y-1.,2);
+    double r3 = fx*(0.25*pow(x,4) - pow(x,3)/3.);
+    r3 += fy*(0.25*pow(y,4) - pow(y,3)/3.);
+    return r1*r2 + r3;
+  }
+  
+  Eigen::VectorXd p_dV(Eigen::VectorXd phi){  // TODO this must be replcaed, // this is not used
+    double x=phi[0];
+    double y=phi[0];
+    double r1 = x*x+c*y*y;
+    double r2 = c*pow(x-1.,2) + pow(y-1.,2);
+    double dr1dx = 2*x;
+    double dr1dy = 2*c*y;
+    double dr2dx = 2*c*(x-1.);
+    double dr2dy = 2*(y-1.);
+    double dVdx = r1*dr2dx + dr1dx*r2 + fx*x*x*(x-1.);
+    double dVdy = r1*dr2dy + dr1dy*r2 + fy*y*y*(y-1.);
+    Eigen::VectorXd rval(2);
+    rval << dVdx, dVdy;
+    return rval;
+  }
+  
+  void set_deformation(std::vector<Eigen::VectorXd> phi_, std::vector<double> dphidr){
+    phi = phi_; // TODO
+    
+    size_t nb=10;
+    size_t kb=3;
+    double v2min=0.0;
+    bool fix_start=false;
+    bool fix_end=false;
+    bool save_all_steps=false;
+    
+    
+    // convert phi to a set of path lengths
+    std::vector<double> dL;
+    for (int i = 0; i < phi.size() - 1; i++) {
+        dL.push_back((phi[i + 1] - phi[i]).norm());
+    }
+    std::vector<double> _t;
+    _t.push_back(0);
+    for (int i = 0; i < dL.size(); i++) {
+        _t.push_back(_t[i] + dL[i]);
+    }
+    double totalLength = _t.back();
+    for (int i = 0; i < _t.size(); i++) {
+        _t[i] /= totalLength;
+    }
+    _t[0] = 1e-50;
+    
+    // create the starting spline
+    std::vector<double> t0;
+    t0.push_back(0.0);
+    t0.push_back(0.0);
+    for (int i = 0; i < nb; ++i) {
+        t0.push_back( i / (nb - 1.) );
+    }
+    t0.push_back(1.0);
+    t0.push_back(1.0);
+    
+//    for (int i = 0; i < t0.size(); ++i) {
+//         std::cout << "t0[" << i << "]: " << t0[i] << std::endl;
+//     }
+    auto result = Nbspld2(t0, _t, kb);
+    X = std::get<0>(result);
+    dX = std::get<1>(result);
+    d2X = std::get<2>(result);
+    
+    Eigen::VectorXd phi0 = phi[0];
+    Eigen::VectorXd phi1 = phi[phi.size()-1];
+    beta.clear();
+    for (int j = 0; j < phi0.size(); ++j) {
+      Eigen::VectorXd phi_delta(phi.size());
+      for (int i = 0; i < phi.size(); ++i) {
+        Eigen::VectorXd phii = phi[i];
+        phi_delta[i] = phii[j] - (phi0[j] + (phi1[j] - phi0[j])* _t[i]);
+      }
+      beta.push_back(X.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(phi_delta));
+//      std::cout << " phi_delta = " << phi_delta << std::endl;
+//      std::cout << " beta[j] = " << beta[j] << std::endl;
+    }
+    
+    
+    
+    double max_v2 = 0;
+    for (int i = 0; i < phi.size(); ++i) {
+      max_v2 = std::max(max_v2, p_dV(phi[i]).norm());
+    }
+    v2min *=  max_v2 * totalLength/nb;
+    
+    v2.clear();
+    for (int i = 0; i < dphidr.size(); ++i) {
+      v2.push_back(std::max(v2min, dphidr[i]*dphidr[i]));
+    }
+    
+    // Deform the path
+    double startstep=2e-3;
+    double fRatioConv=.02;
+    double converge_0=5.;
+    double fRatioIncrease=5.;
+    size_t maxiter=500;
+    
+//    minfRatio = np.inf
+//    minfRatio_index = 0
+//    minfRatio_beta = None
+//    minfRatio_phi = None
+    double stepsize = startstep;
+//    deformation_converged = False
+    while(true){
+      num_steps++;
+      step(stepsize);
+      if (num_steps >= maxiter){
+        LOG(debug) << "Maximum number of deformation iterations reached.";
+        break;
+      }
+    }
+    
+
+  }
+  
+  size_t nphi=2;
+  size_t num_steps=0;
+  Eigen::MatrixXd X;
+  Eigen::MatrixXd dX;
+  Eigen::MatrixXd d2X;
+  std::vector<Eigen::VectorXd> beta;
+  std::vector<Eigen::VectorXd> phi;
+  std::vector<double> v2;
+  
+  void step(size_t lastStep ){
+    forces();
+  }
+  
+  // Calculate the normal force and potential gradient on the path
+  void forces(){
+    // X, dX, d2X
+    
+    
+    std::cout << "Matrix N.rows:" << dX.rows() << std::endl;
+    std::cout << "Matrix N.cols:" << dX.cols() << std::endl;
+    
+    std::vector<Eigen::VectorXd> dphi(dX.rows());
+    std::vector<Eigen::VectorXd> d2phi(dX.rows());
+    std::vector<double> dphi_sq(dX.rows());
+    std::vector<Eigen::VectorXd> dphids(dX.rows());
+    std::vector<Eigen::VectorXd> d2phids2(dX.rows());
+    
+    std::vector<Eigen::VectorXd> dV(dX.rows());
+    std::vector<Eigen::VectorXd> F_norm(dX.rows());
+    for (int ii=0; ii<dX.rows(); ++ii){
+      Eigen::VectorXd dphi_kk(nphi);
+      Eigen::VectorXd d2phi_kk(nphi);
+      for(int jj=0; jj<nphi; ++jj){
+        dphi_kk[jj] = 0.;
+        d2phi_kk[jj] = 0.;
+        for (int kk=0; kk<dX.cols(); ++kk){
+          dphi_kk[jj] += beta[jj][kk] * dX(ii,kk);
+          d2phi_kk[jj] += beta[jj][kk] * d2X(ii,kk);
+        }
+        dphi_kk[jj] += phi.back()[jj] - phi[0][jj];
+      }
+      
+      dphi[ii] = dphi_kk;
+      d2phi[ii] = d2phi_kk;
+      double dphi_ = dphi_kk.norm();
+      dphi_sq[ii] = dphi_*dphi_;
+      dphids[ii] = dphi_kk / dphi_;
+      double sum_dphi_d2phi = 1;
+      d2phids2[ii] = (d2phi_kk - dphi_kk*(dphi_kk.dot(d2phi_kk))/dphi_sq[ii])/dphi_sq[ii];
+      
+      dV[ii] = p_dV(phi[ii]);
+      Eigen::VectorXd dV_perp = dV[ii] - dV[ii].dot(dphids[ii]) * dphids[ii];
+      F_norm[ii] = d2phids2[ii] * v2[ii] - dV_perp;
+//      std::cout << "phi[ii]:" << phi[ii] << std::endl;
+      std::cout << "F_norm[ii]:" << F_norm[ii] << std::endl;
+    }
+    std::exit(0);
+  }
+  
+  
+  
+  
+  std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> Nbspld2(std::vector<double> t, std::vector<double> x, int k = 3) {
+      int kmax = k;
+      if (kmax >= t.size() - 2) {
+        throw std::runtime_error("Input error in Nbspl: require that k < len(t)-2");
+      }
+      
+      int size_x = static_cast<int>(x.size());
+      
+      Eigen::MatrixXd N = Eigen::MatrixXd::Ones(size_x, t.size() - 1);
+      Eigen::MatrixXd dN = Eigen::MatrixXd::Zero(size_x, t.size() - 1);
+      Eigen::MatrixXd d2N = Eigen::MatrixXd::Zero(size_x, t.size() - 1);
+      
+      for (int i = 0; i < N.rows(); ++i) {
+        for (int j = 0; j < N.cols(); ++j) {
+          N(i, j) = 1.0 * ((x[i] > t[j]) && (x[i] <= t[j + 1]));
+        }
+      }
+//    std::cout << "Matrix N:" << std::endl << N << std::endl;
+//      std::cout << "Matrix N.rows:" << N.rows() << std::endl;
+//    std::cout << "Matrix N.cols:" << N.cols() << std::endl;
+    
+      for (int i = 1; i <= kmax; ++i) {
+        Eigen::VectorXd dt(t.size() - i);
+        Eigen::VectorXd _dt(t.size() - i);
+          
+        for (int j = 0; j < t.size() - i; ++j) {
+          dt(j) = t[j + i] - t[j];
+          _dt(j) = (dt(j) != 0) ? 1.0 / dt(j) : 0.0;
+        }
+        for (int j = 0; j < size_x; ++j) {
+          for (int l = 0; l < dt.size() - 1; ++l) {
+            
+            d2N(j,l) = d2N(j,l) * (x[j] - t[l]) * _dt[l]
+                      -d2N(j,1+l) * (x[j] - t[1+i+l])* _dt[1+l]
+                      +2.*dN(j,l) * _dt[l] - 2.*dN(j,1+l) * _dt[1+l];
+            
+            dN(j,l) = dN(j,l) * (x[j] - t[l]) * _dt[l]
+                      -dN(j,1+l) * (x[j] - t[1+i+l])* _dt[1+l]
+                      +N(j,l) * _dt[l] - N(j,1+l) * _dt[1+l];
+            
+            N(j,l) = N(j,l) * (x[j] - t[l]) * _dt[l]
+                    -N(j,1+l) * (x[j] - t[1+i+l]) * _dt[1+l];
+          }
+        }
+      }
+    N.conservativeResize(N.rows(), N.cols() - 3);
+    dN.conservativeResize(dN.rows(), dN.cols() - 3);
+    d2N.conservativeResize(d2N.rows(), d2N.cols() - 3);
+    
+//    std::cout << "Matrix d2N:" << std::endl;
+//    for (int ii = 0; ii < 3; ++ii) {
+//        for (int j = 0; j < N.cols(); ++j) {
+//            std::cout << d2N(ii, j) << " ";
+//        }
+//        std::cout << std::endl;
+//    }
+//    for (int ii = N.rows() - 3; ii < N.rows(); ++ii) {
+//        for (int j = 0; j < N.cols(); ++j) {
+//            std::cout << d2N(ii, j) << " ";
+//        }
+//        std::cout << std::endl;
+//    }
+    
+    return {N, dN, d2N};
+  }
+  
+  
   /* Calculate the instanton solution in multiple field dimension */
   double fullTunneling(double delta_phi){
     std::vector<Eigen::VectorXd> path_pts;
@@ -400,16 +658,30 @@ public:
       
       std::cout << "path.V(0) = " << path.V(0) << std::endl;
       std::cout << "path.V(0.5) = " << path.V(0.5) << std::endl;
-      std::cout << "path.V(1) = " << path.V(
-                                            1) << std::endl;
+      std::cout << "path.V(1) = " << path.V(1) << std::endl;
       
-      PhaseTracer::Shooting s(path);
+      std::cout << "path.dV(0.5) = " << path.dV(0.5) << std::endl;
+      std::cout << "path.d2V(0.5) = " << path.d2V(0.5) << std::endl;
       
-      auto profile = s.findProfile(0,path.get_path_length());
+      PhaseTracer::Shooting tobj(path);
       
-      auto action = s.calAction(profile);
+      std::cout << "path.get_path_length() = " << path.get_path_length() << std::endl;
+      
+      auto profile = tobj.findProfile(path.get_path_length(),0.);
+      
+      std::vector<double> phi, dphi;
+      tobj.evenlySpacedPhi(profile, &phi, &dphi, profile.Phi.size(), false);
+      dphi[0]=0.;
+      dphi[dphi.size()-1]=0.;
+      auto action = tobj.calAction(profile);
       std::cout << "action = " << action << std::endl;
+      std::vector<Eigen::VectorXd> pts(phi.size());
+      for (size_t ii=0; ii<phi.size(); ii++ ){
+        pts[ii] = path.vecp(phi[ii]);
+      }
+      // TODO add callback
       
+      set_deformation(pts, dphi);
       
     }
     

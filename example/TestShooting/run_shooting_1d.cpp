@@ -48,11 +48,11 @@ int main(int argc, char* argv[]) {
   LOGGER(debug);
   
 //  Example p(0.25,0.49,0.235);
-  Example p(0.25,0.4,0.1);
-  
-  PhaseTracer::Shooting s(p);
-  
-  auto profile = s.findProfile(0,1);
+//  Example p(0.25,0.4,0.1);
+//
+//  PhaseTracer::Shooting s(p);
+//
+//  auto profile = s.findProfile(0,1);
   
 //  std::ofstream file("test_data.txt");
 //  for (int jj=0; jj< profile.R.size(); jj++){
@@ -61,9 +61,9 @@ int main(int argc, char* argv[]) {
 //  }
 //  file.close();
 //
-  auto action = s.calAction(profile);
-  std::cout << "action = " << action << std::endl;
-  
+//  auto action = s.calAction(profile);
+//  std::cout << "action = " << action << std::endl;
+//
   PhaseTracer::PathDeformation pd(0);
   auto a = pd.fullTunneling(0);
   
