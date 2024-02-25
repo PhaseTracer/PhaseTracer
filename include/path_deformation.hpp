@@ -81,10 +81,10 @@ public:
     extend_to_minima(extend_to_minima_), reeval_distances(reeval_distances_) {
       // 1. Find derivs
       std::vector<Eigen::VectorXd> dpts = _pathDeriv(pts);
-      std::cout << "SplinePath : " << std::endl;
-      for (const auto& v : dpts) {
-          std::cout << "  " << v.transpose() << std::endl;
-      }
+//      std::cout << "SplinePath : " << std::endl;
+//      for (const auto& v : dpts) {
+//          std::cout << "  " << v.transpose() << std::endl;
+//      }
       
       // 2. Extend the path
       if (extend_to_minima){
@@ -122,7 +122,7 @@ public:
 //        std::cout << "pts= " << pts << std::endl;
       }
       // 3. Find knot positions and fit the spline
-      std::cout << "dpts = " << dpts << std::endl;
+//      std::cout << "dpts = " << dpts << std::endl;
       std::vector<double> squared_sums;
       squared_sums.reserve(dpts.size());
       for (const auto& vec : dpts)
@@ -160,13 +160,13 @@ public:
         typedef double state_type;
         state_type x = 0.0;
         double t_start = 0.0;
-        double dt = pdist[pdist.size()-1]*1E-4; // TODO this need be changed.
+        double dt = pdist.back()*1E-4; // TODO this need be changed.
         using error_stepper_type =
            boost::numeric::odeint::runge_kutta_dopri5<state_type>;
         using controlled_stepper_type =
            boost::numeric::odeint::controlled_runge_kutta<error_stepper_type>;
         controlled_stepper_type stepper
-           = make_controlled(0., pdist[pdist.size()-1]*1E-8, error_stepper_type());
+           = make_controlled(0., pdist.back()*1E-8, error_stepper_type());
         for (size_t i = 0; i < pdist.size(); ++i) // TODO this may be improved
         {
           boost::numeric::odeint::integrate_const(stepper,
@@ -319,7 +319,7 @@ public:
   
   double p_V(Eigen::VectorXd phi){
     double x=phi[0];
-    double y=phi[0];
+    double y=phi[1];
     double r1 = x*x+c*y*y;
     double r2 = c*pow(x-1.,2) + pow(y-1.,2);
     double r3 = fx*(0.25*pow(x,4) - pow(x,3)/3.);
@@ -328,7 +328,7 @@ public:
   }
   Eigen::VectorXd p_dV(Eigen::VectorXd phi){  // TODO this must be replcaed, // this is not used
     double x=phi[0];
-    double y=phi[0];
+    double y=phi[1];
     double r1 = x*x+c*y*y;
     double r2 = c*pow(x-1.,2) + pow(y-1.,2);
     double dr1dx = 2*x;
@@ -367,6 +367,14 @@ private:
 };
 
 
+struct FullTunneling {
+  double action;
+  double fRatio;
+  Profile1D profile1D;
+  std::vector<Eigen::VectorXd> phi;
+  std::vector<std::vector<Eigen::VectorXd>> saved_steps;
+};
+
 class PathDeformation {
 public:
 //  explicit PathDeformation(TransitionFinder& tf_) :
@@ -390,7 +398,7 @@ public:
   
   double p_V(Eigen::VectorXd phi){
     double x=phi[0];
-    double y=phi[0];
+    double y=phi[1];
     double r1 = x*x+c*y*y;
     double r2 = c*pow(x-1.,2) + pow(y-1.,2);
     double r3 = fx*(0.25*pow(x,4) - pow(x,3)/3.);
@@ -400,7 +408,7 @@ public:
   
   Eigen::VectorXd p_dV(Eigen::VectorXd phi){  // TODO this must be replcaed, // this is not used
     double x=phi[0];
-    double y=phi[0];
+    double y=phi[1];
     double r1 = x*x+c*y*y;
     double r2 = c*pow(x-1.,2) + pow(y-1.,2);
     double dr1dx = 2*x;
@@ -414,160 +422,318 @@ public:
     return rval;
   }
   
-  void set_deformation(std::vector<Eigen::VectorXd> phi_, std::vector<double> dphidr){
-    phi = phi_; // TODO
-    
-    size_t nb=10;
-    size_t kb=3;
-    double v2min=0.0;
-    bool fix_start=false;
-    bool fix_end=false;
-    bool save_all_steps=false;
-    
-    
+  bool deformPath(std::vector<double> dphidr){
+    num_steps=0;
     // convert phi to a set of path lengths
     std::vector<double> dL;
-    for (int i = 0; i < phi.size() - 1; i++) {
+    for (int i = 0; i < npoints - 1; i++) {
         dL.push_back((phi[i + 1] - phi[i]).norm());
     }
-    std::vector<double> _t;
+    _t.clear();
     _t.push_back(0);
     for (int i = 0; i < dL.size(); i++) {
         _t.push_back(_t[i] + dL[i]);
     }
-    double totalLength = _t.back();
+    totalLength = _t.back();
     for (int i = 0; i < _t.size(); i++) {
         _t[i] /= totalLength;
     }
     _t[0] = 1e-50;
+//    for (int i = 0; i < _t.size(); ++i) {
+//        std::cout << "_t[" << i << "]: " << _t[i] << std::endl;
+//    }
+//    std::exit(0);
     
     // create the starting spline
     std::vector<double> t0;
-    t0.push_back(0.0);
-    t0.push_back(0.0);
+    for (int i = 0; i < kb-1; ++i) {
+      t0.push_back(0.0);
+    }
     for (int i = 0; i < nb; ++i) {
         t0.push_back( i / (nb - 1.) );
     }
-    t0.push_back(1.0);
-    t0.push_back(1.0);
+    for (int i = 0; i < kb-1; ++i) {
+      t0.push_back(1.0);
+    }
     
 //    for (int i = 0; i < t0.size(); ++i) {
 //         std::cout << "t0[" << i << "]: " << t0[i] << std::endl;
 //     }
+//    std::exit(0);
     auto result = Nbspld2(t0, _t, kb);
     X = std::get<0>(result);
     dX = std::get<1>(result);
     d2X = std::get<2>(result);
     
+//    std::cout << "d2X: " << d2X << std::endl;
+//
+    
     Eigen::VectorXd phi0 = phi[0];
-    Eigen::VectorXd phi1 = phi[phi.size()-1];
+    Eigen::VectorXd phi1 = phi.back();
     beta.clear();
-    for (int j = 0; j < phi0.size(); ++j) {
-      Eigen::VectorXd phi_delta(phi.size());
-      for (int i = 0; i < phi.size(); ++i) {
+    for (int j = 0; j < nphi; ++j) {
+      Eigen::VectorXd phi_delta(npoints);
+      for (int i = 0; i < npoints; ++i) {
         Eigen::VectorXd phii = phi[i];
-        phi_delta[i] = phii[j] - (phi0[j] + (phi1[j] - phi0[j])* _t[i]);
+        double phi_lin = phi0[j] + (phi1[j] - phi0[j])* _t[i];
+//        std::cout << " phi_lin = " << phi_lin << std::endl;
+//        std::cout << " phii = " << phii[j] << std::endl;
+        phi_delta[i] = phii[j] - phi_lin;
       }
       beta.push_back(X.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(phi_delta));
 //      std::cout << " phi_delta = " << phi_delta << std::endl;
 //      std::cout << " beta[j] = " << beta[j] << std::endl;
     }
-    
-    
-    
+        
     double max_v2 = 0;
-    for (int i = 0; i < phi.size(); ++i) {
+    for (int i = 0; i < npoints; ++i) {
       max_v2 = std::max(max_v2, p_dV(phi[i]).norm());
     }
     v2min *=  max_v2 * totalLength/nb;
     
+    // TODO dphidr is not same, so does v2
     v2.clear();
-    for (int i = 0; i < dphidr.size(); ++i) {
+    for (int i = 0; i < npoints; ++i) {
       v2.push_back(std::max(v2min, dphidr[i]*dphidr[i]));
+//      std::cout << " dphidr[i] = " << dphidr[i] << std::endl;
+//      std::cout << " v2[j] = " << v2[i] << std::endl;
     }
+//    std::exit(0);
     
     // Deform the path
-    double startstep=2e-3;
-    double fRatioConv=.02;
-    double converge_0=5.;
-    double fRatioIncrease=5.;
-    size_t maxiter=500;
-    
-//    minfRatio = np.inf
-//    minfRatio_index = 0
-//    minfRatio_beta = None
-//    minfRatio_phi = None
+    double minfRatio = std::numeric_limits<double>::infinity();
+    size_t minfRatio_index = 0;
+    std::vector<Eigen::VectorXd> minfRatio_beta;
+    std::vector<Eigen::VectorXd> minfRatio_phi;
     double stepsize = startstep;
-//    deformation_converged = False
+    bool deformation_converged = false;
+    bool step_reversed;
+    double fRatio;
+    phi_prev.clear();
+    F_prev.clear();
     while(true){
       num_steps++;
-      step(stepsize);
+      step(stepsize, step_reversed, fRatio);
+      // TODO add callback
+//      std::cout << " fRatio = " << fRatio << std::endl;
+      
+      if (fRatio < fRatioConv || (num_steps == 1 && fRatio < converge_0*fRatioConv)) {
+        LOG(debug) << "Path deformation converged. "
+                   << num_steps << " steps. fRatio = " << fRatio;
+        deformation_converged = true;
+        break;
+      }
+      
+      if (minfRatio > fRatio) {
+        minfRatio = fRatio;
+        minfRatio_beta = beta;
+        minfRatio_index = num_steps;
+        minfRatio_phi = phi;
+      }
+
+      if (fRatio > fRatioIncrease * minfRatio && !step_reversed) {
+        beta = minfRatio_beta;
+        phi = minfRatio_phi;
+        phi_list.resize(minfRatio_index);
+        F_list.resize(minfRatio_index);
+        LOG(fatal) << "Deformation doesn't appear to be converging. Stopping at the point of best convergence.";
+        // TODO add error
+      }
+      
       if (num_steps >= maxiter){
         LOG(debug) << "Maximum number of deformation iterations reached.";
         break;
       }
     }
-    
-
+    return deformation_converged;
   }
-  
+    
+  size_t npoints;
   size_t nphi=2;
-  size_t num_steps=0;
+  size_t num_steps;
+  
+  double startstep=2e-3;
+  double fRatioConv=.02;
+  double converge_0=5.;
+  double fRatioIncrease=5.;
+  size_t maxiter=500;
+  
+  double maxstep=.1;
+  double minstep=1e-4;
+  double reverseCheck=.15;
+  double stepIncrease=1.5;
+  double stepDecrease=5.;
+  bool checkAfterFit=true;
+  
   Eigen::MatrixXd X;
   Eigen::MatrixXd dX;
   Eigen::MatrixXd d2X;
+  std::vector<double> _t;
   std::vector<Eigen::VectorXd> beta;
   std::vector<Eigen::VectorXd> phi;
   std::vector<double> v2;
+  double totalLength;
   
-  void step(size_t lastStep ){
-    forces();
+  bool fix_start=false;
+  bool fix_end=false;
+  std::vector<Eigen::VectorXd> phi_prev;
+  std::vector<Eigen::VectorXd> F_prev;
+  
+  std::vector<std::vector<Eigen::VectorXd>> phi_list;
+  std::vector<std::vector<Eigen::VectorXd>> F_list;
+  
+  
+  
+  void step(double &lastStep, bool &step_reversed, double &fRatio){
+
+    std::vector<Eigen::VectorXd> _phi = phi;
+    std::vector<Eigen::VectorXd> F, dV;
+    forces(F, dV);
+    double F_max=0, dV_max=0;
+    for (int ii=0; ii<dX.rows(); ++ii){
+      F_max = std::max(F_max, F[ii].norm());
+      dV_max = std::max(dV_max, dV[ii].norm());
+//      std::cout << "F[ii]:" << F[ii] << std::endl;
+    }
+    double fRatio1 = F_max/dV_max;
+    for (int ii=0; ii<dX.rows(); ++ii) F[ii] *= totalLength/dV_max;
+    
+//    std::cout << "F_max:" << F_max << std::endl;
+//    std::cout << "dV_max:" << dV_max << std::endl;
+    
+    // see how big the stepsize should be
+    double stepsize = lastStep;
+    step_reversed = false;
+    std::vector<double> FdotFlast(dX.rows());
+    if (reverseCheck<1 and (not F_prev.empty())){
+      for (int ii=0; ii<dX.rows(); ++ii) FdotFlast[ii] = F[ii].dot(F_prev[ii]);
+//      for (int ii=0; ii<dX.rows(); ++ii) std::cout << "FdotFlast[ii]:" << FdotFlast[ii] << std::endl;
+//      std::exit(0);
+      int numNegative = std::count_if(FdotFlast.begin(), FdotFlast.end(),
+              [](double val) { return val < 0; });
+      if (numNegative > npoints * reverseCheck) {
+        if (stepsize > minstep) {
+          step_reversed = true;
+          _phi = phi_prev;
+          F = F_prev;
+          LOG(trace) << "step reversed";
+          stepsize = lastStep / stepDecrease;
+        }
+      } else {
+        stepsize = lastStep * stepIncrease;
+      }
+    }
+    
+    if (stepsize > maxstep) stepsize = maxstep;
+    if (stepsize < minstep) stepsize = minstep;
+    
+    // Save the state before the step
+    phi_prev = _phi;
+    F_prev = F;
+    if (save_all_steps){
+      phi_list.push_back(_phi);
+      F_list.push_back(F);
+    }
+    
+    for (int ii=0; ii<dX.rows(); ++ii) _phi[ii] += F[ii]*stepsize;
+   
+    // fit to the spline
+    std::vector<Eigen::VectorXd> phi_lin(dX.rows());
+    Eigen::VectorXd delta_phi = _phi.back()-_phi[0];
+    Eigen::VectorXd phi0 = _phi[0];
+    for (int ii=0; ii<dX.rows(); ++ii){
+      phi_lin[ii] = phi0 + delta_phi*_t[ii];
+      _phi[ii] -= phi_lin[ii];
+//      std::cout << "_phi:" << _phi[ii] << std::endl;
+//      std::cout << "phi:" << phi[ii] << std::endl;
+    }
+    
+//    std::cout << "betas:" << beta << std::endl;
+    for (size_t ii=0; ii<nphi; ++ii){
+      Eigen::VectorXd ii_phi(npoints);
+      for (size_t jj = 0; jj < npoints; ++jj) {
+        ii_phi(jj) = _phi[jj](ii);
+      }
+      beta[ii] = X.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(ii_phi);
+//      std::cout << "ii_phi:" << ii_phi << std::endl;
+//      std::cout << " ---beta:" << beta[ii] << std::endl;
+    }
+//    std::cout << "betas:" << beta << std::endl;
+    
+    double fRatio2 = 0.;
+    for (int ii=0; ii<dX.rows(); ++ii){
+      Eigen::VectorXd ii_phi(nphi);
+      for(int jj=0; jj<nphi; ++jj){
+        ii_phi[jj] = 0.;
+        for (int kk=0; kk<dX.cols(); ++kk){
+          ii_phi[jj] += beta[jj][kk] * X(ii,kk);
+        }
+      }
+      _phi[ii] = ii_phi + phi_lin[ii];
+      
+//      std::cout << "phi:" << phi[ii] << std::endl;
+//      std::cout << "_phi:" << _phi[ii] << std::endl;
+      
+      Eigen::VectorXd Ffit = (_phi[ii] - phi_prev[ii])/stepsize;
+      fRatio2 = std::max(fRatio2, Ffit.norm()/totalLength);
+    }
+//    std::exit(0);
+//    std::cout << "phi:" << phi[0] << std::endl;
+//    std::cout << "_phi:" << _phi[0] << std::endl;
+    phi = _phi;
+    lastStep = stepsize;
+    
+    LOG(trace) << "step: " << num_steps
+               << "; stepsize: " << stepsize
+               << "; fRatio1: "  << fRatio1
+               << "; fRatio2: "  << fRatio2;
+    
+    fRatio = checkAfterFit ? fRatio2 : fRatio1;
   }
   
   // Calculate the normal force and potential gradient on the path
-  void forces(){
-    // X, dX, d2X
+  void forces(std::vector<Eigen::VectorXd>& F_norm, std::vector<Eigen::VectorXd>& dV){
+    F_norm.resize(dX.rows());
+    dV.resize(dX.rows());
     
-    
-    std::cout << "Matrix N.rows:" << dX.rows() << std::endl;
-    std::cout << "Matrix N.cols:" << dX.cols() << std::endl;
-    
-    std::vector<Eigen::VectorXd> dphi(dX.rows());
-    std::vector<Eigen::VectorXd> d2phi(dX.rows());
-    std::vector<double> dphi_sq(dX.rows());
-    std::vector<Eigen::VectorXd> dphids(dX.rows());
-    std::vector<Eigen::VectorXd> d2phids2(dX.rows());
-    
-    std::vector<Eigen::VectorXd> dV(dX.rows());
-    std::vector<Eigen::VectorXd> F_norm(dX.rows());
-    for (int ii=0; ii<dX.rows(); ++ii){
-      Eigen::VectorXd dphi_kk(nphi);
-      Eigen::VectorXd d2phi_kk(nphi);
+    for (int ii=0; ii<npoints; ++ii){
+//      std::cout << "phi:" << phi[ii] << std::endl;
+      Eigen::VectorXd dphi(nphi);
+      Eigen::VectorXd d2phi(nphi);
       for(int jj=0; jj<nphi; ++jj){
-        dphi_kk[jj] = 0.;
-        d2phi_kk[jj] = 0.;
-        for (int kk=0; kk<dX.cols(); ++kk){
-          dphi_kk[jj] += beta[jj][kk] * dX(ii,kk);
-          d2phi_kk[jj] += beta[jj][kk] * d2X(ii,kk);
+        dphi[jj] = 0.;
+        d2phi[jj] = 0.;
+        for (int kk=0; kk<nb; ++kk){
+          dphi[jj] += beta[jj][kk] * dX(ii,kk);
+          d2phi[jj] += beta[jj][kk] * d2X(ii,kk);
         }
-        dphi_kk[jj] += phi.back()[jj] - phi[0][jj];
+        dphi[jj] += phi.back()[jj] - phi[1][jj]; // TODO Note this is phi[1], not phi[0]
       }
       
-      dphi[ii] = dphi_kk;
-      d2phi[ii] = d2phi_kk;
-      double dphi_ = dphi_kk.norm();
-      dphi_sq[ii] = dphi_*dphi_;
-      dphids[ii] = dphi_kk / dphi_;
-      double sum_dphi_d2phi = 1;
-      d2phids2[ii] = (d2phi_kk - dphi_kk*(dphi_kk.dot(d2phi_kk))/dphi_sq[ii])/dphi_sq[ii];
+//      std::cout << "dphi:" << dphi << std::endl;
+//      std::cout << "d2phi:" << d2phi << std::endl;
+      
+      double dphi_ = dphi.norm();
+      double dphi_sq = dphi_*dphi_;
+      Eigen::VectorXd dphids = dphi / dphi_;
+      Eigen::VectorXd d2phids2 = (d2phi - dphi*(dphi.dot(d2phi))/dphi_sq)/dphi_sq;
       
       dV[ii] = p_dV(phi[ii]);
-      Eigen::VectorXd dV_perp = dV[ii] - dV[ii].dot(dphids[ii]) * dphids[ii];
-      F_norm[ii] = d2phids2[ii] * v2[ii] - dV_perp;
 //      std::cout << "phi[ii]:" << phi[ii] << std::endl;
-      std::cout << "F_norm[ii]:" << F_norm[ii] << std::endl;
+//      std::cout << "dV:" << dV[ii] << std::endl;
+//      Eigen::VectorXd xxx(2);
+//      xxx(0)=  0.00134591;
+//      xxx(1)=  0.00132431;
+//      std::cout << "dV():" << p_dV(xxx) << std::endl;
+      Eigen::VectorXd dV_perp = dV[ii] - dV[ii].dot(dphids) * dphids;
+      F_norm[ii] = d2phids2 * v2[ii] - dV_perp;
     }
-    std::exit(0);
+    if (fix_start){
+      F_norm[0]=Eigen::VectorXd::Zero(nphi);;
+    }
+    if (fix_end){
+      F_norm.back()=Eigen::VectorXd::Zero(nphi);
+    }
   }
   
   
@@ -648,44 +814,80 @@ public:
     path_pts[0] << 1, 1;
     path_pts[1] << 0, 0;
     
-    int maxiter = 1;
+    int maxiter = 20;
     int V_spline_samples = 100;
     bool extend_to_minima = true;
+    bool breakLoop = false;
     
     for (int num_iter = 1; num_iter <= maxiter; num_iter++) {
       LOG(debug) <<  "Starting tunneling step " << num_iter;
       SplinePath path(0, path_pts);
       
-      std::cout << "path.V(0) = " << path.V(0) << std::endl;
-      std::cout << "path.V(0.5) = " << path.V(0.5) << std::endl;
-      std::cout << "path.V(1) = " << path.V(1) << std::endl;
-      
-      std::cout << "path.dV(0.5) = " << path.dV(0.5) << std::endl;
-      std::cout << "path.d2V(0.5) = " << path.d2V(0.5) << std::endl;
+//      std::cout << "path.V(0) = " << path.V(0) << std::endl;
+//      std::cout << "path.V(0.5) = " << path.V(0.5) << std::endl;
+//      std::cout << "path.V(1) = " << path.V(1) << std::endl;
+//
+//      std::cout << "path.dV(0.5) = " << path.dV(0.5) << std::endl;
+//      std::cout << "path.d2V(0.5) = " << path.d2V(0.5) << std::endl;
       
       PhaseTracer::Shooting tobj(path);
       
-      std::cout << "path.get_path_length() = " << path.get_path_length() << std::endl;
+//      std::cout << "path.get_path_length() = " << path.get_path_length() << std::endl;
       
       auto profile = tobj.findProfile(path.get_path_length(),0.);
-      
-      std::vector<double> phi, dphi;
-      tobj.evenlySpacedPhi(profile, &phi, &dphi, profile.Phi.size(), false);
-      dphi[0]=0.;
-      dphi[dphi.size()-1]=0.;
-      auto action = tobj.calAction(profile);
-      std::cout << "action = " << action << std::endl;
-      std::vector<Eigen::VectorXd> pts(phi.size());
-      for (size_t ii=0; ii<phi.size(); ii++ ){
-        pts[ii] = path.vecp(phi[ii]);
+      npoints = profile.Phi.size();
+      // TODO profile.Phi[ii] is not matched
+//      std::cout << "profile.Phi.size() = " << profile.Phi.size() << std::endl;
+//      for (size_t ii=0; ii<npoints; ii++ ) std::cout << "profile.Phi[ii] = " << profile.Phi[ii] << std::endl;
+//      std::exit(0);
+      std::vector<double> phi_1d, dphi_1d;
+      tobj.evenlySpacedPhi(profile, &phi_1d, &dphi_1d, npoints, false);
+      dphi_1d[0]=0.;
+      dphi_1d.back()=0.;
+//      std::cout << "phi_1d.size = " << phi_1d.size() << std::endl;
+//      for (size_t ii=0; ii<phi_1d.size(); ii++ ) std::cout << "phi_1d = " << phi_1d[ii] << std::endl;
+//      std::exit(0);
+//      auto action = tobj.calAction(profile);
+//      std::cout << "action = " << action << std::endl;
+      phi.resize(npoints);
+      for (size_t ii=0; ii<npoints; ii++ ){
+        phi[ii] = path.vecp(phi_1d[ii]);
       }
       // TODO add callback
+      // TODO add try and error
+      bool converged = deformPath(dphi_1d);
+      path_pts = phi;
       
-      set_deformation(pts, dphi);
+      // TODO save_all_steps
       
+      if (converged and num_steps < 2){
+        breakLoop = true;
+        break;
+      }
+    }
+    if (!breakLoop){
+      LOG(warning)<<"Reached maxiter in fullTunneling. No convergence.";
     }
     
-    
+//    std::vector<Eigen::VectorXd> F, dV;
+//    forces(F, dV);
+//    double F_max=0, dV_max=0;
+//    for (int ii=0; ii<dX.rows(); ++ii){
+//      F_max = std::max(F_max, F[ii].norm());
+//      dV_max = std::max(dV_max, dV[ii].norm());
+//    }
+//    double fRatio = F_max/dV_max;
+//
+//    SplinePath path(0, path_pts);
+//    PhaseTracer::Shooting tobj(path);
+//    auto profile = tobj.findProfile(path.get_path_length(),0.);
+//    auto action = tobj.calAction(profile);
+//
+//    FullTunneling ft;
+//    ft.fRatio = fRatio;
+//    ft.phi = phi;
+//    ft.profile1D = profile;
+//    ft.action = action;
     
     return 0;
   }
@@ -694,6 +896,17 @@ private:
 
   double phi_absMin;
   double phi_metaMin;
+  
+  
+  /* Number of basis splines to use */
+  PROPERTY(size_t, nb, 10);
+  /* Order of basis splines */
+  PROPERTY(size_t, kb, 3);
+  /* Get each step saved */
+  PROPERTY(bool, save_all_steps, false);
+  /* The smallest the square of dphidr is allowed to be */
+  PROPERTY(double, v2min, 0.0);
+  
   
 };
 
