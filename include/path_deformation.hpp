@@ -62,6 +62,19 @@ std::vector<Eigen::VectorXd> deriv14_const_dx(const std::vector<Eigen::VectorXd>
   return dy;
 }
 
+template<typename T>
+std::vector<T> cumulative_trapezoidal_integration(const std::vector<T>& values)
+{
+    std::vector<T> integration_result;
+    integration_result.clear();
+    T sum = T(0);
+    for (size_t i = 0; i < values.size() - 1; ++i)
+    {
+        sum += (values[i] + values[i + 1]) / 2.0;
+        integration_result.push_back(sum);
+    }
+    return integration_result;
+}
 
 /* Fit a spline to a path in field space, and find the potential on that path */
 class SplinePath: public PotentialForShooting {
@@ -106,6 +119,7 @@ public:
 //        std::cout << "xmin= " << xmin << std::endl;
         xmin = std::max(xmin, 0.0);
         nx = static_cast<int>(std::ceil(std::abs(xmin) - 0.5)) + 1;
+//        std::cout << "nx= " << nx << std::endl;
         stepSize = xmin / nx;
         std::vector<Eigen::VectorXd> new_pts2;
         for (int i = 0; i < nx; ++i) {
@@ -124,7 +138,7 @@ public:
       // 3. Find knot positions and fit the spline
 //      std::cout << "dpts = " << dpts << std::endl;
       std::vector<double> squared_sums;
-      squared_sums.reserve(dpts.size());
+      squared_sums.clear();
       for (const auto& vec : dpts)
       {
           squared_sums.push_back(vec.norm());
@@ -167,24 +181,33 @@ public:
            boost::numeric::odeint::controlled_runge_kutta<error_stepper_type>;
         controlled_stepper_type stepper
            = make_controlled(0., pdist.back()*1E-8, error_stepper_type());
-        for (size_t i = 0; i < pdist.size(); ++i) // TODO this may be improved
+//        std::cout << "???????" << std::endl;
+//        std::cout << "pdist = ";
+//        for (const auto& value : pdist)
+//        {
+//            std::cout << value << " ";
+//        }
+        for (size_t i = 1; i < pdist.size(); ++i)
         {
           boost::numeric::odeint::integrate_const(stepper,
             [this](const state_type& y, state_type& dydr, double r) {dpdx(y, dydr, r);},
-            x, t_start, pdist[i], dt);
+            x, pdist[i-1], pdist[i], dt);
           pdist_[i] = x;
         }
+//        std::cout << "???????" << std::endl;
+//        std::cout << "pdist_ = ";
+//        for (const auto& value : pdist_)
+//        {
+//            std::cout << value << " ";
+//        }
+        std::cout << std::endl;
+        std::cout << std::endl;
         pdist = pdist_;
         length = pdist[pdist.size()-1];
         get_path_tck(pdist);
         
         
-        std::cout << "pdist = ";
-        for (const auto& value : pdist)
-        {
-            std::cout << value << " ";
-        }
-        std::cout << std::endl;
+//        std::exit(0);
         
         std::cout << "x = 0.5 --->";
         for (const auto& value : vecp(0.5))
@@ -251,20 +274,6 @@ public:
     double fmin;
     optimizer.optimize(xmin, fmin);
     return xmin[0];
-  }
-  
-  template<typename T>
-  std::vector<T> cumulative_trapezoidal_integration(const std::vector<T>& values)
-  {
-      std::vector<T> integration_result;
-      integration_result.reserve(values.size());
-      T sum = T(0);
-      for (size_t i = 0; i < values.size() - 1; ++i)
-      {
-          sum += (values[i] + values[i + 1]) / 2.0;
-          integration_result.push_back(sum);
-      }
-      return integration_result;
   }
   
   void get_path_tck(std::vector<double> pdist){
@@ -869,25 +878,28 @@ public:
       LOG(warning)<<"Reached maxiter in fullTunneling. No convergence.";
     }
     
-//    std::vector<Eigen::VectorXd> F, dV;
-//    forces(F, dV);
-//    double F_max=0, dV_max=0;
-//    for (int ii=0; ii<dX.rows(); ++ii){
-//      F_max = std::max(F_max, F[ii].norm());
-//      dV_max = std::max(dV_max, dV[ii].norm());
-//    }
-//    double fRatio = F_max/dV_max;
-//
-//    SplinePath path(0, path_pts);
-//    PhaseTracer::Shooting tobj(path);
-//    auto profile = tobj.findProfile(path.get_path_length(),0.);
-//    auto action = tobj.calAction(profile);
-//
-//    FullTunneling ft;
-//    ft.fRatio = fRatio;
-//    ft.phi = phi;
-//    ft.profile1D = profile;
-//    ft.action = action;
+    
+    std::vector<Eigen::VectorXd> F, dV;
+    forces(F, dV);
+    double F_max=0, dV_max=0;
+    for (int ii=0; ii<dX.rows(); ++ii){
+      F_max = std::max(F_max, F[ii].norm());
+      dV_max = std::max(dV_max, dV[ii].norm());
+    }
+    double fRatio = F_max/dV_max;
+
+    SplinePath path(0, path_pts);
+    PhaseTracer::Shooting tobj(path);
+    auto profile = tobj.findProfile(path.get_path_length(),0.);
+    auto action = tobj.calAction(profile);
+
+    FullTunneling ft;
+    ft.fRatio = fRatio;
+    ft.phi = phi;
+    ft.profile1D = profile;
+    ft.action = action;
+    
+    LOG(debug)<< "Tunneling step converged. Action = " << action;
     
     return 0;
   }
