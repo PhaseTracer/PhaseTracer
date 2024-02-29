@@ -47,26 +47,26 @@ int main(int argc, char* argv[]) {
 
   LOGGER(debug);
   
-//  Example p(0.25,0.49,0.235);
+  Example p(0.25,0.49,0.235);
 //  Example p(0.25,0.4,0.1);
 //
-//  PhaseTracer::Shooting s(p);
+  PhaseTracer::Shooting s(p);
 //
-//  auto profile = s.findProfile(0,1);
+  auto profile = s.findProfile(0,1);
   
-//  std::ofstream file("test_data.txt");
-//  for (int jj=0; jj< profile.R.size(); jj++){
+  std::ofstream file("test_data.txt");
+  for (int jj=0; jj< profile.R.size(); jj++){
 //    std::cout << "R, phi, dphi = " << profile.R[jj] << ", " << profile.Phi(jj) << ", "  << profile.dPhi(jj) << std::endl;
-//    file << profile.R[jj] << ", " << profile.Phi(jj) << ", "  << profile.dPhi(jj) << std::endl;
-//  }
-//  file.close();
+    file << profile.R[jj] << ", " << profile.Phi(jj) << ", "  << profile.dPhi(jj) << std::endl;
+  }
+  file.close();
+
+  auto action = s.calAction(profile);
+  std::cout << "action = " << std::setprecision(8) << action << std::endl;
 //
-//  auto action = s.calAction(profile);
-//  std::cout << "action = " << action << std::endl;
+//  PhaseTracer::PathDeformation pd(0);
+//  auto a = pd.fullTunneling(0);
 //
-  PhaseTracer::PathDeformation pd(0);
-  auto a = pd.fullTunneling(0);
-  
   
   
 //  double E, alpha, scale;

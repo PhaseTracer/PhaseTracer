@@ -189,7 +189,7 @@ public:
 //        }
         for (size_t i = 1; i < pdist.size(); ++i)
         {
-          boost::numeric::odeint::integrate_const(stepper,
+          boost::numeric::odeint::integrate_adaptive(stepper,
             [this](const state_type& y, state_type& dydr, double r) {dpdx(y, dydr, r);},
             x, pdist[i-1], pdist[i], dt);
           pdist_[i] = x;
