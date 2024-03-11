@@ -86,19 +86,22 @@ public:
 //                      bool reeval_distances_ = true) :
 //    tf(tf_), pts(pts_), V_spline_samples(V_spline_samples_),
 //    extend_to_minima(extend_to_minima_), reeval_distances(reeval_distances_) {
-  explicit SplinePath(double a,
+  explicit SplinePath(EffectivePotential::Potential &potential,
                       std::vector<Eigen::VectorXd> pts_,
                       bool extend_to_minima_ = true,
                       bool reeval_distances_ = true) :
-    pts(pts_), npoints(pts_.size()),
+    P(potential), pts(pts_), npoints(pts_.size()),
     extend_to_minima(extend_to_minima_), reeval_distances(reeval_distances_) {
+      
+      nphi = P.get_n_scalars();
+      
       // 1. Find derivs
       std::vector<Eigen::VectorXd> dpts = _pathDeriv(pts);
 //      std::cout << "SplinePath : " << std::endl;
 //      for (const auto& v : dpts) {
 //          std::cout << "  " << v.transpose() << std::endl;
 //      }
-      
+      std::cout << "pts= " << pts << std::endl;
       // 2. Extend the path
       if (extend_to_minima){
         double xmin = find_loc_min_w_guess(pts[0], dpts[0]); // TODO: This may return global mim
@@ -114,7 +117,7 @@ public:
         new_pts.insert(new_pts.end(), pts.begin() + 1, pts.end());
         pts = new_pts;
         
-//        std::cout << "pts= " << pts << std::endl;
+        std::cout << "pts= " << pts << std::endl;
         xmin = find_loc_min_w_guess(pts[npoints-1], dpts[npoints-1]);
 //        std::cout << "xmin= " << xmin << std::endl;
         xmin = std::max(xmin, 0.0);
@@ -144,6 +147,13 @@ public:
           squared_sums.push_back(vec.norm());
       }
 //      std::cout << "squared_sums = " << squared_sums << std::endl;
+//      std::ofstream file("squared_sums.txt");
+//      for (const auto &value : squared_sums) {
+//          file << value << std::endl;
+//      }
+//      file.close();
+      
+      
       std::vector<double> pdist = cumulative_trapezoidal_integration(squared_sums);
       pdist.insert(pdist.begin(), 0.0);
 //      std::cout << "pdist = ";
@@ -181,12 +191,12 @@ public:
            boost::numeric::odeint::controlled_runge_kutta<error_stepper_type>;
         controlled_stepper_type stepper
            = make_controlled(0., pdist.back()*1E-8, error_stepper_type());
-//        std::cout << "???????" << std::endl;
-//        std::cout << "pdist = ";
-//        for (const auto& value : pdist)
-//        {
-//            std::cout << value << " ";
-//        }
+        std::cout << "???????" << std::endl;
+        std::cout << "pdist = ";
+        for (const auto& value : pdist)
+        {
+            std::cout << value << " ";
+        }
         for (size_t i = 1; i < pdist.size(); ++i)
         {
           boost::numeric::odeint::integrate_adaptive(stepper,
@@ -194,12 +204,12 @@ public:
             x, pdist[i-1], pdist[i], dt);
           pdist_[i] = x;
         }
-//        std::cout << "???????" << std::endl;
-//        std::cout << "pdist_ = ";
-//        for (const auto& value : pdist_)
-//        {
-//            std::cout << value << " ";
-//        }
+        std::cout << "???????" << std::endl;
+        std::cout << "pdist_ = ";
+        for (const auto& value : pdist_)
+        {
+            std::cout << value << " ";
+        }
         std::cout << std::endl;
         std::cout << std::endl;
         pdist = pdist_;
@@ -215,7 +225,7 @@ public:
             std::cout << value << " ";
         }
         std::cout << std::endl;
-        std::cout << "V(0.5) = " << p_V(vecp(0.5)) << std::endl;
+        std::cout << "V(0.5) = " << P.V(vecp(0.5),T) << std::endl;
       }
 
       // Make the potential spline.
@@ -227,7 +237,7 @@ public:
       {
         // extend 20% beyond
         p_arr[i] = -0.2*length + i * (1.4*length) / (V_spline_samples - 1);
-        v_arr[i] = p_V(vecp(p_arr[i]));
+        v_arr[i] = P.V(vecp(p_arr[i]),T);
       }
       alglib::spline1dbuildcubic(p_arr, v_arr, _V_tck);
     }
@@ -258,7 +268,7 @@ public:
   double find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0, double guess = 0.){
 
     std::shared_ptr<std::function<double(const std::vector<double>&)>> V_lin = std::make_shared<std::function<double(const std::vector<double>&)>>([this, p0, dp0](const std::vector<double>& x) {
-      return this->p_V(p0 + x[0] * dp0);
+      return this->P.V(p0 + x[0] * dp0, T);
     });
     
     auto V_lin_func = [](const std::vector<double>& x, std::vector<double>& grad, void* data) -> double {
@@ -325,32 +335,6 @@ public:
     return d2s;
   }
   
-  
-  double p_V(Eigen::VectorXd phi){
-    double x=phi[0];
-    double y=phi[1];
-    double r1 = x*x+c*y*y;
-    double r2 = c*pow(x-1.,2) + pow(y-1.,2);
-    double r3 = fx*(0.25*pow(x,4) - pow(x,3)/3.);
-    r3 += fy*(0.25*pow(y,4) - pow(y,3)/3.);
-    return r1*r2 + r3;
-  }
-  Eigen::VectorXd p_dV(Eigen::VectorXd phi){  // TODO this must be replcaed, // this is not used
-    double x=phi[0];
-    double y=phi[1];
-    double r1 = x*x+c*y*y;
-    double r2 = c*pow(x-1.,2) + pow(y-1.,2);
-    double dr1dx = 2*x;
-    double dr1dy = 2*c*y;
-    double dr2dx = 2*c*(x-1.);
-    double dr2dy = 2*(y-1.);
-    double dVdx = r1*dr2dx + dr1dx*r2 + fx*x*x*(x-1.);
-    double dVdy = r1*dr2dy + dr1dy*r2 + fy*y*y*(y-1.);
-    Eigen::VectorXd rval(2);
-    rval << dVdx, dVdy;
-    return rval;
-  }
-  
   double get_path_length(){return length;}
   
 private:
@@ -363,15 +347,16 @@ private:
   
   double length;
   
-  size_t nphi=2;
-  size_t npoints;
+
   
   std::vector<alglib::spline1dinterpolant> _path_tck;
   alglib::spline1dinterpolant _V_tck;
   
-  double c=5.;
-  double fx=0.;
-  double fy=2.;
+  EffectivePotential::Potential &P;
+  double T;
+  
+  size_t nphi=2;
+  size_t npoints;
   
 };
 
@@ -392,44 +377,11 @@ public:
 //    }
 //  TransitionFinder& tf;
   
-  explicit PathDeformation(double a)
-    {
-      double b=a;
-      // TODO
-    }
+  explicit PathDeformation(EffectivePotential::Potential &potential): P(potential){
+    nphi=P.get_n_scalars();;
+  }
   
   virtual ~PathDeformation() = default;
-  
-  
-  double c=5.;
-  double fx=0.;
-  double fy=2.;
-  
-  double p_V(Eigen::VectorXd phi){
-    double x=phi[0];
-    double y=phi[1];
-    double r1 = x*x+c*y*y;
-    double r2 = c*pow(x-1.,2) + pow(y-1.,2);
-    double r3 = fx*(0.25*pow(x,4) - pow(x,3)/3.);
-    r3 += fy*(0.25*pow(y,4) - pow(y,3)/3.);
-    return r1*r2 + r3;
-  }
-  
-  Eigen::VectorXd p_dV(Eigen::VectorXd phi){  // TODO this must be replcaed, // this is not used
-    double x=phi[0];
-    double y=phi[1];
-    double r1 = x*x+c*y*y;
-    double r2 = c*pow(x-1.,2) + pow(y-1.,2);
-    double dr1dx = 2*x;
-    double dr1dy = 2*c*y;
-    double dr2dx = 2*c*(x-1.);
-    double dr2dy = 2*(y-1.);
-    double dVdx = r1*dr2dx + dr1dx*r2 + fx*x*x*(x-1.);
-    double dVdy = r1*dr2dy + dr1dy*r2 + fy*y*y*(y-1.);
-    Eigen::VectorXd rval(2);
-    rval << dVdx, dVdy;
-    return rval;
-  }
   
   bool deformPath(std::vector<double> dphidr){
     num_steps=0;
@@ -496,7 +448,7 @@ public:
         
     double max_v2 = 0;
     for (int i = 0; i < npoints; ++i) {
-      max_v2 = std::max(max_v2, p_dV(phi[i]).norm());
+      max_v2 = std::max(max_v2, P.dV_dx(phi[i], T).norm());
     }
     v2min *=  max_v2 * totalLength/nb;
     
@@ -727,7 +679,7 @@ public:
       Eigen::VectorXd dphids = dphi / dphi_;
       Eigen::VectorXd d2phids2 = (d2phi - dphi*(dphi.dot(d2phi))/dphi_sq)/dphi_sq;
       
-      dV[ii] = p_dV(phi[ii]);
+      dV[ii] = P.dV_dx(phi[ii],T);
 //      std::cout << "phi[ii]:" << phi[ii] << std::endl;
 //      std::cout << "dV:" << dV[ii] << std::endl;
 //      Eigen::VectorXd xxx(2);
@@ -823,14 +775,14 @@ public:
     path_pts[0] << 1, 1;
     path_pts[1] << 0, 0;
     
-    int maxiter = 20;
+    int maxiter = 50;
     int V_spline_samples = 100;
     bool extend_to_minima = true;
     bool breakLoop = false;
     
     for (int num_iter = 1; num_iter <= maxiter; num_iter++) {
       LOG(debug) <<  "Starting tunneling step " << num_iter;
-      SplinePath path(0, path_pts);
+      SplinePath path(P, path_pts);
       
 //      std::cout << "path.V(0) = " << path.V(0) << std::endl;
 //      std::cout << "path.V(0.5) = " << path.V(0.5) << std::endl;
@@ -888,7 +840,7 @@ public:
     }
     double fRatio = F_max/dV_max;
 
-    SplinePath path(0, path_pts);
+    SplinePath path(P, path_pts);
     PhaseTracer::Shooting tobj(path);
     auto profile = tobj.findProfile(path.get_path_length(),0.);
     auto action = tobj.calAction(profile);
@@ -906,6 +858,8 @@ public:
   
 private:
 
+  EffectivePotential::Potential &P;
+  double T=0;
   double phi_absMin;
   double phi_metaMin;
   

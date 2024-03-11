@@ -299,7 +299,7 @@ int Shooting::integrateProfile(double r0, std::vector<double> y0_,
   LOG(debug) << "Integrated to ";
   LOG(debug) << "  r = " << *rf << ", phi = " << (*yf)[0] << ", dphi/dr = " << (*yf)[1];
   LOG(debug) << "Convergence_type = " << ( (convergence_type ==0) ? "converged" : ( (convergence_type == 1) ? "overshoot":"undershoot") )  << std::endl;
-  
+//  std::exit(0);
   return convergence_type;
 }
 
