@@ -218,12 +218,7 @@ public:
         
         
 //        std::exit(0);
-        
-        std::cout << "x = 0.5 --->";
-        for (const auto& value : vecp(0.5))
-        {
-            std::cout << value << " ";
-        }
+
         std::cout << std::endl;
         std::cout << "V(0.5) = " << P.V(vecp(0.5),T) << std::endl;
       }
