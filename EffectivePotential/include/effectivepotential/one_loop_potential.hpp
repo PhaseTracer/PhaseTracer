@@ -36,6 +36,9 @@ enum class DaisyMethod { None, ArnoldEspinosa, Parwani };
 class OneLoopPotential : public Potential {
  public:
   virtual double V0(Eigen::VectorXd phi) const = 0;
+  /** Functions for squared field dependent masses, depending on:
+      a vector of fields and for scalars a xi gauge parameter.  Note the 
+      latter will be unused for potentials implemented in a fixed gauge. */ 
   virtual std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const;
   virtual std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const { return {}; }
   virtual std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const { return {}; }
