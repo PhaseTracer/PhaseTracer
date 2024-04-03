@@ -197,14 +197,14 @@ void Shooting::initialConditions(double delta_phi0, double rmin, double delta_ph
     return fabs(*phi_r0 - phi_absMin) - fabs(delta_phi_cutoff);
   };
   if ( deltaPhiDiff(rmin) > 0) { // phi_rmin - phi_absMin > delta_phi_cutoff
-    LOG(debug) << "Initial point for phi(r=0) = " << phi0 << " : ";
-    LOG(debug) << "  r_0 =  r_min = " << *r0 << ", phi = " << *phi_r0 << ", dphi = " << *dphi_r0;
+    LOG(trace) << "Initial point for phi(r=0) = " << phi0 << " : ";
+    LOG(trace) << "  r_0 =  r_min = " << *r0 << ", phi = " << *phi_r0 << ", dphi = " << *dphi_r0;
     return;
   }
   if ( (*dphi_r0)*delta_phi0 < 0 ) { // wrong direction
-    LOG(debug) << "Initial point for phi(r=0) = " << phi0 << " : ";
-    LOG(debug) << "  r_0 = " << *r0 << ", phi = " << *phi_r0 << ", dphi = " << *dphi_r0;
-    LOG(debug) << "  Wrong direction!";
+    LOG(trace) << "Initial point for phi(r=0) = " << phi0 << " : ";
+    LOG(trace) << "  r_0 = " << *r0 << ", phi = " << *phi_r0 << ", dphi = " << *dphi_r0;
+    LOG(trace) << "  Wrong direction!";
     return;
   }
 
@@ -221,8 +221,8 @@ void Shooting::initialConditions(double delta_phi0, double rmin, double delta_ph
   const auto result = boost::math::tools::bisect(deltaPhiDiff, rlast, r, boost::math::tools::eps_tolerance<double>(), max_iter);
   *r0 = (result.first + result.second) * 0.5;
   exactSolution(*r0, phi0, dV_, d2V_, phi_r0, dphi_r0);
-  LOG(debug) << "Initial point for phi(r=0) = " << phi0 << " : ";
-  LOG(debug) << "  r_0 = " << *r0 << ", phi = " << *phi_r0 << ", dphi = " << *dphi_r0;
+  LOG(trace) << "Initial point for phi(r=0) = " << phi0 << " : ";
+  LOG(trace) << "  r_0 = " << *r0 << ", phi = " << *phi_r0 << ", dphi = " << *dphi_r0;
   return;
 }
 
@@ -255,7 +255,7 @@ int Shooting::integrateProfile(double r0, std::vector<double> y0_,
     Eigen::Vector2d y1 = y0 + dy;
     Eigen::Vector2d dydr1 = dY(y1,r1);
     
-//    LOG(debug) << "r = " << r1 << ", phi = " << y1[0] << ", dphi/dr = " << y1[1];
+//    LOG(trace) << "r = " << r1 << ", phi = " << y1[0] << ", dphi/dr = " << y1[1];
     if (r1 > rmax){
       throw std::runtime_error("r > rmax");
     } else if (dr < drmin){
@@ -296,9 +296,9 @@ int Shooting::integrateProfile(double r0, std::vector<double> y0_,
     convergence_type = 0;
   }
 
-  LOG(debug) << "Integrated to ";
-  LOG(debug) << "  r = " << *rf << ", phi = " << (*yf)[0] << ", dphi/dr = " << (*yf)[1];
-  LOG(debug) << "Convergence_type = " << ( (convergence_type ==0) ? "converged" : ( (convergence_type == 1) ? "overshoot":"undershoot") )  << std::endl;
+  LOG(trace) << "Integrated to ";
+  LOG(trace) << "  r = " << *rf << ", phi = " << (*yf)[0] << ", dphi/dr = " << (*yf)[1];
+  LOG(trace) << "Convergence_type = " << ( (convergence_type ==0) ? "converged" : ( (convergence_type == 1) ? "overshoot":"undershoot") )  << std::endl;
 //  std::exit(0);
   return convergence_type;
 }
@@ -568,7 +568,7 @@ void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double>* p,std::vector<
   }
   for (size_t jj=0; jj<filtered_phi.size(); jj++){
     phi_arr[ii] = filtered_phi[jj];
-    dphi_arr[ii] = filtered_phi[jj];
+    dphi_arr[ii] = filtered_dphi[jj];
     ii++;
   }
   if (phi_metaMin>filtered_phi[filtered_phi.size()-1]){

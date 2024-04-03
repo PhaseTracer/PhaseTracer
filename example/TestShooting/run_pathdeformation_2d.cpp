@@ -60,7 +60,13 @@ int main(int argc, char* argv[]) {
   Example p(5,0.,2.);
   
   PhaseTracer::PathDeformation pd(p);
-  auto a = pd.fullTunneling(0);
+  
+  std::vector<Eigen::VectorXd> path_pts;
+  path_pts.push_back(Eigen::VectorXd(2));
+  path_pts.push_back(Eigen::VectorXd(2));
+  path_pts[0] << 1, 1;
+  path_pts[1] << 0, 0;
+  auto a = pd.fullTunneling(path_pts);
 
   
 

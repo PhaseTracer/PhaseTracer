@@ -99,15 +99,6 @@ public:
     dydr[1] = ps.dV(y[0]) - alpha * y[1] /r ;
     return dydr;
   }
-//  void equationOfMotion(const std::vector<double>& y, std::vector<double>& dydr, const double r){
-//    dydr[0] = y[1];
-//    dydr[1] = ps.dV(y[0]) - alpha * y[1] /r ;
-//  }
-//  std::vector<double> dY(const std::vector<double> y, const double r){
-//    std::vector<double> dydr(2);
-//    equationOfMotion(y,dydr,r);
-//    return dydr;
-//  }
   /* Integrate the bubble wall equation */
   int integrateProfile(double r0, std::vector<double> y0, double* rf, std::vector<double>* yf,
       double dr0, std::vector<double> epsabs, std::vector<double> epsfrac, double drmin, double rmax);
