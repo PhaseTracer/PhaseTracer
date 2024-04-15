@@ -28,25 +28,11 @@
 #include <nlopt.hpp>
 
 #include "logger.hpp"
-#include "transition_finder.hpp"
+#include "shooting.hpp"
 
 namespace PhaseTracer {
 
-/* Calculates dy/dx to fourth-order using finite differences. */
-std::vector<Eigen::VectorXd> deriv14_const_dx(const std::vector<Eigen::VectorXd>& y, double dx = 1.) {
-  const int ny = y.size();
-  const double factor = 1.0 / (12.0*dx);
-  std::vector<Eigen::VectorXd> dy(ny, Eigen::VectorXd::Zero(y[0].size()));
-  for (int i = 2; i < ny - 2; ++i) {
-      dy[i] = factor * (-y[i + 2] + 8.0 * y[i + 1] - 8.0 * y[i - 1] + y[i - 2]);
-  }
-  
-  dy[0] = factor * (-25*y[0] + 48*y[1] - 36*y[2] + 16*y[3] - 3*y[4]);
-  dy[1] = factor * (-3 *y[0] - 10*y[1] + 18*y[2] - 6 *y[3] +   y[4]);
-  dy[ny-2] = factor * (3*y[ny-1] + 10*y[ny-2] - 18*y[ny-3] + 6*y[ny-4] - y[ny-5]);
-  dy[ny-1] = factor * (25*y[ny-1] - 48*y[ny-2] + 36*y[ny-3] - 16*y[ny-4] + 3*y[ny-5]);
-  return dy;
-}
+
 
 template<typename T>
 std::vector<T> cumulative_trapezoidal_integration(const std::vector<T>& values)
@@ -123,20 +109,7 @@ public:
       std::vector<double> pdist = cumulative_trapezoidal_integration(squared_sums);
       pdist.insert(pdist.begin(), 0.0);
       length = pdist[pdist.size()-1];
-      
       get_path_tck(pdist);
-//      alglib::real_1d_array x_arr;
-//      alglib::real_1d_array y_arr;
-//      x_arr.setlength(np);
-//      y_arr.setlength(np);
-//      _path_tck.clear();
-//      for (size_t i = 0; i < np; i++) x_arr[i] = pdist[i];
-//      for (size_t j = 0; j < nphi; j++){
-//        alglib::spline1dinterpolant spline;
-//        for (size_t i = 0; i < np; i++) y_arr[i] = pts[i](j);
-//        alglib::spline1dbuildcubic(x_arr, y_arr, spline);
-//        _path_tck.push_back(spline);
-//      }
       
       // 4. Re-evaluate the distance to each point.
       if (reeval_distances){
@@ -274,6 +247,23 @@ public:
   
 private:
   
+  // TODO move to cpp
+  /* Calculates dy/dx to fourth-order using finite differences. */
+  std::vector<Eigen::VectorXd> deriv14_const_dx(const std::vector<Eigen::VectorXd>& y, double dx = 1.) {
+    const int ny = y.size();
+    const double factor = 1.0 / (12.0*dx);
+    std::vector<Eigen::VectorXd> dy(ny, Eigen::VectorXd::Zero(y[0].size()));
+    for (int i = 2; i < ny - 2; ++i) {
+        dy[i] = factor * (-y[i + 2] + 8.0 * y[i + 1] - 8.0 * y[i - 1] + y[i - 2]);
+    }
+    
+    dy[0] = factor * (-25*y[0] + 48*y[1] - 36*y[2] + 16*y[3] - 3*y[4]);
+    dy[1] = factor * (-3 *y[0] - 10*y[1] + 18*y[2] - 6 *y[3] +   y[4]);
+    dy[ny-2] = factor * (3*y[ny-1] + 10*y[ny-2] - 18*y[ny-3] + 6*y[ny-4] - y[ny-5]);
+    dy[ny-1] = factor * (25*y[ny-1] - 48*y[ny-2] + 36*y[ny-3] - 16*y[ny-4] + 3*y[ny-5]);
+    return dy;
+  }
+  
 //  TransitionFinder& tf;
   std::vector<Eigen::VectorXd> pts;
   int V_spline_samples = 140; // larger than 5
@@ -351,17 +341,10 @@ public:
       t0.push_back(1.0);
     }
     
-//    for (int i = 0; i < t0.size(); ++i) {
-//         std::cout << "t0[" << i << "]: " << t0[i] << std::endl;
-//     }
-//    std::exit(0);
     auto result = Nbspld2(t0, t_node, kb);
     X_node = std::get<0>(result);
     dX_node = std::get<1>(result);
     d2X_node = std::get<2>(result);
-    
-//    std::cout << "d2X: " << d2X_node << std::endl;
-//    std::exit(0);
     
     Eigen::VectorXd phi0 = phi_node[0];
     Eigen::VectorXd phi1 = phi_node.back();
@@ -371,13 +354,9 @@ public:
       for (int i = 0; i < num_nodes; ++i) {
         Eigen::VectorXd phii = phi_node[i];
         double phi_lin = phi0[j] + (phi1[j] - phi0[j])* t_node[i];
-//        std::cout << " phi_lin = " << phi_lin << std::endl;
-//        std::cout << " phii = " << phii[j] << std::endl;
         phi_delta[i] = phii[j] - phi_lin;
       }
       beta_node.push_back(X_node.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(phi_delta));
-//      std::cout << " phi_delta = " << phi_delta << std::endl;
-//      std::cout << " beta_node[j] = " << beta_node[j] << std::endl;
     }
         
     double max_v2 = 0;
@@ -386,16 +365,10 @@ public:
     }
     v2min *=  max_v2 * totalLength_node/nb;
     
-//    std::cout << " v2min = " << v2min << std::endl;
-    
-    // TODO dphidr is not same, so does v2
     v2_node.clear();
     for (int i = 0; i < num_nodes; ++i) {
       v2_node.push_back(std::max(v2min, dphidr[i]*dphidr[i]));
-//      std::cout << " dphidr[i] = " << dphidr[i] << std::endl;
-//      std::cout << " v2_node[j] = " << v2_node[i] << std::endl;
     }
-//    std::exit(0);
     
     // Deform the path
     double minfRatio = std::numeric_limits<double>::infinity();
@@ -412,8 +385,6 @@ public:
       num_steps++;
       step(stepsize, step_reversed, fRatio);
       // TODO add callback
-//      std::cout << " fRatio = " << fRatio << std::endl;
-//      std::string age; std::cin >> age;
       
       if (fRatio < fRatioConv || (num_steps == 1 && fRatio < converge_0*fRatioConv)) {
         LOG(debug) << "Path deformation converged. "
@@ -456,22 +427,16 @@ public:
     for (int ii=0; ii<dX_node.rows(); ++ii){
       F_max = std::max(F_max, F[ii].norm());
       dV_max = std::max(dV_max, dV[ii].norm());
-//      std::cout << "F[ii]:" << F[ii] << std::endl;
     }
     double fRatio1 = F_max/dV_max;
     for (int ii=0; ii<dX_node.rows(); ++ii) F[ii] *= totalLength_node/dV_max;
-    
-//    std::cout << "F_max:" << F_max << std::endl;
-//    std::cout << "dV_max:" << dV_max << std::endl;
-    
+      
     // see how big the stepsize should be
     double stepsize = lastStep;
     step_reversed = false;
     std::vector<double> FdotFlast(dX_node.rows());
     if (reverseCheck<1 and (not F_prev.empty())){
       for (int ii=0; ii<dX_node.rows(); ++ii) FdotFlast[ii] = F[ii].dot(F_prev[ii]);
-//      for (int ii=0; ii<dX_node.rows(); ++ii) std::cout << "FdotFlast[ii]:" << FdotFlast[ii] << std::endl;
-//      std::exit(0);
       int numNegative = std::count_if(FdotFlast.begin(), FdotFlast.end(),
               [](double val) { return val < 0; });
       if (numNegative > num_nodes * reverseCheck) {
@@ -479,7 +444,7 @@ public:
           step_reversed = true;
           _phi = phi_prev;
           F = F_prev;
-          LOG(debug) << "step reversed";
+          LOG(trace) << "step reversed";
           stepsize = lastStep / stepDecrease;
         }
       } else {
@@ -507,8 +472,6 @@ public:
     for (int ii=0; ii<dX_node.rows(); ++ii){
       phi_lin[ii] = phi0 + delta_phi*t_node[ii];
       _phi[ii] -= phi_lin[ii];
-//      std::cout << "_phi:" << _phi[ii] << std::endl;
-//      std::cout << "phi:" << phi[ii] << std::endl;
     }
     
 //    std::cout << "betas:" << beta << std::endl;
@@ -518,10 +481,7 @@ public:
         ii_phi(jj) = _phi[jj](ii);
       }
       beta_node[ii] = X_node.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(ii_phi);
-//      std::cout << "ii_phi:" << ii_phi << std::endl;
-//      std::cout << " ---beta:" << beta_node[ii] << std::endl;
     }
-//    std::cout << "betas:" << beta_node << std::endl;
     
     double fRatio2 = 0.;
     for (int ii=0; ii<dX_node.rows(); ++ii){
@@ -534,19 +494,13 @@ public:
       }
       _phi[ii] = ii_phi + phi_lin[ii];
       
-//      std::cout << "phi:" << phi[ii] << std::endl;
-//      std::cout << "_phi:" << _phi[ii] << std::endl;
-      
       Eigen::VectorXd Ffit = (_phi[ii] - phi_prev[ii])/stepsize;
       fRatio2 = std::max(fRatio2, Ffit.norm()/totalLength_node);
     }
-//    std::exit(0);
-//    std::cout << "phi:" << phi[0] << std::endl;
-//    std::cout << "_phi:" << _phi[0] << std::endl;
     phi_node = _phi;
     lastStep = stepsize;
     
-    LOG(debug) << "step: " << num_steps
+    LOG(trace) << "step: " << num_steps
                << "; stepsize: " << stepsize
                << "; fRatio1: "  << fRatio1
                << "; fRatio2: "  << fRatio2;
@@ -573,21 +527,12 @@ public:
         dphi[jj] += phi_node.back()[jj] - phi_node[1][jj]; // TODO Note this is phi[1], not phi[0]
       }
       
-//      std::cout << "dphi:" << dphi << std::endl;
-//      std::cout << "d2phi:" << d2phi << std::endl;
-      
       double dphi_ = dphi.norm();
       double dphi_sq = dphi_*dphi_;
       Eigen::VectorXd dphids = dphi / dphi_;
       Eigen::VectorXd d2phids2 = (d2phi - dphi*(dphi.dot(d2phi))/dphi_sq)/dphi_sq;
       
       dV[ii] = P.dV_dx(phi_node[ii],T);
-//      std::cout << "phi[ii]:" << phi[ii] << std::endl;
-//      std::cout << "dV:" << dV[ii] << std::endl;
-//      Eigen::VectorXd xxx(2);
-//      xxx(0)=  0.00134591;
-//      xxx(1)=  0.00132431;
-//      std::cout << "dV():" << p_dV(xxx) << std::endl;
       Eigen::VectorXd dV_perp = dV[ii] - dV[ii].dot(dphids) * dphids;
       F_norm[ii] = d2phids2 * v2_node[ii] - dV_perp;
     }
@@ -619,9 +564,6 @@ public:
           N(i, j) = 1.0 * ((x[i] > t[j]) && (x[i] <= t[j + 1]));
         }
       }
-//    std::cout << "Matrix N:" << std::endl << N << std::endl;
-//      std::cout << "Matrix N.rows:" << N.rows() << std::endl;
-//    std::cout << "Matrix N.cols:" << N.cols() << std::endl;
     
       for (int i = 1; i <= kmax; ++i) {
         Eigen::VectorXd dt(t.size() - i);
@@ -651,26 +593,12 @@ public:
     dN.conservativeResize(dN.rows(), dN.cols() - 3);
     d2N.conservativeResize(d2N.rows(), d2N.cols() - 3);
     
-//    std::cout << "Matrix d2N:" << std::endl;
-//    for (int ii = 0; ii < 3; ++ii) {
-//        for (int j = 0; j < N.cols(); ++j) {
-//            std::cout << d2N(ii, j) << " ";
-//        }
-//        std::cout << std::endl;
-//    }
-//    for (int ii = N.rows() - 3; ii < N.rows(); ++ii) {
-//        for (int j = 0; j < N.cols(); ++j) {
-//            std::cout << d2N(ii, j) << " ";
-//        }
-//        std::cout << std::endl;
-//    }
-    
     return {N, dN, d2N};
   }
   
   
   /* Calculate the instanton solution in multiple field dimension */
-  double fullTunneling(std::vector<Eigen::VectorXd> path_pts){
+  double fullTunneling(std::vector<Eigen::VectorXd> path_pts) {
     FullTunneling ft;
     std::vector<double> phi_1d, dphi_1d;
     for (int num_iter = 1; num_iter <= path_maxiter; num_iter++) {
@@ -682,8 +610,8 @@ public:
       tobj.evenlySpacedPhi(profile, &phi_1d, &dphi_1d, num_nodes, false);
       dphi_1d[0]=0.;
       dphi_1d.back()=0.;
-//      auto action = tobj.calAction(profile);
-//      std::cout << "action = " << std::setprecision(10) <<  action << std::endl;
+      auto action = tobj.calAction(profile);
+      std::cout << "action = " << std::setprecision(10) <<  action << std::endl;
       
       phi_node.resize(num_nodes);
       for (size_t ii=0; ii<num_nodes; ii++ ){

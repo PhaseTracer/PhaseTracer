@@ -46,16 +46,16 @@ namespace PhaseTracer {
 
 class V_BubbleProfiler : public BubbleProfiler::Potential {
 public:
-  explicit V_BubbleProfiler(PhaseFinder& pf_) :
-    pf(pf_),
-    n_fields(pf_.P.get_n_scalars()) {
+  explicit V_BubbleProfiler(EffectivePotential::Potential &p_) :
+    P(p_),
+    n_fields(P.get_n_scalars()) {
     origin = Eigen::VectorXd::Zero(n_fields);
     origin_translation = origin;
     basis_transform = Eigen::MatrixXd::Identity(n_fields, n_fields);
   }
   virtual ~V_BubbleProfiler() = default;
   
-  PhaseFinder pf;
+  EffectivePotential::Potential &P;
   
   virtual V_BubbleProfiler * clone() const override {
      return new V_BubbleProfiler(*this);
@@ -64,23 +64,23 @@ public:
   double operator()(const Eigen::VectorXd& coords) const override{
     Eigen::VectorXd transformed_coords =
        (basis_transform * coords) + origin_translation;
-    return pf.P.V(transformed_coords,T);
+    return P.V(transformed_coords,T);
   }
   
   double partial(const Eigen::VectorXd& coords, int i) const override{
     Eigen::VectorXd transformed_coords =
        (basis_transform * coords) + origin_translation;
-    auto const dV = pf.P.dV_dx(transformed_coords,T);
+    auto const dV = P.dV_dx(transformed_coords,T);
     return dV.coeff(i);
   }
   double partial(const Eigen::VectorXd& coords, int i, int j) const override{
     Eigen::VectorXd transformed_coords =
        (basis_transform * coords) + origin_translation;
-    auto const d2V =  pf.P.d2V_dx2(transformed_coords,T);
+    auto const d2V =  P.d2V_dx2(transformed_coords,T);
     return d2V.coeff(i, j);
   }
   std::size_t get_number_of_fields() const override{
-    return pf.P.get_n_scalars();
+    return P.get_n_scalars();
   }
 
   void translate_origin(const Eigen::VectorXd& translation) override{
@@ -109,7 +109,7 @@ public:
      const auto v = [this,TT](const Eigen::VectorXd& coords) {
       Eigen::VectorXd transformed_coords =
           (basis_transform * coords) + origin_translation;
-      return pf.P.V(transformed_coords,TT);
+      return P.V(transformed_coords,TT);
      };
 
      BubbleProfiler::NLopt_optimizer optimizer(v, n_fields);

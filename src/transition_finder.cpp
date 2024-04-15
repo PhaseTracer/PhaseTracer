@@ -79,13 +79,13 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
         auto true_vacuum_TN = true_vacuum;
         auto false_vacuum_TN = false_vacuum;
         double action_TN = std::numeric_limits<double>::quiet_NaN();
-        if (false){ // Need BubbleProfiler
+        if (true){ // Need BubbleProfiler
           TN = get_Tnuc(phase1, phase2, i_unique, TC, T1);
           auto vacua = get_vacua_at_T(phase1, phase2, TN, i_unique);
           true_vacuum_TN = vacua[1];
           false_vacuum_TN = vacua[0];
 //          false_vacuum_TN(0) = -1E-4;
-          action_TN = get_action(true_vacuum_TN,false_vacuum_TN,TN);
+          action_TN = ac.get_action(true_vacuum_TN,false_vacuum_TN,TN);
         }
         unique_transitions.push_back({SUCCESS, TC, phase1, phase2,
           true_vacuum, false_vacuum, gamma_, changed_, delta_potential,
@@ -188,75 +188,8 @@ std::vector<Eigen::VectorXd> TransitionFinder::get_vacua_at_T(Phase phase1, Phas
 
 double TransitionFinder::get_action(Phase phase1, Phase phase2, double T, size_t i_unique) const{
   const auto vacua = get_vacua_at_T(phase1, phase2, T, i_unique);
-  return get_action(vacua[0], vacua[1], T);
+  return ac.get_action(vacua[0], vacua[1], T);
 }
-
-double TransitionFinder::get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
-    double action=std::numeric_limits<double>::quiet_NaN();
-    V_BubbleProfiler V_BP_=V_BP; // perturbative_profiler only accept non-const potential
-    V_BP_.set_T(T); // This is necessary!!
-    
-    Eigen::VectorXd true_vacuum = vacuum_1;
-    Eigen::VectorXd false_vacuum = vacuum_2;
-    if ( pf.P.V(true_vacuum,T) > pf.P.V(false_vacuum,T) ) true_vacuum.swap(false_vacuum);
-    
-    size_t n_dims = 4;
-    
-    bool use_perturbative = false;
-    if (n_fields == 1  && !use_perturbative) {
-
-      double false_min = false_vacuum[0];
-      double true_min = true_vacuum[0];
-      auto barrier_ = V_BP_.find_one_dimensional_barrier( true_vacuum, false_vacuum, T);
-      double barrier = barrier_[0];
-
-      LOG(debug) << "Calculate action at T=" << T << ", with false, true, barrier = " << false_min << ", " << true_min << ", " << barrier;
-
-      try{
-        BubbleProfiler::Shooting one_dim;
-        one_dim.solve(V_BP_, false_min,
-                      true_min,barrier, n_dims, BubbleProfiler::Shooting::Solver_options::Compute_action);
-        action = one_dim.get_euclidean_action();
-      }catch (const std::exception& e) {
-        LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: "   << e.what() << std::endl;
-      }
-    } else {
-      LOG(debug) << "Calculate action at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
-      BubbleProfiler::RK4_perturbative_profiler profiler;
-      
-//      profiler.set_domain_start(input.domain_start);
-//      profiler.set_domain_end(input.domain_end);
-      profiler.set_initial_step_size(1.e-2);
-      profiler.set_interpolation_points_fraction(1.0);
-      
-      
-      profiler.set_false_vacuum_loc(false_vacuum);
-      profiler.set_true_vacuum_loc(true_vacuum);
-      n_dims = 3;
-      profiler.set_number_of_dimensions(n_dims);
-      auto root_finder = std::make_shared<BubbleProfiler::GSL_root_finder<Eigen::Dynamic> >();
-      profiler.set_root_finder(root_finder);
-      std::shared_ptr<BubbleProfiler::Profile_guesser> guesser;
-      guesser = std::make_shared<BubbleProfiler::Kink_profile_guesser>();
-      profiler.set_initial_guesser(guesser);
-      auto convergence_tester = std::make_shared<BubbleProfiler::Relative_convergence_tester>(
-                                1.e-3, 1.e-3);
-      profiler.set_convergence_tester(convergence_tester);
-      
-      try{
-        profiler.calculate_bubble_profile(V_BP_);
-        action = profiler.get_euclidean_action();
-      }catch (const std::exception& e) {
-        LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what() << std::endl;
-      }
-    }
-    
-    LOG(debug) << " S = " << action << std::endl;
-    
-    return action;
-    
-  }
-
 
 double TransitionFinder::gamma(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, const double TC) const {
   const int b = true_vacuum.size() + 1;

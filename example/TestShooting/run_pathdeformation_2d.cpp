@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
 //  LOGGER(fatal);
   LOGGER(debug);
   
-  Example p(5,0.,2.);
+  Example p(5,0.,10);
   
   PhaseTracer::PathDeformation pd(p);
   
