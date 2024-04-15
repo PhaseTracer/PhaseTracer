@@ -30,9 +30,10 @@
 #include <boost/math/tools/minima.hpp>
 #include <gsl/gsl_sf_bessel.h>
 
-
+#include "potential.hpp"
+#include "property.hpp"
 #include "logger.hpp"
-#include "transition_finder.hpp"
+
 
 namespace PhaseTracer {
 

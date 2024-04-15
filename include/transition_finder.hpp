@@ -27,7 +27,7 @@
 #include "phase_finder.hpp"
 #include "overload.hpp"
 #include "potential.hpp"
-#include "bubble_profiler.hpp"
+#include "action_calculator.hpp"
 
 namespace PhaseTracer {
 
@@ -82,9 +82,8 @@ struct Transition {
 class TransitionFinder {
  public:
   explicit TransitionFinder(PhaseFinder& pf_) :
-    pf(pf_),
-    V_BP(pf_),
-    n_fields(pf_.P.get_n_scalars()){
+    pf(pf_), ac(pf_.P)
+    {
   }
   virtual ~TransitionFinder() = default;
 
@@ -97,7 +96,6 @@ class TransitionFinder {
   std::vector<Eigen::VectorXd> get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique=0)const;
   
   double get_action(Phase phase1, Phase phase2, double T, size_t i_unique=0) const;
-  double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const;
   
   double get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const;
   
@@ -110,10 +108,9 @@ class TransitionFinder {
  private:
   /** Object with phases and potential */
   PhaseFinder &pf;
-    
-  V_BubbleProfiler V_BP;
   
-  size_t n_fields{0};
+  ActionCalculator ac;
+  
   
   /** Whether already calculated all transitions */
   bool calculated_transitions = false;
