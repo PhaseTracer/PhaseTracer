@@ -600,6 +600,9 @@ public:
   /* Calculate the instanton solution in multiple field dimension */
   double fullTunneling(std::vector<Eigen::VectorXd> path_pts) {
     FullTunneling ft;
+    
+    
+    
     std::vector<double> phi_1d, dphi_1d;
     for (int num_iter = 1; num_iter <= path_maxiter; num_iter++) {
       LOG(debug) <<  "Starting tunneling step " << num_iter;
@@ -610,8 +613,8 @@ public:
       tobj.evenlySpacedPhi(profile, &phi_1d, &dphi_1d, num_nodes, false);
       dphi_1d[0]=0.;
       dphi_1d.back()=0.;
-      auto action = tobj.calAction(profile);
-      std::cout << "action = " << std::setprecision(10) <<  action << std::endl;
+      action_temp = tobj.calAction(profile);
+//      std::cout << "action = " << std::setprecision(10) <<  action_temp << std::endl;
       
       phi_node.resize(num_nodes);
       for (size_t ii=0; ii<num_nodes; ii++ ){
@@ -655,7 +658,7 @@ public:
     PhaseTracer::Shooting tobj(path);
     auto profile = tobj.findProfile(path.get_path_length(),0.);
     auto action = tobj.calAction(profile);
-
+    action_temp = action;
     
     ft.fRatio = fRatio;
     ft.phi = phi_node;
@@ -668,6 +671,11 @@ public:
     
     return 0;
   }
+  
+  double get_action(){
+    return action_temp;
+  }
+  
   
 private:
 
@@ -723,11 +731,11 @@ private:
   bool fix_end=false;
   std::vector<Eigen::VectorXd> phi_prev;
   std::vector<Eigen::VectorXd> F_prev;
+  double action_temp=std::numeric_limits<double>::quiet_NaN();
   
   std::vector<std::vector<Eigen::VectorXd>> phi_list;
   std::vector<std::vector<Eigen::VectorXd>> F_list;
 
-  
 };
 
 }  // namespace PhaseTracer

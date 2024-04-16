@@ -69,7 +69,7 @@ public:
                         true_min,barrier, num_dims, BubbleProfiler::Shooting::Solver_options::Compute_action);
           action_BP = one_dim.get_euclidean_action();
         }catch (const std::exception& e) {
-          LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: "   << e.what() << std::endl;
+          LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: "   << e.what();
         }
       } else {
         LOG(debug) << "Calculate action(BP) at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
@@ -97,30 +97,41 @@ public:
           profiler.calculate_bubble_profile(V_BP);
           action_BP = profiler.get_euclidean_action();
         }catch (const std::exception& e) {
-          LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what() << std::endl;
+          LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what();
         }
       }
-      LOG(debug) << " S(BP) = " << action_BP << std::endl;
+      LOG(debug) << " S(BP) = " << action_BP;
 
     }
     double action_PD=std::numeric_limits<double>::quiet_NaN();
     if (use_PathDeformation){
       LOG(debug) << "Calculate action(PD) at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
-      try{
+      if (potential.get_n_scalars() == 1){
+        OneDimPotentialForShooting ps(potential);
+        Shooting st(ps);
+        try{
+          auto profile = st.findProfile(false_vacuum[0],true_vacuum[0]);
+          action_PD = st.calAction(profile);
+        }catch (const std::exception& e) {
+          LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what();
+        }
+      } else{
+        PathDeformation pd(potential);
         std::vector<Eigen::VectorXd> path_pts;
         path_pts.push_back(true_vacuum);
         path_pts.push_back(false_vacuum);
-        PathDeformation pd(potential);
-        auto a_pd = pd.fullTunneling(path_pts);
-      }catch (const std::exception& e) {
-        LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what() << std::endl;
+        try{
+          auto a_pd = pd.fullTunneling(path_pts);
+        }catch (const std::exception& e) {
+          LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what();
+        }
+        action_PD = pd.get_action();
       }
       
-      action_PD = 1.;
     }
     
     
-    LOG(debug) << " S(PD) = " << action_PD << std::endl;
+    LOG(debug) << " S(PD) = " << action_PD;
 
     return action_BP;
 

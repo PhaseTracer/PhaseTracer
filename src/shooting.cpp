@@ -106,7 +106,7 @@ void Shooting::findBarrierLocation(){
     phi0 = 0.5 * (phi1 + phi2);
   }
   phi_bar = phi0;
-  LOG(debug) << "phi_bar = "<< phi_bar;
+  LOG(trace) << "phi_bar = "<< phi_bar;
   return;
 }
 
@@ -125,7 +125,7 @@ void Shooting::findRScale() {
             "Minimization is placing the top of the potential barrier outside of the interval defined by phi_bar and phi_metaMin. Assume that the barrier does not exist.");
     }
     
-    LOG(debug) << "phi_bar_top = "<< phi_bar_top;
+    LOG(trace) << "phi_bar_top = "<< phi_bar_top;
   
     double Vtop = ps.V(phi_bar_top) - ps.V(phi_metaMin);
     double xtop = phi_bar_top - phi_metaMin;
@@ -135,7 +135,7 @@ void Shooting::findRScale() {
     }
     
     rscale = std::abs(xtop) / std::sqrt(std::abs(6 * Vtop));
-    LOG(debug) << "rscale = "<< rscale;
+    LOG(trace) << "rscale = "<< rscale;
     return;
 }
 
@@ -375,8 +375,8 @@ Profile1D Shooting::integrateAndSaveProfile(Eigen::VectorXd R, std::vector<doubl
 Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, int max_interior_pts){
   phi_absMin = absMin;
   phi_metaMin = metaMin;
-  LOG(debug) << "phi_absMin = " << phi_absMin;
-  LOG(debug) << "phi_metaMin = " << phi_metaMin;
+  LOG(trace) << "phi_absMin = " << phi_absMin;
+  LOG(trace) << "phi_metaMin = " << phi_metaMin;
   findBarrierLocation();
   findRScale();
   
@@ -434,7 +434,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
     }
     
     if ((xmax-xmin) < xtol){
-      LOG(debug) << "Reached xtol" << std::endl;
+      LOG(debug) << "Reached xtol";
       break;
     }
   

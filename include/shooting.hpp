@@ -45,6 +45,23 @@ public:
   virtual double d2V(double phi) const = 0;
 };
 
+class OneDimPotentialForShooting: public PotentialForShooting {
+public:
+  explicit OneDimPotentialForShooting(EffectivePotential::Potential &P_): P(P_) {}
+  virtual ~OneDimPotentialForShooting() = default;
+  double V(double phi) const override { return P.V(Vec(phi),T);}
+  double dV(double phi) const override { return P.dV_dx(Vec(phi),T)(0);}
+  double d2V(double phi) const override { return P.d2V_dx2(Vec(phi),T)(0,0);}
+  PROPERTY(double, T, 0);
+private:
+  EffectivePotential::Potential &P;
+  Eigen::VectorXd Vec(double phi) const {
+    Eigen::VectorXd Vec_(1);
+    Vec_ << phi;
+    return Vec_;
+  };
+};
+
 class CubicInterpFunction {
 public:
   CubicInterpFunction(double y0, double dy0, double y1, double dy1, double c_ = 0)
