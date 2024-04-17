@@ -59,10 +59,11 @@ public:
 //    tf(tf_), pts(pts_), V_spline_samples(V_spline_samples_),
 //    extend_to_minima(extend_to_minima_), reeval_distances(reeval_distances_) {
   explicit SplinePath(EffectivePotential::Potential &potential,
+                      double T_,
                       std::vector<Eigen::VectorXd> pts_,
                       bool extend_to_minima_ = true,
                       bool reeval_distances_ = true) :
-    P(potential), pts(pts_), nphi(potential.get_n_scalars()), num_nodes(pts_.size()),
+    P(potential), T(T_), pts(pts_), nphi(potential.get_n_scalars()), num_nodes(pts_.size()),
     extend_to_minima(extend_to_minima_), reeval_distances(reeval_distances_) {
       
       // 1. Find derivs
@@ -606,7 +607,7 @@ public:
     std::vector<double> phi_1d, dphi_1d;
     for (int num_iter = 1; num_iter <= path_maxiter; num_iter++) {
       LOG(debug) <<  "Starting tunneling step " << num_iter;
-      SplinePath path(P, path_pts);
+      SplinePath path(P, T, path_pts);
       PhaseTracer::Shooting tobj(path);
       auto profile = tobj.findProfile(path.get_path_length(),0.);
       num_nodes = profile.Phi.size();
@@ -654,7 +655,7 @@ public:
     }
     double fRatio = F_max/dV_max;
 
-    SplinePath path(P, path_pts);
+    SplinePath path(P, T, path_pts);
     PhaseTracer::Shooting tobj(path);
     auto profile = tobj.findProfile(path.get_path_length(),0.);
     auto action = tobj.calAction(profile);
