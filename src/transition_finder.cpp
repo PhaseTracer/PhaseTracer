@@ -76,23 +76,12 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
         const auto changed_ = changed(true_vacuum, false_vacuum);
 
         double TN = std::numeric_limits<double>::quiet_NaN();
-        auto true_vacuum_TN = true_vacuum;
-        auto false_vacuum_TN = false_vacuum;
-        double action_TN = std::numeric_limits<double>::quiet_NaN();
-        if (true){ // Need BubbleProfiler
+        if (calculate_action){ // Need BubbleProfiler
           TN = get_Tnuc(phase1, phase2, i_unique, TC, T1);
-          auto vacua = get_vacua_at_T(phase1, phase2, TN, i_unique);
-          true_vacuum_TN = vacua[1];
-          false_vacuum_TN = vacua[0];
-//          false_vacuum_TN(0) = -1E-4;
-          action_TN = ac.get_action(true_vacuum_TN,false_vacuum_TN,TN);
         }
         unique_transitions.push_back({SUCCESS, TC, phase1, phase2,
           true_vacuum, false_vacuum, gamma_, changed_, delta_potential,
-          TN, true_vacuum_TN, false_vacuum_TN, action_TN,
-          unique_transitions.size()});
-
-
+          TN, unique_transitions.size()});
       }
     }
 
@@ -106,8 +95,6 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
 }
 
 double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const{
-  
-//    print("Tunneling from phase %s to phase %s at T=%0.4g"
   
   if (T_begin < T_end) {
     LOG(fatal) << "T_begin < T_end, so swith the values. ";
@@ -126,16 +113,28 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
   LOG(debug) << "fun_nucleation(T_begin)= " << fun_nucleation(T_begin) ;
   LOG(debug) << "fun_nucleation(T_end)= " << fun_nucleation(T_end) ;
   
+  double Tnuc = std::numeric_limits<double>::quiet_NaN();
+  // If action at T_begin is NaN, find the largest valid T_begin
+  while (std::isnan(fun_nucleation(T_begin))){
+    T_begin -= Tnuc_step;
+    if (T_begin < T_end)
+      return Tnuc;
+    std::exit(0);
+  }
+  
   if ( fun_nucleation(T_begin) < 0 ) {
     LOG(debug) << "The tunneling possibility at T_begin satisfys the nucleation condition." ;
     return T_begin;
   }
-  double Tnuc = std::numeric_limits<double>::quiet_NaN();
-  if ( fun_nucleation(T_end) > 0) {
-    double Tnuc_try = T_begin;
-    while (Tnuc_try>T_end) {
-      Tnuc_try -= Tnuc_step;
-      while (fun_nucleation(Tnuc_try) < 0) break;
+  
+  // If the tunneling possibility at T_end is small, find T_end from T_begin
+  if ( fun_nucleation(T_end) > 0 or std::isnan(fun_nucleation(T_end)) ) {
+    double T_end_ = T_end;
+    while (true) {
+      T_end = T_begin - Tnuc_step;
+      while (fun_nucleation(T_end) < 0) break;
+      while (T_end < T_end_) return Tnuc;
+      T_begin = T_end;
     }
   }
   
@@ -146,24 +145,17 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
     const auto result = boost::math::tools::bisect(fun_nucleation, T_end, T_begin, stop, non_const_max_iter);
     Tnuc = (result.first + result.second) * 0.5;
     LOG(debug) << "Found nucleation temperature = " << Tnuc;
-    return Tnuc;
   } catch(char *str){
     std::cout << str << std::endl; // TODO
     // find the first
   }
-  
-
-//
-//
-//  for (double Ttry = T_begin ; Ttry > T_end; Ttry--){
-//    LOG(debug) << "Cal action at " << Ttry << ". ";
-//
-//  }
+  return Tnuc;
 }
 
 std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2) const {
 
 #ifdef CAL_TNUC
+  // TODO
   LOG(warning) << "When assume_only_one_transition is set to false, the calculation of Tnuc will not be performed. " << std::endl;
 #endif
   
@@ -285,8 +277,7 @@ void TransitionFinder::find_transitions() {
                         phase1_at_critical.x, phase2_at_critical.x,
                         gamma_, changed_,
                         phase1_at_critical.potential - phase2_at_critical.potential,
-                        TC, phase1_at_critical.x, phase2_at_critical.x, 0
-        };
+                        TC, 0 };
         transitions.push_back(f);
       }
 

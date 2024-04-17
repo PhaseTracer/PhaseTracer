@@ -680,10 +680,11 @@ public:
 private:
 
   EffectivePotential::Potential &P;
-  double T=0;
+  
   double phi_absMin;
   double phi_metaMin;
   
+  PROPERTY(double, T, 0);
   
   /* Number of basis splines to use */
   PROPERTY(size_t, nb, 10);

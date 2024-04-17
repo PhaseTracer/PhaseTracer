@@ -52,7 +52,7 @@ public:
     double action_BP=std::numeric_limits<double>::quiet_NaN();
     if (use_BubbleProfiler){
       V_BubbleProfiler V_BP(potential); // perturbative_profiler only accept non-const potential
-      V_BP.set_T(T); // This is necessary!!
+      V_BP.set_T(T);
       
       if (potential.get_n_scalars() == 1  && !use_perturbative) {
 
@@ -108,6 +108,7 @@ public:
       LOG(debug) << "Calculate action(PD) at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
       if (potential.get_n_scalars() == 1){
         OneDimPotentialForShooting ps(potential);
+        ps.set_T(T);
         Shooting st(ps);
         try{
           auto profile = st.findProfile(false_vacuum[0],true_vacuum[0]);
@@ -117,6 +118,7 @@ public:
         }
       } else{
         PathDeformation pd(potential);
+        pd.set_T(T);
         std::vector<Eigen::VectorXd> path_pts;
         path_pts.push_back(true_vacuum);
         path_pts.push_back(false_vacuum);
