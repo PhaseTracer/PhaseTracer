@@ -46,9 +46,6 @@ struct Transition {
   std::vector<bool> changed;
   double delta_potential;
   double TN;
-  Eigen::VectorXd true_vacuum_TN;
-  Eigen::VectorXd false_vacuum_TN;
-  double action_TN;
   size_t key;
 
   /** Pretty-printer for single transition */
@@ -67,10 +64,7 @@ struct Transition {
         << "true vacuum (TC) = " << a.true_vacuum << std::endl
         << "gamma (TC) = " << a.gamma << std::endl
         << "delta potential (TC) = " << a.delta_potential << std::endl
-        << "TN = " << a.TN << std::endl
-        << "false vacuum (TN) = " << a.false_vacuum_TN << std::endl
-        << "true vacuum (TN) = " << a.true_vacuum_TN << std::endl
-        << "action (TN) = " << a.action_TN << std::endl;
+        << "TN = " << a.TN << std::endl;
     } else {
       o << "=== failure. message =  " << a.message << " ===" << std::endl;
     }
@@ -82,9 +76,13 @@ struct Transition {
 class TransitionFinder {
  public:
   explicit TransitionFinder(PhaseFinder& pf_) :
-    pf(pf_), ac(pf_.P)
-    {
-  }
+    pf(pf_), ac(pf_.P){
+      calculate_action = false;
+    }
+  explicit TransitionFinder(PhaseFinder& pf_, ActionCalculator ac_) :
+    pf(pf_), ac(ac_){
+      calculate_action = true;
+    }
   virtual ~TransitionFinder() = default;
 
   /** Find all transitions between all phases */
@@ -110,7 +108,6 @@ class TransitionFinder {
   PhaseFinder &pf;
   
   ActionCalculator ac;
-  
   
   /** Whether already calculated all transitions */
   bool calculated_transitions = false;
@@ -152,6 +149,8 @@ class TransitionFinder {
   /** Absolute tolerance for judging whether a field is changed during a transition */
   PROPERTY(double, change_abs_tol, 1.e-3)
   PROPERTY(double, Tnuc_step, 1.)
+  
+  PROPERTY(bool, calculate_action, false)
   
 };
 
