@@ -109,9 +109,11 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
   const auto fun_nucleation = [this, phase1, phase2, i_unique](double Ttry) {
     return this->get_action(phase1, phase2, Ttry, i_unique)/Ttry - 140.;
   };
-  
-  LOG(debug) << "fun_nucleation(T_begin)= " << fun_nucleation(T_begin) ;
-  LOG(debug) << "fun_nucleation(T_end)= " << fun_nucleation(T_end) ;
+
+  // TODO 
+  T_begin -= Tnuc_step;  
+//  LOG(debug) << "fun_nucleation(T_begin)= " << fun_nucleation(T_begin) ;
+//  LOG(debug) << "fun_nucleation(T_end)= " << fun_nucleation(T_end) ;  
   
   double Tnuc = std::numeric_limits<double>::quiet_NaN();
   // If action at T_begin is NaN, find the largest valid T_begin
@@ -119,7 +121,6 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
     T_begin -= Tnuc_step;
     if (T_begin < T_end)
       return Tnuc;
-    std::exit(0);
   }
   
   if ( fun_nucleation(T_begin) < 0 ) {

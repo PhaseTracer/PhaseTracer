@@ -36,20 +36,20 @@ int main(int argc, char* argv[]) {
   PhaseTracer::ActionCalculator ac(model);
   ac.set_use_BubbleProfiler(false);
   
-  double T=77.61682;
-//  auto vacuums = pf.find_minima_at_t(T);
+//  double T=77.61682;
+////  auto vacuums = pf.find_minima_at_t(T);
+//  
+////  Eigen::VectorXd true_vacuum(2);
+////  true_vacuum << 289.27693787, 389.92593071;
+////  Eigen::VectorXd false_vacuum(2);
+////  false_vacuum <<  234.2959619,  -111.48232561;
+//  
+//  ac.get_action(true_vacuum,false_vacuum,T);
   
-  Eigen::VectorXd true_vacuum(2);
-  true_vacuum << 289.27693787, 389.92593071;
-  Eigen::VectorXd false_vacuum(2);
-  false_vacuum <<  234.2959619,  -111.48232561;
-  
-  ac.get_action(true_vacuum,false_vacuum,T);
-  
-//  // Make TransitionFinder object and find the transitions
-//  PhaseTracer::TransitionFinder tf(pf,ac);
-//  tf.find_transitions();
-//  std::cout << std::setprecision (15) << tf;
+  // Make TransitionFinder object and find the transitions
+  PhaseTracer::TransitionFinder tf(pf,ac);
+  tf.find_transitions();
+  std::cout << std::setprecision (15) << tf;
 
 //  if (debug_mode) {
 //    PhaseTracer::potential_plotter(model, tf.get_transitions().front().TC, "2D_test_model", 0., 2., 0.01, -2., 0., 0.01);
