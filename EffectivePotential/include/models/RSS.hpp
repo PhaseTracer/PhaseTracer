@@ -438,9 +438,11 @@ class RSS : public OneLoopPotential
 	std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const override
 	{
 		const double hSq = phi[0]*phi[0]/(vh*vh);
-		
+
+		//For the top quark we can use the Yuakawa which was set already
+		const double topSq = 0.5*yt2*phi[0]*phi[0];
+		//const double topSq = 162.5*162.5*hSq;
 		// Mass values from PDG.
-		const double topSq = 162.5*162.5*hSq;
 		const double upSq = 0.00216*0.00216*hSq;
 		const double downSq = 0.00467*0.00467*hSq;
 		const double strangeSq = 0.0934*0.0934*hSq;
