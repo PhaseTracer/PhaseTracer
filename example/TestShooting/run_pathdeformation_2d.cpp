@@ -68,7 +68,20 @@ int main(int argc, char* argv[]) {
   path_pts[1] << 0, 0;
   auto a = pd.fullTunneling(path_pts);
 
+  LOG(debug)<< "Action = "<< std::setprecision(10) << a.action;
+  LOG(debug)<< "fRatio = "<< std::setprecision(10) << a.fRatio;
   
+  std::ofstream file1("profile1D_for_2d_example.txt");
+  for (int i = 0; i < a.profile1D.R.size(); ++i) {
+    file1 << std::setprecision(10) << a.profile1D.R[i] << "\t" << a.profile1D.Phi[i]  << std::endl;
+  }
+  file1.close();
 
+  std::ofstream file2("path_for_2d_example.txt");
+  for (int i = 0; i < a.phi.size(); ++i) {
+    file2 << std::setprecision(10) << a.phi[i][0] << "\t" << a.phi[i][1]  << std::endl;
+  }
+  file2.close();
+  
   return 0;
 }
