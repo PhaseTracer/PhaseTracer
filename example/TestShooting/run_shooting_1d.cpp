@@ -47,11 +47,13 @@ int main(int argc, char* argv[]) {
   double k2_max = 0.49; // Thin-walled
   double k3_max = 0.235;
   
-  int num_values = 10;
+  int num_values = 100;
   std::vector<double> k2_values;
   std::vector<double> k3_values;
   double k1 = 0.25;
 
+  std::ofstream file("data_shooting_1d.txt");
+  
   for (int i = 0; i < num_values; ++i) {
     double k2 = k2_min + i * (k2_max - k2_min) / (num_values - 1);
     double k3 = k3_min + i * (k3_max - k3_min) / (num_values - 1);
@@ -63,7 +65,9 @@ int main(int argc, char* argv[]) {
 
     std::cout << "k2= "<< k2 << ", action = " << std::setprecision(10) << action << std::endl;
 
+    file << k2 << "\t" << std::setprecision(10) << action << std::endl;
   }
   
+  file.close();
   return 0;
 }

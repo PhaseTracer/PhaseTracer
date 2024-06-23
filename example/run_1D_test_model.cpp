@@ -29,10 +29,14 @@ int main(int argc, char* argv[]) {
   pf.find_phases();
   std::cout << pf;
 
+  // Make PhaseFinder object
+  PhaseTracer::ActionCalculator ac(model);
+  
   // Make TransitionFinder object and find the transitions
-  PhaseTracer::TransitionFinder tf(pf);
+  PhaseTracer::TransitionFinder tf(pf,ac);
   tf.find_transitions();
   std::cout << tf;
+  
   
 
 //
@@ -53,15 +57,15 @@ int main(int argc, char* argv[]) {
 //  std::cout << tf.get_action(true_vacuum, false_vacuum, 56.9986) << std::endl;
 //
   
-  std::ofstream outputFile("output.txt", std::ios_base::app);
+  std::ofstream outputFile("action_1D_test_model.txt", std::ios_base::app);
   const auto phases = pf.get_phases();
   auto phase1 = phases[1];
   auto phase2 = phases[0];
-    for (double Ttest=35; Ttest < 59.1; Ttest += 0.2){
+  for (double Ttest=31.623288422919078; Ttest < 57.975077465648184; Ttest += 0.5){
       auto s = tf.get_action(phase1, phase2, Ttest);
       auto vacua = tf.get_vacua_at_T(phase1, phase2, Ttest);
-      outputFile << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s/Ttest << " " << s/Ttest  << std::endl;
-    }
+      outputFile << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s << " " << s/Ttest  << std::endl;
+  }
   outputFile.close();
   
 //  Eigen::VectorXd d(1);
