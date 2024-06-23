@@ -134,8 +134,16 @@ public:
     
     
     LOG(debug) << " S(PD) = " << action_PD;
-
-    return action_BP;
+    LOG(debug) << " S(BP) = " << action_BP;
+    
+    if (std::isnan(action_BP)) {
+        return action_PD;
+    }
+    if (std::isnan(action_PD)) {
+        return action_BP;
+    }
+    
+    return std::min(action_BP,action_PD);
 
   }
   

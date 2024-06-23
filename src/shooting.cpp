@@ -94,10 +94,6 @@ void Shooting::findBarrierLocation(){
   const double phi_tol = fabs(phi_metaMin - phi_absMin) * 1e-12;
   const double V_phimeta = ps.V(phi_metaMin);
   LOG(trace) << "V_phimeta = "<< ps.V(0);
-  LOG(trace) << "V_phimeta = "<< ps.V(1);
-  LOG(trace) << "V_phimeta = "<< ps.V(2);
-  LOG(trace) << "V_phimeta = "<< ps.V(3);
-  LOG(trace) << "V_phimeta = "<< ps.V(4);
   double phi1 = phi_metaMin;
   double phi2 = phi_absMin;
   double phi0 = 0.5 * (phi1 + phi2);

@@ -68,13 +68,12 @@ public:
       
       // 1. Find derivs
       std::vector<Eigen::VectorXd> dpts = _pathDeriv(pts);
-
       // 2. Extend the path
       if (extend_to_minima){
         double xmin = find_loc_min_w_guess(pts[0], dpts[0]); // TODO: This may return global mim
         xmin = std::min(xmin, 0.0);
         int nx = static_cast<int>(std::ceil(std::abs(xmin)-.5)) + 1;
-        double stepSize = xmin / nx;
+        double stepSize = -xmin / nx;
         std::vector<Eigen::VectorXd> new_pts;
         for (int i = 0; i < nx; ++i) {
             double x = xmin + i * stepSize;
@@ -84,20 +83,21 @@ public:
         new_pts.insert(new_pts.end(), pts.begin() + 1, pts.end());
         pts = new_pts;
         
-        xmin = find_loc_min_w_guess(pts[num_nodes-1], dpts[num_nodes-1]);
+        xmin = find_loc_min_w_guess(pts.back(), dpts.back());
         xmin = std::max(xmin, 0.0);
         nx = static_cast<int>(std::ceil(std::abs(xmin) - 0.5)) + 1;
-        stepSize = xmin / nx;
+        stepSize = -xmin / nx;
         std::vector<Eigen::VectorXd> new_pts2;
         for (int i = 0; i < nx; ++i) {
           // TODO this is not checked
           double x = xmin + (nx-i-1) * stepSize;
-          Eigen::VectorXd pt_ext = pts[num_nodes-1] + x * dpts[num_nodes-1];
+          Eigen::VectorXd pt_ext = pts.back() + x * dpts.back();
           new_pts2.push_back(pt_ext);
         }
         pts.pop_back();
         pts.insert(pts.end(), new_pts2.begin(), new_pts2.end());
         dpts = _pathDeriv(pts);
+        num_nodes = pts.size();
       }
       // 3. Find knot positions and fit the spline
       std::vector<double> squared_sums;
@@ -111,6 +111,8 @@ public:
       pdist.insert(pdist.begin(), 0.0);
       length = pdist[pdist.size()-1];
       get_path_tck(pdist);
+      
+
       
       // 4. Re-evaluate the distance to each point.
       if (reeval_distances){
@@ -155,16 +157,17 @@ public:
   
   /* Calculates to 4th order if len(phi) >= 5, otherwise 1st/2nd order. */
   std::vector<Eigen::VectorXd> _pathDeriv(const std::vector<Eigen::VectorXd> phi) { // rename phi
-    std::vector<Eigen::VectorXd> dphi(num_nodes);
-    if (num_nodes < 2){
+    int num_phi = phi.size();
+    std::vector<Eigen::VectorXd> dphi(num_phi);
+    if (num_phi < 2){
       throw std::runtime_error("The number of points that describe the path must be larger than 1.");
-    } else if (num_nodes == 2){
+    } else if (num_phi == 2){
       dphi[0] = dphi[1] = phi[1] - phi[0];
-    } else if (num_nodes < 5){
+    } else if (num_phi < 5){
       // 1st/2nd order calculation
       dphi[0] = -1.5 * phi[0] + 2.0 * phi[1] - 0.5 * phi[2];
-      dphi[num_nodes - 1] = 1.5 * phi[num_nodes - 1] - 2.0 * phi[num_nodes - 2] + 0.5 * phi[num_nodes - 3];
-      for (int i = 1; i < num_nodes - 1; ++i) {
+      dphi[num_phi - 1] = 1.5 * phi[num_phi - 1] - 2.0 * phi[num_phi - 2] + 0.5 * phi[num_phi - 3];
+      for (int i = 1; i < num_phi - 1; ++i) {
           dphi[i] = 0.5 * (phi[i + 1] - phi[i - 1]);
       }
     } else{
@@ -505,7 +508,6 @@ public:
                << "; stepsize: " << stepsize
                << "; fRatio1: "  << fRatio1
                << "; fRatio2: "  << fRatio2;
-    
     fRatio = checkAfterFit ? fRatio2 : fRatio1;
   }
   
@@ -515,7 +517,6 @@ public:
     dV.resize(dX_node.rows());
     
     for (int ii=0; ii<num_nodes; ++ii){
-//      std::cout << "phi:" << phi[ii] << std::endl;
       Eigen::VectorXd dphi(nphi);
       Eigen::VectorXd d2phi(nphi);
       for(int jj=0; jj<nphi; ++jj){
@@ -599,7 +600,7 @@ public:
   
   
   /* Calculate the instanton solution in multiple field dimension */
-  double fullTunneling(std::vector<Eigen::VectorXd> path_pts) {
+  FullTunneling fullTunneling(std::vector<Eigen::VectorXd> path_pts) {
     FullTunneling ft;
     
     
@@ -667,10 +668,7 @@ public:
     ft.action = action;
     
     LOG(debug)<< "Tunneling step converged. ";
-    LOG(debug)<< "Action = "<< std::setprecision(10) << action;
-    LOG(debug)<< "fRatio = "<< std::setprecision(10) << fRatio;
-    
-    return 0;
+    return ft;
   }
   
   double get_action(){
