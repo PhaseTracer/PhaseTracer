@@ -83,8 +83,12 @@ int main(int argc, char* argv[]) {
   }
   if (debug_mode) std::cout << pf;
 
+  // Make PhaseFinder object
+  PhaseTracer::ActionCalculator ac(model);
+  ac.set_use_BubbleProfiler(false);
+  
   // Make TransitionFinder object and find the transitions
-  PhaseTracer::TransitionFinder tf(pf);
+  PhaseTracer::TransitionFinder tf(pf,ac);
   tf.find_transitions();
   if (debug_mode) std::cout << tf;
       
