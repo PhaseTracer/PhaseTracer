@@ -407,6 +407,9 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
   double delta_phi0;
   while (true){
     delta_phi0 = exp(-x)*delta_phi;
+    if (delta_phi0 < std::numeric_limits<double>::min()) { // This is the case at TC
+      return profile_inf;
+    }
     double r0_, phi0, dphi0;
     initialConditions(delta_phi0, rmin, delta_phi_cutoff, &r0_, &phi0, &dphi0);
     
@@ -494,6 +497,10 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
 double Shooting::calAction(Profile1D profile){
   
   const auto r = profile.R;
+  if (r.size()==2){
+    if (r.isApprox(profile_zero.R, xtol)) return 0;
+    if (r.isApprox(profile_inf.R, xtol)) return std::numeric_limits<double>::max();
+  }
   const auto phi = profile.Phi;
   const auto dphi = profile.dPhi;
   size_t n = r.size();

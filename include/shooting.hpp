@@ -132,6 +132,20 @@ public:
   void evenlySpacedPhi(Profile1D pf, std::vector<double>* p,std::vector<double>* dp,
                        size_t npoints=100, bool fixAbs=true);
   
+  Profile1D profile_zero = {
+    Eigen::Vector2d::Zero(2),
+    Eigen::Vector2d::Zero(2),
+    Eigen::Vector2d::Zero(2),
+    0.0
+  };
+
+  Profile1D profile_inf = {
+    Eigen::Vector2d::Ones(2),
+    Eigen::Vector2d::Ones(2),
+    Eigen::Vector2d::Zero(2),
+    0.0
+  };
+  
 private:
   
   PotentialForShooting& ps;
@@ -151,6 +165,8 @@ private:
   PROPERTY(double, rmin, 1e-4)
   PROPERTY(double, rmax, 1e4)
   PROPERTY(boost::uintmax_t, max_iter, 100)
+  
+
   
 };
 
