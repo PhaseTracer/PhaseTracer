@@ -74,19 +74,42 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
         LOG(trace) << "are not duplicate";
         const auto gamma_ = gamma(true_vacuum, false_vacuum, TC);
         const auto changed_ = changed(true_vacuum, false_vacuum);
-
-        double TN = std::numeric_limits<double>::quiet_NaN();
-        if (calculate_action){ // Need BubbleProfiler
-          TN = get_Tnuc(phase1, phase2, i_unique, TC, T1);
-        }
         unique_transitions.push_back({SUCCESS, TC, phase1, phase2,
           true_vacuum, false_vacuum, gamma_, changed_, delta_potential,
-          TN, unique_transitions.size()});
+          std::numeric_limits<double>::quiet_NaN(), i_unique});
       }
     }
-
-
-    return unique_transitions;
+    
+    if (calculate_action){
+      size_t i_selected = 0;
+      if (unique_transitions.size()>1){
+        double min_action = std::numeric_limits<double>::max();
+        for (size_t i_unique=0; i_unique < unique_transitions.size(); i_unique++) {
+          double Ttry = T1 + 0.9*(TC-T1);
+          double try_action = get_action(phase1, phase2, Ttry, i_unique);
+          LOG(debug) << "Action at "<< Ttry << " for transtion " << i_unique << " is " << try_action;
+          if (try_action<min_action){
+            min_action = try_action;
+            i_selected = i_unique;
+          }
+        }
+        if (min_action<std::numeric_limits<double>::max()){
+          LOG(debug) << "Selcet the symmetric partner " << i_selected << ".";
+        } else {
+          LOG(debug) << "Can not selcet the symmetric partner.";
+          //TODO
+        }
+      }
+        
+      double TN = get_Tnuc(phase1, phase2, i_selected, TC, T1);
+      std::vector<Transition> selected_transition;
+      selected_transition.push_back(unique_transitions[i_selected]);
+      selected_transition[0].TN =TN;
+      return selected_transition;
+    } else {
+      return unique_transitions;
+    }
+    
   } catch (const std::exception& e) {
     // TODO
     LOG(debug) << e.what() << " - probably no sign change between T = " << T1 << " and " << T2;
@@ -110,26 +133,27 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
     return this->get_action(phase1, phase2, Ttry, i_unique)/Ttry - 140.;
   };
 
-  // TODO 
-  T_begin -= Tnuc_step;  
 //  LOG(debug) << "fun_nucleation(T_begin)= " << fun_nucleation(T_begin) ;
 //  LOG(debug) << "fun_nucleation(T_end)= " << fun_nucleation(T_end) ;  
   
   double Tnuc = std::numeric_limits<double>::quiet_NaN();
   // If action at T_begin is NaN, find the largest valid T_begin
-  while (std::isnan(fun_nucleation(T_begin))){
+  double action_ = fun_nucleation(T_begin);
+  while (std::isnan(action_)){
     T_begin -= Tnuc_step;
     if (T_begin < T_end)
       return Tnuc;
+    action_ = fun_nucleation(T_begin);
   }
   
-  if ( fun_nucleation(T_begin) < 0 ) {
+  if ( action_ < 0 ) {
     LOG(debug) << "The tunneling possibility at T_begin satisfys the nucleation condition." ;
     return T_begin;
   }
   
+  action_ = fun_nucleation(T_end);
   // If the tunneling possibility at T_end is small, find T_end from T_begin
-  if ( fun_nucleation(T_end) > 0 or std::isnan(fun_nucleation(T_end)) ) {
+  if ( action_ > 0 or std::isnan(action_) ) {
     double T_end_ = T_end;
     while (true) {
       T_end = T_begin - Tnuc_step;

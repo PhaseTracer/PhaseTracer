@@ -611,6 +611,19 @@ public:
       SplinePath path(P, T, path_pts);
       PhaseTracer::Shooting tobj(path);
       auto profile = tobj.findProfile(path.get_path_length(),0.);
+      if (profile.R.size()==2){
+        if (profile.R.isApprox(tobj.profile_inf.R, tobj.get_xtol())){
+          ft.action = std::numeric_limits<double>::max();
+          action_temp = std::numeric_limits<double>::max();
+          LOG(debug)<< "Action is infinity.";
+          return ft;
+        }else if (profile.R.isApprox(tobj.profile_zero.R, tobj.get_xtol())){
+          ft.action = 0;
+          action_temp = 0;
+          LOG(debug)<< "Action is too small.";
+          return ft;
+        }
+      }
       num_nodes = profile.Phi.size();
       tobj.evenlySpacedPhi(profile, &phi_1d, &dphi_1d, num_nodes, false);
       dphi_1d[0]=0.;
