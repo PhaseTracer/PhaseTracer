@@ -103,9 +103,10 @@ class TransitionFinder {
   /** Pretty-printer for set of transitions in this object */
   friend std::ostream& operator << (std::ostream& o, const TransitionFinder& a);
 
- private:
   /** Object with phases and potential */
   PhaseFinder &pf;
+  
+ private:
   
   ActionCalculator ac;
   

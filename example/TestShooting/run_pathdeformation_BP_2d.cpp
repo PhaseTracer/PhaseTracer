@@ -62,4 +62,7 @@ int main(int argc, char* argv[]) {
   path_pts[1] << 0, 0;
   auto a = pd.fullTunneling(path_pts);
   
+  LOG(debug)<< "Action = "<< std::setprecision(10) << a.action;
+  LOG(debug)<< "fRatio = "<< std::setprecision(10) << a.fRatio;
+  
 }
