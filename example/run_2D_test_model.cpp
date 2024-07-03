@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
   pf.find_phases();
   std::cout << pf;
   
-  // Make PhaseFinder object
+  // Make ActionCalculator object
   PhaseTracer::ActionCalculator ac(model);
   ac.set_use_BubbleProfiler(false);
   
