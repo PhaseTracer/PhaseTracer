@@ -573,7 +573,7 @@ void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double>* p,std::vector<
   phi_arr.setlength(arr_npoints);
   dphi_arr.setlength(arr_npoints);
   size_t ii=0;
-  if (fixAbs and phi_absMin<filtered_phi[0] ){
+  if (fixAbs and filtered_phi[0] - phi_absMin > 1e-10 ){ // Adding 1e-10 is due to precision in alglib
     phi_arr[ii] = phi_absMin;
     dphi_arr[ii] = 0.;
     ii++;
@@ -583,13 +583,14 @@ void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double>* p,std::vector<
     dphi_arr[ii] = filtered_dphi[jj];
     ii++;
   }
-  if (phi_metaMin>filtered_phi[filtered_phi.size()-1]){
+  if (phi_metaMin - filtered_phi[filtered_phi.size()-1] > 1e-10 ){
     phi_arr[ii] = phi_metaMin;
     dphi_arr[ii] = 0.;
   }
 
   alglib::spline1dinterpolant spl;
   alglib::spline1dbuildcubic(phi_arr, dphi_arr, spl);
+
   std::vector<double> evenly_phi(npoints);
   std::vector<double> evenly_dphi(npoints);
   double max = phi_metaMin;
