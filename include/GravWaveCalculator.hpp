@@ -20,9 +20,10 @@ class GravWaveCalculator {
 private:
     double alpha;
     double beta_H;
-    double vw;
     double T_ref;
-    std::vector<double> frequency_list;
+  
+  std::vector<double> frequency_list;
+  double vw;
   PROPERTY(double, dof, 106.75)
   PROPERTY(double, epsilon, 0.1)
   PROPERTY(double, begin_log_frequency, -4)

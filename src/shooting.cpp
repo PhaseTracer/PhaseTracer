@@ -168,6 +168,9 @@ void Shooting::exactSolution(double r, double phi0, double dV_, double d2V_,
       phi = std::numeric_limits<double>::infinity();
       dphi = NAN;
     }
+    if (std::isinf(dphi)){
+      phi = std::numeric_limits<double>::infinity();
+    }
   }else{
     phi = (std::tgamma(nu+1)*pow(0.5*beta_r,-nu) * boost::math::cyl_bessel_j(nu, beta_r)-1) * dV_/d2V_;
     dphi = -nu*(pow(0.5*beta_r,-nu) / r) * boost::math::cyl_bessel_j(nu, beta_r);
@@ -221,6 +224,7 @@ void Shooting::initialConditions(double delta_phi0, double rmin, double delta_ph
   // Find phi - phi_absMin == delta_phi_cutoff exactly
   const auto result = boost::math::tools::bisect(deltaPhiDiff, rlast, r, boost::math::tools::eps_tolerance<double>(), max_iter);
   *r0 = (result.first + result.second) * 0.5;
+  
   exactSolution(*r0, phi0, dV_, d2V_, phi_r0, dphi_r0);
   LOG(trace) << "Initial point for phi(r=0) = " << phi0 << " : ";
   LOG(trace) << "  r_0 = " << *r0 << ", phi = " << *phi_r0 << ", dphi = " << *dphi_r0;
@@ -407,7 +411,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
   double delta_phi0;
   while (true){
     delta_phi0 = exp(-x)*delta_phi;
-    if (delta_phi0 < std::numeric_limits<double>::min()) { // This is the case at TC
+    if (delta_phi0 < 1000*std::numeric_limits<double>::min()) { // This is the case at TC TODO: set a more reasonable value
       return profile_inf;
     }
     double r0_, phi0, dphi0;
