@@ -115,8 +115,6 @@ public:
   explicit GravWaveCalculator(TransitionFinder tf_) :
   tf(tf_) {
     std::vector<Transition> trans = tf.get_transitions();
-    std::mt19937 generator(static_cast<unsigned int>(std::time(0)));
-    std::uniform_real_distribution<double> distribution(0.01, 0.1);
     
     for (const auto& ti : trans){
       double TN = ti.TN;
@@ -129,7 +127,7 @@ public:
         transitions_params.push_back({alpha(vacua[0],vacua[1],TN), beta(ti.true_phase,ti.false_phase,TN,ti.key), ti.TN});     
       }
     }
-}
+  }
   virtual ~GravWaveCalculator() = default;
     
     void Set_frequency_list(double begin_log_frequency = -4, double end_log_frequency = 1, double num_frequency = 500);
