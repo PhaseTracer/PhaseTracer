@@ -95,6 +95,8 @@ class TransitionFinder {
   
   double get_action(Phase phase1, Phase phase2, double T, size_t i_unique=0) const;
   
+  double get_action(Eigen::VectorXd vacuum_1, Eigen::VectorXd vacuum_2, double T) const;
+  
   double get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const;
   
   /** Retrieve all phases */
