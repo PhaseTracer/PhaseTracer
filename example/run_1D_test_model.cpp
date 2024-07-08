@@ -9,7 +9,7 @@
 #include "transition_finder.hpp"
 #include "logger.hpp"
 #include "phase_plotter.hpp"
-#include "GravWaveCalculator.hpp"
+#include "gravwave_calculator.hpp"
 
 int main(int argc, char* argv[]) {
 
@@ -70,9 +70,9 @@ int main(int argc, char* argv[]) {
   outputFile.close();
   
   PhaseTracer::GravWaveCalculator gc(tf);
-  gc.Set_parameters(0.3,500.,0.9,40.);
-  auto results = gc.GW_total_spectrum();
-  gc.Write_to_csv(results, "GW_results.csv");
+//  gc.Set_parameters(0.3,500.,0.9,40.);
+//  auto results = gc.GW_total_spectrum();
+//  gc.Write_to_csv(results, "GW_results.csv");
   
 //  Eigen::VectorXd d(1);
 //  d(0) = 24.5;

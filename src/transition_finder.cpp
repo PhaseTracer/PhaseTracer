@@ -208,6 +208,10 @@ double TransitionFinder::get_action(Phase phase1, Phase phase2, double T, size_t
   return ac.get_action(vacua[0], vacua[1], T);
 }
 
+double TransitionFinder::get_action(Eigen::VectorXd vacuum_1, Eigen::VectorXd vacuum_2, double T) const{
+  return ac.get_action(vacuum_1, vacuum_2, T);
+}
+
 double TransitionFinder::gamma(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, const double TC) const {
   const int b = true_vacuum.size() + 1;
   const int items = (b + (n_ew_scalars % b)) % b;
