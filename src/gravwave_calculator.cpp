@@ -9,184 +9,257 @@
 
 namespace PhaseTracer {
 
+
+
+std::ostream& operator << (std::ostream& o, const GravWaveCalculator& a){
+  for (const auto &t : a.spectrums) {
+    o << t << std::endl;
+  }
+  o << "=== Summed gravitational wave " << std::endl;
+  o << "    peak_frequency = " << a.total_spectrum.peak_frequency << std::endl
+    << "    peak_amplitude = " << a.total_spectrum.peak_amplitude << std::endl;
+  return o;
+}
+
+const double GravWaveCalculator::rho_R(double T){
+  return std::pow(T, 4) * M_PI * M_PI * dof / 30.;
+}
+
+const double GravWaveCalculator::H(double T){
+  return std::sqrt(8. * M_PI * G / 3. * rho_R(T));
+}
+
+const double GravWaveCalculator::V(const Eigen::VectorXd phi, const double T) {
+  return tf.pf.P.V(phi,T);
+}
+const double GravWaveCalculator::dVdT(const Eigen::VectorXd phi, const double T) {
+  return (-V(phi,T+2*h_dVdT) + 8*V(phi,T+h_dVdT) - 8*V(phi,T-h_dVdT) + V(phi,T-2*h_dVdT)) / (12.0 * h_dVdT);
+}
+const double GravWaveCalculator::rho(const Eigen::VectorXd phi, const double T){
+  return V(phi,T) - 0.25*T*dVdT(phi,T);
+}
+const double GravWaveCalculator::get_alpha(const Eigen::VectorXd vacuum_1, const Eigen::VectorXd vacuum_2, double T){
+  return ( rho(vacuum_1,T) - rho(vacuum_2,T) ) / rho_R(T);
+}
+
+Eigen::VectorXd GravWaveCalculator::vacuum_of_phase_at_T(Phase phase1, double T){
+  return tf.pf.phase_at_T(phase1, T).x;
+}
+const double GravWaveCalculator::V(Phase phase1, const double T) {
+  return tf.pf.P.V(vacuum_of_phase_at_T(phase1,T),T);
+}
+const double GravWaveCalculator::dVdT(Phase phase1, const double T) {
+  return (-V(phase1,T+2*h_dVdT) + 8*V(phase1,T+h_dVdT) - 8*V(phase1,T-h_dVdT) + V(phase1,T-2*h_dVdT)) / (12.0 * h_dVdT);
+}
+const double GravWaveCalculator::rho(Phase phase1, const double T){
+  return V(phase1,T) - 0.25*T*dVdT(phase1,T);
+}
+const double GravWaveCalculator::get_alpha(Phase phase1, Phase phase2, double T){
+  return ( rho(phase1,T) - rho(phase1,T) ) / rho_R(T);
+}
+
+Eigen::Vector2d GravWaveCalculator::LinearRegression(std::vector<double> x_, std::vector<double> y_) {
+  Eigen::Map<Eigen::VectorXd> x(x_.data(), x_.size());
+  Eigen::Map<Eigen::VectorXd> y(y_.data(), y_.size());
+  int n = x.size();
+  Eigen::MatrixXd A(n, 2);
+  A.col(0) = Eigen::VectorXd::Ones(n);
+  A.col(1) = x;
+  // Calculate (A^T * A)^(-1) * A^T * y
+  Eigen::VectorXd coeff = (A.transpose() * A).ldlt().solve(A.transpose() * y);
+  return coeff;
+}
+
+const double GravWaveCalculator::S3T(Phase phase1, Phase phase2, double T, size_t i_unique){
+  return tf.get_action(phase1, phase2, T, i_unique)/T;
+}
+
+const double GravWaveCalculator::dSdT(Phase phase1, Phase phase2, double T, size_t i_unique){
+  std::vector<double> x,y;
+  for (int ii=0; ii <= np_dSdT; ii++ ){
+    double Ti = T - h_dSdT + ii * 2. * h_dSdT / np_dSdT;
+    double S = S3T(phase1,phase2,Ti,i_unique);
+    if ( (not std::isnan(S)) and (not std::isinf(S)) ) {
+      x.push_back(Ti);
+      y.push_back(S);
+    }
+  }
+  if (x.size()<2){
+    LOG(fatal) << "No enough valid S values in the calculation of dSdT.";
+    exit(EXIT_FAILURE);
+  }
+  Eigen::Vector2d coeff = LinearRegression(x, y); // coeff[0] + coeff[1]*x
+//      std::cout << "  T = np.array(" << x << ")" << std::endl;
+//      std::cout << "  S = np.array(" << y << ")" << std::endl;
+//      std::cout << "  coeff = np.array(" << coeff[0] << ", "<< coeff[1] << "])" << std::endl;
+  return  coeff[1];
+}
+
+const double GravWaveCalculator::get_beta(Phase phase1, Phase phase2, double T, size_t i_unique){
+  return T * H(T) * dSdT(phase1, phase2, T, i_unique);
+}
+
 double GravWaveCalculator::GW_bubble_collision(double f, double alpha, double beta_H, double T_ref) {
-    double omega_env;
-    double s_env;
-    double kappa = 1 / (1 + 0.715 * alpha) * (0.715 * alpha + 4. / 27 * sqrt(3 * alpha / 2));
-    double f_peak_beta = 0.35 / (1 + 0.069 * vw + 0.69 * pow(vw, 4.));
-    double f_env = 1.65e-5 * f_peak_beta * beta_H * (T_ref / 100) * pow(dof / 100, 1./ 6);
-    double delta = 0.48 * pow(vw, 3.) / (1 + 5.3 * pow(vw, 2.) + 5 * pow(vw, 4.));
-    s_env = pow(0.064 * pow(f/f_env, -3.) + (1 - 0.064 - 0.48) * pow(f / f_env, -1.) + 0.48 * (f / f_env),-1);
-    omega_env = 1.67e-5 * delta * pow(beta_H, -2.) * pow(kappa * alpha / (1 + alpha), 2.) * pow(100 / dof, 1 / 3.) * s_env;
-    return omega_env;
+  double omega_env;
+  double s_env;
+  double kappa = 1 / (1 + 0.715 * alpha) * (0.715 * alpha + 4. / 27 * sqrt(3 * alpha / 2));
+  double f_peak_beta = 0.35 / (1 + 0.069 * vw + 0.69 * pow(vw, 4.));
+  double f_env = 1.65e-5 * f_peak_beta * beta_H * (T_ref / 100) * pow(dof / 100, 1./ 6);
+  double delta = 0.48 * pow(vw, 3.) / (1 + 5.3 * pow(vw, 2.) + 5 * pow(vw, 4.));
+  s_env = pow(0.064 * pow(f/f_env, -3.) + (1 - 0.064 - 0.48) * pow(f / f_env, -1.) + 0.48 * (f / f_env),-1);
+  omega_env = 1.67e-5 * delta * pow(beta_H, -2.) * pow(kappa * alpha / (1 + alpha), 2.) * pow(100 / dof, 1 / 3.) * s_env;
+  return omega_env;
 }
 
 double GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, double T_ref) {
-    double omega_sw;
-    double omega_sw_peak;
-    double Hstar_R = pow(beta_H, -1.) * pow(8 * 3.1415926, 1./ 3) * vw;
-    double f_peak_sw = 2.6e-5 / Hstar_R * (T_ref / 100) * pow(dof / 100, 1./ 6);
-    double K_sw = Kappa_sound_wave(alpha) * alpha / (1 + alpha);
-    double H_tau = Hstar_R / sqrt(3 * K_sw /4);
-    omega_sw_peak = 2.061 * 0.678 * 0.678 * 3.57e-5 * pow(100 / dof, 1./ 3) * 0.012 * Hstar_R * pow(K_sw, 2.);
-    omega_sw = omega_sw_peak * pow(f / f_peak_sw, 3.) *
-            pow(7. / (4. + 3. * pow(f / f_peak_sw, 2.)),7. / 2);
-    omega_sw = omega_sw * std::min(1.0, H_tau);
-    return omega_sw;
+  double omega_sw;
+  double omega_sw_peak;
+  double Hstar_R = pow(beta_H, -1.) * pow(8 * 3.1415926, 1./ 3) * vw;
+  double f_peak_sw = 2.6e-5 / Hstar_R * (T_ref / 100) * pow(dof / 100, 1./ 6);
+  double K_sw = Kappa_sound_wave(alpha) * alpha / (1 + alpha);
+  double H_tau = Hstar_R / sqrt(3 * K_sw /4);
+  omega_sw_peak = 2.061 * 0.678 * 0.678 * 3.57e-5 * pow(100 / dof, 1./ 3) * 0.012 * Hstar_R * pow(K_sw, 2.);
+  omega_sw = omega_sw_peak * pow(f / f_peak_sw, 3.) *
+             pow(7. / (4. + 3. * pow(f / f_peak_sw, 2.)),7. / 2);
+  omega_sw = omega_sw * std::min(1.0, H_tau);
+  return omega_sw;
 }
 
 double GravWaveCalculator::GW_turbulence(double f, double alpha, double beta_H, double T_ref) {
-    double omega_turb;
-    double hn = 1.65e-5 * (T_ref / 100) * pow(dof/100, 1./ 6);
-    double f_peak_turb = 2.7e-5 / vw * beta_H * (T_ref / 100) * pow(dof / 100, 1./ 6);
-    double kappa_turb = Kappa_sound_wave(alpha) * epsilon;
-    omega_turb = 3.35e-4 * pow(beta_H, -1.) * pow(kappa_turb * alpha / (1 + alpha), 3./2) * pow(100 / dof, 1./3)
+  double omega_turb;
+  double hn = 1.65e-5 * (T_ref / 100) * pow(dof/100, 1./ 6);
+  double f_peak_turb = 2.7e-5 / vw * beta_H * (T_ref / 100) * pow(dof / 100, 1./ 6);
+  double kappa_turb = Kappa_sound_wave(alpha) * epsilon;
+  omega_turb = 3.35e-4 * pow(beta_H, -1.) * pow(kappa_turb * alpha / (1 + alpha), 3./2) * pow(100 / dof, 1./3)
             * vw * pow(f / f_peak_turb, 3) / (pow(1 + f / f_peak_turb, 11./3) * (1 + 8 * 3.1415926 * f / hn));
-    return omega_turb;
-}
-
-void GravWaveCalculator::Set_frequency_list(double begin_log_frequency, double end_log_frequency, double num_frequency) {
-    if (num_frequency <= 1) {
-        std::cerr << "Error: Number of frequencies must be greater than 1." << std::endl;
-        std::exit(1);
-    }
-
-    if (end_log_frequency < begin_log_frequency){
-        std::cerr << "Error: The end log frequency must be larger than begin log frequency" << std::endl;
-        std::exit(1);
-    }
-
-
-    double step = (end_log_frequency - begin_log_frequency) / (num_frequency - 1);
-    for (int i = 0; i < num_frequency; ++i) {
-        double frequency = begin_log_frequency + i * step;
-        double value = std::pow(10, frequency);
-        frequency_list.push_back(value);
-    }
-
-}
-
-void GravWaveCalculator::Print_parameter() {
-    std::string dashes(10, '-');
-    for (std::size_t i=0; i < transitions_params.size(); ++i){
-    	std::cout << "The GW Parameters of the "<< i + 1 << " th transition is: " << std::endl;
-    	std::cout << "alpha is: " << transitions_params[i].alpha <<std::endl;
-    	std::cout << "beta over H is: " << transitions_params[i].beta_H <<std::endl;
-    	std::cout << "vw is: " << vw <<std::endl;
-    	std::cout << "T_ref is: " << transitions_params[i].T_ref <<std::endl;
-    	std::cout << "epsilon is: " << epsilon <<std::endl;
-    	std::cout << "Degree of freedom is: " << dof <<std::endl;
-    	std::cout << dashes <<std::endl;
-    	std::cout << std::endl;
-    }
+  return omega_turb;
 }
 
 double GravWaveCalculator::Kappa_sound_wave(double alpha) {
-    double kappa_sw;
-    double cs = sqrt(1 / 3.);
-    double v_cj = 1 / (1 + alpha) * (cs + sqrt(pow(alpha,2.) + 2./3 * alpha));
-    double kappa_a = pow(vw, 6./5) * 6.9 * alpha / (1.36 - 0.037 * sqrt(alpha) + alpha);
-    double kappa_b = pow(alpha, 2./5) / (0.017 + pow(0.997 + alpha, 2./5));
-    double kappa_c = sqrt(alpha) / (0.135 + sqrt(0.98 + alpha ));
-    double kappa_d = alpha / (0.73 + 0.083 * sqrt(alpha) + alpha);
-    double delta_kappa = -0.9 * log(sqrt(alpha) / (1 + sqrt(alpha)));
+  double kappa_sw;
+  double cs = sqrt(1 / 3.);
+  double v_cj = 1 / (1 + alpha) * (cs + sqrt(pow(alpha,2.) + 2./3 * alpha));
+  double kappa_a = pow(vw, 6./5) * 6.9 * alpha / (1.36 - 0.037 * sqrt(alpha) + alpha);
+  double kappa_b = pow(alpha, 2./5) / (0.017 + pow(0.997 + alpha, 2./5));
+  double kappa_c = sqrt(alpha) / (0.135 + sqrt(0.98 + alpha ));
+  double kappa_d = alpha / (0.73 + 0.083 * sqrt(alpha) + alpha);
+  double delta_kappa = -0.9 * log(sqrt(alpha) / (1 + sqrt(alpha)));
 
-    if (0. < vw && vw <= cs)
-    {
-        kappa_sw = pow(cs, 11./ 5) * kappa_a * kappa_b / ((pow(cs, 11./ 5) - pow(vw, 11./ 5)) * kappa_b + vw * pow(cs, 6./ 5) * kappa_a);
-    }
-    else if (cs < vw && vw < v_cj)
-    {
-        kappa_sw = kappa_b + (vw - cs) * delta_kappa + pow(vw-cs, 3.) / pow(v_cj-cs, 3.) * (kappa_c - kappa_b - (v_cj -cs) * delta_kappa);
-    }
-    else if (v_cj <= vw && vw <= 1.)
-    {
-        kappa_sw = pow(v_cj-1, 3.) * pow(v_cj, 5./ 2) * pow(vw, -5./ 2) * kappa_c * kappa_d / ((pow(v_cj-1, 3.) - pow(vw-1,3.)) *
-                pow(v_cj, 5./ 2) * kappa_c + pow(vw-1,3.) * kappa_d);
-    }
-    else
-    {
-        std::cerr<<"Error: Wrong bubble velocity, please check its values !";
-        std::exit(1);
-    }
-    return kappa_sw;
-
+  if (0. < vw && vw <= cs){
+    kappa_sw = pow(cs, 11./ 5) * kappa_a * kappa_b / ((pow(cs, 11./ 5) - pow(vw, 11./ 5)) * kappa_b + vw * pow(cs, 6./ 5) * kappa_a);
+  }
+  else if (cs < vw && vw < v_cj){
+    kappa_sw = kappa_b + (vw - cs) * delta_kappa + pow(vw-cs, 3.) / pow(v_cj-cs, 3.) * (kappa_c - kappa_b - (v_cj -cs) * delta_kappa);
+  }
+  else if (v_cj <= vw && vw <= 1.){
+    kappa_sw = pow(v_cj-1, 3.) * pow(v_cj, 5./ 2) * pow(vw, -5./ 2) * kappa_c * kappa_d / ((pow(v_cj-1, 3.) - pow(vw-1,3.)) * pow(v_cj, 5./ 2) * kappa_c + pow(vw-1,3.) * kappa_d);
+  }
+  else{
+    LOG(fatal) << "Wrong bubble velocity.";
+    exit(EXIT_FAILURE);
+  }
+  return kappa_sw;
 }
 
-void GravWaveCalculator::GW_total_spectrum() {
-    std::vector<double> omega_tot;
-    for (std::size_t i=0; i < transitions_params.size(); ++i){
-    	double omega_env = 0;
-    	double omega_sw;
-    	double omega_turb;
-    	double tot_value;
-    	double peak_frequency = 0;
-    	double peak_spectrum = 0;	
-    	double alpha = transitions_params[i].alpha;
-    	double beta_H = transitions_params[i].beta_H;
-    	double T_ref = transitions_params[i].T_ref;
-    	
-    	for (double value : frequency_list){
-        	if (T_ref < 10){
-            	omega_env = GW_bubble_collision(value, alpha, beta_H, T_ref);
-        	}        	
-        	omega_sw = GW_sound_wave(value, alpha, beta_H, T_ref);
-        	omega_turb = GW_turbulence(value, alpha, beta_H, T_ref);
-        	tot_value = omega_env + omega_sw + omega_turb;
-        	omega_tot.push_back(tot_value);
-        	
-        	if (tot_value > peak_spectrum){
-            	peak_spectrum = tot_value;
-            	peak_frequency = value;}
-      }
-      std::stringstream filename_string;
-      filename_string<<"GW_results_of_transition_" << i << ".csv";
-      std::string filename = filename_string.str();
-      GravWaveCalculator::Write_to_csv(std::make_tuple(peak_frequency, peak_spectrum, frequency_list, omega_tot), filename);
-      omega_tot.clear(); //reset vector
-}	
+GravWaveSpectrum GravWaveCalculator::cal_spectrum(double alpha, double beta, double Tref){
+  if (num_frequency < 2){
+    LOG(fatal) << "Number of frequencies must be greater than 1.";
+    exit(EXIT_FAILURE);
+  }
+  if (max_frequency < min_frequency){
+    LOG(fatal) << "Error: max_frequency < min_frequency";
+    exit(EXIT_FAILURE);
+  }
+  
+  GravWaveSpectrum sp;
+  sp.Tref = Tref;
+  sp.alpha = alpha;
+  sp.beta = beta;
+  double logMin = std::log10(max_frequency);
+  double logMax = std::log10(min_frequency);
+  double logInterval = (logMax - logMin) / (num_frequency - 1);
+  double peak_frequency = 0;
+  double peak_amplitude = 0;
+  for (int i = 0; i < num_frequency; ++i) {
+    double fq = std::pow(10, logMin + i * logInterval);
+    sp.frequency.push_back(fq);
+    double sound_wave = GW_sound_wave(fq, alpha, beta, Tref);
+    sp.sound_wave.push_back(sound_wave);
+    double turbulence = GW_turbulence(fq, alpha, beta, Tref);
+    sp.turbulence.push_back(turbulence);
+    double bubble_collision = Tref < T_threshold_bubble_collision ? GW_bubble_collision(fq, alpha, beta, Tref) : 0;
+    sp.bubble_collision.push_back(bubble_collision);
+    double total_amplitude = sound_wave+turbulence+bubble_collision;
+    sp.total_amplitude.push_back(total_amplitude);
+    if (total_amplitude > peak_amplitude){
+        peak_amplitude = total_amplitude;
+        peak_frequency = fq;
+    }
+  }
+  sp.peak_frequency = peak_frequency;
+  sp.peak_amplitude = peak_amplitude;
+  return sp;
 }
 
-void GravWaveCalculator::Write_to_csv(const std::tuple<double, double, std::vector<double>, std::vector<double>> &data, const std::string &filename) {
-    std::ofstream file(filename);
+GravWaveSpectrum GravWaveCalculator::sum_spectrums(std::vector<GravWaveSpectrum> sps){
 
-    if (!file.is_open()) {
-        std::cerr << "Error: Failed to open file: " << filename << std::endl;
-        return;
+  GravWaveSpectrum summed_sp;
+  
+  if (sps.empty()){
+    LOG(fatal) << "No GW spectrums is generated. Can not sum spectrums";
+    exit(EXIT_FAILURE);
+  }
+  
+  double peak_frequency = 0;
+  double peak_amplitude = 0;
+  
+  for (int ii=0; ii<sps[0].frequency.size(); ii++){
+    summed_sp.frequency.push_back(sps[0].frequency[ii]);
+    double sound_wave=0;
+    double turbulence=0;
+    double bubble_collision=0;
+    double total_amplitude=0;
+    for(int jj=0; jj<sps.size(); jj++){
+      sound_wave += sps[jj].sound_wave[ii];
+      turbulence += sps[jj].turbulence[ii];
+      bubble_collision += sps[jj].bubble_collision[ii];
+      sound_wave += sps[jj].sound_wave[ii];
+      total_amplitude += sps[jj].total_amplitude[ii];
     }
-    
-    file << "Peak frequency, Peak spectrum, Frequency list, Spectrum list" << std::endl;
-    
-    double peak_frequency = std::get<0>(data);
-    double peak_spectrum = std::get<1>(data);
-    std::vector<double> f_list = std::get<2>(data);
-    std::vector<double> omega_list = std::get<3>(data);
-
-    size_t max_size = f_list.size();
-    
-    for (size_t i = 0; i < max_size; ++i) {
-        if (i == 0) {
-            file << peak_frequency << ",";
-            file << peak_spectrum << ",";
-        } else {
-            file << ",";
-            file << ",";
-        }
-
-        if (i < f_list.size()) {
-            file << f_list[i];
-        }
-        file << ",";
-
-        if (i < omega_list.size()) {
-            file << omega_list[i];
-        }
-        file << std::endl;
+    if (total_amplitude > peak_amplitude){
+        peak_amplitude = total_amplitude;
+        peak_frequency = sps[0].frequency[ii];
     }
-
-    std::cout << "GW results has been written to " << filename << std::endl;
-    file.close();
+    summed_sp.sound_wave.push_back(sound_wave);
+    summed_sp.turbulence.push_back(turbulence);
+    summed_sp.bubble_collision.push_back(bubble_collision);
+    summed_sp.total_amplitude.push_back(total_amplitude);
+  }
+  
+  return summed_sp;
 }
 
+std::vector<GravWaveSpectrum> GravWaveCalculator::cal_spectrums(){
+  for(const auto& ti : trans){
+    double Tref = ti.TN;
+    std::vector<Eigen::VectorXd>  vacua = tf.get_vacua_at_T(ti.true_phase,ti.false_phase,Tref,ti.key);
+    double alpha = get_alpha(vacua[0],vacua[1],Tref);
+    double beta = get_beta(ti.true_phase,ti.false_phase,Tref,ti.key);
+    GravWaveSpectrum spi = cal_spectrum(alpha,beta,Tref);
+    spectrums.push_back(spi);
+  }
+  total_spectrum = sum_spectrums(spectrums);
+  return spectrums;
+}
+
+void GravWaveCalculator::write_spectrum_to_text(GravWaveSpectrum sp, const std::string &filename){
+  std::ofstream file(filename);
+  for (int ii=0; ii<sp.frequency.size(); ii++){
+    file << sp.frequency[ii] << ", " << sp.total_amplitude[ii]<< ", "
+         << sp.sound_wave[ii] << ", " << sp.turbulence[ii] << ", " << sp.bubble_collision[ii] << std::endl;
+  }
+  
+  LOG(debug) << "GW spectrum has been written to " << filename;
+}
 
 }
