@@ -70,6 +70,14 @@ int main(int argc, char* argv[]) {
   outputFile.close();
   
   PhaseTracer::GravWaveCalculator gc(tf);
+  auto gw = gc.cal_spectrums();
+  std::cout << gc;
+  for (int ii=0; ii < gw.size(); ii++){
+    gc.write_spectrum_to_text(gw[ii],"GW_results"+std::to_string(ii)+".txt");
+  }
+  
+  gc.write_spectrum_to_text(gc.get_total_spectrum(),"GW_results.txt");
+  
 //  gc.Set_parameters(0.3,500.,0.9,40.);
 //  auto results = gc.GW_total_spectrum();
 //  gc.Write_to_csv(results, "GW_results.csv");
