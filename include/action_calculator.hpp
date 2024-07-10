@@ -38,6 +38,28 @@ namespace PhaseTracer {
 
 
 class ActionCalculator{
+  
+private:
+  EffectivePotential::Potential &potential;
+  
+  /* TODO */
+  PROPERTY(size_t, num_dims, 3)
+  
+  /* Choose method to calculate the action*/
+  PROPERTY(bool, use_BubbleProfiler, true)
+  PROPERTY(bool, use_PathDeformation, true)
+
+  /* Set parameters in BubbleProfiler */
+  /* Use perturbative method or not*/
+  PROPERTY(bool, BP_use_perturbative, false)
+  PROPERTY(double, BP_initial_step_size, 1.e-2)
+  PROPERTY(double, BP_interpolation_points_fraction, 1.0)
+  // TODD: Add more settings if needed
+  
+  /* Set parameters for PathDeformation */
+  // TODD: Add setting
+  
+  
 public:
   explicit ActionCalculator(EffectivePotential::Potential &potential_) :
     potential(potential_){
@@ -54,7 +76,7 @@ public:
       V_BubbleProfiler V_BP(potential); // perturbative_profiler only accept non-const potential
       V_BP.set_T(T);
       
-      if (potential.get_n_scalars() == 1  && !use_perturbative) {
+      if (potential.get_n_scalars() == 1  && !BP_use_perturbative) {
 
         double false_min = false_vacuum[0];
         double true_min = true_vacuum[0];
@@ -77,8 +99,8 @@ public:
 
   //      profiler.set_domain_start(input.domain_start);
   //      profiler.set_domain_end(input.domain_end);
-        profiler.set_initial_step_size(1.e-2);
-        profiler.set_interpolation_points_fraction(1.0);
+        profiler.set_initial_step_size(BP_initial_step_size);
+        profiler.set_interpolation_points_fraction(BP_interpolation_points_fraction);
 
 
         profiler.set_false_vacuum_loc(false_vacuum);
@@ -146,20 +168,6 @@ public:
     return std::min(action_BP,action_PD);
 
   }
-  
-private:
-  EffectivePotential::Potential &potential;
-  
-  PROPERTY(size_t, num_dims, 3)
-  
-  PROPERTY(bool, use_BubbleProfiler, true)
-  PROPERTY(bool, use_perturbative, false)
-  
-  PROPERTY(bool, use_PathDeformation, true)
-  
-  
-  
-  
   
 };
 
