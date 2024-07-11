@@ -95,8 +95,8 @@ const double GravWaveCalculator::dSdT(Phase phase1, Phase phase2, double T, size
   return  coeff[1];
 }
 
-const double GravWaveCalculator::get_beta(Phase phase1, Phase phase2, double T, size_t i_unique){
-  return T * H(T) * dSdT(phase1, phase2, T, i_unique);
+const double GravWaveCalculator::get_beta_H(Phase phase1, Phase phase2, double T, size_t i_unique){
+  return T * dSdT(phase1, phase2, T, i_unique);
 }
 
 double GravWaveCalculator::GW_bubble_collision(double f, double alpha, double beta_H, double T_ref) {
@@ -161,7 +161,7 @@ double GravWaveCalculator::Kappa_sound_wave(double alpha) {
   return kappa_sw;
 }
 
-GravWaveSpectrum GravWaveCalculator::cal_spectrum(double alpha, double beta, double Tref){
+GravWaveSpectrum GravWaveCalculator::cal_spectrum(double alpha, double beta_H, double Tref){
   if (num_frequency < 2){
     LOG(fatal) << "Number of frequencies must be greater than 1.";
     exit(EXIT_FAILURE);
@@ -174,7 +174,7 @@ GravWaveSpectrum GravWaveCalculator::cal_spectrum(double alpha, double beta, dou
   GravWaveSpectrum sp;
   sp.Tref = Tref;
   sp.alpha = alpha;
-  sp.beta = beta;
+  sp.beta_H = beta_H;
   double logMin = std::log10(max_frequency);
   double logMax = std::log10(min_frequency);
   double logInterval = (logMax - logMin) / (num_frequency - 1);
@@ -183,11 +183,11 @@ GravWaveSpectrum GravWaveCalculator::cal_spectrum(double alpha, double beta, dou
   for (int i = 0; i < num_frequency; ++i) {
     double fq = std::pow(10, logMin + i * logInterval);
     sp.frequency.push_back(fq);
-    double sound_wave = GW_sound_wave(fq, alpha, beta, Tref);
+    double sound_wave = GW_sound_wave(fq, alpha, beta_H, Tref);
     sp.sound_wave.push_back(sound_wave);
-    double turbulence = GW_turbulence(fq, alpha, beta, Tref);
+    double turbulence = GW_turbulence(fq, alpha, beta_H, Tref);
     sp.turbulence.push_back(turbulence);
-    double bubble_collision = Tref < T_threshold_bubble_collision ? GW_bubble_collision(fq, alpha, beta, Tref) : 0;
+    double bubble_collision = Tref < T_threshold_bubble_collision ? GW_bubble_collision(fq, alpha, beta_H, Tref) : 0;
     sp.bubble_collision.push_back(bubble_collision);
     double total_amplitude = sound_wave+turbulence+bubble_collision;
     sp.total_amplitude.push_back(total_amplitude);
@@ -244,8 +244,8 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::cal_spectrums(){
     double Tref = ti.TN;
     std::vector<Eigen::VectorXd>  vacua = tf.get_vacua_at_T(ti.true_phase,ti.false_phase,Tref,ti.key);
     double alpha = get_alpha(vacua[0],vacua[1],Tref);
-    double beta = get_beta(ti.true_phase,ti.false_phase,Tref,ti.key);
-    GravWaveSpectrum spi = cal_spectrum(alpha,beta,Tref);
+    double beta_H = get_beta_H(ti.true_phase,ti.false_phase,Tref,ti.key);
+    GravWaveSpectrum spi = cal_spectrum(alpha,beta_H,Tref);
     spectrums.push_back(spi);
   }
   total_spectrum = sum_spectrums(spectrums);

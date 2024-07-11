@@ -13,7 +13,7 @@ namespace PhaseTracer {
 struct GravWaveSpectrum {
   double Tref;
   double alpha;
-  double beta;
+  double beta_H;
   double peak_frequency;
   double peak_amplitude;
   std::vector<double> frequency;
@@ -26,7 +26,7 @@ struct GravWaveSpectrum {
   friend std::ostream& operator << (std::ostream& o, const GravWaveSpectrum& a) {
     o << "=== Gravitational wave generated at T = " << a.Tref << std::endl;
     o << "    alpha = " << a.alpha << std::endl
-      << "    beta = " << a.beta << std::endl
+      << "    beta over H = " << a.beta_H << std::endl
       << "    peak_frequency = " << a.peak_frequency << std::endl
       << "    peak_amplitude = " << a.peak_amplitude << std::endl;
     return o;
@@ -59,7 +59,7 @@ public:
   double GW_turbulence(double f, double alpha, double beta_H, double T_ref);
 
   /** Calculate GW spectrum for one transition*/
-  GravWaveSpectrum cal_spectrum(double alpha, double beta, double Tref);
+  GravWaveSpectrum cal_spectrum(double alpha, double beta_H, double Tref);
   /** Calculate GW spectrums for all the transitions*/
   std::vector<GravWaveSpectrum> cal_spectrums();
   /** Return GW spectrums for all the transitions*/
@@ -78,8 +78,8 @@ public:
   /* Calcualte alpha along the phases */
   const double get_alpha(Phase phase1, Phase phase2, double T);
   
-  /* Calcualte beta */
-  const double get_beta(Phase phase1, Phase phase2, double T, size_t i_unique);
+  /* Calcualte beta_H */
+  const double get_beta_H(Phase phase1, Phase phase2, double T, size_t i_unique);
   
 private:
   
@@ -89,7 +89,7 @@ private:
   PROPERTY(double, dof, 106.75)
   /** Velocity of the bubble wall */
   PROPERTY(double, vw, 0.3)
-  /** ?? */
+  /** the ratio of efficiency factor of turbulence to the one of sound wave*/
   PROPERTY(double, epsilon, 0.1)
   /** Gravitational constant */
   const double G = 6.7088e-39;
