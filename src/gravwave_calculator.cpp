@@ -6,6 +6,7 @@
 #include <sstream>
 #include <random>
 #include "gravwave_calculator.hpp"
+#include <boost/math/quadrature/trapezoidal.hpp>
 
 namespace PhaseTracer {
 
@@ -198,6 +199,7 @@ GravWaveSpectrum GravWaveCalculator::cal_spectrum(double alpha, double beta_H, d
   }
   sp.peak_frequency = peak_frequency;
   sp.peak_amplitude = peak_amplitude;
+  sp.SNR = get_SNR(SNR_f_min, SNR_f_max, run_time_LISA, run_time_Taiji, alpha, beta_H, Tref);
   return sp;
 }
 
@@ -262,4 +264,46 @@ void GravWaveCalculator::write_spectrum_to_text(GravWaveSpectrum sp, const std::
   LOG(debug) << "GW spectrum has been written to " << filename;
 }
 
+double GravWaveCalculator::intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref){
+	double P_oms = 3.6e-41;
+	double P_acc = 1.44e-48 / pow(2 * M_PI * f, 4) * (1 + pow(0.4e-3 / f, 2));
+	double S_A = sqrt(2) * 20. / 3 * (P_oms + 4 * P_acc) * (1 + pow(f / (2.54e-2), 2));
+	double H_0 = 67.4 / (3.086e19);
+	double omegahsq_lisa = 4 * M_PI * M_PI / (3 * H_0 * H_0) * pow(f, 3) * S_A * 0.674 * 0.674;
+	double sound_wave = GW_sound_wave(f, alpha, beta_H, T_ref); 
+	double turbulence = GW_turbulence(f, alpha, beta_H, T_ref);
+	double bubble_collision = T_ref < T_threshold_bubble_collision ? GW_bubble_collision(f, alpha, beta_H, T_ref) : 0;
+	double omegahsq = sound_wave + turbulence + bubble_collision;
+	return omegahsq * omegahsq / (omegahsq_lisa * omegahsq_lisa);
+}
+
+double GravWaveCalculator::intergrand_SNR_Taiji(double f, double alpha, double beta_H, double T_ref){
+	double P_oms = 64e-24 * (1 + pow(2e-3 / f, 4)) * (2 * M_PI * f / 3e8);
+	double P_acc = 9e-30 * (1 + pow(0.4e-3 / f, 2)) * (1 + pow(f/8e-3, 4)) * (1 / (2 * M_PI * f * 3e8));
+	double f_star = 3e8 / (2 * M_PI * 3e9);
+	double N_A = 8 * std::sin(f / f_star) * std::sin(f / f_star) * (4 * P_acc * (1 + std::cos(f / f_star) + pow(std::cos(f / f_star), 2)) + P_oms * (2 + std::cos(f / f_star)));
+	double R_A = 9. / 20 * 1. / (1 + pow(3 * f / (4 * f_star), 2)) * (2 - 2 * std::cos(2 * f / f_star));
+	/*inverse-noise weighted sensitivity, 1/sqrt(2) accounts for the S_E contribution */
+	double S_A = N_A / R_A * 1 / sqrt(2); 
+	double H_0 = 67.4 / (3.086e19);
+	double omegahsq_taiji = 4 * M_PI * M_PI / (3 * H_0 * H_0) * pow(f, 3) * S_A * 0.674 * 0.674;
+	double sound_wave = GW_sound_wave(f, alpha, beta_H, T_ref); 
+	double turbulence = GW_turbulence(f, alpha, beta_H, T_ref);
+	double bubble_collision = T_ref < T_threshold_bubble_collision ? GW_bubble_collision(f, alpha, beta_H, T_ref) : 0;
+	double omegahsq = sound_wave + turbulence + bubble_collision;
+	return omegahsq * omegahsq / (omegahsq_taiji * omegahsq_taiji);
+}
+
+std::vector<double> GravWaveCalculator::get_SNR(double f_min, double f_max, double run_time_LISA, double run_time_Taiji, double alpha, double beta_H, double T_ref){
+	std::vector<double> SNR_vector;
+	double T_obs_LISA = run_time_LISA * 365.25 * 86400;
+	double T_obs_Taiji = run_time_Taiji * 365.25 * 86400;
+	auto intergrand_SNR_LISA_fix_var = std::bind(&GravWaveCalculator::intergrand_SNR_LISA, this, std::placeholders::_1, alpha, beta_H, T_ref);
+	auto intergrand_SNR_Taiji_fix_var = std::bind(&GravWaveCalculator::intergrand_SNR_Taiji, this, std::placeholders::_1, alpha, beta_H, T_ref);
+	double SNR_LISA_sq = boost::math::quadrature::trapezoidal(intergrand_SNR_LISA_fix_var, f_min, f_max);
+	double SNR_Taiji_sq = boost::math::quadrature::trapezoidal(intergrand_SNR_Taiji_fix_var, f_min, f_max);
+	SNR_vector.push_back(sqrt(SNR_LISA_sq * T_obs_LISA));
+	SNR_vector.push_back(sqrt(SNR_Taiji_sq * T_obs_Taiji));
+	return SNR_vector;
+	}
 }

@@ -21,6 +21,7 @@ struct GravWaveSpectrum {
   std::vector<double> turbulence;
   std::vector<double> bubble_collision;
   std::vector<double> total_amplitude;
+  std::vector<double> SNR;
   
   /** Pretty-printer for GravWaveSpectrum */
   friend std::ostream& operator << (std::ostream& o, const GravWaveSpectrum& a) {
@@ -28,7 +29,10 @@ struct GravWaveSpectrum {
     o << "    alpha = " << a.alpha << std::endl
       << "    beta over H = " << a.beta_H << std::endl
       << "    peak_frequency = " << a.peak_frequency << std::endl
-      << "    peak_amplitude = " << a.peak_amplitude << std::endl;
+      << "    peak_amplitude = " << a.peak_amplitude << std::endl
+      << "    siganl to noise ratio for LISA = "<<a.SNR[0]<<std::endl
+      << "    siganl to noise ratio for Taiji = "<<a.SNR[1]<<std::endl;
+      
     return o;
   }
 };
@@ -80,19 +84,35 @@ public:
   
   /* Calcualte beta_H */
   const double get_beta_H(Phase phase1, Phase phase2, double T, size_t i_unique);
+  /*Sensitivity for LISA*/
+  double intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref);
+  /*Sensitivity for Taiji*/
+  double intergrand_SNR_Taiji(double f, double alpha, double beta_H, double T_ref);
+  std::vector<double> get_SNR(double f_min, double f_max, double T_obs_LISA, double T_obs_Taiji, double alpha, double beta_H, double T_ref);
   
 private:
   
   TransitionFinder tf;
   
   /** Degree of freedom */
-  PROPERTY(double, dof, 106.75)
+  PROPERTY(double, dof, 106.75);
   /** Velocity of the bubble wall */
-  PROPERTY(double, vw, 0.3)
+  PROPERTY(double, vw, 0.3);
   /** the ratio of efficiency factor of turbulence to the one of sound wave*/
-  PROPERTY(double, epsilon, 0.1)
+  PROPERTY(double, epsilon, 0.1);
   /** Gravitational constant */
   const double G = 6.7088e-39;
+  
+  /**Effecive run time**/
+  PROPERTY(double, run_time_LISA, 3);
+  PROPERTY(double, run_time_Taiji, 3);
+  /**Acquisition time for LISA, Taiji, units second **/
+  PROPERTY(double, T_obs_LISA, 3 * 365.25 * 86400);
+  PROPERTY(double, T_obs_Taiji, 3 * 365.25 * 86400);
+  
+   /**Integrate bound for SNR calculation **/
+  PROPERTY(double, SNR_f_min, 1e-5);
+  PROPERTY(double, SNR_f_max, 1e-1);
   
   /** GW spectrums for all the transitions*/
   std::vector<GravWaveSpectrum> spectrums;
@@ -102,20 +122,20 @@ private:
   std::vector<Transition> trans;
   
   /** Lower bound on the frequency of the GW spectrum*/
-  PROPERTY(double, min_frequency, 1e-4)
+  PROPERTY(double, min_frequency, 1e-4);
   /** Upper bound on the frequency of the GW spectrum*/
-  PROPERTY(double, max_frequency, 1e1)
+  PROPERTY(double, max_frequency, 1e1);
   /** Number of points for  the frequency of the GW spectrum*/
-  PROPERTY(int, num_frequency, 500)
+  PROPERTY(int, num_frequency, 500);
   /** Temperature threshold for using bubble collision*/
-  PROPERTY(double, T_threshold_bubble_collision, 10)
+  PROPERTY(double, T_threshold_bubble_collision, 10);
   
   /** The step-size in numerical derivative for dVdT*/
-  PROPERTY(double, h_dVdT, 1e-2)
+  PROPERTY(double, h_dVdT, 1e-2);
   /** The step-size in numerical derivative for dSdT */
-  PROPERTY(double, h_dSdT, 1e-1)
+  PROPERTY(double, h_dSdT, 1e-1);
   /** The number of points used in numerical derivative of action */
-  PROPERTY(double, np_dSdT, 5)
+  PROPERTY(double, np_dSdT, 5);
 
     /*  */
   const double rho_R(double T);
@@ -140,7 +160,7 @@ private:
   const double S3T(Phase phase1, Phase phase2, double T, size_t i_unique);
   /* Calculate derivative of S3/T to T */
   const double dSdT(Phase phase1, Phase phase2, double T, size_t i_unique);
-  
+
 };
 
 }  // namespace PhaseTracer
