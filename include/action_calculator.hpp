@@ -18,18 +18,7 @@
 #ifndef ACTION_CALCULATOR_HPP_INCLUDED
 #define ACTION_CALCULATOR_HPP_INCLUDED
 
-//#include <cmath>
 #include <ostream>
-//#include <vector>
-//#include <Eigen/Core>
-//#include <algorithm>
-//#include <boost/cstdint.hpp>
-//#include <boost/math/special_functions/bessel.hpp>
-//#include <boost/numeric/odeint.hpp>
-//#include <boost/math/quadrature/gauss_kronrod.hpp>
-//#include <boost/math/tools/minima.hpp>
-//#include <gsl/gsl_sf_bessel.h>
-
 
 #include "bubble_profiler.hpp"
 #include "path_deformation.hpp"
@@ -42,7 +31,7 @@ class ActionCalculator{
 private:
   EffectivePotential::Potential &potential;
   
-  /* TODO */
+  /* Number of dimensions */
   PROPERTY(size_t, num_dims, 3)
   
   /* Choose method to calculate the action*/

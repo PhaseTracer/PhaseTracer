@@ -94,9 +94,7 @@ struct Profile1D {
 class Shooting {
 public:
   explicit Shooting(PotentialForShooting& ps_) :
-    ps(ps_) {
-      // TODO Add checking, this olny works for 1d
-    }
+    ps(ps_) {}
   virtual ~Shooting() = default;
     
   /*Calculates `dV/dphi` at ``phi = phi_absMin + delta_phi``.*/
