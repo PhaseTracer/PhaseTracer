@@ -268,7 +268,6 @@ void TransitionFinder::find_transitions() {
     return;
   }
 
-  transitions.empty();
   calculated_transitions = true;
   const auto phases = pf.get_phases();
 

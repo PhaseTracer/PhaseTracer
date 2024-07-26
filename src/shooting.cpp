@@ -411,7 +411,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
   double delta_phi0;
   while (true){
     delta_phi0 = exp(-x)*delta_phi;
-    if (delta_phi0 < 1000*std::numeric_limits<double>::min()) { // This is the case at TC TODO: set a more reasonable value
+    if (fabs(delta_phi0) < 1e3*std::numeric_limits<double>::min()) { // This corresponds to the situation at TC.
       return profile_inf;
     }
     double r0_, phi0, dphi0;

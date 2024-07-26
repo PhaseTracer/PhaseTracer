@@ -82,7 +82,7 @@ public:
   /* Calcualte alpha along the phases */
   const double get_alpha(Phase phase1, Phase phase2, double T);
   
-  /* Calcualte beta_H */
+  /* Calcualte beta/H */
   const double get_beta_H(Phase phase1, Phase phase2, double T, size_t i_unique);
   /*Sensitivity for LISA*/
   double intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref);
@@ -98,7 +98,7 @@ private:
   PROPERTY(double, dof, 106.75);
   /** Velocity of the bubble wall */
   PROPERTY(double, vw, 0.3);
-  /** the ratio of efficiency factor of turbulence to the one of sound wave*/
+  /** Ratio of efficiency factor of turbulence to the one of sound wave*/
   PROPERTY(double, epsilon, 0.1);
   /** Gravitational constant */
   const double G = 6.7088e-39;
