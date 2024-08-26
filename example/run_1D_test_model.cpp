@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
 
   // Make ActionCalculator object
   PhaseTracer::ActionCalculator ac(model);
-  
+  ac.set_use_BubbleProfiler(false);
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf,ac);
   tf.find_transitions();
@@ -58,26 +58,36 @@ int main(int argc, char* argv[]) {
 //  std::cout << tf.get_action(true_vacuum, false_vacuum, 56.9986) << std::endl;
 //
   
-  std::ofstream outputFile("action_1D_test_model.txt", std::ios_base::app);
+  std::ofstream outputFile("action_1D_test_model.txt");
   const auto phases = pf.get_phases();
   auto phase1 = phases[1];
   auto phase2 = phases[0];
-  for (double Ttest=31.623288422919078; Ttest < 57.975077465648184; Ttest += 0.5){
+  for (double Ttest=34; Ttest < 61; Ttest += 0.1){
       auto s = tf.get_action(phase1, phase2, Ttest);
       auto vacua = tf.get_vacua_at_T(phase1, phase2, Ttest);
       outputFile << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s << " " << s/Ttest  << std::endl;
   }
   outputFile.close();
   
-  PhaseTracer::GravWaveCalculator gc(tf);
-  auto gw = gc.cal_spectrums();
-  std::cout << gc;
-  for (int ii=0; ii < gw.size(); ii++){
-    gc.write_spectrum_to_text(gw[ii],"GW_results"+std::to_string(ii)+".txt");
-  }
+//  double Ttest = 51.3;
+//  auto s = tf.get_action(phase2, phase1, Ttest);
+//  auto vacua = tf.get_vacua_at_T(phase1, phase2, Ttest);
+//  std::cout << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s << " " << s/Ttest  << std::endl;
   
-  gc.write_spectrum_to_text(gc.get_total_spectrum(),"GW_results.txt");
+//  Ttest = 51.35;
+//  s = tf.get_action(phase1, phase2, Ttest);
+//  vacua = tf.get_vacua_at_T(phase1, phase2, Ttest);
+//  std::cout << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s << " " << s/Ttest  << std::endl;
   
+//  PhaseTracer::GravWaveCalculator gc(tf);
+//  auto gw = gc.cal_spectrums();
+//  std::cout << gc;
+//  for (int ii=0; ii < gw.size(); ii++){
+//    gc.write_spectrum_to_text(gw[ii],"GW_results"+std::to_string(ii)+".txt");
+//  }
+//  
+//  gc.write_spectrum_to_text(gc.get_total_spectrum(),"GW_results.txt");
+//  
 //  gc.Set_parameters(0.3,500.,0.9,40.);
 //  auto results = gc.GW_total_spectrum();
 //  gc.Write_to_csv(results, "GW_results.csv");

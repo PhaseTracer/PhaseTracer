@@ -77,12 +77,12 @@ public:
   /** Write a GW spectrum to a text file*/
   void write_spectrum_to_text(GravWaveSpectrum sp, const std::string &filename);
 
-  /* Calcualte alpha with fixed phi */
+  /* Calcualte alpha(phase transition strength) with fixed phi */
   const double get_alpha(const Eigen::VectorXd vacuum_1, const Eigen::VectorXd vacuum_2, double T);
-  /* Calcualte alpha along the phases */
+  /* Calcualte alpha(phase transition strength) along the phases */
   const double get_alpha(Phase phase1, Phase phase2, double T);
   
-  /* Calcualte beta/H */
+  /* Calcualte beta/H (Inverse phase transition duration) */
   const double get_beta_H(Phase phase1, Phase phase2, double T, size_t i_unique);
   /*Sensitivity for LISA*/
   double intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref);
