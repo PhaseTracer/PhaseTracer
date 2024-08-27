@@ -20,7 +20,9 @@
 
 #include <ostream>
 
+#ifdef BUILD_WITH_BP
 #include "bubble_profiler.hpp"
+#endif
 #include "path_deformation.hpp"
 
 namespace PhaseTracer {
@@ -56,10 +58,19 @@ public:
   virtual ~ActionCalculator() = default;
   
   double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
+    
+#ifndef BUILD_WITH_BP
+      if (use_BubbleProfiler){
+        LOG(fatal) << "Enable BubbleProfiler in CMake configuration before using it.";
+        throw std::runtime_error("BubbleProfiler is not installed.");
+      }
+#endif
+    
     Eigen::VectorXd true_vacuum = vacuum_1;
     Eigen::VectorXd false_vacuum = vacuum_2;
     if ( potential.V(true_vacuum,T) > potential.V(false_vacuum,T) ) true_vacuum.swap(false_vacuum);
     
+#ifdef BUILD_WITH_BP
     double action_BP=std::numeric_limits<double>::quiet_NaN();
     if (use_BubbleProfiler){
       V_BubbleProfiler V_BP(potential); // perturbative_profiler only accept non-const potential
@@ -112,8 +123,8 @@ public:
         }
       }
       LOG(debug) << " S(BP) = " << action_BP;
-
     }
+#endif
     double action_PD=std::numeric_limits<double>::quiet_NaN();
     if (use_PathDeformation){
       LOG(debug) << "Calculate action(PD) at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
@@ -145,17 +156,19 @@ public:
     
     
     LOG(debug) << " S(PD) = " << action_PD;
+#ifdef BUILD_WITH_BP
     LOG(debug) << " S(BP) = " << action_BP;
-    
     if (std::isnan(action_BP)) {
         return action_PD;
     }
     if (std::isnan(action_PD)) {
         return action_BP;
     }
-    
     return std::min(action_BP,action_PD);
-
+#else
+    return action_PD;
+#endif
+    
   }
   
 };

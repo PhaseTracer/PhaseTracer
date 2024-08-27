@@ -14,7 +14,7 @@ option(BUILD_WITH_FS_ScalarSingletZ2DMEWSBoutputlamHEFTHiggs "Build FlexibleSUSY
 option(BUILD_WITH_BSMPT "Build BSMPT example programs" OFF)
 
 # option for including BubbleProfiler
-option(BUILD_WITH_BP "Build example programs including BubbleProfiler" On)
+option(BUILD_WITH_BP "Build example programs including BubbleProfiler" OFF)
 
 # packages
 
@@ -35,6 +35,7 @@ find_package(Git)
 add_subdirectory(EffectivePotential)
 
 if(BUILD_WITH_BP)
+  add_definitions(-DBUILD_WITH_BP)
   find_package(GSL REQUIRED)
   find_package(BubbleProfiler REQUIRED)
 endif(BUILD_WITH_BP)
