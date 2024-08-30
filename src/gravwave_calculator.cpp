@@ -162,7 +162,7 @@ double GravWaveCalculator::Kappa_sound_wave(double alpha) {
   return kappa_sw;
 }
 
-GravWaveSpectrum GravWaveCalculator::cal_spectrum(double alpha, double beta_H, double Tref){
+GravWaveSpectrum GravWaveCalculator::calc_spectrum(double alpha, double beta_H, double Tref){
   if (num_frequency < 2){
     LOG(fatal) << "Number of frequencies must be greater than 1.";
     exit(EXIT_FAILURE);
@@ -241,13 +241,13 @@ GravWaveSpectrum GravWaveCalculator::sum_spectrums(std::vector<GravWaveSpectrum>
   return summed_sp;
 }
 
-std::vector<GravWaveSpectrum> GravWaveCalculator::cal_spectrums(){
+std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums(){
   for(const auto& ti : trans){
     double Tref = ti.TN;
     std::vector<Eigen::VectorXd>  vacua = tf.get_vacua_at_T(ti.true_phase,ti.false_phase,Tref,ti.key);
     double alpha = get_alpha(vacua[0],vacua[1],Tref);
     double beta_H = get_beta_H(ti.true_phase,ti.false_phase,Tref,ti.key);
-    GravWaveSpectrum spi = cal_spectrum(alpha,beta_H,Tref);
+    GravWaveSpectrum spi = calc_spectrum(alpha,beta_H,Tref);
     spectrums.push_back(spi);
   }
   total_spectrum = sum_spectrums(spectrums);
