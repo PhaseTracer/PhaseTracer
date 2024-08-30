@@ -63,9 +63,9 @@ public:
   double GW_turbulence(double f, double alpha, double beta_H, double T_ref);
 
   /** Calculate GW spectrum for one transition*/
-  GravWaveSpectrum cal_spectrum(double alpha, double beta_H, double Tref);
+  GravWaveSpectrum calc_spectrum(double alpha, double beta_H, double Tref);
   /** Calculate GW spectrums for all the transitions*/
-  std::vector<GravWaveSpectrum> cal_spectrums();
+  std::vector<GravWaveSpectrum> calc_spectrums();
   /** Return GW spectrums for all the transitions*/
   std::vector<GravWaveSpectrum> get_spectrums() {return spectrums;}
   

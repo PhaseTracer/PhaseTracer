@@ -129,35 +129,35 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
   LOG(debug) << "Find Tnuc between " << phase1.key << " and " << phase2.key << " in [" << T_begin << ", "<< T_end <<"]. ";
   
   
-  const auto fun_nucleation = [this, phase1, phase2, i_unique](double Ttry) {
+  const auto nucleation_criteria = [this, phase1, phase2, i_unique](double Ttry) {
     return this->get_action(phase1, phase2, Ttry, i_unique)/Ttry - 140.;
   };
 
-//  LOG(debug) << "fun_nucleation(T_begin)= " << fun_nucleation(T_begin) ;
-//  LOG(debug) << "fun_nucleation(T_end)= " << fun_nucleation(T_end) ;  
+//  LOG(debug) << "nucleation_criteria(T_begin)= " << nucleation_criteria(T_begin) ;
+//  LOG(debug) << "nucleation_criteria(T_end)= " << nucleation_criteria(T_end) ;
   
   double Tnuc = std::numeric_limits<double>::quiet_NaN();
   // If action at T_begin is NaN, find the largest valid T_begin
-  double action_ = fun_nucleation(T_begin);
-  while (std::isnan(action_)){
+  double nc = nucleation_criteria(T_begin);
+  while (std::isnan(nc)){
     T_begin -= Tnuc_step;
     if (T_begin < T_end)
       return Tnuc;
-    action_ = fun_nucleation(T_begin);
+    nc = nucleation_criteria(T_begin);
   }
   
-  if ( action_ < 0 ) {
+  if ( nc < 0 ) {
     LOG(debug) << "The tunneling possibility at T_begin satisfys the nucleation condition." ;
     return T_begin;
   }
   
-  action_ = fun_nucleation(T_end);
+  nc = nucleation_criteria(T_end);
   // If the tunneling possibility at T_end is small, find T_end from T_begin
-  if ( action_ > 0 or std::isnan(action_) ) {
+  if ( nc > 0 or std::isnan(nc) ) {
     double T_end_ = T_end;
     while (true) {
       T_end = T_begin - Tnuc_step;
-      while (fun_nucleation(T_end) < 0) break;
+      while (nucleation_criteria(T_end) < 0) break;
       while (T_end < T_end_) return Tnuc;
       T_begin = T_end;
     }
@@ -167,7 +167,7 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
     const double root_bits = 1. - std::log2(TC_tol_rel);
     boost::math::tools::eps_tolerance<double> stop(root_bits);
     boost::uintmax_t non_const_max_iter = max_iter;
-    const auto result = boost::math::tools::bisect(fun_nucleation, T_end, T_begin, stop, non_const_max_iter);
+    const auto result = boost::math::tools::bisect(nucleation_criteria, T_end, T_begin, stop, non_const_max_iter);
     Tnuc = (result.first + result.second) * 0.5;
     LOG(debug) << "Found nucleation temperature = " << Tnuc;
   } catch(char *str){
