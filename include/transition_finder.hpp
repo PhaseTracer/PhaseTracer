@@ -46,6 +46,8 @@ struct Transition {
   std::vector<bool> changed;
   double delta_potential;
   double TN;
+  Eigen::VectorXd true_vacuum_TN;
+  Eigen::VectorXd false_vacuum_TN;
   size_t key;
 
   /** Pretty-printer for single transition */
@@ -64,7 +66,9 @@ struct Transition {
         << "true vacuum (TC) = " << a.true_vacuum << std::endl
         << "gamma (TC) = " << a.gamma << std::endl
         << "delta potential (TC) = " << a.delta_potential << std::endl
-        << "TN = " << a.TN << std::endl;
+        << "TN = " << a.TN << std::endl
+        << "false vacuum (TN) = " << a.true_vacuum_TN << std::endl
+        << "true vacuum (TN) = " << a.false_vacuum_TN << std::endl;
     } else {
       o << "=== failure. message =  " << a.message << " ===" << std::endl;
     }
@@ -152,6 +156,8 @@ class TransitionFinder {
   /** Absolute tolerance for judging whether a field is changed during a transition */
   PROPERTY(double, change_abs_tol, 1.e-3)
   PROPERTY(double, Tnuc_step, 1.)
+  /** Relative precision in nucleation temperature */
+  PROPERTY(double, Tnuc_tol_rel, 1.e-3)
   
   PROPERTY(bool, calculate_action, false)
   

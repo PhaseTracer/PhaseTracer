@@ -74,9 +74,11 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
         LOG(trace) << "are not duplicate";
         const auto gamma_ = gamma(true_vacuum, false_vacuum, TC);
         const auto changed_ = changed(true_vacuum, false_vacuum);
+        Eigen::VectorXd NaN_vec(1);
+        NaN_vec[0] = std::numeric_limits<double>::quiet_NaN();
         unique_transitions.push_back({SUCCESS, TC, phase1, phase2,
           true_vacuum, false_vacuum, gamma_, changed_, delta_potential,
-          std::numeric_limits<double>::quiet_NaN(), i_unique});
+          std::numeric_limits<double>::quiet_NaN(), NaN_vec, NaN_vec, i_unique});
       }
     }
     
@@ -104,7 +106,9 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
       double TN = get_Tnuc(phase1, phase2, i_selected, TC, T1);
       std::vector<Transition> selected_transition;
       selected_transition.push_back(unique_transitions[i_selected]);
-      selected_transition[0].TN =TN;
+      const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
+      selected_transition[0].true_vacuum_TN = vacua[0];
+      selected_transition[0].false_vacuum_TN = vacua[1];
       return selected_transition;
     } else {
       return unique_transitions;
@@ -164,7 +168,7 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
   }
   
   try{
-    const double root_bits = 1. - std::log2(TC_tol_rel);
+    const double root_bits = 1. - std::log2(Tnuc_tol_rel);
     boost::math::tools::eps_tolerance<double> stop(root_bits);
     boost::uintmax_t non_const_max_iter = max_iter;
     const auto result = boost::math::tools::bisect(nucleation_criteria, T_end, T_begin, stop, non_const_max_iter);
@@ -305,7 +309,7 @@ void TransitionFinder::find_transitions() {
                         phase1_at_critical.x, phase2_at_critical.x,
                         gamma_, changed_,
                         phase1_at_critical.potential - phase2_at_critical.potential,
-                        TC, 0 };
+                        TC, phase1_at_critical.x, phase2_at_critical.x, 0 };
         transitions.push_back(f);
       }
 
