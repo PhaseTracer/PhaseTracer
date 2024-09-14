@@ -93,7 +93,7 @@ struct Profile1D {
 
 class Shooting {
 public:
-  explicit Shooting(PotentialForShooting& ps_, int alpha_=2) :
+  explicit Shooting(PotentialForShooting& ps_, int alpha_) :
     ps(ps_), alpha(alpha_) {}
   virtual ~Shooting() = default;
     
@@ -161,7 +161,7 @@ private:
   /* The fractional error tolerance in integration*/
   PROPERTY(double, phitol, 1e-4)
   /* The cut off for finding the initial conditions for integration */
-  PROPERTY(double, thinCutoff, .01)
+  PROPERTY(double, thin_cutoff, .01)
   /* Number of points to return in the profile */
   PROPERTY(double, npoints, 500)
   /* The smallest starting radius */

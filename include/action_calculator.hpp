@@ -62,7 +62,23 @@ private:
   PROPERTY(double, PD_rmax, 1e4)
   /* The maximum number of points to be positioned during the integration process. */
   PROPERTY(boost::uintmax_t, PD_max_iter, 100)
-  
+  /* Number of basis splines to use */
+  PROPERTY(size_t, PD_nb, 10);
+  /* Order of basis splines */
+  PROPERTY(size_t, PD_kb, 3);
+  /* Get each step saved */
+  PROPERTY(bool, PD_save_all_steps, false);
+  /* The smallest the square of dphidr is allowed to be */
+  PROPERTY(double, PD_v2min, 0.0);
+  /* Maximum number of steps to take in a deformation */
+  PROPERTY(size_t, PD_step_maxiter, 500);
+  /* Maximum number of allowed deformation iterations */
+  PROPERTY(size_t, PD_path_maxiter, 20);
+  /* Number of samples to take along the path to create the spline
+   interpolation functions */
+  PROPERTY(size_t, PD_V_spline_samples, 100);
+  /* Flag to extend the path to minimums*/
+  PROPERTY(bool, PD_extend_to_minima, true);
   
 public:
   explicit ActionCalculator(EffectivePotential::Potential &potential_) :
@@ -148,11 +164,11 @@ public:
 
         st.set_xtol(PD_xtol);
         st.set_phitol(PD_phitol);
-        st.set_thinCutoff(PD_thin_cutoff);
+        st.set_thin_cutoff(PD_thin_cutoff);
         st.set_rmin(PD_rmin);
         st.set_rmax(PD_rmax);
         st.set_max_iter(PD_max_iter);
-        
+                
         try{
           auto profile = st.findProfile(false_vacuum[0],true_vacuum[0]);
           action_PD = st.calAction(profile);
@@ -161,6 +177,24 @@ public:
         }
       } else{
         PathDeformation pd(potential);
+        
+        pd.set_nb(PD_nb);
+        pd.set_kb(PD_kb);
+        pd.set_save_all_steps(PD_save_all_steps);
+        pd.set_v2min(PD_v2min);
+        pd.set_step_maxiter(PD_step_maxiter);
+        pd.set_path_maxiter(PD_path_maxiter);
+        pd.set_V_spline_samples(PD_V_spline_samples);
+        pd.set_extend_to_minima(PD_extend_to_minima);
+        
+        /** Pass through the shooting settings **/
+        pd.set_xtol(PD_xtol);
+        pd.set_phitol(PD_phitol);
+        pd.set_thin_cutoff(PD_thin_cutoff);
+        pd.set_rmin(PD_rmin);
+        pd.set_rmax(PD_rmax);
+        pd.set_max_iter(PD_max_iter);
+        
         pd.set_T(T);
         std::vector<Eigen::VectorXd> path_pts;
         path_pts.push_back(true_vacuum);

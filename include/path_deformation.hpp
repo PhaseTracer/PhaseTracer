@@ -159,6 +159,9 @@ private:
   
   PROPERTY(double, T, 0);
   
+  /* Number of dimensions */
+  PROPERTY(size_t, num_dims, 3)
+  
   /* Number of basis splines to use */
   PROPERTY(size_t, nb, 10);
   /* Order of basis splines */
@@ -167,13 +170,31 @@ private:
   PROPERTY(bool, save_all_steps, false);
   /* The smallest the square of dphidr is allowed to be */
   PROPERTY(double, v2min, 0.0);
-  
-  PROPERTY(size_t, step_maxiter, 50);
-  
+  /* Maximum number of steps to take in a deformation */
+  PROPERTY(size_t, step_maxiter, 500);
+  /* Maximum number of allowed deformation iterations */
   PROPERTY(size_t, path_maxiter, 20);
+  /* Number of samples to take along the path to create the spline
+   interpolation functions */
   PROPERTY(size_t, V_spline_samples, 100);
+  /* Flag to extend the path to minimums*/
   PROPERTY(bool, extend_to_minima, true);
-  PROPERTY(bool, breakLoop, false);
+  
+  /** Pass through the shooting settings **/
+  /* The precision of field values after taking the logarithm */
+  PROPERTY(double, xtol, 1e-4)
+  /* The fractional error tolerance in integration*/
+  PROPERTY(double, phitol, 1e-4)
+  /* The cut off for finding the initial conditions for integration */
+  PROPERTY(double, thin_cutoff, .01)
+  /* Number of points to return in the profile */
+  PROPERTY(double, npoints, 500)
+  /* The smallest starting radius */
+  PROPERTY(double, rmin, 1e-4)
+  /* The maximum allowed integration distance */
+  PROPERTY(double, rmax, 1e4)
+  /* The maximum number of points to be positioned during the integration process. */
+  PROPERTY(boost::uintmax_t, max_iter, 100)
   
   
   size_t num_nodes;
@@ -191,7 +212,7 @@ private:
   double stepIncrease=1.5;
   double stepDecrease=5.;
   bool checkAfterFit=true;
-  
+
   Eigen::MatrixXd X_node;
   Eigen::MatrixXd dX_node;
   Eigen::MatrixXd d2X_node;
@@ -201,6 +222,7 @@ private:
   std::vector<double> v2_node;
   double totalLength_node;
   
+  bool breakLoop = false;
   bool fix_start=false;
   bool fix_end=false;
   std::vector<Eigen::VectorXd> phi_prev;

@@ -393,7 +393,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
   const double delta_phi = phi_metaMin - phi_absMin;
   const std::vector<double> epsabs = {fabs(delta_phi*phitol), fabs(delta_phi*phitol/rscale)};
   const std::vector<double> epsfrac = {phitol, phitol};
-  double delta_phi_cutoff = thinCutoff * delta_phi;
+  double delta_phi_cutoff = thin_cutoff * delta_phi;
   // Set x parameters
   double xmin = xtol*10;
   double xmax = std::numeric_limits<double>::infinity();

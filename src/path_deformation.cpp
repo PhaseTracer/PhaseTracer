@@ -495,7 +495,13 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
     for (int num_iter = 1; num_iter <= path_maxiter; num_iter++) {
       LOG(debug) <<  "Starting tunneling step " << num_iter;
       SplinePath path(P, T, path_pts);
-      PhaseTracer::Shooting tobj(path);
+      PhaseTracer::Shooting tobj(path, num_dims-1);
+      tobj.set_xtol(xtol);
+      tobj.set_phitol(phitol);
+      tobj.set_thin_cutoff(thin_cutoff);
+      tobj.set_rmin(rmin);
+      tobj.set_rmax(rmax);
+      tobj.set_max_iter(max_iter);
       auto profile = tobj.findProfile(path.get_path_length(),0.);
       if (profile.R.size()==2){
         if (profile.R.isApprox(tobj.profile_inf.R, tobj.get_xtol())){
@@ -556,7 +562,14 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
     double fRatio = F_max/dV_max;
 
     SplinePath path(P, T, path_pts);
-    PhaseTracer::Shooting tobj(path);
+    PhaseTracer::Shooting tobj(path, num_dims-1);
+    tobj.set_xtol(xtol);
+    tobj.set_phitol(phitol);
+    tobj.set_thin_cutoff(thin_cutoff);
+    tobj.set_rmin(rmin);
+    tobj.set_rmax(rmax);
+    tobj.set_max_iter(max_iter);
+  
     auto profile = tobj.findProfile(path.get_path_length(),0.);
     auto action = tobj.calAction(profile);
     action_temp = action;
