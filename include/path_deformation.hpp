@@ -145,7 +145,7 @@ public:
   std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> Nbspld2(std::vector<double> t, std::vector<double> x, int k = 3);
   
   /* Calculate the instanton solution in multiple field dimension */
-  FullTunneling fullTunneling(std::vector<Eigen::VectorXd> path_pts);
+  FullTunneling full_tunneling(std::vector<Eigen::VectorXd> path_pts);
   
   double get_action(){return action_temp;}
   
