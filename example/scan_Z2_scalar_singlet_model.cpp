@@ -55,12 +55,8 @@ int main() {
       pf.set_check_hessian_singular(false);
       pf.find_phases();
 
-      // Make ActionCalculator object
-      PhaseTracer::ActionCalculator ac(model);
-      ac.set_use_BubbleProfiler(false);
-
       // Make TransitionFinder object and find the transitions
-      PhaseTracer::TransitionFinder tf(pf,ac);
+      PhaseTracer::TransitionFinder tf(pf);
       tf.find_transitions();
 
       if (pf.get_phases().size()!=2 or tf.get_transitions().size() !=1) {
@@ -75,8 +71,7 @@ int main() {
       for (auto &t : tf.get_transitions()) {
         output_file << t.TC << "\t" << t.true_vacuum[0] << "\t"
                     << t.true_vacuum[1] << "\t" << t.false_vacuum[0] << "\t"
-                    << t.false_vacuum[1] << "\t"
-                    << t.TN << "\t";
+                    << t.false_vacuum[1] ;
       }
       output_file << std::endl;
     }
