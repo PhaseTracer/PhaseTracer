@@ -48,7 +48,20 @@ private:
   // TODD: Add more settings if needed
   
   /* Set parameters for PathDeformation */
-  // TODD: Add setting
+  /* The precision of field values after taking the logarithm */
+  PROPERTY(double, PD_xtol, 1e-4)
+  /* The fractional error tolerance in integration*/
+  PROPERTY(double, PD_phitol, 1e-4)
+  /* The cut off for finding the initial conditions for integration */
+  PROPERTY(double, PD_thin_cutoff, .01)
+  /* Number of points to return in the profile */
+  PROPERTY(double, PD_npoints, 500)
+  /* The smallest starting radius */
+  PROPERTY(double, PD_rmin, 1e-4)
+  /* The maximum allowed integration distance */
+  PROPERTY(double, PD_rmax, 1e4)
+  /* The maximum number of points to be positioned during the integration process. */
+  PROPERTY(boost::uintmax_t, PD_max_iter, 100)
   
   
 public:
@@ -131,7 +144,15 @@ public:
       if (potential.get_n_scalars() == 1){
         OneDimPotentialForShooting ps(potential);
         ps.set_T(T);
-        Shooting st(ps);
+        Shooting st(ps,num_dims-1);
+
+        st.set_xtol(PD_xtol);
+        st.set_phitol(PD_phitol);
+        st.set_thinCutoff(PD_thin_cutoff);
+        st.set_rmin(PD_rmin);
+        st.set_rmax(PD_rmax);
+        st.set_max_iter(PD_max_iter);
+        
         try{
           auto profile = st.findProfile(false_vacuum[0],true_vacuum[0]);
           action_PD = st.calAction(profile);

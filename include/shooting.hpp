@@ -93,8 +93,8 @@ struct Profile1D {
 
 class Shooting {
 public:
-  explicit Shooting(PotentialForShooting& ps_) :
-    ps(ps_) {}
+  explicit Shooting(PotentialForShooting& ps_, int alpha_=2) :
+    ps(ps_), alpha(alpha_) {}
   virtual ~Shooting() = default;
     
   /*Calculates `dV/dphi` at ``phi = phi_absMin + delta_phi``.*/
@@ -152,18 +152,26 @@ private:
   double phi_metaMin;
   double phi_bar;
   double rscale; // approximate radial scale of the instanton
+  int alpha;
   
+  /* To determine whether the field is considered nearby phi_absMin or not */
   PROPERTY(double, phi_eps_rel, 1e-3)
-  PROPERTY(int, alpha, 2)
-  
+  /* The precision of field values after taking the logarithm */
   PROPERTY(double, xtol, 1e-4)
+  /* The fractional error tolerance in integration*/
   PROPERTY(double, phitol, 1e-4)
+  /* The cut off for finding the initial conditions for integration */
   PROPERTY(double, thinCutoff, .01)
+  /* Number of points to return in the profile */
   PROPERTY(double, npoints, 500)
+  /* The smallest starting radius */
   PROPERTY(double, rmin, 1e-4)
+  /* The maximum allowed integration distance */
   PROPERTY(double, rmax, 1e4)
+  /* The maximum number of points to be positioned during the integration process. */
   PROPERTY(boost::uintmax_t, max_iter, 100)
   
+
 
   
 };
