@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
   path_pts.push_back(Eigen::VectorXd(2));
   path_pts[0] << 1, 1;
   path_pts[1] << 0, 0;
-  auto a = pd.fullTunneling(path_pts);
+  auto a = pd.full_tunneling(path_pts);
 
   LOG(debug)<< "Action = "<< std::setprecision(10) << a.action;
   LOG(debug)<< "fRatio = "<< std::setprecision(10) << a.fRatio;
