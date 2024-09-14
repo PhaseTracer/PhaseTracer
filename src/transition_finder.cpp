@@ -78,7 +78,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
         NaN_vec[0] = std::numeric_limits<double>::quiet_NaN();
         unique_transitions.push_back({SUCCESS, TC, phase1, phase2,
           true_vacuum, false_vacuum, gamma_, changed_, delta_potential,
-          std::numeric_limits<double>::quiet_NaN(), NaN_vec, NaN_vec, i_unique});
+          std::numeric_limits<double>::quiet_NaN(), {}, {}, i_unique});
       }
     }
     
@@ -107,6 +107,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
       std::vector<Transition> selected_transition;
       selected_transition.push_back(unique_transitions[i_selected]);
       const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
+      selected_transition[0].TN = TN;
       selected_transition[0].true_vacuum_TN = vacua[0];
       selected_transition[0].false_vacuum_TN = vacua[1];
       return selected_transition;
@@ -309,7 +310,7 @@ void TransitionFinder::find_transitions() {
                         phase1_at_critical.x, phase2_at_critical.x,
                         gamma_, changed_,
                         phase1_at_critical.potential - phase2_at_critical.potential,
-                        TC, phase1_at_critical.x, phase2_at_critical.x, 0 };
+                        TC, {}, {}, 0 };
         transitions.push_back(f);
       }
 
