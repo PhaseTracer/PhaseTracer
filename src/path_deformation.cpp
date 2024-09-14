@@ -489,7 +489,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> PathDeformation::N
 }
 
 
-FullTunneling PathDeformation::fullTunneling(std::vector<Eigen::VectorXd> path_pts) {
+FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_pts) {
     FullTunneling ft;
     std::vector<double> phi_1d, dphi_1d;
     for (int num_iter = 1; num_iter <= path_maxiter; num_iter++) {
@@ -536,7 +536,7 @@ FullTunneling PathDeformation::fullTunneling(std::vector<Eigen::VectorXd> path_p
     }
 
     if (!breakLoop){
-      LOG(warning)<<"Reached maxiter in fullTunneling. No convergence.";
+      LOG(warning)<<"Reached maxiter in full_tunneling. No convergence.";
     }
     
     // TODO

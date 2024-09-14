@@ -145,7 +145,7 @@ public:
         path_pts.push_back(true_vacuum);
         path_pts.push_back(false_vacuum);
         try{
-          auto a_pd = pd.fullTunneling(path_pts);
+          auto a_pd = pd.full_tunneling(path_pts);
         }catch (const std::exception& e) {
           LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what();
         }
