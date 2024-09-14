@@ -304,7 +304,6 @@ int Shooting::integrateProfile(double r0, std::vector<double> y0_,
   LOG(trace) << "Integrated to ";
   LOG(trace) << "  r = " << *rf << ", phi = " << (*yf)[0] << ", dphi/dr = " << (*yf)[1];
   LOG(trace) << "Convergence_type = " << ( (convergence_type ==0) ? "converged" : ( (convergence_type == 1) ? "overshoot":"undershoot") )  << std::endl;
-//  std::exit(0);
   return convergence_type;
 }
 
