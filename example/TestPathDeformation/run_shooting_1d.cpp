@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
     double k3 = k3_min + i * (k3_max - k3_min) / (num_values - 1);
 
     Example p(k1,k2,k3);
-    PhaseTracer::Shooting s(p);
+    PhaseTracer::Shooting s(p, 2);
     auto profile = s.findProfile(0,1);
     auto action = s.calAction(profile);
 
