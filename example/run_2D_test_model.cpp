@@ -50,6 +50,9 @@ int main(int argc, char* argv[]) {
   }
   
   if (debug_mode) {
+    const auto trans = tf.get_transitions();
+    double action = ac.get_action(trans[0].true_vacuum_TN,trans[0].false_vacuum_TN,trans[0].TN);
+    std::cout << "action = " << std::setprecision (15) << action << std::endl;
     PhaseTracer::potential_plotter(model, tf.get_transitions().front().TC, "2D_test_model", 0., 2., 0.01, -2., 0., 0.01);
     PhaseTracer::potential_line_plotter(model, tf.get_transitions(), "2D_test_model");
     PhaseTracer::phase_plotter(tf, "2D_test_model");
