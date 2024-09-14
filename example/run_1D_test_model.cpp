@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#include "models/1D_test_model.hpp"
+#include "models/1D_test_model.hpp" // Located in effective-potential/include/models
 #include "phase_finder.hpp"
 #include "transition_finder.hpp"
 #include "logger.hpp"
@@ -38,67 +38,31 @@ int main(int argc, char* argv[]) {
   tf.find_transitions();
   std::cout << tf;
   
-  
-
-//
-
-//    const auto phases = pf.get_phases();
-//    auto phase1 = phases[0];
-//    auto phase2 = phases[1];
-//
-//  std::cout << tf.get_action(phase2, phase1, 56.9986)  << std::endl;
-//
-//    Eigen::VectorXd true_vacuum(1);
-//    Eigen::VectorXd false_vacuum(1);
-//  true_vacuum[0] = 9.18412e-06;
-//  false_vacuum[0] = 54.2887;
-//  std::cout << tf.get_action(true_vacuum, false_vacuum, 56.9986) << std::endl;
-//
-//  false_vacuum[0] = 54.28871;
-//  std::cout << tf.get_action(true_vacuum, false_vacuum, 56.9986) << std::endl;
-//
-  
-  std::ofstream outputFile("action_1D_test_model.txt");
-  const auto phases = pf.get_phases();
-  auto phase1 = phases[1];
-  auto phase2 = phases[0];
-  for (double Ttest=34; Ttest < 61; Ttest += 0.1){
-      auto s = tf.get_action(phase1, phase2, Ttest);
-      auto vacua = tf.get_vacua_at_T(phase1, phase2, Ttest);
-      outputFile << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s << " " << s/Ttest  << std::endl;
+  // Make GravWaveCalculator object
+  PhaseTracer::GravWaveCalculator gc(tf);
+  const auto sps = gc.calc_spectrums();
+  for (size_t ii=0; ii<sps.size(); ii++){
+    std::cout << sps[ii];
+    if (debug_mode) {
+      gc.write_spectrum_to_text(sps[ii], "GW_spectrum_1D_test_model"+std::to_string(ii)+".txt");
+    }
   }
-  outputFile.close();
   
-//  double Ttest = 51.3;
-//  auto s = tf.get_action(phase2, phase1, Ttest);
-//  auto vacua = tf.get_vacua_at_T(phase1, phase2, Ttest);
-//  std::cout << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s << " " << s/Ttest  << std::endl;
-  
-//  Ttest = 51.35;
-//  s = tf.get_action(phase1, phase2, Ttest);
-//  vacua = tf.get_vacua_at_T(phase1, phase2, Ttest);
-//  std::cout << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s << " " << s/Ttest  << std::endl;
-  
-//  PhaseTracer::GravWaveCalculator gc(tf);
-//  auto gw = gc.cal_spectrums();
-//  std::cout << gc;
-//  for (int ii=0; ii < gw.size(); ii++){
-//    gc.write_spectrum_to_text(gw[ii],"GW_results"+std::to_string(ii)+".txt");
-//  }
-//  
-//  gc.write_spectrum_to_text(gc.get_total_spectrum(),"GW_results.txt");
-//  
-//  gc.Set_parameters(0.3,500.,0.9,40.);
-//  auto results = gc.GW_total_spectrum();
-//  gc.Write_to_csv(results, "GW_results.csv");
-  
-//  Eigen::VectorXd d(1);
-//  d(0) = 24.5;
-//  std::cout << model.dV_dx(d,56.8716) << std::endl;
-  
-//  if (debug_mode) {
-//    PhaseTracer::phase_plotter(tf, "1D_test_model");
-//  }
+  if (debug_mode) {
+    // Get actions between the two phases
+    std::ofstream outputFile("action_1D_test_model.txt");
+    LOGGER(fatal);
+    const auto trans = tf.get_transitions();
+    auto phase1 = trans[0].true_phase;
+    auto phase2 = trans[0].false_phase;
+    double min_T = std::max(trans[0].true_phase.T[0],trans[0].false_phase.T[0]);
+    for (double Ttest=min_T; Ttest < trans[0].TC; Ttest += 0.1){
+        auto s = tf.get_action(phase1, phase2, Ttest);
+        auto vacua = tf.get_vacua_at_T(phase1, phase2, Ttest);
+        outputFile << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s << " " << s/Ttest  << std::endl;
+    }
+    outputFile.close();
+  }
 
   return 0;
 }
