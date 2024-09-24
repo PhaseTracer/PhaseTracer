@@ -30,8 +30,8 @@ struct GravWaveSpectrum {
       << "    beta over H = " << a.beta_H << std::endl
       << "    peak_frequency = " << a.peak_frequency << std::endl
       << "    peak_amplitude = " << a.peak_amplitude << std::endl
-      << "    siganl to noise ratio for LISA = "<<a.SNR[0]<<std::endl
-      << "    siganl to noise ratio for Taiji = "<<a.SNR[1]<<std::endl;
+      << "    siganl to noise ratio for LISA = "<<a.SNR[0]<<std::endl;
+//      << "    siganl to noise ratio for Taiji = "<<a.SNR[1]<<std::endl;
       
     return o;
   }
