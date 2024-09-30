@@ -34,23 +34,25 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
         double xmin = find_loc_min_w_guess(pts[0], dpts[0]); // TODO: This may return global mim
         xmin = std::min(xmin, 0.0);
         int nx = static_cast<int>(std::ceil(std::abs(xmin)-.5)) + 1;
-        double stepSize = -xmin / nx;
-        std::vector<Eigen::VectorXd> new_pts;
-        for (int i = 0; i < nx; ++i) {
+        if (nx>1) {
+          double stepSize = -xmin / (nx-1);
+          std::vector<Eigen::VectorXd> new_pts;
+          for (int i = 0; i < nx; ++i) {
             double x = xmin + i * stepSize;
             Eigen::VectorXd pt_ext = pts[0] + x * dpts[0];
             new_pts.push_back(pt_ext);
+            std::cout << "new_pts : "  << pt_ext << std::endl;
+          }
+          new_pts.insert(new_pts.end(), pts.begin() + 1, pts.end());
+          pts = new_pts;
         }
-        new_pts.insert(new_pts.end(), pts.begin() + 1, pts.end());
-        pts = new_pts;
         
         xmin = find_loc_min_w_guess(pts.back(), dpts.back());
         xmin = std::max(xmin, 0.0);
         nx = static_cast<int>(std::ceil(std::abs(xmin) - 0.5)) + 1;
-        stepSize = -xmin / nx;
+        double stepSize = -xmin / nx;
         std::vector<Eigen::VectorXd> new_pts2;
         for (int i = 0; i < nx; ++i) {
-          // TODO this is not checked
           double x = xmin + (nx-i-1) * stepSize;
           Eigen::VectorXd pt_ext = pts.back() + x * dpts.back();
           new_pts2.push_back(pt_ext);
@@ -302,6 +304,7 @@ bool PathDeformation::deformPath(std::vector<double> dphidr){
         phi_list.resize(minfRatio_index);
         F_list.resize(minfRatio_index);
         LOG(fatal) << "Deformation doesn't appear to be converging. Stopping at the point of best convergence.";
+        break;
         // TODO add error
       }
       
@@ -396,6 +399,8 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
     phi_node = _phi;
     lastStep = stepsize;
     
+
+  
     LOG(trace) << "step: " << num_steps
                << "; stepsize: " << stepsize
                << "; fRatio1: "  << fRatio1
@@ -502,6 +507,7 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
       tobj.set_rmin(rmin);
       tobj.set_rmax(rmax);
       tobj.set_max_iter(max_iter);
+      
       auto profile = tobj.findProfile(path.get_path_length(),0.);
       if (profile.R.size()==2){
         if (profile.R.isApprox(tobj.profile_inf.R, tobj.get_xtol())){
