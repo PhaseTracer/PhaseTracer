@@ -41,7 +41,6 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
             double x = xmin + i * stepSize;
             Eigen::VectorXd pt_ext = pts[0] + x * dpts[0];
             new_pts.push_back(pt_ext);
-            std::cout << "new_pts : "  << pt_ext << std::endl;
           }
           new_pts.insert(new_pts.end(), pts.begin() + 1, pts.end());
           pts = new_pts;
@@ -50,15 +49,17 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
         xmin = find_loc_min_w_guess(pts.back(), dpts.back());
         xmin = std::max(xmin, 0.0);
         nx = static_cast<int>(std::ceil(std::abs(xmin) - 0.5)) + 1;
-        double stepSize = -xmin / nx;
-        std::vector<Eigen::VectorXd> new_pts2;
-        for (int i = 0; i < nx; ++i) {
-          double x = xmin + (nx-i-1) * stepSize;
-          Eigen::VectorXd pt_ext = pts.back() + x * dpts.back();
-          new_pts2.push_back(pt_ext);
+        if (nx>1) {
+          double stepSize = -xmin / (nx-1);
+          std::vector<Eigen::VectorXd> new_pts2;
+          for (int i = 0; i < nx; ++i) {
+            double x = xmin + (nx-i-1) * stepSize;
+            Eigen::VectorXd pt_ext = pts.back() + x * dpts.back();
+            new_pts2.push_back(pt_ext);
+          }
+          pts.pop_back();
+          pts.insert(pts.end(), new_pts2.begin(), new_pts2.end());
         }
-        pts.pop_back();
-        pts.insert(pts.end(), new_pts2.begin(), new_pts2.end());
         dpts = _pathDeriv(pts);
         num_nodes = pts.size();
       }
