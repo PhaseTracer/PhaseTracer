@@ -88,7 +88,6 @@ int main(int argc, char* argv[]) {
 
   // Make ActionCalculator object
   PhaseTracer::ActionCalculator ac(model);
-  ac.set_use_BubbleProfiler(false);
   
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf,ac);
