@@ -27,6 +27,8 @@
 
 namespace PhaseTracer {
 
+/** Method for action calculation */
+enum class ActionMethod{ None, BubbleProfiler, PathDeformation, All };
 
 class ActionCalculator{
   
@@ -37,8 +39,9 @@ private:
   PROPERTY(size_t, num_dims, 3)
   
   /* Choose method to calculate the action*/
-  PROPERTY(bool, use_BubbleProfiler, true)
-  PROPERTY(bool, use_PathDeformation, true)
+  ActionMethod action_method = ActionMethod::PathDeformation;
+  double use_PathDeformation = true;
+  double use_BubbleProfiler = false;
 
   /* Set parameters in BubbleProfiler */
   /* Use perturbative method or not*/
@@ -86,14 +89,34 @@ public:
   }
   virtual ~ActionCalculator() = default;
   
-  double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
+  void set_action_calculator(ActionMethod am){
+    action_method = am;
+    if (action_method == ActionMethod::PathDeformation){
+      use_PathDeformation = true;
+      use_BubbleProfiler = false;
+    } else if (action_method == ActionMethod::BubbleProfiler){
+      use_PathDeformation = false;
+      use_BubbleProfiler = true;
+    } else if (action_method == ActionMethod::None){
+      use_PathDeformation = false;
+      use_BubbleProfiler = false;
+    } else if (action_method == ActionMethod::All){
+      use_PathDeformation = true;
+      use_BubbleProfiler = true;
+    }
     
 #ifndef BUILD_WITH_BP
-      if (use_BubbleProfiler){
-        LOG(fatal) << "Enable BubbleProfiler in CMake configuration before using it.";
-        throw std::runtime_error("BubbleProfiler is not installed.");
-      }
+    if (use_BubbleProfiler){
+      LOG(fatal) << "Enable BubbleProfiler in CMake configuration before using it.";
+      throw std::runtime_error("BubbleProfiler is not installed.");
+    }
 #endif
+    
+  }
+  
+  ActionMethod get_action_calculator() const { return action_method; }
+  
+  double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
     
     Eigen::VectorXd true_vacuum = vacuum_1;
     Eigen::VectorXd false_vacuum = vacuum_2;

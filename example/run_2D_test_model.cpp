@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
   
   // Make ActionCalculator object
   PhaseTracer::ActionCalculator ac(model);
-  ac.set_use_BubbleProfiler(false);
+  ac.set_action_calculator(PhaseTracer::ActionMethod::PathDeformation);
   
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf,ac);
