@@ -23,7 +23,7 @@
 
 namespace PhaseTracer {
 
-std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase phase2, double T1, double T2) const {
+std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase phase2, double T1, double T2, size_t currentID) const {
   if (T1 > T2) {
     LOG(debug) << "Phases do not overlap in temperature - no critical temperature";
     return {{NON_OVERLAPPING_T}};
@@ -78,7 +78,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
         NaN_vec[0] = std::numeric_limits<double>::quiet_NaN();
         unique_transitions.push_back({SUCCESS, TC, phase1, phase2,
           true_vacuum, false_vacuum, gamma_, changed_, delta_potential,
-          std::numeric_limits<double>::quiet_NaN(), {}, {}, i_unique});
+          std::numeric_limits<double>::quiet_NaN(), {}, {}, i_unique, false, currentID++});
       }
     }
     
@@ -182,7 +182,7 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
   return Tnuc;
 }
 
-std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2) const {
+std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2, size_t currentID) const {
 
 #ifdef CAL_TNUC
   // TODO
@@ -191,7 +191,7 @@ std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase
   
   std::vector<Transition> roots;
   for (double T = T1; T <= T2; T += separation) {
-    const auto bs = find_transition(phase1, phase2, T, std::min(T + separation, T2));
+    const auto bs = find_transition(phase1, phase2, T, std::min(T + separation, T2), currentID + roots.size());
     for (const auto &b : bs) {
       roots.push_back(b);
     }
@@ -310,25 +310,198 @@ void TransitionFinder::find_transitions() {
                         phase1_at_critical.x, phase2_at_critical.x,
                         gamma_, changed_,
                         phase1_at_critical.potential - phase2_at_critical.potential,
-                        TC, {}, {}, 0 };
+                        TC, {}, {}, 0 , false, transitions.size()};
         transitions.push_back(f);
       }
 
       const auto found = assume_only_one_transition ?
-        find_transition(phase1, phase2, T_range[0], T_range[1]) :
-        divide_and_find_transition(phase1, phase2, T_range[0], T_range[1]);
+        find_transition(phase1, phase2, T_range[0], T_range[1], transitions.size()) :
+        divide_and_find_transition(phase1, phase2, T_range[0], T_range[1], transitions.size());
 
       for (const auto &f : found) {
-        if (f.message == SUCCESS) {
+        if (f.message == SUCCESS && validateTransition(f)) {
             transitions.push_back(f);
         }
       }
     }
   }
 
+  if(check_subcritical_transitions)
+  {
+    LOG(debug) << "Checking for subcritical transitions...";
+    append_subcritical_transitions();
+  }
+  else
+  {
+    LOG(debug) << "Ignoring subcritical transitions.";
+  }
+
   // Finally sort transitions by critical temperature
   std::sort(transitions.begin(), transitions.end(),
     [](const Transition &a, const Transition &b) {return a.TC < b.TC;});
+}
+
+bool TransitionFinder::validateTransition(const Transition& transition) const
+{
+  // The only validation required at the moment is based on phase splitting. Just as we do for subcritical transitions,
+  // we need to make sure that the transition isn't spurious, arising from 
+
+  //  wait, instead of patching everything, how about insert the precise data point into the pre-existing phase too?!
+
+  return true;
+}
+
+void TransitionFinder::append_subcritical_transitions()
+{
+  const auto phases = pf.get_phases();
+
+  std::vector<bool> isTransitionedTo(phases.size(), false);
+
+  for (int i = 0; i < transitions.size(); ++i)
+  {
+    // Valid because we update the phase keys to their position in the phases list (at the end of merge_phase_gaps).
+    isTransitionedTo[transitions[i].true_phase.key] = true;
+  }
+  
+  // Loop through phases and check if any phase has lower energy than any other phase when it first appears (i.e. at
+  // its Tmax).
+  for (int i = 0; i < phases.size(); ++i)
+  {
+    double Tmax = phases[i].T.back();
+    double energyAtTmax = phases[i].V.back();
+
+    // Used to determine what phases need to be searched again to capture subcritical transitions *from* the new phase.
+    int firstSubcriticalIndex = -1;
+    
+    for (int j = 0; j < phases.size(); ++j)
+    {
+      if (j == i)
+      {
+        continue;
+      }
+
+      LOG(debug) << "Checking subcritical transition " << phases[i].key << " -> " << phases[j].key;
+
+      // The last parameter is whether we should consider transitions from the new phase. We want to check for this if
+      // this new phase has lower energy than some other phase, because there is a subcritical transition to it so there
+      // could be a transition from it, following that.
+      if (firstSubcriticalIndex == -1 && checkSubcriticalTransition(phases, i, j, Tmax, energyAtTmax,
+	    firstSubcriticalIndex > -1, isTransitionedTo))
+      {
+        firstSubcriticalIndex = j;
+        LOG(debug) << "firstSubcriticalIndex j = " << firstSubcriticalIndex << " for phase i = " << i;
+      }
+    }
+
+    // Search over all phases prior to the first subcritical transition to this phase. In the previous search we didn't
+    // look for transitions from this phase in this range of phases.
+    for (int j = 0; j < firstSubcriticalIndex; ++j)
+    {
+      if (j == i)
+      {
+        continue;
+      }
+
+      // This time we always want to check for a subcritical transition from this phase.
+      checkSubcriticalTransition(phases, i, j, Tmax, energyAtTmax, true, isTransitionedTo);
+    }
+  }
+}
+
+bool TransitionFinder::checkSubcriticalTransition(const std::vector<PhaseTracer::Phase>& phases, int i, int j,
+  double Tmax, double energyAtTmax, bool checkFromNewPhase, std::vector<bool>& isTransitionedTo)
+{
+  // If the phases do not overlap in temperature, there cannot be a transition between them.
+  //if(abs(phasejAtTmax.t - Tmax) > 1)
+  if (phases[j].T.back() < Tmax || phases[j].T.front() > Tmax)
+  {
+    LOG(debug) << "No overlap.";
+    return false;
+  }
+
+  // Avoid double counting subcritical transitions between phases that appear at the same temperature.
+  //if(i > j && phases[j].T.back() == Tmax)
+  //{
+  //  return false;
+  //}
+
+  PhaseTracer::Point phasejAtTmax = pf.phase_at_T(phases[j], Tmax);
+  
+  Eigen::VectorXd trueVacuum = phases[i].X.back();
+  Eigen::VectorXd falseVacuum = phasejAtTmax.x;
+  double dist = (trueVacuum - falseVacuum).norm();
+  double gamma = (trueVacuum - falseVacuum).norm() / Tmax;
+  std::vector<bool> vevChanged = changed(trueVacuum, falseVacuum);
+  double deltaPotential = energyAtTmax - phasejAtTmax.potential;
+
+  // If this second phase has a higher energy, then we have a subcritical transition from j -> i. Otherwise, we have
+  // a subcritical transition from i -> j.
+  // NOTE: changed on 16/11/2021 to code further below, because:
+  //    - If phase i splits from phase j at T' (i.e. Tmax), with both phase continuing to exist below T', the precisely
+  //        sampled potential at (phi_i, T') might *erroneously* be lower than the potential at (phi_j, T') which is
+  //        linearly interpolated from surrounding samples in phase j.
+  //    - If phase j was identified as the deeper phase, it should actually have a lower energy at T' but this may
+  //        not be reflected after linear interpolation of potential energy samples.
+  //    - So if phase i and phase j are very close together at T' (i.e. phase i's maximum temperature, Tmax), we should
+  //        not add a subcritical transition j -> i. Instead, we should add (if deemed relevant) the subcritical
+  //        transition i -> j.
+  /*if (phasejAtTmax.potential > energyAtTmax)
+  {
+    LOG(debug) << "Adding subcritical transition " << j << " -> " << i;
+    // TODO: need to handle symmetric transitions!
+    //transitions.push_back({PhaseTracer::SUCCESS, -Tmax, phases[i], phases[j], trueVacuum, falseVacuum,
+    //  -gamma, vevChanged, deltaPotential, transitions.size(), true});
+    transitions.push_back({PhaseTracer::SUCCESS, Tmax, phases[i], phases[j], trueVacuum, falseVacuum,
+      gamma, vevChanged, deltaPotential, 0, true, transitions.size()});
+
+    return true;
+  }
+  else if(checkFromNewPhase)
+  {
+    LOG(debug) << "Adding subcritical transition " << i << " -> " << j;
+    transitions.push_back({PhaseTracer::SUCCESS, Tmax, phases[j], phases[i], falseVacuum, trueVacuum,
+      -gamma, vevChanged, -deltaPotential, 0, true, transitions.size()});
+  }*/
+
+  double distTol = 0.05*pf.get_potential().get_field_scale();
+
+  if (phasejAtTmax.potential > energyAtTmax)
+  {
+    LOG(debug) << "Correct energies for subcritical transition.";
+    
+    if (dist > distTol)
+    {
+      LOG(debug) << "Adding subcritical transition " << j << " -(" << Tmax << ")-> " << i;
+      transitions.push_back({PhaseTracer::SUCCESS, Tmax, phases[i], phases[j], trueVacuum, falseVacuum,
+        gamma, vevChanged, deltaPotential, Tmax, {}, {}, 0, true, transitions.size()});
+	  isTransitionedTo[i] = true;
+    }
+    else
+    {
+        LOG(debug) << "Not adding subcritical transition " << j << " -(" << Tmax << ")-> " << i << " from suspected phase splitting.";
+    }
+  }
+  else
+  {
+    LOG(debug) << "Incorrect energies for subcritical transition: " << energyAtTmax << " vs. " << phasejAtTmax.potential;
+  }
+
+  if (isTransitionedTo[i] || checkFromNewPhase)
+  {
+    if (phasejAtTmax.potential < energyAtTmax || dist < distTol)
+    {
+      transitions.push_back({PhaseTracer::SUCCESS, Tmax, phases[j], phases[i], falseVacuum, trueVacuum,
+        -gamma, vevChanged, -deltaPotential, Tmax, {}, {}, 0, true, transitions.size()});
+	  isTransitionedTo[j] = true;
+    }
+  }
+
+  return checkFromNewPhase;
+}
+
+void TransitionFinder::find_transition_paths(const EffectivePotential::Potential& model, bool knownHighTPhase)
+{
+    transition_paths = TransitionGraph::getPhaseHistory(pf, *this, model, knownHighTPhase);
 }
 
 std::ostream& operator << (std::ostream& o, const TransitionFinder& a) {

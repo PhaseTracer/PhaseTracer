@@ -3,6 +3,8 @@
 *.DS_Store
 bin/
 lib/
+build/
+.vs/
 paper/paper\.synctex\.gz
 paper/paper\.pdf
 paper/paper\.log
