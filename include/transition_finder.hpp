@@ -28,6 +28,12 @@
 #include "overload.hpp"
 #include "potential.hpp"
 #include "action_calculator.hpp"
+#include "transition_graph_util.hpp"
+
+namespace TransitionGraph
+{
+    struct Path;
+}
 
 namespace PhaseTracer {
 
@@ -49,6 +55,8 @@ struct Transition {
   Eigen::VectorXd true_vacuum_TN;
   Eigen::VectorXd false_vacuum_TN;
   size_t key;
+  bool subcritical;
+  size_t id;
 
   /** Pretty-printer for single transition */
   friend std::ostream& operator << (std::ostream& o, const Transition& a) {
@@ -69,6 +77,12 @@ struct Transition {
         << "TN = " << a.TN << std::endl
         << "false vacuum (TN) = " << a.true_vacuum_TN << std::endl
         << "true vacuum (TN) = " << a.false_vacuum_TN << std::endl;
+        // TODO: Ideally we would only print this property if we check for subcritical transitions.
+        // TODO: Unfortunately this is a property of the TransitionFinder and the Transition doesn't have knowledge of
+        // TODO: this. We could store it here but that seems wasteful.
+        // if(check_subcritical_transitions){
+        //  o << "subcritical = " << a.subcritical << std::endl;
+        // }
     } else {
       o << "=== failure. message =  " << a.message << " ===" << std::endl;
     }
@@ -92,6 +106,19 @@ class TransitionFinder {
   /** Find all transitions between all phases */
   void find_transitions();
 
+  /** Called from find_transitions; adds subcritical transitions to the transitions vector */
+  void append_subcritical_transitions();
+
+  /** Called from append_subcritical_transitions; checks whether there is a subcritical transition between two phases. */
+  bool checkSubcriticalTransition(const std::vector<PhaseTracer::Phase>& phases, int i, int j, double Tmax,
+    double energyAtTmax, bool checkFromNewPhase, std::vector<bool>& isTransitionedTo);
+
+  /** Called from find_transitions; checks whether the transition should be kept or rejected. */
+  bool validateTransition(const Transition& transition) const;
+
+  /** Find all transition paths  */
+  void find_transition_paths(const EffectivePotential::Potential& model, bool knownHighTPhase);
+
   /** Retrieve all transitions between all phases */
   std::vector<Transition> get_transitions() const { return transitions; }
 
@@ -103,6 +130,9 @@ class TransitionFinder {
   
   double get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const;
   
+  /** Retrieve all transition paths */
+  std::vector<TransitionGraph::Path> get_transition_paths() const { return transition_paths; }
+
   /** Retrieve all phases */
   std::vector<Phase> get_phases() const { return pf.get_phases(); }
 
@@ -122,11 +152,14 @@ class TransitionFinder {
   /** Container for all transitions between any two phases */
   std::vector<Transition> transitions;
 
+  /** Container for all transition paths. */
+  std::vector<TransitionGraph::Path> transition_paths;
+
   /** Find transitions between two phases between two temperatures */
-  std::vector<Transition> find_transition(Phase p1, Phase p2, double T1, double T2) const;
+  std::vector<Transition> find_transition(Phase p1, Phase p2, double T1, double T2, size_t currentID) const;
 
   /** Find many transitions between two phases at a particular resolution */
-  std::vector<Transition> divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2) const;
+  std::vector<Transition> divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2, size_t currentID) const;
 
   /** Check whether two phase are overlapped at T*/
   bool phases_overlaped(const Phase& phase1, const Phase& phase2, double T) const;
@@ -161,6 +194,12 @@ class TransitionFinder {
   
   PROPERTY(bool, calculate_action, false)
   
+  /**
+    * Whether we should check for subcritical transitions, i.e. transitions between phases when one phase is strictly of
+    * lower energy than the other. This can occur when a new phase appears near a phase that is not of the highest energy
+    * at that temperature.
+    */
+  PROPERTY(bool, check_subcritical_transitions, false)
 };
 
 }  // namespace PhaseTracer
