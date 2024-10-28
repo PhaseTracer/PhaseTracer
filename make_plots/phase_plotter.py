@@ -93,8 +93,8 @@ def constant(x, y, atol=1e-1, **kwargs):
     return constant_
 
 
-def plane_phi_phi_one(pi, pj, phases, transitions, pdf_name="plane.pdf"):
-    full_pdf_name = "phi_{0}_phi_{1}_".format(pi+1, pj+1)+pdf_name
+def plane_phi_phi_one(pi, pj, phases, transitions, pdf_name="plane.pdf", repo=""):
+    full_pdf_name = repo+"phi_{0}_phi_{1}_".format(pi+1, pj+1)+pdf_name
     print("Plotting phases on (phi_{}, phi_{}) plane for {} figure".format(pi+1, pj+1, full_pdf_name))
     fig, ax = plt.subplots()
 
@@ -150,14 +150,14 @@ def plane_phi_phi_one(pi, pj, phases, transitions, pdf_name="plane.pdf"):
     plt.savefig(full_pdf_name, bbox_inches="tight")
 
 
-def plane_phi_phi(phases, transitions, pdf_name="plane.pdf"):
+def plane_phi_phi(phases, transitions, pdf_name="plane.pdf", repo=""):
     n_field = phases[0].n_field
     print("Making plots with {} fields".format(n_field))
     if n_field <= 1:
         return
     for i in range(n_field):
         for j in range(i + 1, n_field):
-            plane_phi_phi_one(i, j, phases, transitions, pdf_name)
+            plane_phi_phi_one(i, j, phases, transitions, pdf_name, repo)
 
 
 def is_origin(x, atol=1e-1):
@@ -201,7 +201,7 @@ def plane_phi_T(phases, transitions, pdf_name="plane.pdf"):
     n_field = phases[0].n_field
     fig, axs = plt.subplots(nrows=1, ncols=n_field)
 
-    T_max = 250
+    T_max = 250 # why is this hardcoded??
     phi_min = np.inf
     phi_max = -np.inf
 
@@ -302,19 +302,26 @@ if __name__ == "__main__":
     rc('grid', **{'ls': ':'})
     rc('legend', **{'fontsize': FONTSIZE})
 
-    # Load data
+    # Set command line arguments
     prefix = sys.argv[1]
-    dat_name = "{}.dat".format(prefix)
+    repo = sys.argv[2] if len(sys.argv) > 2 else ""
+
+    # Construct the file names
+    if repo:
+        dat_name = "{}{}.dat".format(repo, prefix)
+        pdf_name_phi_phi = "{}.pdf".format(prefix)
+        pdf_name_phi_T = "{}phi_T_{}.pdf".format(repo, prefix)
+        pdf_name_V_T = "{}V_T_{}.pdf".format(repo, prefix)
+    else:
+        dat_name = "{}.dat".format(prefix)
+        pdf_name_phi_phi = "{}.pdf".format(prefix)
+        pdf_name_phi_T = "phi_T_{}.pdf".format(prefix)
+        pdf_name_V_T = "V_T_{}.pdf".format(prefix)
+
+    # Load data
     phases, transitions = load_data(dat_name)
 
-    # Plot phases on (phi_i, phi_j) plane
-    pdf_name = "{}.pdf".format(prefix)
-    plane_phi_phi(phases, transitions, pdf_name)
-
-    # Plot phases on (phi_i, T) plane
-    pdf_name = "phi_T_{}.pdf".format(prefix)
-    plane_phi_T(phases, transitions, pdf_name)
-
-    # Plot phases on (T, V) plane
-    pdf_name = "V_T_{}.pdf".format(prefix)
-    plane_T_V(phases, pdf_name)
+    # Make plots
+    plane_phi_phi(phases, transitions, pdf_name_phi_phi, repo)
+    plane_phi_T(phases, transitions, pdf_name_phi_T)
+    plane_T_V(phases, pdf_name_V_T)
