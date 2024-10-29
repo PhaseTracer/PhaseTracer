@@ -11,6 +11,8 @@
 #include "DRalgo_ah.hpp" 
 #include "phase_finder.hpp"
 #include "transition_finder.hpp"
+#include "action_calculator.hpp"
+#include "gravwave_calculator.hpp"
 #include "logger.hpp"
 #include "phase_plotter.hpp"
 
@@ -86,8 +88,11 @@ int main(int argc, char* argv[]) {
   }
   if (debug_mode) std::cout << pf;
 
+  // Make ActionCalculator object
+  PhaseTracer::ActionCalculator ac(model);
+
   // Make TransitionFinder object and find the transitions
-  PhaseTracer::TransitionFinder tf(pf);
+  PhaseTracer::TransitionFinder tf(pf, ac);
   tf.find_transitions();
   if (debug_mode) std::cout << tf;
 
@@ -101,6 +106,15 @@ int main(int argc, char* argv[]) {
     output_file << toString(in, out) << std::endl;
     return 0;
   }
+
+  PhaseTracer::GravWaveCalculator gc(tf);
+  gc.set_min_frequency(1e-4);
+  gc.set_max_frequency(1e+1);
+  gc.calc_spectrums();
+
+  std::cout << gc;
+
+  auto gw = gc.get_spectrums();
   
   std::vector<double> out = {(float)t.size(), t[0].TC, t[0].true_vacuum[0], t[0].false_vacuum[0]};
 

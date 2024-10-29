@@ -104,7 +104,7 @@ class Potential {
   const double Glaisher = 1.2824271291006226369;
   std::vector<alglib::spline1dinterpolant> RGEs;
   alglib::spline1dinterpolant make_cubic_spline(alglib::real_1d_array x, alglib::real_1d_array y);
-  void solveBetas(std::vector<double> x0, double t0=100., double t_start = 20.0, double t_end = 5000.0, double dt = 1.);
+  void solveBetas(std::vector<double> x0, double t0=100., double t_start = 20.0, double t_end = 5000.0);
   
 };
 
