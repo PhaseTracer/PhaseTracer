@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef POTENTIAL_DRALGO_XSM_MODEL_HPP_INCLUDED
-#define POTENTIAL_DRALGO_XSM_MODEL_HPP_INCLUDED
+#ifndef POTENTIAL_DRALGO_xSM_HPP_INCLUDED
+#define POTENTIAL_DRALGO_xSM_MODEL_HPP_INCLUDED
 
 /**
    The xSMin  DRalgo
@@ -31,382 +31,335 @@
 
 #include <vector>
 #include <cmath>
+#include <complex>
+#include <Eigen/Eigenvalues>
 #include <interpolation.h>
 
 #include "pow.hpp"
 #include "potential.hpp"
-#include "pow.hpp"
+// #include "DRalgo_xSM_nnlo.hpp"
+#include "models/SM_parameters.hpp"
 
 namespace EffectivePotential {
 
-class DR_xSM: public Potential {
- public:
+class DR_xsm: public Potential {
+  public :
 
-  DR_xSM(double lamdaHS_input_,
-         double lamdaS_input_,
-         double mS_input_){
-      lamdaHS_input = lamdaHS_input_;
-      lamdaS_input = lamdaS_input_;
-      mS_input = mS_input_;
-      ms_sq = mS_input * mS_input;
-      muSsq_init = -ms_sq + 0.5 * lamdaHS_input * vev_higgs_sq;
-//      std::cout << " Before RGE g1sq = " << g1sq_init << std::endl;
-//      std::cout << " Before RGE g2sq = " << g2sq_init << std::endl;
-//      std::cout << " Before RGE g3sq = " << g3sq_init << std::endl;
-//      std::cout << " Before RGE Yt   = " << Yt_init << std::endl;
-//      std::cout << " Before RGE muSsq = " << muSsq_init << std::endl;
-//      std::cout << " Before RGE muHsq = " << muHsq_init << std::endl;
-//      std::cout << " Before RGE lamdaH = " << lamdaH_init << std::endl;
-//      std::cout << " Before RGE lamdaS = " << lamdaS_input << std::endl;
-//      std::cout << " Before RGE lamdaHS = " << lamdaHS_input << std::endl;
-      solveBetas({g1sq_init, g2sq_init, g3sq_init, lamdaHS_input, lamdaH_init, lamdaS_input, Yt_init, muHsq_init, muSsq_init},246.); // The order is same to `Betas'
-//    std::cout << " Before RGE muHsq = " << muHsq_init << std::endl;
-//    std::cout << " Before RGE muSsq = " << muSsq_init << std::endl;
+    DR_xsm(double Ms_, double lamHS_input_, double lamS_input_) {
+    
+      bool print = false;
+
+      // First set inputs
+      Ms = Ms_;
+      lamHS_input = lamHS_input_;
+      lamS_input = lamS_input_;
+      if(print){
+        std::cout << "Input Ms (physical scalar mass) = " << Ms << std::endl;
+        std::cout << "Input lamHS = " << lamHS_input << std::endl;
+        std::cout << "Input lamS = " << lamS_input << std::endl;
+      }
+
+      // Then, solve for mphiSq_input, msSq_input, lamH_input
+      set_Params();
+      
+      if(print){
+        std::cout << "msSq = " << msSq_input << std::endl;
+        std::cout << "mphiSq = " << mphiSq_input << std::endl;
+        std::cout << "lamH = " << lamH_input << std::endl;
+      }
+
+      // Check points
+      if( !check_points(print) ) { 
+        std::cout << "Failed!" << std::endl;
+        exit(EXIT_FAILURE);
+      }
+    
+      std::vector<double> x0 = {g1sq_input, g2sq_input, g3sq_input, b1_input, mphiSq_input, msSq_input, a1_input, b3_input, lamH_input, lamHS_input, lamS_input, yt_input};
+  
+      solveBetas(x0, 246., 1., 5000.);
+
     }
+
+    size_t get_n_scalars() const override { return 2;}
+
+    std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const override {
+      auto phi1 = phi;
+      phi1[0] = - phi[0];
+      auto phi2 = phi;
+      phi2[1] = - phi[1];
+      return {phi1,phi2};
+    };
+
+    void set_Params() {
+      
+      msSq_input = pow(Ms, 2) - 0.5 * lamHS_input * pow(v, 2);
+      lamH_input = 0.5 * MhSq/pow(v, 2);
+      mphiSq_input = - lamH_input * pow(v, 2);
+
+    }
+
+    bool check_points(bool print_) {
+
+      if ( mphiSq_input > 0){
+        std::cout << "Higgs mass (mphiSq) is positive." << std::endl;
+        return false;
+      }
+
+      if ( msSq_input > 0){
+        std::cout << "Scalar mass (msSq) is positive." << std::endl;
+        return false;
+      }
+
+      if(print_) {
+        std::cout << "- pow(mphiSq_input,2)/lamH_input = " << - pow(mphiSq_input,2)/lamH_input << std::endl;
+        std::cout << "- pow(msSq_input,2)/lamS_input = " << - pow(msSq_input,2)/lamS_input << std::endl;
+      }
+
+      return true;
+    }
+
+    double get_TC_from_expression() const {
+      const double cs = 1. / 12. * (2. * lamHS_input + 3. * lamS_input);
+      const double ch = 1. / 48. * (9. * g2sq_input + 3. * g1sq_input + 12. * yt_input*yt_input + 24. * lamH_input + 2. * lamHS_input);
+      const double TC_sq = -(lamS_input * ch * mphiSq_input - lamH_input * cs * msSq_input + std::sqrt(lamS_input * lamH_input) * std::abs(cs * mphiSq_input - ch * msSq_input)) / (lamS_input * square(ch) - lamH_input * square(cs));
+      return std::sqrt(TC_sq);
+      }
+
+    double V(Eigen::VectorXd phi, double T) const override {
+    
+      const std::vector<double> par = DRstep(T);
+    
+      std::complex<double> g1sq(par[0],0);
+      std::complex<double> g2sq(par[1],0);
+      std::complex<double> g3sq(par[2],0);
+      std::complex<double> b1(par[3],0);
+      std::complex<double> mphiSq(par[4],0);
+      std::complex<double> msSq(par[5],0);
+      std::complex<double> a1(par[6],0);
+      std::complex<double> b3(par[7],0);
+      std::complex<double> lamH(par[8],0);
+      std::complex<double> lamHS(par[9],0);
+      std::complex<double> lamS(par[10],0);
+    
+      std::complex<double> h(phi[0]/sqrt(T + 1e-15),0);
+      std::complex<double> rs(phi[1]/sqrt(T + 1e-15),0);
+
+      std::complex<double> veffLO = 0.25*pow(h,4)*lamH + 0.5*pow(h,2)*mphiSq + 0.25*a1*pow(h,2)*rs + 0.25*pow(h,2)*lamHS*pow(rs,2) + 0.5*msSq*pow(rs,2) + 0.3333333333333333*b3*pow(rs,3) + 0.25*lamS*pow(rs,4);
+
+      if ( potential_flag == 0 ) {
+        return T * veffLO.real();
+      }
+
+      std::complex<double> veffNLO = -1./(12. * M_PI) * ( 0. 
+        + 3. * pow( pow(h,2)*lamH + mphiSq + 0.5*a1*rs + 0.5*lamHS*pow(rs,2) , 3./2.)
+        + pow( 0.25*(6.*pow(h,2)*lamH + pow(h,2)*lamHS + 2.*mphiSq + 2.*msSq + a1*rs + 4.*b3*rs + lamHS*pow(rs,2) + 6.*lamS*pow(rs,2) - sqrt(pow(-6.*pow(h,2)*lamH - 1.*pow(h,2)*lamHS - 2.*mphiSq - 2.*msSq - 1.*a1*rs - 4.*b3*rs - 1.*lamHS*pow(rs,2) - 6.*lamS*pow(rs,2),2) - 4.*(-1.*pow(a1,2)*pow(h,2) + 6.*pow(h,4)*lamH*lamHS + 2.*pow(h,2)*lamHS*mphiSq + 12.*pow(h,2)*lamH*msSq + 4.*mphiSq*msSq + 24.*b3*pow(h,2)*lamH*rs - 3.*a1*pow(h,2)*lamHS*rs + 8.*b3*mphiSq*rs + 2.*a1*msSq*rs + 4.*a1*b3*pow(rs,2) - 3.*pow(h,2)*pow(lamHS,2)*pow(rs,2) + 36.*pow(h,2)*lamH*lamS*pow(rs,2) + 12.*lamS*mphiSq*pow(rs,2) + 2.*lamHS*msSq*pow(rs,2) + 4.*b3*lamHS*pow(rs,3) + 6.*a1*lamS*pow(rs,3) + 6.*lamHS*lamS*pow(rs,4)))), 3./2.)
+        + pow( 0.25*(6.*pow(h,2)*lamH + pow(h,2)*lamHS + 2.*mphiSq + 2.*msSq + a1*rs + 4.*b3*rs + lamHS*pow(rs,2) + 6.*lamS*pow(rs,2) + sqrt(pow(-6.*pow(h,2)*lamH - 1.*pow(h,2)*lamHS - 2.*mphiSq - 2.*msSq - 1.*a1*rs - 4.*b3*rs - 1.*lamHS*pow(rs,2) - 6.*lamS*pow(rs,2),2) - 4.*(-1.*pow(a1,2)*pow(h,2) + 6.*pow(h,4)*lamH*lamHS + 2.*pow(h,2)*lamHS*mphiSq + 12.*pow(h,2)*lamH*msSq + 4.*mphiSq*msSq + 24.*b3*pow(h,2)*lamH*rs - 3.*a1*pow(h,2)*lamHS*rs + 8.*b3*mphiSq*rs + 2.*a1*msSq*rs + 4.*a1*b3*pow(rs,2) - 3.*pow(h,2)*pow(lamHS,2)*pow(rs,2) + 36.*pow(h,2)*lamH*lamS*pow(rs,2) + 12.*lamS*mphiSq*pow(rs,2) + 2.*lamHS*msSq*pow(rs,2) + 4.*b3*lamHS*pow(rs,3) + 6.*a1*lamS*pow(rs,3) + 6.*lamHS*lamS*pow(rs,4)))), 3./2.)
+      )
+      - 1./(6. * M_PI) * ( 2. * pow( 0.25*g2sq*pow(h,2) , 3./2.) + pow( 0.25*(g1sq + g2sq)*pow(h,2), 3./2.))
+      + 1./(12. * M_PI) * ( 4. * pow( mphiSq, 3./2.) +  pow( msSq, 3./2.)); // this ensure correct normalisation
+
+      if ( potential_flag == 1 ) {
+        return T * veffLO.real() + T * veffNLO.real();
+      }
+
+      // DR_xsm_nnlo Vnnlo;
+      // std::complex<double> veffNNLO = Vnnlo.V2(phi, T, par);
+
+      // if ( potential == 2 ) {
+      // return T * veffLO.real() + T * veffNLO.real() + T * veffNNLO.real();
+      // }
+
+      if ( potential_flag == 2 ) {
+      return 0.;
+      }
+
+      return 0;
+    }
+
+    void Betas( const std::vector<double>& x, std::vector<double>& dxdt, const double t) override {
+    
+      double g1sq = x[0];
+      double g2sq = x[1];
+      double g3sq = x[2];
+      double b1 = x[3];
+      double mphiSq = x[4];
+      double msSq = x[5];
+      double a1 = x[6];
+      double b3 = x[7];
+      double lamH = x[8];
+      double lamHS = x[9];
+      double lamS = x[10];
+      double yt = x[11];
+      dxdt[0] = 1./t * 0.25541381709839317*pow(g1sq,2);
+      dxdt[1] = 1./t * 0.0612148817839124*pow(g2sq,2);
+      dxdt[2] = 1./t * 0.012665147955292222*pow(g3sq,2);
+      dxdt[3] = 1./t * 0.012665147955292222*(a1*mphiSq + b3*msSq);
+      dxdt[4] = 1./t * 0.0031662869888230555*(pow(a1,2) + 2.*lamHS*msSq - 3.*mphiSq*(g1sq + 3.*g2sq - 8.*lamH - 4.*pow(yt,2)));
+      dxdt[5] = 1./t * 0.006332573977646111*(pow(a1,2) + 4.*pow(b3,2) + 4.*lamHS*mphiSq + 6.*lamS*msSq);
+      dxdt[6] = 1./t * 0.0031662869888230555*(8.*b3*lamHS + a1*(-3.*g1sq - 9.*g2sq + 24.*lamH + 8.*lamHS + 12.*pow(yt,2)));
+      dxdt[7] = 1./t * 0.018997721932938333*(a1*lamHS + 6.*b3*lamS);
+      dxdt[8] = 1./t * 0.0007915717472057639*(3.*pow(g1sq,2) + 9.*pow(g2sq,2) + 6.*g1sq*(g2sq - 4.*lamH) - 72.*g2sq*lamH + 4.*(48.*pow(lamH,2) + pow(lamHS,2) + 24.*lamH*pow(yt,2) - 12.*pow(yt,4)));
+      dxdt[9] = 1./t * 0.0031662869888230555*lamHS*(-3.*g1sq - 9.*g2sq + 24.*lamH + 8.*lamHS + 12.*(lamS + pow(yt,2)));
+      dxdt[10] = 1./t * 0.012665147955292222*(pow(lamHS,2) + 9.*pow(lamS,2));
+      dxdt[11] = 1./t * 0.0005277144981371759*yt*(-17.*g1sq - 27.*g2sq - 96.*g3sq + 54.*pow(yt,2));
+    
+    }
+
+    std::vector<double> DRstep(double T) const {
+    
+      double Gamma = scaleFactor * T;
+      double scaleFactor3;
+      double scaleFactor3dUS;
+      double Lb = 2.*log(scaleFactor) + 2. * EulerGamma - 2. * log(4 * M_PI);
+      double Lf = Lb + 4. * log(2.);
+      double g1sq, g2sq, g3sq, b1, mphiSq, msSq, a1,b3, lamH, lamHS, lamS, yt;
+    
+      if ( running_flag ) {
+        g1sq = alglib::spline1dcalc(RGEs[0], Gamma);
+        g2sq = alglib::spline1dcalc(RGEs[1], Gamma);
+        g3sq = alglib::spline1dcalc(RGEs[2], Gamma);
+        b1 = alglib::spline1dcalc(RGEs[3], Gamma);
+        mphiSq = alglib::spline1dcalc(RGEs[4], Gamma);
+        msSq = alglib::spline1dcalc(RGEs[5], Gamma);
+        a1 = alglib::spline1dcalc(RGEs[6], Gamma);
+        b3 = alglib::spline1dcalc(RGEs[7], Gamma);
+        lamH = alglib::spline1dcalc(RGEs[8], Gamma);
+        lamHS = alglib::spline1dcalc(RGEs[9], Gamma);
+        lamS = alglib::spline1dcalc(RGEs[10], Gamma);
+        yt = alglib::spline1dcalc(RGEs[11], Gamma);
+      } else {
+        g1sq = g1sq_input;
+        g2sq = g2sq_input;
+        g3sq = g3sq_input;
+        b1 = b1_input;
+        mphiSq = mphiSq_input;
+        msSq = msSq_input;
+        a1 = a1_input;
+        b3 = b3_input;
+        lamH = lamH_input;
+        lamHS = lamHS_input;
+        lamS = lamS_input;
+        yt = yt_input;
+      }
+      //---------------------------------------------------------------------------------
+      double g1sq3d = g1sq*T - 0.0010554289962743518*pow(g1sq,2)*(Lb + 120.*Lf)*T;
+      double g2sq3d = g2sq*T + 0.0010554289962743518*pow(g2sq,2)*(4. + 43.*Lb - 72.*Lf)*T;
+      double g3sq3d = g3sq*T + 0.006332573977646111*pow(g3sq,2)*(1. + 11.*Lb - 12.*Lf)*T;
+      double a13d = 0.0015831434944115277*sqrt(T)*(-8.*b3*lamHS*Lb + a1*(631.6546816697189 + 3.*g1sq*Lb + 9.*g2sq*Lb - 8.*(3.*lamH + lamHS)*Lb - 12.*Lf*pow(yt,2)));
+      double b33d = 0.5*(2.*b3 - 0.018997721932938333*(a1*lamHS + 6.*b3*lamS)*Lb)*sqrt(T);
+      double lamH3d = 0.00039578587360288194*T*(2526.6187266788756*lamH + (pow(g1sq,2) + 2.*g1sq*g2sq + 3.*pow(g2sq,2))*(2. - 3.*Lb) - 4.*(48.*pow(lamH,2) + pow(lamHS,2))*Lb + 48.*Lf*pow(yt,4) + 24.*lamH*(g1sq*Lb + 3.*g2sq*Lb - 4.*Lf*pow(yt,2)));
+      double lamHS3d = 0.0015831434944115277*lamHS*T*(631.6546816697189 + (3.*g1sq + 9.*g2sq - 4.*(6.*lamH + 2.*lamHS + 3.*lamS))*Lb - 12.*Lf*pow(yt,2));
+      double lamS3d = lamS*T - 0.006332573977646111*(pow(lamHS,2) + 9.*pow(lamS,2))*Lb*T;
+      //---------------------------------------------------------------------------------
+      double b13d_LO = (0.08333333333333333*(12.*b1 + (a1 + b3)*pow(T,2)))/sqrt(T);
+      double b13d_NLO = (0.00013192862453429398*(-4.*b3*(12.*Lb*msSq - 28.89405671404654*lamS*pow(T,2) + (2.*lamHS - 3.*lamS)*Lb*pow(T,2)) + a1*(2.*pow(T,2)*(g1sq - 40.3410850710698*g2sq + 14.44702835702327*(-1.*g1sq + 2.*lamHS) + 3.*Lf*pow(yt,2)) - 1.*Lb*(48.*mphiSq + pow(T,2)*(9.*g1sq + 27.*g2sq + 24.*lamH - 10.*lamHS + 18.*pow(yt,2)))) + 24.*(-1.*a13d*(g1sq3d + 3.*g2sq3d - 2.*lamHS3d) + 4.*b33d*lamS3d)*sqrt(T)*log(scaleFactor3/scaleFactor)))/sqrt(T);
+    
+      double b13d = b13d_LO + b13d_NLO;
+      //---------------------------------------------------------------------------------
+      double lambdaVLL_1 = -0.24063781115055222*pow(g2sq,2)*T;
+      double lambdaVLL_2 = -0.22797266319526*g2sq*g3sq*T;
+      double lambdaVLL_3 = -0.22797266319526*pow(g3sq,2)*T;
+      double lambdaVLL_4 = 0.;
+      double lambdaVLL_5 = 0.;
+      double lambdaVLL_6 = -0.07599088773175333*sqrt(g1sq)*pow(g3sq,1.5)*T;
+      double lambdaVLL_7 = -0.2786332550164289*g1sq*g3sq*T;
+      double lambdaVLL_8 = -0.13931662750821444*g1sq*g2sq*T;
+      double lambdaVLL_9 = -1.5915869263817226*pow(g1sq,2)*T;
+      double lambdaVL_1 = 0.012665147955292222*g2sq*lamHS*T;
+      double lambdaVL_2 = -0.025330295910584444*g3sq*T*pow(yt,2);
+      double lambdaVL_3 = 0.012665147955292222*g1sq*lamHS*T;
+      double lambdaVL_4 = 0.0005277144981371759*g2sq*T*(947.4820225045784 + 3.*g1sq + 72.*lamH + g2sq*(123. + 43.*Lb - 72.*Lf) - 36.*pow(yt,2));
+      double lambdaVL_5 = -0.0026041666666666665*sqrt(g1sq)*sqrt(g2sq)*T*(192. + 0.10132118364233778*(48.*lamH + g1sq*(118. - 1.*Lb) + g2sq*(60. + 43.*Lb) - 6.*g1sq*(-1. + Lf) - 9.*(12.666666666666666*g1sq + 8.*g2sq)*Lf - 12.*(-2. + Lf)*pow(yt,2) + 12.*Lf*pow(yt,2)));
+      double lambdaVL_6 = 0.005208333333333333*g1sq*T*(96. + 0.10132118364233778*(9.*g2sq + 72.*lamH + g1sq*(67. - 1.*Lb - 48.*(-1. + Lf) - 66.*Lf) + 18.*(1.7777777777777777*(-2. + Lf) - 1.*Lf)*pow(yt,2) - 16.*Lf*pow(yt,2) + 2.*(-3.*g1sq*(-1. + Lf) + (-2. + Lf)*pow(yt,2))));
+      double lambdaVVSL_1 = 0.006332573977646111*a1*g2sq*sqrt(T);
+      double lambdaVVSL_2 = 0.006332573977646111*a1*g1sq*sqrt(T);
+      //---------------------------------------------------------------------------------
+      double MusqSU3_LO = 4.*g3sq*pow(T,2);
+      double MusqSU2_LO = 3.8333333333333335*g2sq*pow(T,2);
+      double MusqU1_LO = 5.166666666666667*g1sq*pow(T,2);
+      double MusqSU3_NLO = -0.017414578438526805*g1sq*g3sq*pow(T,2) - 0.04274487434911125*g2sq*g3sq*pow(T,2) - 0.33001039755056605*pow(g3sq,2)*pow(T,2) - 0.006332573977646111*g3sq*pow(T,2)*pow(yt,2) + 0.13931662750821444*pow(g3sq,2)*pow(T,2)*log(0.07957747154594767*scaleFactor) + 0.18997721932938333*pow(g3sq,2)*pow(T,2)*log(3.141592653589793*T) - 0.18997721932938333*pow(g3sq,2)*pow(T,2)*log(scaleFactor*T);
+      double MusqSU2_NLO = 0.012665147955292222*g2sq*mphiSq - 0.008707289219263403*g1sq*g2sq*pow(T,2) - 0.06816774467240017*pow(g2sq,2)*pow(T,2) - 0.11398633159763*g2sq*g3sq*pow(T,2) + 0.006332573977646111*g2sq*lamH*pow(T,2) + 0.0005277144981371759*g2sq*lamHS*pow(T,2) - 0.0015831434944115277*g2sq*pow(T,2)*pow(yt,2) + 0.030255631226531417*pow(g2sq,2)*pow(T,2)*log(scaleFactor) + 0.26491267806486235*pow(g2sq,2)*pow(T,2)*log(T) - 0.26491267806486235*pow(g2sq,2)*pow(T,2)*log(scaleFactor*T);
+      double MusqU1_NLO = 0.012665147955292222*g1sq*mphiSq - 0.14268965380560672*pow(g1sq,2)*pow(T,2) - 0.026121867657790208*g1sq*g2sq*pow(T,2) - 0.13931662750821444*g1sq*g3sq*pow(T,2) + 0.006332573977646111*g1sq*lamH*pow(T,2) + 0.0005277144981371759*g1sq*lamHS*pow(T,2) - 0.005804859479508935*g1sq*pow(T,2)*pow(yt,2) - 0.0527714498137176*pow(g1sq,2)*pow(T,2)*log(scaleFactor) + 1.2665147955292222*pow(g1sq,2)*pow(T,2)*log(3.141592653589793*T) + 0.0003518096654247839*pow(g1sq,2)*pow(T,2)*log(12.566370614359172*T) - 1.2668666051946469*pow(g1sq,2)*pow(T,2)*log(scaleFactor*T);
+    
+      double MusqSU3 = MusqSU3_LO/3 + MusqSU3_NLO/3;
+      double MusqSU2 = MusqSU2_LO/3 + MusqSU2_NLO/3;
+      double MusqU1 = MusqU1_LO/3 + MusqU1_NLO/3;
+      //---------------------------------------------------------------------------------
+      scaleFactor3 = sqrt(MusqU1);
+      scaleFactor3dUS = sqrt(g1sq) * scaleFactor3;
+      //---------------------------------------------------------------------------------
+      double mphiSq3d_LO = mphiSq + 0.020833333333333332*pow(T,2)*(3.*g1sq + 9.*g2sq + 24.*lamH + 2.*lamHS + 12.*pow(yt,2));
+      double msSq3d_LO = msSq + 0.08333333333333333*(2.*lamHS + 3.*lamS)*pow(T,2);
+      double mphiSq3d_NLO = 0.000021988104089048995*(-72.*pow(a1,2)*Lb + 216.*g1sq*Lb*mphiSq + 648.*g2sq*Lb*mphiSq - 1728.*lamH*Lb*mphiSq - 144.*lamHS*Lb*msSq + 272.6937977487443*pow(g1sq,2)*pow(T,2) + 596.116276066047*g1sq*g2sq*pow(T,2) - 1038.313945378327*pow(g2sq,2)*pow(T,2) - 968.1860417056755*g1sq*lamH*pow(T,2) - 2904.558125117026*g2sq*lamH*pow(T,2) + 4160.744166822702*pow(lamH,2)*pow(T,2) + 173.36434028427922*pow(lamHS,2)*pow(T,2) - 507.*pow(g1sq,2)*Lb*pow(T,2) + 216.*g1sq*g2sq*Lb*pow(T,2) - 1395.*pow(g2sq,2)*Lb*pow(T,2) - 216.*g1sq*lamH*Lb*pow(T,2) - 648.*g2sq*lamH*Lb*pow(T,2) + 9.*g1sq*lamHS*Lb*pow(T,2) + 27.*g2sq*lamHS*Lb*pow(T,2) - 72.*lamH*lamHS*Lb*pow(T,2) + 12.*pow(lamHS,2)*Lb*pow(T,2) - 36.*lamHS*lamS*Lb*pow(T,2) + 180.*pow(g1sq,2)*Lf*pow(T,2) + 324.*pow(g2sq,2)*Lf*pow(T,2) - 864.*Lf*mphiSq*pow(yt,2) - 66.*g1sq*pow(T,2)*pow(yt,2) - 54.*g2sq*pow(T,2)*pow(yt,2) - 576.*g3sq*pow(T,2)*pow(yt,2) + 47.*g1sq*Lb*pow(T,2)*pow(yt,2) + 189.*g2sq*Lb*pow(T,2)*pow(yt,2) - 192.*g3sq*Lb*pow(T,2)*pow(yt,2) - 648.*lamH*Lb*pow(T,2)*pow(yt,2) + 55.*g1sq*Lf*pow(T,2)*pow(yt,2) - 27.*g2sq*Lf*pow(T,2)*pow(yt,2) + 768.*g3sq*Lf*pow(T,2)*pow(yt,2) - 216.*lamH*Lf*pow(T,2)*pow(yt,2) - 36.*lamHS*Lf*pow(T,2)*pow(yt,2) + 108.*Lb*pow(T,2)*pow(yt,4) + 18.*log(scaleFactor3/scaleFactor)*(5.*pow(g1sq3d,2) - 39.*pow(g2sq3d,2) + 6.*g1sq3d*(3.*g2sq3d - 8.*lamH3d) - 48.*g2sq3d*(3.*lamH3d + 2.*lambdaVL_4) + 8.*(24.*pow(lamH3d,2) + pow(lamHS3d,2) - 48.*g3sq3d*lambdaVL_2 + 8.*pow(lambdaVL_2,2) + 3.*pow(lambdaVL_4,2) + 6.*pow(lambdaVL_5,2) + pow(lambdaVL_6,2))));
+      double msSq3d_NLO = -0.00026385724906858796*(12.*pow(a1,2)*Lb + 48.*pow(b3,2)*Lb + 48.*lamHS*Lb*mphiSq + 72.*lamS*Lb*msSq + 26.894056714046535*g1sq*lamHS*pow(T,2) + 80.68217014213961*g2sq*lamHS*pow(T,2) - 57.78811342809307*pow(lamHS,2)*pow(T,2) - 173.36434028427922*pow(lamS,2)*pow(T,2) + 9.*g1sq*lamHS*Lb*pow(T,2) + 27.*g2sq*lamHS*Lb*pow(T,2) + 24.*lamH*lamHS*Lb*pow(T,2) - 10.*pow(lamHS,2)*Lb*pow(T,2) + 12.*lamHS*lamS*Lb*pow(T,2) - 18.*pow(lamS,2)*Lb*pow(T,2) + 18.*lamHS*Lb*pow(T,2)*pow(yt,2) - 6.*lamHS*Lf*pow(T,2)*pow(yt,2) + 12.*log(scaleFactor3/scaleFactor)*(2.*g1sq3d*lamHS3d - 4.*pow(lamHS3d,2) - 12.*pow(lamS3d,2) - 3.*pow(lambdaVL_1,2) + 6.*g2sq3d*(lamHS3d + 2.*lambdaVL_1) - 1.*pow(lambdaVL_3,2)));
+    
+      double mphiSq3d = mphiSq3d_LO + mphiSq3d_NLO;
+      double msSq3d = msSq3d_LO + msSq3d_NLO;
+      //---------------------------------------------------------------------------------
+      if ( matching_flag == 0 ) {
+        return {g1sq*T, g2sq*T, g3sq*T, b1/sqrt(T), mphiSq3d_LO, msSq3d_LO, a1*sqrt(T), b3*sqrt(T), lamH*T, lamHS*T, lamS*T};
+      } else if ( matching_flag == 1 ) {
+        return {g1sq3d, g2sq3d, g3sq3d, b13d_NLO, mphiSq3d, msSq3d, a13d, b33d, lamH3d, lamHS3d, lamS3d};
+      }
+      //---------------------------------------------------------------------------------
+      double g1sq3dUS = g1sq3d;
+      double g2sq3dUS = g2sq3d - (0.013262911924324612*pow(g2sq3d,2))/sqrt(MusqSU2);
+      double g3sq3dUS = g3sq3d - (0.019894367886486918*pow(g3sq3d,2))/sqrt(MusqSU3);
+      double a13dUS = -0.0008289319952702883*(48.*((3.*lambdaVL_4*lambdaVVSL_1)/sqrt(MusqSU2) + (lambdaVL_6*lambdaVVSL_2)/sqrt(MusqU1)) + a13d*(-1206.3715789784806 + (3.*pow(lambdaVVSL_1,2))/pow(MusqSU2,1.5) + pow(lambdaVVSL_2,2)/pow(MusqU1,1.5)));
+      double b33dUS = -0.0024867959858108648*((36.*lambdaVL_1*lambdaVVSL_1)/sqrt(MusqSU2) + (12.*lambdaVL_3*lambdaVVSL_2)/sqrt(MusqU1) + b33d*(-402.1238596594935 + (3.*pow(lambdaVVSL_1,2))/pow(MusqSU2,1.5) + pow(lambdaVVSL_2,2)/pow(MusqU1,1.5)));
+      double lamH3dUS = lamH3d - 0.009947183943243459*((8.*pow(lambdaVL_2,2))/sqrt(MusqSU3) + (3.*pow(lambdaVL_4,2))/sqrt(MusqSU2) + (4.*pow(lambdaVL_5,2))/(sqrt(MusqSU2) + sqrt(MusqU1)) + pow(lambdaVL_6,2)/sqrt(MusqU1));
+      double lamHS3dUS = 0.0016578639905405765*(603.1857894892403*lamHS3d - (36.*lambdaVL_1*lambdaVL_4)/sqrt(MusqSU2) - (12.*lambdaVL_3*lambdaVL_6)/sqrt(MusqU1) + (3.*lamHS3d*pow(lambdaVVSL_1,2))/pow(MusqSU2,1.5) + (lamHS3d*pow(lambdaVVSL_2,2))/pow(MusqU1,1.5));
+      double lamS3dUS = 0.003315727981081153*(301.59289474462014*lamS3d - (9.*pow(lambdaVL_1,2))/sqrt(MusqSU2) - (3.*pow(lambdaVL_3,2))/sqrt(MusqU1) + (3.*lamS3d*pow(lambdaVVSL_1,2))/pow(MusqSU2,1.5) + (lamS3d*pow(lambdaVVSL_2,2))/pow(MusqU1,1.5));
+      //---------------------------------------------------------------------------------
+      double b13dUS = b13d - 0.039788735772973836*(3.*sqrt(MusqSU2)*lambdaVVSL_1 + sqrt(MusqU1)*lambdaVVSL_2) - 0.0008289319952702883*b13d*((3.*pow(lambdaVVSL_1,2))/pow(MusqSU2,1.5) + pow(lambdaVVSL_2,2)/pow(MusqU1,1.5));
+      //---------------------------------------------------------------------------------
+      double mphiSq3dUS_LO = mphiSq3d - 0.039788735772973836*(8.*sqrt(MusqSU3)*lambdaVL_2 + 3.*sqrt(MusqSU2)*lambdaVL_4 + sqrt(MusqU1)*lambdaVL_6);
+      double msSq3dUS_LO = msSq3d - 0.019894367886486918*(6.*sqrt(MusqSU2)*lambdaVL_1 + (3.*pow(lambdaVVSL_1,2))/sqrt(MusqSU2) + (2.*MusqU1*lambdaVL_3 + pow(lambdaVVSL_2,2))/sqrt(MusqU1));
+      double mphiSq3dUS_NLO = 0.0007915717472057639*(48.*g3sq3d*lambdaVL_2 + 32.*log((0.5*scaleFactor3)/sqrt(MusqSU3))*(6.*g3sq3d - 1.*lambdaVL_2)*lambdaVL_2 - 16.*pow(lambdaVL_2,2) + 12.*g2sq3d*lambdaVL_4 - 6.*pow(lambdaVL_4,2) - 6.*log((0.5*scaleFactor3)/sqrt(MusqSU2))*(pow(g2sq3d,2) - 8.*g2sq3d*lambdaVL_4 + 2.*pow(lambdaVL_4,2)) - 12.*pow(lambdaVL_5,2) - 24.*log((scaleFactor3)/(sqrt(MusqSU2) + sqrt(MusqU1)))*pow(lambdaVL_5,2) - 2.*pow(lambdaVL_6,2) - 4.*log((0.5*scaleFactor3)/sqrt(MusqU1))*pow(lambdaVL_6,2) + 5.*lambdaVL_4*lambdaVLL_1 + (24.*sqrt(MusqSU2)*lambdaVL_2*lambdaVLL_2)/sqrt(MusqSU3) + (24.*sqrt(MusqSU3)*lambdaVL_4*lambdaVLL_2)/sqrt(MusqSU2) + 26.666666666666668*lambdaVL_2*lambdaVLL_3 + (8.*sqrt(MusqU1)*lambdaVL_2*lambdaVLL_7)/sqrt(MusqSU3) + (8.*sqrt(MusqSU3)*lambdaVL_6*lambdaVLL_7)/sqrt(MusqU1) + (3.*sqrt(MusqU1)*lambdaVL_4*lambdaVLL_8)/sqrt(MusqSU2) + (3.*sqrt(MusqSU2)*lambdaVL_6*lambdaVLL_8)/sqrt(MusqU1) + lambdaVL_6*lambdaVLL_9);
+      double msSq3dUS_NLO = 0.00026385724906858796*(36.*g2sq3d*(1. + 4.*log((0.5*scaleFactor3)/sqrt(MusqSU2)))*lambdaVL_1 - 18.*(1. + 2.*log((0.5*scaleFactor3)/sqrt(MusqSU2)))*pow(lambdaVL_1,2) - 6.*(1. + 2.*log((0.5*scaleFactor3)/sqrt(MusqU1)))*pow(lambdaVL_3,2) + (3.*lambdaVL_1*(5.*sqrt(MusqSU2)*lambdaVLL_1 + 24.*sqrt(MusqSU3)*lambdaVLL_2 + 3.*sqrt(MusqU1)*lambdaVLL_8))/sqrt(MusqSU2) + (3.*lambdaVL_3*(8.*sqrt(MusqSU3)*lambdaVLL_7 + 3.*sqrt(MusqSU2)*lambdaVLL_8 + sqrt(MusqU1)*lambdaVLL_9))/sqrt(MusqU1) + (0.125*(3.*pow(MusqU1,1.5)*pow(lambdaVVSL_1,2) + pow(MusqSU2,1.5)*pow(lambdaVVSL_2,2))*(-50.26548245743669*msSq3d*sqrt(MusqSU2)*sqrt(MusqU1) + 6.*MusqSU2*sqrt(MusqU1)*lambdaVL_1 + 3.*sqrt(MusqU1)*pow(lambdaVVSL_1,2) + sqrt(MusqSU2)*(2.*MusqU1*lambdaVL_3 + pow(lambdaVVSL_2,2))))/(pow(MusqSU2,2)*pow(MusqU1,2)));
+      double mphiSq3dUS_beta = 0.00039578587360288194*(5.*pow(g1sq3dUS,2) + 18.*g1sq3dUS*g2sq3dUS - 51.*pow(g2sq3dUS,2) - 48.*(g1sq3dUS + 3.*g2sq3dUS)*lamH3dUS + 192.*pow(lamH3dUS,2) + 8.*pow(lamHS3dUS,2));
+      double msSq3dUS_beta = 0.006332573977646111*(-1.*(g1sq3dUS + 3.*g2sq3dUS - 2.*lamHS3dUS)*lamHS3dUS + 6.*pow(lamS3dUS,2));
+    
+      double mphiSq3dUS = mphiSq3dUS_LO + mphiSq3dUS_NLO + mphiSq3dUS_beta * log(scaleFactor3dUS / scaleFactor3);
+      double msSq3dUS = msSq3dUS_LO + msSq3dUS_NLO + msSq3dUS_beta * log(scaleFactor3dUS / scaleFactor3);
+      //---------------------------------------------------------------------------------
+      if ( matching_flag == 2 ) {
+        return {g1sq3dUS, g2sq3dUS, g3sq3dUS, b13dUS, mphiSq3dUS, msSq3dUS, a13dUS, b33dUS, lamH3dUS, lamHS3dUS, lamS3dUS};
+      }
+      return {0.};
+    }
+
+  private :
+
+    PROPERTY(int, potential_flag, 1);
+    PROPERTY(int, matching_flag, 1);
+    PROPERTY(bool, running_flag, true);
+
+    const double v = SM::v;
+    const double Mh = SM::mh; // Captial for physical mass.
+    const double MhSq = Mh*Mh;
+    const double g1 = SM::gp;
+    const double g2 = SM::g;
+
+    double Ms;
   
-  size_t get_n_scalars() const override {return 2;}
-
-  std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const override {
-    auto phi1 = phi;
-    phi1[0] = - phi[0];
-    auto phi2 = phi;
-    phi2[1] = - phi[1];
-    return {phi1,phi2};
-  };
-
-  double V(Eigen::VectorXd phi, double T) const override {
-
-    const std::vector<double> par = DRstep(T);
-
-    std::complex<double> g1sq(par[0],0);
-    std::complex<double> g2sq(par[1],0);
-    std::complex<double> lamH(par[2],0);
-    std::complex<double> lamHS(par[3],0);
-    std::complex<double> lamS(par[4],0);
-    std::complex<double> muHsq(par[5],0);
-    std::complex<double> muSsq(par[6],0);
-
-//    std::cout << std::endl;
-//    std::cout << "par = " << par[0] << ", " <<  par[1] << ", " << par[2] << std::endl;
-//    std::cout << "par = " << par[3] << ", " <<  par[4] << ", " << par[5] << std::endl;
-//    std::cout << "par = " << par[6] << std::endl;
-
-//        std::cout << " 3dUS g1sq = " << g1sq << std::endl;
-//        std::cout << " 3dUS g2sq = " << g2sq << std::endl;
-//        std::cout << " 3dUS lamHS = " << lamHS << std::endl;
-//        std::cout << " 3dUS lamH = " << lamH << std::endl;
-//        std::cout << " 3dUS lamS = " << lamS << std::endl;
-//        std::cout << " 3dUS muHsq = " << muHsq << std::endl;
-//        std::cout << " 3dUS muSsq = " << muSsq << std::endl;
-    
-    std::complex<double> Hsq(phi[0] * phi[0] ,0);
-    std::complex<double> Ssq(phi[1] * phi[1] ,0);
-    
-    std::complex<double> veffLO = (pow(Hsq,2.)*lamH)/4. - (Hsq*muHsq)/2.
-             + (Hsq*lamHS*Ssq)/4. - (muSsq*Ssq)/2. + (lamS*pow(Ssq,2.))/4.;
-    
-    std::complex<double> veffNLO = 2.*(-0.020833333333333332*pow(g2sq*Hsq,1.5)/M_PI - pow((g1sq +
-              g2sq)*Hsq,1.5)/(96.*M_PI)) - pow(Hsq*lamH - muHsq + (lamHS*Ssq)/2.,1.5)/(4.*M_PI) -
-              pow(6.*Hsq*lamH + Hsq*lamHS - 2.*muHsq - 2.*muSsq + lamHS*Ssq + 6.*lamS*Ssq -
-              sqrt(pow(Hsq*(-6.*lamH + lamHS) + 2.*muHsq - 2.*muSsq,2.) +
-              2.*(7.*Hsq*pow(lamHS,2.) + 12.*lamS*(-3.*Hsq*lamH + muHsq - muSsq) +
-              2.*lamHS*(3.*Hsq*(lamH + lamS) - muHsq + muSsq))*Ssq +
-              pow(lamHS - 6.*lamS,2.)*pow(Ssq,2.)),1.5)/(96.*M_PI) -
-              pow(6.*Hsq*lamH + Hsq*lamHS - 2.*muHsq - 2.*muSsq + lamHS*Ssq + 6.*lamS*Ssq +
-              sqrt(pow(Hsq*(-6.*lamH + lamHS) + 2.*muHsq - 2.*muSsq,2.) +
-              2.*(7.*Hsq*pow(lamHS,2.) + 12.*lamS*(-3.*Hsq*lamH + muHsq - muSsq) +
-              2.*lamHS*(3.*Hsq*(lamH + lamS) - muHsq + muSsq))*Ssq +
-              pow(lamHS - 6.*lamS,2.)*pow(Ssq,2.)),1.5)/(96.*M_PI);
-    
-//    std::cout << "veffLO = " << veffLO.real() << std::endl;
-//    std::cout << "veffNLO = " << veffNLO.real() << std::endl;
-    
-    return veffLO.real() + veffNLO.real();
-  }
+    double g1sq_input = g1*g1;
+    double g2sq_input = g2*g2;
+    double g3sq_input = 0.1183 * 0.1183;
+    double b1_input = 0;
+    double mphiSq_input;
+    double msSq_input;
+    double a1_input = 0;
+    double b3_input = 0;
+    double lamH_input;
+    double lamHS_input;
+    double lamS_input;
+    double yt_input = SM::yt;
   
-  void Betas(const std::vector<double>& x, std::vector<double>& dxdt, const double t) override {
-    double g1sq = x[0];
-    double g2sq = x[1];
-    double g3sq = x[2];
-    double lamHS = x[3];
-    double lamH = x[4];
-    double lamS = x[5];
-    double yt1 = x[6];
-    double muHsq = x[7];
-    double muSsq = x[8];
-    dxdt[0] = 1./t*(43*pow(g1sq,2))/(144.*pow(M_PI,2));
-    dxdt[1] = 1./t*(-35*pow(g2sq,2))/(48.*pow(M_PI,2));
-    dxdt[2] = 1./t*(-29*pow(g3sq,2))/(24.*pow(M_PI,2));
-    dxdt[3] = 1./t*(lamHS*(-3*g1sq - 9*g2sq + 4*(6*lamH + 2*lamHS + 3*lamS + 3*pow(yt1,2))))/(32.*pow(M_PI,2));
-    dxdt[4] = 1./t*(3*pow(g1sq,2) + 9*pow(g2sq,2) + 6*g1sq*(g2sq - 4*lamH) - 72*g2sq*lamH + 4*pow(lamHS,2) -
-               48*pow(yt1,4) + 96*lamH*(2*lamH + pow(yt1,2)))/(128.*pow(M_PI,2));
-    dxdt[5] = 1./t*(pow(lamHS,2) + 9*pow(lamS,2))/(8.*pow(M_PI,2));
-    dxdt[6] = 1./t*(yt1*(-17*g1sq - 27*g2sq - 96*g3sq + 54*pow(yt1,2)))/(192.*pow(M_PI,2));
-    dxdt[7] = 1./t*(2*lamHS*muSsq - 3*muHsq*(g1sq + 3*g2sq - 4*(2*lamH + pow(yt1,2))))/(32.*pow(M_PI,2));
-    dxdt[8] = 1./t*(2*lamHS*muHsq + 3*lamS*muSsq)/(8.*pow(M_PI,2));
-  }
-  
-  std::vector<double> DRstep(double T) const {
-    
-    double Gamma = scaleFactor * T;
-    double Lb = 2.*log(scaleFactor) + 2. * EulerGamma - 2. * log(4 * M_PI);
-    double Lf = Lb + 4. * log(2.);
-    
-    double g1sq = alglib::spline1dcalc(RGEs[0], Gamma);
-    double g2sq = alglib::spline1dcalc(RGEs[1], Gamma);
-    double g3sq = alglib::spline1dcalc(RGEs[2], Gamma);
+    const double scaleFactor = M_PI;
 
-    double lamHS = alglib::spline1dcalc(RGEs[3], Gamma);
-    double lamH  = alglib::spline1dcalc(RGEs[4], Gamma);
-    double lamS  = alglib::spline1dcalc(RGEs[5], Gamma);
-    
-    double yt1   = alglib::spline1dcalc(RGEs[6], Gamma);
-    double muHsq = alglib::spline1dcalc(RGEs[7], Gamma);
-    double muSsq = alglib::spline1dcalc(RGEs[8], Gamma);
-//    std::cout << std::endl;
-//    std::cout << " Gamma = " << Gamma << std::endl;
-//    std::cout << " After RGE g1sq = " << g1sq << std::endl;
-//    std::cout << " After RGE g2sq = " << g2sq << std::endl;
-//    std::cout << " After RGE g3sq = " << g3sq << std::endl;
-//    std::cout << " After RGE lamHS = " << lamHS << std::endl;
-//    std::cout << " After RGE lamH = " << lamH << std::endl;
-//    std::cout << " After RGE lamS = " << lamS << std::endl;
-//    std::cout << " After RGE yt1 = " << yt1<< std::endl;
-//    std::cout << " After RGE muHsq = " << muHsq << std::endl;
-//    std::cout << " After RGE muSsq = " << muSsq << std::endl;
-    
-    // ---------------------------------------------------------------------------------
-    // Couplings
-    double g13dsq = g1sq*T - (pow(g1sq,2)*(3*Lb + 40*Lf)*T)/(288.*pow(M_PI,2));
-    double g23dsq = g2sq*T + (pow(g2sq,2)*(4 + 43*Lb - 8*Lf)*T)/(96.*pow(M_PI,2));
-    double g33dsq = g3sq*T + (pow(g3sq,2)*(3 + 33*Lb - 4*Lf)*T)/(48.*pow(M_PI,2));
-    
-//    std::cout << " g13dsq = " << g13dsq << std::endl;
-//    std::cout << " g23dsq = " << g23dsq << std::endl;
-//    std::cout << " g33dsq = " << g33dsq << std::endl;
-    
-    double lamH3d = (T*(pow(g2sq,2)*(6 - 9*Lb) + pow(g1sq,2)*(2 - 3*Lb) + 72*g2sq*lamH*Lb - 4*pow(lamHS,2)*Lb +\
-                    g1sq*(g2sq*(4 - 6*Lb) + 24*lamH*Lb) +\
-                    48*Lf*pow(yt1,4) - 32*lamH*(6*lamH*Lb - 8*pow(M_PI,2) + 3*Lf*pow(yt1,2))))/(256.*pow(M_PI,2));
-    double lamHS3d = (lamHS*T*((3*g1sq + 9*g2sq - 4*(6*lamH + 2*lamHS + 3*lamS))*Lb + 64*pow(M_PI,2) - 12*Lf*pow(yt1,2)))/(64.*pow(M_PI,2));
-    double lamS3d = lamS*T - ((pow(lamHS,2) + 9*pow(lamS,2))*Lb*T)/(16.*pow(M_PI,2));
-    // ---------------------------------------------------------------------------------
-    // TemporalScalarCouplings
-    double lambdaVLL_1 = (-353*pow(g1sq,2)*T)/(216.*pow(M_PI,2));
-    double lambdaVLL_2 = -0.041666666666666664*(g1sq*g2sq*T)/pow(M_PI,2);
-    double lambdaVLL_3 = (13*pow(g2sq,2)*T)/(24.*pow(M_PI,2));
-    double lambdaVLL_4 = (-11*g1sq*g3sq*T)/(36.*pow(M_PI,2));
-    double lambdaVLL_5 = -0.25*(g2sq*g3sq*T)/pow(M_PI,2);
-    double lambdaVLL_6 = -0.08333333333333333*(sqrt(g1sq)*pow(sqrt(g3sq),3)*T)/pow(M_PI,2);
-    double lambdaVLL_7 = (7*pow(g3sq,2)*T)/(12.*pow(M_PI,2));
-    double lambdaVL_1 = -0.25*(g3sq*T*pow(yt1,2))/pow(M_PI,2);
-    double lambdaVL_2 = -0.0008680555555555555*(sqrt(g1sq)*sqrt(g2sq)*T*(-3*g2sq*(-4 + 43*Lb - 8*Lf) + g1sq*(-52 + 3*Lb + 40*Lf) - 72*(2*lamH + 8*pow(M_PI,2) + pow(yt1,2))))/ pow(M_PI,2);
-    double lambdaVL_3 = (g2sq*T*(3*g1sq + g2sq*(59 + 43*Lb - 8*Lf) + 12*(6*lamH + 8*pow(M_PI,2) - 3*pow(yt1,2))))/(192.*pow(M_PI,2));
-    double lambdaVL_4 = (g1sq*T*(g1sq*(43 - 3*Lb - 40*Lf) + 3*(9*g2sq + 72*lamH + 96*pow(M_PI,2) - 68*pow(yt1,2))))/(576.*pow(M_PI,2));
-    double lambdaVL_5 = (g1sq*lamHS*T)/(8.*pow(M_PI,2));
-    double lambdaVL_6 = (g2sq*lamHS*T)/(8.*pow(M_PI,2));
-    // ---------------------------------------------------------------------------------
-    // 3d DebyeMass
-    double MusqSU2_LO = (7*g2sq*pow(T,2))/6.;
-    double MusqSU3_LO = (4*g3sq*pow(T,2))/3.;
-    double MusqU1_LO = (13*g1sq*pow(T,2))/18.;
-    
-    double MusqSU2_NLO = (g2sq*(-3*g1sq*pow(T,2) + g2sq*(283 + 602*Lb - 112*Lf)*pow(T,2) -
-                      6*(24*muHsq + 24*g3sq*pow(T,2) + pow(T,2)*(-12*lamH - lamHS +
-                      3*pow(yt1,2)))))/(1152.*pow(M_PI,2));
-    double MusqSU3_NLO = -0.001736111111111111*(g3sq*pow(T,2)*(11*g1sq + 27*g2sq -
-                      16*g3sq*(13 + 33*Lb - 4*Lf) + 36*pow(yt1,2)))/pow(M_PI,2);
-    double MusqU1_NLO = -0.000048225308641975306*(g1sq*(2592*muHsq + pow(T,2)*
-                    (2*g1sq*(175 + 78*Lb + 1040*Lf) + 18*(9*g2sq + 176*g3sq - 72*lamH - 6*lamHS + 66*pow(yt1,2)))))/pow(M_PI,2);
-    
-    double MusqSU2 = MusqSU2_LO + MusqSU2_NLO;
-    double MusqSU3 = MusqSU3_LO + MusqSU3_NLO;
-    double MusqU1 = MusqU1_LO + MusqU1_NLO;
-    
-    // ---------------------------------------------------------------------------------
-    // 3d ScalarMass
-    double MuHsq3d_LO = (-3*g1sq*pow(T,2) - 9*g2sq*pow(T,2) - 2*(-24*muHsq + 12*lamH*pow(T,2) + lamHS*pow(T,2) + 6*pow(T,2)*pow(yt1,2)))/48.;
-    double MuSsq3d_LO = muSsq - ((2*lamHS + 3*lamS)*pow(T,2))/12.;
-
-//        std::cout << " MuHsq3d_LO = " << MuHsq3d_LO << std::endl;
-//        std::cout << " MuSsq3d_LO = " << MuSsq3d_LO << std::endl;
-//    std::cout << " g1sq = " << g1sq << std::endl;
-//    std::cout << " g2sq = " << g2sq << std::endl;
-//    std::cout << " g3sq = " << g3sq << std::endl;
-//    std::cout << " Lb = " << Lb << std::endl;
-//    std::cout << " Lf = " << Lf << std::endl;
-//    std::cout << " ====================== "<< std::endl;
-//    std::cout << " muHsq = " << muHsq << std::endl;
-//    std::cout << " muSsq = " << muSsq << std::endl;
-//    std::cout << " lamHS = " << lamHS << std::endl;
-//    std::cout << " lamH = " << lamH << std::endl;
-//    std::cout << " lamS = " << lamS << std::endl;
-//    std::cout << " yt1 = " << yt1 << std::endl;
-//    std::cout << " ====================== "<< std::endl;
-//    std::cout << " g13dsq = " << g13dsq << std::endl;
-//    std::cout << " g23dsq = " << g23dsq << std::endl;
-//    std::cout << " g33dsq = " << g33dsq << std::endl;
-//    std::cout << " lamH3d = " << lamH3d << std::endl;
-//    std::cout << " lamHS3d = " << lamHS3d << std::endl;
-//    std::cout << " lamS3d = " << lamS3d << std::endl;
-//    std::cout << " ====================== "<< std::endl;
-//    std::cout << " lambdaVL_1 = " << lambdaVL_1 << std::endl;
-//    std::cout << " lambdaVL_2 = " << lambdaVL_2 << std::endl;
-//    std::cout << " lambdaVL_3 = " << lambdaVL_3 << std::endl;
-//    std::cout << " lambdaVL_4 = " << lambdaVL_4 << std::endl;
-//    std::cout << " lambdaVL_5 = " << lambdaVL_5 << std::endl;
-//    std::cout << " lambdaVL_6 = " << lambdaVL_6 << std::endl;
-//
-//    std::cout << " ====================== "<< std::endl;
-//    std::cout << " lambdaVLL_1 = " << lambdaVLL_1 << std::endl;
-//    std::cout << " lambdaVLL_2 = " << lambdaVLL_2 << std::endl;
-//    std::cout << " lambdaVLL_3 = " << lambdaVLL_3 << std::endl;
-//    std::cout << " lambdaVLL_4 = " << lambdaVLL_4 << std::endl;
-//    std::cout << " lambdaVLL_5 = " << lambdaVLL_5 << std::endl;
-//    std::cout << " lambdaVLL_6 = " << lambdaVLL_6 << std::endl;
-//    std::cout << " lambdaVLL_7 = " << lambdaVLL_7 << std::endl;
-//
-//    std::cout << " ====================== "<< std::endl;
-//    std::cout << " EulerGamma = " << EulerGamma << std::endl;
-//    std::cout << " Glaisher = " << Glaisher << std::endl;
-
-    double MuHsq3d_NLO = (-9*(9*g2sq*(-24*Lb*muHsq + pow(T,2)*(lamHS*Lb + (-2 + 7*Lb - Lf)*pow(yt1,2) +
-              8*lamH*(1 + 6*EulerGamma - 3*Lb - 72*log(Glaisher)))) -
-              4*(16*g3sq*(3 + Lb - 4*Lf)*pow(T,2)*pow(yt1,2) + 3*Lf*(-24*muHsq +
-              (6*lamH + lamHS)*pow(T,2))*pow(yt1,2) -
-              Lb*(12*(12*lamH*muHsq + lamHS*muSsq) + pow(T,2)*(lamHS*(-6*lamH + lamHS - 3*lamS) -
-              54*lamH*pow(yt1,2) + 9*pow(yt1,4))) +
-              6*(24*pow(lamH,2) + pow(lamHS,2))*pow(T,2)*(EulerGamma - 12*log(Glaisher))) +
-              pow(g2sq,2)*pow(T,2)*(175 + 243*EulerGamma - 177*Lb + 12*Lf - 2916*log(Glaisher))) +
-              3*g1sq*(216*Lb*muHsq - pow(T,2)*(9*lamHS*Lb + (-66 + 47*Lb + 55*Lf)*pow(yt1,2) +
-              72*lamH*(1 + 6*EulerGamma - 3*Lb - 72*log(Glaisher))) +
-              54*g2sq*pow(T,2)*(1 + 5*EulerGamma - 4*Lb - 60*log(Glaisher))) +
-              pow(g1sq,2)*pow(T,2)*(-43 + 189*EulerGamma + 81*Lb - 60*Lf - 2268*log(Glaisher)) -
-              54*log(scaleFactor3/scaleFactor)*(5*pow(g13dsq,2) - 39*pow(g23dsq,2) +
-              6*g13dsq*(3*g23dsq - 8*lamH3d) - 48*g23dsq*(3*lamH3d + 2*lambdaVL_3) +
-              8*(24*pow(lamH3d,2) + pow(lamHS3d,2) - 48*g33dsq*lambdaVL_1 + 8*pow(lambdaVL_1,2) +
-              6*pow(lambdaVL_2,2) + 3*pow(lambdaVL_3,2) + pow(lambdaVL_4,2))))/(13824.*pow(M_PI,2));
-    
-    double MuSsq3d_NLO = (-48*lamHS*Lb*muHsq - 72*lamS*Lb*muSsq - 6*g2sq*lamHS*pow(T,2) -
-              36*EulerGamma*g2sq*lamHS*pow(T,2) +
-              24*EulerGamma*pow(lamHS,2)*pow(T,2) + 72*EulerGamma*pow(lamS,2)*pow(T,2) +
-              27*g2sq*lamHS*Lb*pow(T,2) + 24*lamH*lamHS*Lb*pow(T,2) -
-              10*pow(lamHS,2)*Lb*pow(T,2) + 12*lamHS*lamS*Lb*pow(T,2) - 18*pow(lamS,2)*Lb*pow(T,2) +
-              18*lamHS*Lb*pow(T,2)*pow(yt1,2) -
-              6*lamHS*Lf*pow(T,2)*pow(yt1,2) + 432*g2sq*lamHS*pow(T,2)*log(Glaisher) -
-              288*pow(lamHS,2)*pow(T,2)*log(Glaisher) -
-              864*pow(lamS,2)*pow(T,2)*log(Glaisher) + g1sq*lamHS*pow(T,2)*(-2 - 12*EulerGamma +
-              9*Lb + 144*log(Glaisher)) +
-              12*log(scaleFactor3 / scaleFactor)*(2*g13dsq*lamHS3d - 4*pow(lamHS3d,2) -
-              12*pow(lamS3d,2) - pow(lambdaVL_5,2) - 3*pow(lambdaVL_6,2) + 6*g23dsq*(lamHS3d
-              + 2*lambdaVL_6)))/(384.*pow(M_PI,2));
-    
-    double MuHsq3d = MuHsq3d_LO + MuHsq3d_NLO;
-    double MuSsq3d = MuSsq3d_LO + MuSsq3d_NLO;
-    
-//    std::cout << " MuHsq3d_LO = " << MuHsq3d_LO << std::endl;
-//    std::cout << " MuHsq3d_NLO = " << MuHsq3d_NLO << std::endl;
-//
-//    std::cout << " MuSsq3d_LO = " << MuSsq3d_LO << std::endl;
-//    std::cout << " MuSsq3d_NLO = " << MuSsq3d_NLO << std::endl;
-    
-    // ---------------------------------------------------------------------------------
-    // 3d US Couplings
-//    std::cout << " lamH3d = " << lamH3d << std::endl;
-//    std::cout << " (8*pow(lambdaVL_1,2))/sqrt(MusqSU3) = " << (8*pow(lambdaVL_1,2))/sqrt(MusqSU3) << std::endl;
-//    std::cout << " (4*pow(lambdaVL_2,2))/(sqrt(MusqSU2) + sqrt(MusqU1)) = " << (4*pow(lambdaVL_2,2))/(sqrt(MusqSU2) + sqrt(MusqU1))<< std::endl;
-//    std::cout << " (3*pow(lambdaVL_3,2))/sqrt(MusqSU2) = " << (3*pow(lambdaVL_3,2))/sqrt(MusqSU2) << std::endl;
-//    std::cout << " pow(lambdaVL_4,2)/sqrt(MusqU1) = " << pow(lambdaVL_4,2)/sqrt(MusqU1) << std::endl;
-    double LambdaH3dUS = lamH3d - ((8*pow(lambdaVL_1,2))/sqrt(MusqSU3) +
-              (4*pow(lambdaVL_2,2))/(sqrt(MusqSU2) + sqrt(MusqU1)) +
-              (3*pow(lambdaVL_3,2))/sqrt(MusqSU2) +
-              pow(lambdaVL_4,2)/sqrt(MusqU1))/(32.*M_PI);
-    double LambdaHS3dUS = lamHS3d - ((lambdaVL_4*lambdaVL_5)/sqrt(MusqU1) + (3*lambdaVL_3*lambdaVL_6)/sqrt(MusqSU2))/(16.*M_PI);
-    double LambdaS3dUS = lamS3d - (pow(lambdaVL_5,2)/sqrt(MusqU1) + (3*pow(lambdaVL_6,2))/sqrt(MusqSU2))/(32.*M_PI);
-    double g13dUSsq = g13dsq;
-    double g23dUSsq = g23dsq - pow(g23dsq,2)/(24.*M_PI*sqrt(MusqSU2));
-    // ---------------------------------------------------------------------------------
-    // 3d US Masses
-    double MuHsq3dUS_LO = MuHsq3d + (8*sqrt(MusqSU3)*lambdaVL_1 + 3*sqrt(MusqSU2)*lambdaVL_3 + sqrt(MusqU1)*lambdaVL_4)/(8.*M_PI);
-    double MuSsq3dUS_LO = MuSsq3d + (sqrt(MusqU1)*lambdaVL_5 + 3*sqrt(MusqSU2)*lambdaVL_6)/(8.*M_PI);
-    
-//    std::cout << " MuHsq3d = " << MuHsq3d << std::endl;
-    
-    double MuHsq3dUS_NLO = -0.0078125*(48*g33dsq*lambdaVL_1 +
-            32*log(scaleFactor3*T/(2.*sqrt(MusqSU3)))*(6*g33dsq - lambdaVL_1)*lambdaVL_1 -
-            16*pow(lambdaVL_1,2) - 12*pow(lambdaVL_2,2) -
-            24*log(scaleFactor3*T/(sqrt(MusqSU2) + sqrt(MusqU1)))*pow(lambdaVL_2,2) +
-            12*g23dsq*lambdaVL_3 - 6*pow(lambdaVL_3,2) -
-            6*log(scaleFactor3*T/(2.*sqrt(MusqSU2)))*(pow(g23dsq,2) - 8*g23dsq*lambdaVL_3 +
-            2*pow(lambdaVL_3,2)) - 2*pow(lambdaVL_4,2) -
-            4*log(scaleFactor3*T/(2.*sqrt(MusqU1)))*pow(lambdaVL_4,2) + lambdaVL_4*lambdaVLL_1 +
-            (3*sqrt(MusqU1)*lambdaVL_3*lambdaVLL_2)/sqrt(MusqSU2) +
-            (3*sqrt(MusqSU2)*lambdaVL_4*lambdaVLL_2)/sqrt(MusqU1) + 15*lambdaVL_3*lambdaVLL_3 +
-            (8*sqrt(MusqU1)*lambdaVL_1*lambdaVLL_4)/sqrt(MusqSU3) +
-            (8*sqrt(MusqSU3)*lambdaVL_4*lambdaVLL_4)/sqrt(MusqU1) +
-            (24*sqrt(MusqSU2)*lambdaVL_1*lambdaVLL_5)/sqrt(MusqSU3) +
-            (24*sqrt(MusqSU3)*lambdaVL_3*lambdaVLL_5)/sqrt(MusqSU2) +
-            80*lambdaVL_1*lambdaVLL_7)/pow(M_PI,2);
-      double MuSsq3dUS_NLO = -0.0078125*
-            (-2*(1 + 2*log(scaleFactor3*T/(2.*sqrt(MusqU1))))*pow(lambdaVL_5,2) + 12*g23dsq*(1 +
-            4*log(scaleFactor3*T/(2.*sqrt(MusqSU2))))*lambdaVL_6 -
-            6*(1 + 2*log(scaleFactor3*T/(2.*sqrt(MusqSU2))))*pow(lambdaVL_6,2) +
-            (lambdaVL_5*(sqrt(MusqU1)*lambdaVLL_1 + 3*sqrt(MusqSU2)*lambdaVLL_2 +
-            8*sqrt(MusqSU3)*lambdaVLL_4))/
-            sqrt(MusqU1) + (3*lambdaVL_6*(sqrt(MusqU1)*lambdaVLL_2 + 5*sqrt(MusqSU2)*lambdaVLL_3 +
-            8*sqrt(MusqSU3)*lambdaVLL_5))/sqrt(MusqSU2))/pow(M_PI,2);
-    double MuHsq3dUS_beta = (-5*pow(g13dUSsq,2) + 51*pow(g23dUSsq,2) +
-                            144*g23dUSsq*LambdaH3dUS + 6*g13dUSsq*(-3*g23dUSsq + 8*LambdaH3dUS) -
-                            8*(24*pow(LambdaH3dUS,2) + pow(LambdaHS3dUS,2)))/(256.*pow(M_PI,2));
-    double MuSsq3dUS_beta = ((g13dUSsq + 3*g23dUSsq - 2*LambdaHS3dUS)*LambdaHS3dUS -
-                            6*pow(LambdaS3dUS,2))/(16.*pow(M_PI,2));
-    double MuHsq3dUS = MuHsq3dUS_LO + MuHsq3dUS_NLO + MuHsq3dUS_beta * log(scaleFactor3dUS / scaleFactor3);
-    double MuSsq3dUS = MuSsq3dUS_LO + MuSsq3dUS_NLO + MuSsq3dUS_beta * log(scaleFactor3dUS / scaleFactor3);
-
-    
-//    std::cout << " LambdaH3dUS = " << LambdaH3dUS << std::endl;
-//    std::cout << " LambdaS3dUS = " << LambdaS3dUS << std::endl;
-//    std::cout << " LambdaHS3dUS = " << LambdaHS3dUS << std::endl;
-//    std::cout << " MuHsq3dUS_LO = " << MuHsq3dUS_LO << std::endl;
-//    std::cout << " MuSsq3dUS_LO = " << MuSsq3dUS_LO << std::endl;
-//    std::cout << " MuHsq3dUS_beta = " << MuHsq3dUS_beta << std::endl;
-//    std::cout << " scaleFactor3dUS = " << scaleFactor3dUS << std::endl;
-//    std::cout << " scaleFactor3 = " << scaleFactor3 << std::endl;
-//    std::cout << " scaleFactor = " << scaleFactor << std::endl;
-    
-    return {g13dUSsq, g23dUSsq, LambdaH3dUS, LambdaHS3dUS, LambdaS3dUS, MuHsq3dUS, MuSsq3dUS};
-  };
-  
-
- private:
-  
-  double lamdaHS_input = 1.6;
-  double lamdaS_input = 1.0;
-  double mS_input = 160;
-  
-  const double mZsq = 91.2*91.2;
-  const double mWsq = 80.4 * 80.4;
-  const double mt = 172.4;
-  const double mh = 125.;
-  const double mh_sq = mh*mh;
-  const double vev_higgs = 246.;
-  const double vev_higgs_sq = vev_higgs*vev_higgs;
-  
-  const double g1sq_init = 4. * mWsq / vev_higgs_sq;
-  const double g2sq_init = 4. * (mZsq - mWsq) / vev_higgs_sq;
-  const double g3sq_init = pow(4 * M_PI * 0.1179 / (1 - 0.1179 / (4 * M_PI)),2);
-  const double Yt_init = sqrt(2.) * mt / vev_higgs;
-
-  double ms_sq = mS_input * mS_input;
-  double lamdaH_init = 0.5 * mh_sq / vev_higgs_sq;
-  double muHsq_init = 0.5 * mh_sq;
-  double muSsq_init = -ms_sq + 0.5 * lamdaHS_input * vev_higgs_sq;
-  
-  double scaleFactor = M_PI;
-  double scaleFactor3 = g1sq_init;
-  double scaleFactor3dUS = g1sq_init*g1sq_init;
 };
 
-}  // namespace EffectivePotential
+} // namespace EffectivePotential
 
 #endif

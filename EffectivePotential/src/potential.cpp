@@ -84,68 +84,64 @@ alglib::spline1dinterpolant Potential::make_cubic_spline(alglib::real_1d_array x
     return spline_;
 }
 
-void Potential::solveBetas(std::vector<double> x0, double t0, double t_start, double t_end, double dt){
-    // Define the type for odeint
+void Potential::solveBetas(std::vector<double> x0, double t0, double t_start, double t_end) {
     using state_type = std::vector<double>;
-    // Define the state variables
-    state_type x;
-    std::vector<double> t_vec;   // Store the values of t
-    std::vector<state_type> x_vec;  // Store the values of x
-    
-    t_vec.push_back(t0);
-    x_vec.push_back(x0);
-    
-    // Define the stepper
-    x = x0;
-    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_down;
-    for (double t = t0; t >= t_start; t -= dt)
-    {
-        stepper_down.do_step(
-                [this](const state_type& x, state_type& dxdt, double t) {Betas(x, dxdt, t);},
-                x, t, -dt);  // Solve the ODEs
-        t_vec.push_back(t-dt);
-        x_vec.push_back(x);
-    }
+
+    state_type x = x0;
+    std::vector<double> t_vec;
+    std::vector<state_type> x_vec;
+
+    // Stepper with constant step size
+    using stepper_type = boost::numeric::odeint::runge_kutta4<state_type>; // Runge-Kutta 4th order with constant step size
+    stepper_type stepper;
+
+    double dt = 1; // Define a constant step size
+
+    // Integrate backward from t0 to t_start
+    boost::numeric::odeint::integrate_const(
+        stepper,
+        [this](const state_type& x, state_type& dxdt, double t) { Betas(x, dxdt, t); },
+        x, t0, t_start, -dt,
+        [&](const state_type& x, double t) {
+            t_vec.push_back(t);
+            x_vec.push_back(x);
+
+        });
+
+    // Reverse the vectors for the downward integration
     std::reverse(t_vec.begin(), t_vec.end());
     std::reverse(x_vec.begin(), x_vec.end());
-    
-    // Define the stepper
-    x=x0;
-    boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_up;
-    for (double t = t0; t <= t_end; t += dt)
-    {
-        stepper_up.do_step(
-             [this](const state_type& x, state_type& dxdt, double t) {Betas(x, dxdt, t);}, 
-             x, t, dt);  // Solve the ODEs
-        if (t == t0) continue;
-        t_vec.push_back(t+dt);
-        x_vec.push_back(x);
-    }
-    
-//    TODO: checking the result. For example, x= -inf when t_start = 10
-//    TODO: dynamically adjust the range
-//    for (const auto& element : t_vec) {
-//        std::cout << element << " ";
-//    }
-//    std::cout << std::endl;
-//    for (const auto& element : x_vec) {
-//        std::cout << element[8] << " ";
-//    }
-//    std::cout << std::endl;
-    
-    int n = t_vec.size();
-    alglib::real_1d_array t_array;
-    t_array.setlength(n);
-    alglib::real_1d_array x_array;
-    x_array.setlength(n);
-    
+
+    // Reinitialize for forward integration
+    x = x0;
+
+    boost::numeric::odeint::integrate_const(
+        stepper,
+        [this](const state_type& x, state_type& dxdt, double t) { Betas(x, dxdt, t); },
+        x, t0, t_end, dt,
+        [&](const state_type& x, double t) {
+            if (t == t0) return; // Skip the initial point
+            t_vec.push_back(t);
+            x_vec.push_back(x);
+
+        });
+
+    // Since we used a constant step size, no need to re-sample
+    // Proceed directly to creating the final spline on the uniform grid
     for (int j = 0; j < x0.size(); j++) {
-      for (int i = 0; i < t_vec.size(); i++) {
-        t_array[i] = t_vec[i];
-        x_array[i] = x_vec[i][j];
-      }
-      auto RGE = make_cubic_spline(t_array, x_array);
-      RGEs.push_back(RGE);
+        alglib::real_1d_array t_array, x_array;
+        t_array.setlength(t_vec.size());
+        x_array.setlength(t_vec.size());
+
+        for (int i = 0; i < t_vec.size(); i++) {
+            t_array[i] = t_vec[i];
+            x_array[i] = x_vec[i][j];
+        }
+
+        // Perform cubic spline interpolation on the original data
+        auto RGE = make_cubic_spline(t_array, x_array);
+
+        RGEs.push_back(RGE);
     }
 }
 
