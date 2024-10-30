@@ -13,12 +13,23 @@ namespace PhaseTracer {
 
 
 std::ostream& operator << (std::ostream& o, const GravWaveCalculator& a){
+  if (a.spectrums.empty()) {
+    o << "found no spectrums" << std::endl << std::endl;
+  } else {
+    o << "found " << a.spectrums.size() << " spectrum";
+  if (a.spectrums.size() > 1) {
+    o << "s";
+  }
+
+  o << std::endl << std::endl;
+
   for (const auto &t : a.spectrums) {
     o << t << std::endl;
   }
-  o << "=== Summed gravitational wave " << std::endl;
-  o << "    peak_frequency = " << a.total_spectrum.peak_frequency << std::endl
-    << "    peak_amplitude = " << a.total_spectrum.peak_amplitude << std::endl;
+
+  o << "=== total gravitational wave spectrum  ===" << std::endl;
+  o << "peak frequency = " << a.total_spectrum.peak_frequency << std::endl
+    << "peak amplitude = " << a.total_spectrum.peak_amplitude << std::endl;
   return o;
 }
 
