@@ -31,6 +31,7 @@ std::ostream& operator << (std::ostream& o, const GravWaveCalculator& a){
   o << "peak frequency = " << a.total_spectrum.peak_frequency << std::endl
     << "peak amplitude = " << a.total_spectrum.peak_amplitude << std::endl;
   return o;
+  }
 }
 
 const double GravWaveCalculator::rho_R(double T){
