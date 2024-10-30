@@ -25,18 +25,15 @@ struct GravWaveSpectrum {
   
   /** Pretty-printer for GravWaveSpectrum */
   friend std::ostream& operator << (std::ostream& o, const GravWaveSpectrum& a) {
-    o << "=== Gravitational wave generated at T = " << a.Tref << std::endl;
-    o << "    alpha = " << a.alpha << std::endl
-      << "    beta over H = " << a.beta_H << std::endl
-      << "    peak_frequency = " << a.peak_frequency << std::endl
-      << "    peak_amplitude = " << a.peak_amplitude << std::endl
-      << "    siganl to noise ratio for LISA = "<<a.SNR[0]<<std::endl;
-//      << "    siganl to noise ratio for Taiji = "<<a.SNR[1]<<std::endl;
-      
+    o << "=== gravitational wave spectrum generated at T = " << a.Tref << " ===" << "\n"
+      << "alpha = " << a.alpha << "\n"
+      << "beta over H = " << a.beta_H << "\n"
+      << "peak frequency = " << a.peak_frequency << "\n"
+      << "peak amplitude = " << a.peak_amplitude << "\n"
+      << "signal to noise ratio for LISA = "<< a.SNR[0] << std::endl;
     return o;
   }
 };
-
 
 class GravWaveCalculator {
   
