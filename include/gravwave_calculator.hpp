@@ -73,7 +73,9 @@ public:
   
   /** Write a GW spectrum to a text file*/
   void write_spectrum_to_text(GravWaveSpectrum sp, const std::string &filename);
-
+  void write_spectrum_to_text(int i, const std::string &filename);
+  void write_spectrum_to_text(const std::string &filename);
+  
   /* Calcualte alpha(phase transition strength) with fixed phi */
   const double get_alpha(const Eigen::VectorXd vacuum_1, const Eigen::VectorXd vacuum_2, double T);
   /* Calcualte alpha(phase transition strength) along the phases */
