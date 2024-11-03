@@ -276,6 +276,17 @@ void GravWaveCalculator::write_spectrum_to_text(GravWaveSpectrum sp, const std::
   LOG(debug) << "GW spectrum has been written to " << filename;
 }
 
+void GravWaveCalculator::write_spectrum_to_text(int i, const std::string &filename){
+  write_spectrum_to_text(spectrums[i], filename);
+}
+
+void GravWaveCalculator::write_spectrum_to_text(const std::string &filename){
+  LOG(fatal) << spectrums.size();
+  for (int ii=0; ii<spectrums.size(); ii++){
+    write_spectrum_to_text(spectrums[ii], std::to_string(ii) + "_" + filename);
+  }
+}
+
 double GravWaveCalculator::intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref){
 	double P_oms = 3.6e-41;
 	double P_acc = 1.44e-48 / pow(2 * M_PI * f, 4) * (1 + pow(0.4e-3 / f, 2));
