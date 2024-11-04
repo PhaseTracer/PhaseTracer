@@ -16,7 +16,7 @@
 // ====================================================================
 
 #ifndef POTENTIAL_DRALGO_ah_HPP_INCLUDED
-#define POTENTIAL_DRALGO_ah_MODEL_HPP_INCLUDED
+#define POTENTIAL_DRALGO_ah_HPP_INCLUDED
 
 #include <vector>
 #include <cmath>
