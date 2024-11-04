@@ -35,7 +35,7 @@ m_s = data["m_s"]
 TC = data["T1_c^PT"]
 TC_theory = data["T_c^EX"]
 
-print "{} failures in {} points".format(sum(failed), len(data["m_s"]))
+print("{} failures in {} points".format(sum(failed), len(data["m_s"])))
 
 # Plot lambda_hs against m_s
 
