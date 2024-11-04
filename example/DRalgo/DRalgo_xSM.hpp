@@ -16,7 +16,7 @@
 // ====================================================================
 
 #ifndef POTENTIAL_DRALGO_xSM_HPP_INCLUDED
-#define POTENTIAL_DRALGO_xSM_MODEL_HPP_INCLUDED
+#define POTENTIAL_DRALGO_xSM_HPP_INCLUDED
 
 /**
    The xSMin  DRalgo
