@@ -566,8 +566,10 @@ Eigen::VectorXd PhaseFinder::dx_min_dt(const Eigen::MatrixXd& hessian, const Eig
   const Eigen::VectorXd dxdt = hessian.colPivHouseholderQr().solve(b);
   const bool check = b.isApprox(hessian * dxdt, linear_algebra_rel_tol);
 
-  if (!check) {
-    throw std::runtime_error("Failed to find dxdt");
+  if( check_dx_min_dt ) {
+    if (!check) {
+      throw std::runtime_error("Failed to find dxdt");
+    }
   }
 
   return dxdt;

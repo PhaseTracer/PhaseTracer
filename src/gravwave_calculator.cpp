@@ -14,7 +14,7 @@ namespace PhaseTracer {
 
 std::ostream& operator << (std::ostream& o, const GravWaveCalculator& a){
   if (a.spectrums.empty()) {
-    o << "found no spectrums" << std::endl << std::endl;
+    o << "found no spectrums" << std::endl;
   } else {
     o << "found " << a.spectrums.size() << " spectrum";
   if (a.spectrums.size() > 1) {
