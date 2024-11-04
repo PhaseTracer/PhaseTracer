@@ -17,3 +17,17 @@
  * Add function, 'get_deepest_phase_at_T', to get the deepest phase at T.
  * Change 'V1' function in 'one_loop_potential' class to virtual function
  * Fix a bug that counter_term is not added to zero-temperature potential
+## PhaseTracer-2.0 [November 5, 2021]
+ * Added xi to OneLoopPotential class, as well as the relevant contributions to V1
+ * Add high-temperature expansions into the one-loop potential class
+ * Add On-shell like scheme example
+ * Add covariant gauge example
+ * Add h_bar_expansion method to obtain TC
+ * Merge interface with TransitionSlover
+ * Modify the one-loop potential class to interface with DRalgo
+ * Add calculation of action, and relevant outputs
+ * Add calculation of nucleation temperature
+ * Add calculation of alpha, beta
+ * Add calculation of GW spectrum, and relevant outputs
+ * Add calculation of GW SNR, and relevant outputs
+   
