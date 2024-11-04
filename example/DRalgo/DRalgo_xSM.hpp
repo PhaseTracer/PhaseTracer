@@ -16,7 +16,7 @@
 // ====================================================================
 
 #ifndef POTENTIAL_DRALGO_xSM_HPP_INCLUDED
-#define POTENTIAL_DRALGO_xSM_MODEL_HPP_INCLUDED
+#define POTENTIAL_DRALGO_xSM_HPP_INCLUDED
 
 /**
    The xSMin  DRalgo
@@ -127,7 +127,7 @@ class DR_xsm: public Potential {
 
     double V(Eigen::VectorXd phi, double T) const override {
     
-      const std::vector<double> par = DRstep(T);
+      const std::vector<double> par = get_3d_parameters(T);
     
       std::complex<double> g1sq(par[0],0);
       std::complex<double> g2sq(par[1],0);
@@ -205,7 +205,7 @@ class DR_xsm: public Potential {
     
     }
 
-    std::vector<double> DRstep(double T) const {
+    std::vector<double> get_3d_parameters(double T) const {
     
       double Gamma = scaleFactor * T;
       double scaleFactor3;

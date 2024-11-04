@@ -16,7 +16,7 @@
 // ====================================================================
 
 #ifndef POTENTIAL_DRALGO_ah_HPP_INCLUDED
-#define POTENTIAL_DRALGO_ah_MODEL_HPP_INCLUDED
+#define POTENTIAL_DRALGO_ah_HPP_INCLUDED
 
 #include <vector>
 #include <cmath>
@@ -69,7 +69,7 @@ class DR_ah: public Potential {
     std::cout << "\tm(Q=5000) = " << alglib::spline1dcalc(RGEs[1], 5000) << "\n";
     std::cout << "\tlam(Q=5000) = " << alglib::spline1dcalc(RGEs[2], 5000) << "\n";
 
-    std::vector<double> par_1000 = DRstep(1000);
+    std::vector<double> par_1000 = get_3d_parameters(1000);
     std::complex<double> gsq3d_1000(par_1000[0],0);
     std::complex<double> msq3d_1000(par_1000[1],0);
     std::complex<double> lam3d_1000(par_1000[2],0);
@@ -78,7 +78,7 @@ class DR_ah: public Potential {
     std::cout << "\tm3d(T=1000) = " << msq3d_1000.real() << "\n";
     std::cout << "\tlam3d(T=1000) = " << lam3d_1000.real() << "\n";
 
-    std::vector<double> par_100 = DRstep(100);
+    std::vector<double> par_100 = get_3d_parameters(100);
     std::complex<double> gsq3d_100(par_100[0],0);
     std::complex<double> msq3d_100(par_100[1],0);
     std::complex<double> lam3d_100(par_100[2],0);
@@ -111,7 +111,7 @@ class DR_ah: public Potential {
 
     double V(Eigen::VectorXd phi, double T) const override {
     
-      const std::vector<double> par = DRstep(T);
+      const std::vector<double> par = get_3d_parameters(T);
     
       std::complex<double> gsq(par[0],0);
       std::complex<double> m(par[1],0);
@@ -155,7 +155,7 @@ class DR_ah: public Potential {
     
     }
 
-    std::vector<double> DRstep(double T) const {
+    std::vector<double> get_3d_parameters(double T) const {
     
       double Gamma = scaleFactor * T;
       double scaleFactor3;
