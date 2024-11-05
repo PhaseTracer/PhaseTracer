@@ -209,7 +209,7 @@ class DR_ah: public Potential {
 
   private :
 
-    PROPERTY(int, potential_flag, 2);
+    PROPERTY(int, potential_flag, 1);
     PROPERTY(int, matching_flag, 1);
     PROPERTY(bool, running_flag, true);
   
