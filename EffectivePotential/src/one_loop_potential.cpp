@@ -328,6 +328,10 @@ double OneLoopPotential::V(Eigen::VectorXd phi, double T) const {
                + V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, T)
                + counter_term(phi, T);
       case DaisyMethod::Parwani:
+        if ((scalar_debye_sq.size() != scalar_masses_sq.size())
+             or (vector_debye_sq.size() != vector_debye_sq.size())){
+          throw std::runtime_error("The sizes of scalar_debye_sq and scalar_masses_sq, vector_debye_sq and vector_debye_sq must be equal in Parwani method");
+        }
         return V0(phi)
                + V1(scalar_debye_sq, fermion_masses_sq, vector_debye_sq)
                + V1T(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, T)
