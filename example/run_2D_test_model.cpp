@@ -5,13 +5,7 @@
 #include <iostream>
 
 #include "models/2D_test_model.hpp" // Located in effective-potential/include/models
-#include "transition_finder.hpp"
-#include "phase_finder.hpp"
-#include "phase_plotter.hpp"
-#include "potential_plotter.hpp"
-#include "potential_line_plotter.hpp"
-#include "gravwave_calculator.hpp"
-#include "logger.hpp"
+#include "phasetracer.hpp" 
 
 
 int main(int argc, char* argv[]) {

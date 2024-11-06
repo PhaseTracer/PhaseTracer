@@ -13,11 +13,7 @@
 #include <iomanip>
 
 #include "models/xSM_OSlike.hpp"
-#include "phase_finder.hpp"
-#include "transition_finder.hpp"
-#include "logger.hpp"
-#include "phase_plotter.hpp"
-#include "thermal_function.hpp"
+#include "phasetracer.hpp" 
 
 std::string toString(std::vector<double> in, std::vector<double> out, std::vector<double> flags) {
   std::stringstream data_str;

@@ -21,11 +21,7 @@
 #include <vector>
 
 #include "DRalgo_xSM.hpp"
-#include "phase_finder.hpp"
-#include "transition_finder.hpp"
-#include "action_calculator.hpp"
-#include "gravwave_calculator.hpp"
-#include "logger.hpp"
+#include "phasetracer.hpp"
 
 std::string toString(std::vector<double> in, std::vector<double> out) {
   std::stringstream data_str;

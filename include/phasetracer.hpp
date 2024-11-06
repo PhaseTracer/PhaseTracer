@@ -23,8 +23,6 @@
 #include "transition_finder.hpp"
 #include "action_calculator.hpp"
 #include "gravwave_calculator.hpp"
-/* if you wish to make plots,
-   include relevant plotting files */
 #include "phase_plotter.hpp"
 #include "potential_plotter.hpp"
 #include "potential_line_plotter.hpp"

@@ -12,10 +12,7 @@
 #include <vector>
 
 #include "models/xSM_HT.hpp" 
-#include "phase_finder.hpp"
-#include "transition_finder.hpp"
-#include "logger.hpp"
-#include "phase_plotter.hpp"
+#include "phasetracer.hpp" 
 
 std::string toString(std::vector<double> in, std::vector<double> out) {
   std::stringstream data_str;
