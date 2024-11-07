@@ -102,14 +102,16 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
           //TODO
         }
       }
-        
+
       double TN = get_Tnuc(phase1, phase2, i_selected, TC, T1);
       std::vector<Transition> selected_transition;
       selected_transition.push_back(unique_transitions[i_selected]);
-      const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
       selected_transition[0].TN = TN;
-      selected_transition[0].true_vacuum_TN = vacua[0];
-      selected_transition[0].false_vacuum_TN = vacua[1];
+      if (not std::isnan(TN)){
+        const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
+        selected_transition[0].true_vacuum_TN = vacua[0];
+        selected_transition[0].false_vacuum_TN = vacua[1];
+      }
       return selected_transition;
     } else {
       return unique_transitions;
@@ -140,15 +142,16 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
 
 //  LOG(debug) << "nucleation_criteria(T_begin)= " << nucleation_criteria(T_begin) ;
 //  LOG(debug) << "nucleation_criteria(T_end)= " << nucleation_criteria(T_end) ;
-  
+    
   double Tnuc = std::numeric_limits<double>::quiet_NaN();
   // If action at T_begin is NaN, find the largest valid T_begin
   double nc = nucleation_criteria(T_begin);
-  while (std::isnan(nc)){
+  while (std::isnan(nc) or nc > 10000 ){
     T_begin -= Tnuc_step;
     if (T_begin < T_end)
       return Tnuc;
     nc = nucleation_criteria(T_begin);
+
   }
   
   if ( nc < 0 ) {
