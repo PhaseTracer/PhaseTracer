@@ -1,8 +1,9 @@
 /**
   Z2 real scalar singlet extension of
   the Standard Model 
+  in MSbar scheme.
+  See arXiv:2208.01319  [hep-ph] for details
   
-  MSbar
   
 */
 

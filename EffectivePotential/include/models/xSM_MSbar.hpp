@@ -20,7 +20,7 @@
 
 /**
  * Z2 symmetric real scalar singlet extension of the Standard Model
- *
+ * See arXiv:2208.01319  [hep-ph] for details
  * Conventions match 1808.01098.
  */
 

@@ -1,5 +1,6 @@
 /**
   Example of h-bar expansion using xSM model.
+  See arXiv:2208.01319  [hep-ph] for details
 */
 
 #include <iostream>

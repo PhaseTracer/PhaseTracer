@@ -1,8 +1,8 @@
 /**
   Z2 real scalar singlet extension of
   the Standard Model 
-  
-  OS-like
+  in OS-like scheme.
+  See arXiv:2208.01319  [hep-ph] for details
   
 */
 
