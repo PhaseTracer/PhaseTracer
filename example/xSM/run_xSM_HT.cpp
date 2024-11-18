@@ -1,8 +1,8 @@
 /**
  Z2 real scalar singlet extension of
  the Standard Model
- 
-  High-temperature approximation
+ in High-temperature approximation scheme.
+ See arXiv:2208.01319  [hep-ph] for details
 
 */
 
