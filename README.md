@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/PhaseTracer/PhaseTracer.svg?branch=master)](https://travis-ci.org/PhaseTracer/PhaseTracer) ![License](https://img.shields.io/github/license/PhaseTracer/PhaseTracer) [![arXiv](https://img.shields.io/badge/arXiv-2003.02859-b31b1b.svg)](https://arxiv.org/abs/2003.02859)
+[![CMake on a single platform](https://github.com/PhaseTracer/PhaseTracer/actions/workflows/cmake-single-platform.yml/badge.svg?branch=master)](https://github.com/PhaseTracer/PhaseTracer/actions/workflows/cmake-single-platform.yml) ![License](https://img.shields.io/github/license/PhaseTracer/PhaseTracer) [![arXiv](https://img.shields.io/badge/arXiv-2003.02859-b31b1b.svg)](https://arxiv.org/abs/2003.02859)
 
 # PhaseTracer
 
