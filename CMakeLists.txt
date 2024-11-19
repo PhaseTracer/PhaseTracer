@@ -19,6 +19,10 @@ option(BUILD_WITH_BP "Build example programs including BubbleProfiler" OFF)
 
 # packages
 
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)
+endif()
+
 find_package(Boost 1.53.0 REQUIRED
   COMPONENTS
   filesystem
