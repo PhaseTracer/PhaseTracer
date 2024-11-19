@@ -8,3 +8,7 @@ link_libraries(
 )
 
 add_executable(unit_tests catch_main.cpp ${TEST_FILES})
+
+# add tests
+
+add_test(NAME UnitTests COMMAND unit_tests)
