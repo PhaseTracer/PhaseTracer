@@ -96,7 +96,7 @@ Eigen::MatrixXd OneLoopPotential::d2V0_dx2(Eigen::VectorXd phi) const {
   return hessian;
 }
 
-/*Eigen::VectorXd OneLoopPotential::d2V_dxdt_old(Eigen::VectorXd phi, double T) const {
+Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const {
   Eigen::VectorXd gradient = Eigen::VectorXd::Zero(phi.size());
 
   for (int ii = 0; ii < phi.size(); ++ii) {
@@ -110,9 +110,12 @@ Eigen::MatrixXd OneLoopPotential::d2V0_dx2(Eigen::VectorXd phi) const {
     }
   }
   return gradient;
-}*/
+}
 
-/** Now handles all supported DaisyMethods. */
+
+/** Now handles all supported DaisyMethods. .*/
+// Funtion V has handled all supported DaisyMethods
+/*
 Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const
 {
     Eigen::VectorXd gradient = Eigen::VectorXd::Zero(phi.size());
@@ -142,7 +145,7 @@ Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const
                 {
                     case DaisyMethod::None:
                     {
-                        V1T_ = V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq, T);
+                        V1T_ = V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq, T_shifted);
                         gradient(i) += (V1T_ + counter_term_)*coeff_xy[j]*coeff_xy[k] / (h*h);
                         break;
                     }
@@ -151,7 +154,7 @@ Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const
                         const auto scalar_debye_sq = get_scalar_debye_sq(phi_shifted, xi, T_shifted);
                         const auto vector_debye_sq = get_vector_debye_sq(phi_shifted, T_shifted);
                         
-                        V1T_ = V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq, T);
+                        V1T_ = V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq, T_shifted);
                         daisy_ = daisy(scalar_masses_sq, scalar_debye_sq, vector_masses_sq, vector_debye_sq,
                             T_shifted);
                         gradient(i) += (V1T_ + daisy_ + counter_term_)*coeff_xy[j]*coeff_xy[k] / (h*h);
@@ -163,7 +166,7 @@ Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const
                         const auto vector_debye_sq = get_vector_debye_sq(phi_shifted, T_shifted);
 						
                         V1_= V1(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, ghost_masses_sq);
-                        V1T_ = V1T(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, ghost_masses_sq, T);
+                        V1T_ = V1T(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, ghost_masses_sq, T_shifted);
 						
                         gradient(i) += (V1_ + V1T_ + counter_term_)*coeff_xy[j]*coeff_xy[k] / (h*h);
                         break;
@@ -177,6 +180,7 @@ Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const
 
     return gradient;
 }
+*/
 
 std::vector<double> OneLoopPotential::get_scalar_dofs() const {
   const std::vector<double> dof(get_n_scalars(), 1.);
