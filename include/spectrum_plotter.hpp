@@ -16,7 +16,7 @@
 // ====================================================================
 
 #ifndef PHASETRACER_SPECTRUM_PLOTTER_HPP_
-#define PHASETRACER_SPECTRUM_PLOTTER_IHPP_
+#define PHASETRACER_SPECTRUM_PLOTTER_HPP_
 
 #include <cstdlib>
 #include <fstream>
@@ -54,4 +54,4 @@ void spectrum_plotter(PhaseTracer::GravWaveCalculator& gc, std::string prefix = 
 
 }  // namespace PhaseTracer
 
-#endif  // PHASETRACER_SPECTRUM_PLOTTER_IHPP_
+#endif  // PHASETRACER_SPECTRUM_PLOTTER_HPP_
