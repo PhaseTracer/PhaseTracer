@@ -32,7 +32,7 @@
 
 namespace PhaseTracer {
 
-void potential_line_plotter(const EffectivePotential::Potential &P, double T, 
+void potential_line_plotter(const EffectivePotential::Potential &P, double T,
                             const Eigen::VectorXd& false_vacuum,
                             const Eigen::VectorXd& true_vacuum,
                             std::string prefix = "model") {
