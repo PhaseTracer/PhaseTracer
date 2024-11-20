@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef ACTION_CALCULATOR_HPP_INCLUDED
-#define ACTION_CALCULATOR_HPP_INCLUDED
+#ifndef PHASETRACER_ACTION_CALCULATOR_HPP_
+#define PHASETRACER_ACTION_CALCULATOR_HPP_
 
 #include <algorithm>
 #include <limits>
@@ -263,4 +263,4 @@ public:
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_ACTION_CALCULATOR_HPP_

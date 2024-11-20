@@ -15,14 +15,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_SPECTRUM_PLOTTER_INCLUDED
-#define PHASETRACER_SPECTRUM_PLOTTER_INCLUDED
+#ifndef PHASETRACER_SPECTRUM_PLOTTER_HPP_
+#define PHASETRACER_SPECTRUM_PLOTTER_IHPP_
 
-#include <boost/filesystem.hpp>
 #include <cstdlib>
 #include <fstream>
 #include <vector>
 #include <string>
+
+#include <boost/filesystem.hpp>
 
 #include "logger.hpp"
 #include "transition_finder.hpp"
@@ -53,4 +54,4 @@ void spectrum_plotter(PhaseTracer::GravWaveCalculator& gc, std::string prefix = 
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_SPECTRUM_PLOTTER_IHPP_

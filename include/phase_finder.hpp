@@ -15,19 +15,19 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_PHASE_FINDER_HPP_INCLUDED
-#define PHASETRACER_PHASE_FINDER_HPP_INCLUDED
+#ifndef PHASETRACER_PHASE_FINDER_HPP_
+#define PHASETRACER_PHASE_FINDER_HPP_
 
+#include <ctime>
 #include <ostream>
 #include <vector>
-#include <Eigen/Core>
-#include <ctime>
 
+#include <Eigen/Core>
 #include "nlopt.hpp"
+
 #include "potential.hpp"
 #include "overload.hpp"
 #include "property.hpp"
-
 
 namespace PhaseTracer {
 
@@ -312,4 +312,4 @@ class PhaseFinder {
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_PHASE_FINDER_HPP_

@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_PATH_DEFORMATION_HPP_INCLUDED
-#define PHASETRACER_PATH_DEFORMATION_HPP_INCLUDED
+#ifndef PHASETRACER_PATH_DEFORMATION_HPP_
+#define PHASETRACER_PATH_DEFORMATION_HPP_
 
 #include <algorithm>
 #include <cmath>
@@ -239,4 +239,4 @@ private:
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_PATH_DEFORMATION_HPP_

@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_CRITICAL_TEMPERATURES_HPP_INCLUDED
-#define PHASETRACER_CRITICAL_TEMPERATURES_HPP_INCLUDED
+#ifndef PHASETRACER_TRANSITION_FINDER_HPP_
+#define PHASETRACER_TRANSITION_FINDER_HPP_
 
 #include <algorithm>
 #include <ostream>
@@ -176,4 +176,4 @@ class TransitionFinder {
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_TRANSITION_FINDER_HPP_

@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_PROPERTY_HPP_INCLUDED
-#define PHASETRACER_PROPERTY_HPP_INCLUDED
+#ifndef PHASETRACER_PROPERTY_HPP_
+#define PHASETRACER_PROPERTY_HPP_
 /**
    Convenience macro for adding getters and setters to our objects
 */
@@ -47,4 +47,4 @@
  protected: \
   type name = default;
 
-#endif
+#endif  // PHASETRACER_PROPERTY_HPP_

@@ -15,10 +15,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_H_BAR_EXPANSION_HPP_INCLUDED
-#define PHASETRACER_H_BAR_EXPANSION_HPP_INCLUDED
+#ifndef PHASETRACER_H_BAR_EXPANSION_HPP_
+#define PHASETRACER_H_BAR_EXPANSION_HPP_
 
 #include <vector>
+
 #include "phase_finder.hpp"
 #include "one_loop_potential.hpp"
 
@@ -56,4 +57,4 @@ class HTExpansion : public PhaseFinder {
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_H_BAR_EXPANSION_HPP_

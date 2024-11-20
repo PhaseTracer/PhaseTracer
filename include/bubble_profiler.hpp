@@ -15,16 +15,16 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_BPROFILER_HPP_INCLUDED
-#define PHASETRACER_BPROFILER_HPP_INCLUDED
+#ifndef PHASETRACER_BPROFILER_HPP_
+#define PHASETRACER_BPROFILER_HPP_
 
+#include <algorithm>
 #include <ostream>
 #include <vector>
-#include <Eigen/Core>
-#include <algorithm>
-#include <boost/cstdint.hpp>
-#include "nlopt.hpp"
 
+#include <boost/cstdint.hpp>
+#include <Eigen/Core>
+#include "nlopt.hpp"
 
 #include "logger.hpp"
 // Include .hpp of BubbleProfiler
@@ -155,4 +155,4 @@ private:
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_BPROFILER_HPP_

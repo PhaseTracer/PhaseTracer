@@ -15,6 +15,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
+#ifndef PHASETRACER_TIME_HPP_
+#define PHASETRACER_TIME_HPP_
+
 #include <chrono>
 #include <iostream>
 
@@ -26,3 +29,5 @@
   auto t1 = std::chrono::high_resolution_clock::now(); \
   auto dt_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count(); \
   std::cout << "seconds per repeat = " << 1.e-6 * static_cast<double>(dt_microseconds) / n_repeats << std::endl;
+
+#endif  // PHASETRACER_TIME_HPP_

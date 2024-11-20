@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef POTENTIAL_LINE_PLOTTER_INCLUDED
-#define POTENTIAL_LINE_PLOTTER_INCLUDED
+#ifndef PHASETRACER_POTENTIAL_LINE_PLOTTER_HPP_
+#define PHASETRACER_POTENTIAL_LINE_PLOTTER_HPP_
 
 #include <cstdlib>
 #include <fstream>
@@ -78,4 +78,4 @@ void potential_line_plotter(EffectivePotential::Potential &P, std::vector<Transi
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_POTENTIAL_LINE_PLOTTER_HPP_
