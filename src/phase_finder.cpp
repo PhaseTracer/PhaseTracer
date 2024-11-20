@@ -15,12 +15,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#include <Eigen/Eigenvalues>
-#include <boost/math/special_functions/sign.hpp>
-
-#include "phase_finder.hpp"
 #include "logger.hpp"
+#include "phase_finder.hpp"
 #include "pow.hpp"
+
+#include <boost/math/special_functions/sign.hpp>
+#include <Eigen/Eigenvalues>
 
 namespace PhaseTracer {
 

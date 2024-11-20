@@ -15,19 +15,19 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#include <iostream>
 #include <cmath>
-#include <vector>
-#include <tuple>
 #include <fstream>
-#include <sstream>
+#include <iostream>
 #include <random>
-#include "gravwave_calculator.hpp"
+#include <sstream>
+#include <tuple>
+#include <vector>
+
 #include <boost/math/quadrature/trapezoidal.hpp>
 
+#include "gravwave_calculator.hpp"
+
 namespace PhaseTracer {
-
-
 
 std::ostream& operator << (std::ostream& o, const GravWaveCalculator& a){
   if (a.spectrums.empty()) {
