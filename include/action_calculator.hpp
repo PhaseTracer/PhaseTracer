@@ -35,13 +35,13 @@ namespace PhaseTracer {
 enum class ActionMethod{ None, BubbleProfiler, PathDeformation, All };
 
 class ActionCalculator{
-  
+
 private:
   EffectivePotential::Potential &potential;
-  
+
   /* Number of dimensions */
   PROPERTY(size_t, num_dims, 3)
-  
+
   /* Choose method to calculate the action*/
   ActionMethod action_method = ActionMethod::PathDeformation;
   double use_PathDeformation = true;
@@ -53,7 +53,7 @@ private:
   PROPERTY(double, BP_initial_step_size, 1.e-2)
   PROPERTY(double, BP_interpolation_points_fraction, 1.0)
   // TODD: Add more settings if needed
-  
+
   /* Set parameters for PathDeformation */
   /* The precision of field values after taking the logarithm */
   PROPERTY(double, PD_xtol, 1e-4)
@@ -86,13 +86,13 @@ private:
   PROPERTY(size_t, PD_V_spline_samples, 100);
   /* Flag to extend the path to minimums*/
   PROPERTY(bool, PD_extend_to_minima, true);
-  
+
 public:
   explicit ActionCalculator(EffectivePotential::Potential &potential_) :
     potential(potential_){
   }
   virtual ~ActionCalculator() = default;
-  
+
   void set_action_calculator(ActionMethod am){
     action_method = am;
     if (action_method == ActionMethod::PathDeformation){
@@ -108,30 +108,30 @@ public:
       use_PathDeformation = true;
       use_BubbleProfiler = true;
     }
-    
+
 #ifndef BUILD_WITH_BP
     if (use_BubbleProfiler){
       LOG(fatal) << "Enable BubbleProfiler in CMake configuration before using it.";
       throw std::runtime_error("BubbleProfiler is not installed.");
     }
 #endif
-    
+
   }
-  
+
   ActionMethod get_action_calculator() const { return action_method; }
-  
+
   double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
-    
+
     Eigen::VectorXd true_vacuum = vacuum_1;
     Eigen::VectorXd false_vacuum = vacuum_2;
     if ( potential.V(true_vacuum,T) > potential.V(false_vacuum,T) ) true_vacuum.swap(false_vacuum);
-    
+
 #ifdef BUILD_WITH_BP
     double action_BP=std::numeric_limits<double>::quiet_NaN();
     if (use_BubbleProfiler){
       V_BubbleProfiler V_BP(potential); // perturbative_profiler only accept non-const potential
       V_BP.set_T(T);
-      
+
       if (potential.get_n_scalars() == 1  && !BP_use_perturbative) {
 
         double false_min = false_vacuum[0];
@@ -195,7 +195,7 @@ public:
         st.set_rmin(PD_rmin);
         st.set_rmax(PD_rmax);
         st.set_max_iter(PD_max_iter);
-                
+
         try{
           auto profile = st.findProfile(false_vacuum[0],true_vacuum[0]);
           action_PD = st.calAction(profile);
@@ -204,7 +204,7 @@ public:
         }
       } else{
         PathDeformation pd(potential);
-        
+
         pd.set_nb(PD_nb);
         pd.set_kb(PD_kb);
         pd.set_save_all_steps(PD_save_all_steps);
@@ -213,7 +213,7 @@ public:
         pd.set_path_maxiter(PD_path_maxiter);
         pd.set_V_spline_samples(PD_V_spline_samples);
         pd.set_extend_to_minima(PD_extend_to_minima);
-        
+
         /** Pass through the shooting settings **/
         pd.set_xtol(PD_xtol);
         pd.set_phitol(PD_phitol);
@@ -221,7 +221,7 @@ public:
         pd.set_rmin(PD_rmin);
         pd.set_rmax(PD_rmax);
         pd.set_max_iter(PD_max_iter);
-        
+
         pd.set_T(T);
         std::vector<Eigen::VectorXd> path_pts;
         path_pts.push_back(true_vacuum);
@@ -241,9 +241,9 @@ public:
       }
       LOG(debug) << " S(PD) = " << action_PD;
     }
-    
-    
-    
+
+
+
 #ifdef BUILD_WITH_BP
     if (std::isnan(action_BP)) {
         return action_PD;
@@ -255,9 +255,9 @@ public:
 #else
     return action_PD;
 #endif
-    
+
   }
-  
+
 };
 
 

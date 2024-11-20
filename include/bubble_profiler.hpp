@@ -54,19 +54,19 @@ public:
     basis_transform = Eigen::MatrixXd::Identity(n_fields, n_fields);
   }
   virtual ~V_BubbleProfiler() = default;
-  
+
   EffectivePotential::Potential &P;
-  
+
   virtual V_BubbleProfiler * clone() const override {
      return new V_BubbleProfiler(*this);
   };
-  
+
   double operator()(const Eigen::VectorXd& coords) const override{
     Eigen::VectorXd transformed_coords =
        (basis_transform * coords) + origin_translation;
     return P.V(transformed_coords,T);
   }
-  
+
   double partial(const Eigen::VectorXd& coords, int i) const override{
     Eigen::VectorXd transformed_coords =
        (basis_transform * coords) + origin_translation;
@@ -92,10 +92,10 @@ public:
   void add_constant_term(double constant) override{
       constant_term += constant;
   }
-  
+
   void set_T(double T_) const { const_cast<double&>(T) = T_; }
-  
-  
+
+
   Eigen::VectorXd find_one_dimensional_barrier(
      const Eigen::VectorXd& true_vacuum_loc,
      const Eigen::VectorXd& false_vacuum_loc,
@@ -136,17 +136,17 @@ public:
 
      return optimizer.get_extremum_location();
   }
-    
+
 private:
   mutable double T;
-  
+
   std::size_t n_fields{0};
   double constant_term{0.};
   Eigen::VectorXd origin{};
   Eigen::VectorXd origin_translation{};
   Eigen::VectorXd mu{};
   Eigen::MatrixXd basis_transform{};
-  
+
 };
 
 

@@ -26,7 +26,7 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
                       bool reeval_distances_ ) :
     P(potential), T(T_), pts(pts_), nphi(potential.get_n_scalars()), num_nodes(pts_.size()),
     extend_to_minima(extend_to_minima_), reeval_distances(reeval_distances_) {
-      
+
       // 1. Find derivs
       std::vector<Eigen::VectorXd> dpts = _pathDeriv(pts);
       // 2. Extend the path
@@ -45,7 +45,7 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
           new_pts.insert(new_pts.end(), pts.begin() + 1, pts.end());
           pts = new_pts;
         }
-        
+
         xmin = find_loc_min_w_guess(pts.back(), dpts.back());
         xmin = std::max(xmin, 0.0);
         nx = static_cast<int>(std::ceil(std::abs(xmin) - 0.5)) + 1;
@@ -70,14 +70,14 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
       {
           squared_sums.push_back(vec.norm());
       }
-      
+
       std::vector<double> pdist = cumulative_trapezoidal_integration(squared_sums);
       pdist.insert(pdist.begin(), 0.0);
       length = pdist[pdist.size()-1];
       get_path_tck(pdist);
-      
 
-      
+
+
       // 4. Re-evaluate the distance to each point.
       if (reeval_distances){
         std::vector<double> pdist_(pdist.size());
@@ -142,7 +142,7 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
     std::shared_ptr<std::function<double(const std::vector<double>&)>> V_lin = std::make_shared<std::function<double(const std::vector<double>&)>>([this, p0, dp0](const std::vector<double>& x) {
       return this->P.V(p0 + x[0] * dp0, T);
     });
-    
+
     auto V_lin_func = [](const std::vector<double>& x, std::vector<double>& grad, void* data) -> double {
       auto v_lin = reinterpret_cast<std::shared_ptr<std::function<double(const std::vector<double>&)>>*>(data);
       return (*(*v_lin))(x);
@@ -151,7 +151,7 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
     nlopt::opt optimizer(nlopt::LN_SBPLX, 1);
     optimizer.set_min_objective(V_lin_func, &V_lin);
     optimizer.set_xtol_abs(1e-6);
-    
+
     std::vector<double> xmin(1, guess);
     double fmin;
     optimizer.optimize(xmin, fmin);
@@ -173,7 +173,7 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
       _path_tck.push_back(spline);
     }
   }
-  
+
   void SplinePath::dpdx(const double& x, double& dpdx_, double r){
     Eigen::VectorXd vecx(nphi);
     for (int i=0; i<nphi; i++){
@@ -183,7 +183,7 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
     }
     dpdx_ = vecx.norm();
   }
-  
+
   Eigen::VectorXd SplinePath::vecp(double x){
     Eigen::VectorXd vec(nphi);
     for (int i=0; i<nphi; i++){
@@ -191,17 +191,17 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
     }
     return vec;
   }
-  
+
   double SplinePath::V(double x) const {
     return alglib::spline1dcalc(_V_tck, x);
   }
-  
+
   double SplinePath::dV(double x) const {
     double s, ds, d2s;
     alglib::spline1ddiff(_V_tck, x, s, ds, d2s);
     return ds;
   }
-  
+
   double SplinePath::d2V(double x) const {
     double s, ds, d2s;
     alglib::spline1ddiff(_V_tck, x, s, ds, d2s);
@@ -227,7 +227,7 @@ bool PathDeformation::deformPath(std::vector<double> dphidr){
       t_node[i] /= totalLength_node;
     }
     t_node[0] = 1e-50;
-    
+
     // create the starting spline
     std::vector<double> t0;
     for (int i = 0; i < kb-1; ++i) {
@@ -239,12 +239,12 @@ bool PathDeformation::deformPath(std::vector<double> dphidr){
     for (int i = 0; i < kb-1; ++i) {
       t0.push_back(1.0);
     }
-    
+
     auto result = Nbspld2(t0, t_node, kb);
     X_node = std::get<0>(result);
     dX_node = std::get<1>(result);
     d2X_node = std::get<2>(result);
-    
+
     Eigen::VectorXd phi0 = phi_node[0];
     Eigen::VectorXd phi1 = phi_node.back();
     beta_node.clear();
@@ -257,18 +257,18 @@ bool PathDeformation::deformPath(std::vector<double> dphidr){
       }
       beta_node.push_back(X_node.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(phi_delta));
     }
-        
+
     double max_v2 = 0;
     for (int i = 0; i < num_nodes; ++i) {
       max_v2 = std::max(max_v2, P.dV_dx(phi_node[i], T).norm());
     }
     v2min *=  max_v2 * totalLength_node/nb;
-    
+
     v2_node.clear();
     for (int i = 0; i < num_nodes; ++i) {
       v2_node.push_back(std::max(v2min, dphidr[i]*dphidr[i]));
     }
-    
+
     // Deform the path
     double minfRatio = std::numeric_limits<double>::infinity();
     size_t minfRatio_index = 0;
@@ -284,14 +284,14 @@ bool PathDeformation::deformPath(std::vector<double> dphidr){
       num_steps++;
       step(stepsize, step_reversed, fRatio);
       // TODO add callback
-      
+
       if (fRatio < fRatioConv || (num_steps == 1 && fRatio < converge_0*fRatioConv)) {
         LOG(debug) << "Path deformation converged. "
                    << num_steps << " steps. fRatio = " << fRatio;
         deformation_converged = true;
         break;
       }
-      
+
       if (minfRatio > fRatio) {
         minfRatio = fRatio;
         minfRatio_beta = beta_node;
@@ -308,7 +308,7 @@ bool PathDeformation::deformPath(std::vector<double> dphidr){
         break;
         // TODO add error
       }
-      
+
       if (num_steps >= step_maxiter){
         LOG(debug) << "Maximum number of deformation iterations reached.";
         break;
@@ -330,7 +330,7 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
     }
     double fRatio1 = F_max/dV_max;
     for (int ii=0; ii<dX_node.rows(); ++ii) F[ii] *= totalLength_node/dV_max;
-      
+
     // see how big the stepsize should be
     double stepsize = lastStep;
     step_reversed = false;
@@ -351,10 +351,10 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
         stepsize = lastStep * stepIncrease;
       }
     }
-    
+
     if (stepsize > maxstep) stepsize = maxstep;
     if (stepsize < minstep) stepsize = minstep;
-    
+
     // Save the state before the step
     phi_prev = _phi;
     F_prev = F;
@@ -362,9 +362,9 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
       phi_list.push_back(_phi);
       F_list.push_back(F);
     }
-    
+
     for (int ii=0; ii<dX_node.rows(); ++ii) _phi[ii] += F[ii]*stepsize;
-   
+
     // fit to the spline
     std::vector<Eigen::VectorXd> phi_lin(dX_node.rows());
     Eigen::VectorXd delta_phi = _phi.back()-_phi[0];
@@ -373,7 +373,7 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
       phi_lin[ii] = phi0 + delta_phi*t_node[ii];
       _phi[ii] -= phi_lin[ii];
     }
-    
+
 //    std::cout << "betas:" << beta << std::endl;
     for (size_t ii=0; ii<nphi; ++ii){
       Eigen::VectorXd ii_phi(num_nodes);
@@ -382,7 +382,7 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
       }
       beta_node[ii] = X_node.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(ii_phi);
     }
-    
+
     double fRatio2 = 0.;
     for (int ii=0; ii<dX_node.rows(); ++ii){
       Eigen::VectorXd ii_phi(nphi);
@@ -393,15 +393,15 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
         }
       }
       _phi[ii] = ii_phi + phi_lin[ii];
-      
+
       Eigen::VectorXd Ffit = (_phi[ii] - phi_prev[ii])/stepsize;
       fRatio2 = std::max(fRatio2, Ffit.norm()/totalLength_node);
     }
     phi_node = _phi;
     lastStep = stepsize;
-    
 
-  
+
+
     LOG(trace) << "step: " << num_steps
                << "; stepsize: " << stepsize
                << "; fRatio1: "  << fRatio1
@@ -413,7 +413,7 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
 void PathDeformation::forces(std::vector<Eigen::VectorXd>& F_norm, std::vector<Eigen::VectorXd>& dV){
     F_norm.resize(dX_node.rows());
     dV.resize(dX_node.rows());
-    
+
     for (int ii=0; ii<num_nodes; ++ii){
       Eigen::VectorXd dphi(nphi);
       Eigen::VectorXd d2phi(nphi);
@@ -426,12 +426,12 @@ void PathDeformation::forces(std::vector<Eigen::VectorXd>& F_norm, std::vector<E
         }
         dphi[jj] += phi_node.back()[jj] - phi_node[1][jj]; // TODO Note this is phi[1], not phi[0]
       }
-      
+
       double dphi_ = dphi.norm();
       double dphi_sq = dphi_*dphi_;
       Eigen::VectorXd dphids = dphi / dphi_;
       Eigen::VectorXd d2phids2 = (d2phi - dphi*(dphi.dot(d2phi))/dphi_sq)/dphi_sq;
-      
+
       dV[ii] = P.dV_dx(phi_node[ii],T);
       Eigen::VectorXd dV_perp = dV[ii] - dV[ii].dot(dphids) * dphids;
       F_norm[ii] = d2phids2 * v2_node[ii] - dV_perp;
@@ -450,38 +450,38 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> PathDeformation::N
       if (kmax >= t.size() - 2) {
         throw std::runtime_error("Input error in Nbspl: require that k < len(t)-2");
       }
-      
+
       int size_x = static_cast<int>(x.size());
-      
+
       Eigen::MatrixXd N = Eigen::MatrixXd::Ones(size_x, t.size() - 1);
       Eigen::MatrixXd dN = Eigen::MatrixXd::Zero(size_x, t.size() - 1);
       Eigen::MatrixXd d2N = Eigen::MatrixXd::Zero(size_x, t.size() - 1);
-      
+
       for (int i = 0; i < N.rows(); ++i) {
         for (int j = 0; j < N.cols(); ++j) {
           N(i, j) = 1.0 * ((x[i] > t[j]) && (x[i] <= t[j + 1]));
         }
       }
-    
+
       for (int i = 1; i <= kmax; ++i) {
         Eigen::VectorXd dt(t.size() - i);
         Eigen::VectorXd _dt(t.size() - i);
-          
+
         for (int j = 0; j < t.size() - i; ++j) {
           dt(j) = t[j + i] - t[j];
           _dt(j) = (dt(j) != 0) ? 1.0 / dt(j) : 0.0;
         }
         for (int j = 0; j < size_x; ++j) {
           for (int l = 0; l < dt.size() - 1; ++l) {
-            
+
             d2N(j,l) = d2N(j,l) * (x[j] - t[l]) * _dt[l]
                       -d2N(j,1+l) * (x[j] - t[1+i+l])* _dt[1+l]
                       +2.*dN(j,l) * _dt[l] - 2.*dN(j,1+l) * _dt[1+l];
-            
+
             dN(j,l) = dN(j,l) * (x[j] - t[l]) * _dt[l]
                       -dN(j,1+l) * (x[j] - t[1+i+l])* _dt[1+l]
                       +N(j,l) * _dt[l] - N(j,1+l) * _dt[1+l];
-            
+
             N(j,l) = N(j,l) * (x[j] - t[l]) * _dt[l]
                     -N(j,1+l) * (x[j] - t[1+i+l]) * _dt[1+l];
           }
@@ -490,7 +490,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> PathDeformation::N
     N.conservativeResize(N.rows(), N.cols() - 3);
     dN.conservativeResize(dN.rows(), dN.cols() - 3);
     d2N.conservativeResize(d2N.rows(), d2N.cols() - 3);
-    
+
     return {N, dN, d2N};
 }
 
@@ -508,7 +508,7 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
       tobj.set_rmin(rmin);
       tobj.set_rmax(rmax);
       tobj.set_max_iter(max_iter);
-      
+
       auto profile = tobj.findProfile(path.get_path_length(),0.);
       if (profile.R.size()==2){
         if (profile.R.isApprox(tobj.profile_inf.R, tobj.get_xtol())){
@@ -529,7 +529,7 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
       dphi_1d.back()=0.;
       action_temp = tobj.calAction(profile);
 //      std::cout << "action = " << std::setprecision(10) <<  action_temp << std::endl;
-      
+
       phi_node.resize(num_nodes);
       for (size_t ii=0; ii<num_nodes; ii++ ){
         phi_node[ii] = path.vecp(phi_1d[ii]);
@@ -538,10 +538,10 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
       // TODO add try and error
       bool converged = deformPath(dphi_1d);
       path_pts = phi_node;
-      
+
       // TODO check this
       ft.saved_steps.push_back(phi_list);
-      
+
       if (converged and num_steps < 2){
         breakLoop = true;
         break;
@@ -551,14 +551,14 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
     if (!breakLoop){
       LOG(warning)<<"Reached maxiter in full_tunneling. No convergence.";
     }
-    
+
     // TODO
     // Calculate the ratio of max perpendicular force to max gradient.
     // Make sure that we go back a step and use the forces on the path, not the
     // most recently deformed path.
     bool converged = deformPath(dphi_1d);
     path_pts = phi_node;
-    
+
     std::vector<Eigen::VectorXd> F, dV;
     forces(F, dV);
     double F_max=0, dV_max=0;
@@ -576,16 +576,16 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
     tobj.set_rmin(rmin);
     tobj.set_rmax(rmax);
     tobj.set_max_iter(max_iter);
-  
+
     auto profile = tobj.findProfile(path.get_path_length(),0.);
     auto action = tobj.calAction(profile);
     action_temp = action;
-    
+
     ft.fRatio = fRatio;
     ft.phi = phi_node;
     ft.profile1D = profile;
     ft.action = action;
-    
+
     LOG(debug)<< "Tunneling step converged. ";
     return ft;
 }

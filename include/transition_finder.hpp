@@ -101,19 +101,19 @@ class TransitionFinder {
   std::vector<Eigen::VectorXd> get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique=0)const;
 
   double get_action(Eigen::VectorXd vacuum_1, Eigen::VectorXd vacuum_2, double T) const;
-  
+
   double get_action(Phase phase1, Phase phase2, double T, size_t i_unique=0) const;
-  
+
   std::vector<double> get_action(Phase phase1, Phase phase2, std::vector<double> T_list, size_t i_unique=0) const;
-  
+
   void write_action_to_text(Phase phase1, Phase phase2, std::vector<double> T_list, const std::string &filename, size_t i_unique=0) const;
-  
+
   void write_action_to_text(Transition tran, double T_min, double T_max, size_t n_step, const std::string &filename, size_t i_unique=0) const;
-  
+
   void write_action_to_text(Transition tran, const std::string &filename, size_t n_step=50, size_t i_unique=0) const;
-  
+
   double get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const;
-  
+
   /** Retrieve all phases */
   std::vector<Phase> get_phases() const { return pf.get_phases(); }
 
@@ -122,11 +122,11 @@ class TransitionFinder {
 
   /** Object with phases and potential */
   PhaseFinder &pf;
-  
+
  private:
-  
+
   ActionCalculator ac;
-  
+
   /** Whether already calculated all transitions */
   bool calculated_transitions = false;
 
@@ -150,7 +150,7 @@ class TransitionFinder {
 
   /** Note which VEVs changed */
   std::vector<bool> changed(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum) const;
-  
+
   /** Number of scalar fields that could break electroweak symmetry */
   PROPERTY(int, n_ew_scalars, -1)
 
@@ -169,9 +169,9 @@ class TransitionFinder {
   PROPERTY(double, Tnuc_step, 1.)
   /** Relative precision in nucleation temperature */
   PROPERTY(double, Tnuc_tol_rel, 1.e-3)
-  
+
   PROPERTY(bool, calculate_action, false)
-  
+
 };
 
 }  // namespace PhaseTracer

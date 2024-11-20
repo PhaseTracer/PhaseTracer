@@ -137,7 +137,7 @@ class PhaseFinder {
 
   /** Generate symmetric partner for a point */
   std::vector<Eigen::VectorXd> symmetric_partners(const Eigen::VectorXd& a) const;
-  
+
   /** Check that two minima are identical to within a particular tolerance */
   bool identical_within_tol(const Eigen::VectorXd& a, const Eigen::VectorXd& b) const;
 
@@ -148,12 +148,12 @@ class PhaseFinder {
 
   /** return phases at T */
   std::vector<Phase> get_phases_at_T(double T);
-  
+
   /** return the deepest phase at T */
   Phase get_deepest_phase_at_T(double T);
-  
+
   EffectivePotential::Potential &P;
-  
+
  protected:
 
   /**
@@ -304,7 +304,7 @@ class PhaseFinder {
   /** Maximum number of iterations when tracing a minimum */
   PROPERTY(unsigned int, trace_max_iter, 100000)
   /** Minimum length of a phase in temperature */
-  // Discard short phase checking, because it may cause endless loop. 
+  // Discard short phase checking, because it may cause endless loop.
   // PROPERTY(double, phase_min_length, 0.5)
   /** Guesses for locations of minima */
   PROPERTY(std::vector<Eigen::VectorXd>, guess_points, {})
