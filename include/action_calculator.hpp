@@ -235,13 +235,12 @@ public:
         }
         action_PD = pd.get_action();
       }
-      
+      LOG(debug) << " S(PD) = " << action_PD;
     }
     
     
-    LOG(debug) << " S(PD) = " << action_PD;
+    
 #ifdef BUILD_WITH_BP
-    LOG(debug) << " S(BP) = " << action_BP;
     if (std::isnan(action_BP)) {
         return action_PD;
     }

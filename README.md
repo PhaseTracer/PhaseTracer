@@ -54,6 +54,29 @@ If the build was succesful, run the examples and tests with:
     ./bin/scan_Z2_scalar_singlet_model
     ./bin/unit_tests
 
+## BubbleProfiler
+<details>
+<summary>Click me</summary>
+
+To use `BubbleProfiler` for calculation of bounce action:
+
+    cmake -D BUILD_WITH_BP=ON ..
+    make
+
+Then run the example with:
+
+    cd ..
+    ./bin/run_BP_2d
+    ./bin/run_BP_scale 1 0.6 200
+
+or in other examples by setting
+    
+    PhaseTracer::ActionCalculator ac(model);
+    ac.set_action_calculator(PhaseTracer::ActionMethod::BubbleProfiler);
+
+</details>
+
+
 ## FlexibleSUSY
 <details>
 <summary>Click me</summary>
