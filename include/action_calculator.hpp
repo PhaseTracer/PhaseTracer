@@ -44,8 +44,6 @@ private:
 
   /* Choose method to calculate the action*/
   ActionMethod action_method = ActionMethod::PathDeformation;
-  double use_PathDeformation = true;
-  double use_BubbleProfiler = false;
 
   /* Set parameters in BubbleProfiler */
   /* Use perturbative method or not*/
@@ -95,22 +93,9 @@ public:
 
   void set_action_calculator(ActionMethod am){
     action_method = am;
-    if (action_method == ActionMethod::PathDeformation){
-      use_PathDeformation = true;
-      use_BubbleProfiler = false;
-    } else if (action_method == ActionMethod::BubbleProfiler){
-      use_PathDeformation = false;
-      use_BubbleProfiler = true;
-    } else if (action_method == ActionMethod::None){
-      use_PathDeformation = false;
-      use_BubbleProfiler = false;
-    } else if (action_method == ActionMethod::All){
-      use_PathDeformation = true;
-      use_BubbleProfiler = true;
-    }
-
+    
 #ifndef BUILD_WITH_BP
-    if (use_BubbleProfiler){
+    if (action_method == ActionMethod::BubbleProfiler or action_method == ActionMethod::All){
       LOG(fatal) << "Enable BubbleProfiler in CMake configuration before using it.";
       throw std::runtime_error("BubbleProfiler is not installed.");
     }
@@ -128,7 +113,7 @@ public:
 
 #ifdef BUILD_WITH_BP
     double action_BP=std::numeric_limits<double>::quiet_NaN();
-    if (use_BubbleProfiler){
+    if (action_method == ActionMethod::BubbleProfiler or action_method == ActionMethod::All){
       V_BubbleProfiler V_BP(potential); // perturbative_profiler only accept non-const potential
       V_BP.set_T(T);
 
@@ -182,7 +167,7 @@ public:
     }
 #endif
     double action_PD=std::numeric_limits<double>::quiet_NaN();
-    if (use_PathDeformation){
+    if (action_method == ActionMethod::PathDeformation or action_method == ActionMethod::All){
       LOG(debug) << "Calculate action(PD) at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
       if (potential.get_n_scalars() == 1){
         OneDimPotentialForShooting ps(potential);
