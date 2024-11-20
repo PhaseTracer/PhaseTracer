@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef POTENTIAL_POW_HPP_INCLUDED
-#define POTENTIAL_POW_HPP_INCLUDED
+#ifndef EFFECTIVEPOTENTIAL_POW_HPP_
+#define EFFECTIVEPOTENTIAL_POW_HPP_
 
 /**
    Optimized pow(double, int) etc
@@ -54,4 +54,4 @@ inline double pow_int(double x, int n) {
   return result;
 }
 
-#endif
+#endif  // EFFECTIVEPOTENTIAL_POW_HPP_
