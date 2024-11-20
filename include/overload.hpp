@@ -29,7 +29,7 @@ namespace PhaseTracer {
 
 /** Overload stream for vectors */
 template <typename T>
-std::ostream& operator<< (std::ostream& o, std::vector<T> v) {
+std::ostream &operator<<(std::ostream &o, std::vector<T> v) {
   o << std::boolalpha;
   o << "[";
   std::copy(v.begin(), v.end(), std::ostream_iterator<T>(o, ", "));
@@ -38,12 +38,12 @@ std::ostream& operator<< (std::ostream& o, std::vector<T> v) {
 }
 
 /** Overload for writing our field coordinates */
-inline std::ostream& operator<< (std::ostream& o, Eigen::VectorXd v) {
+inline std::ostream &operator<<(std::ostream &o, Eigen::VectorXd v) {
   static Eigen::IOFormat format(Eigen::StreamPrecision, Eigen::DontAlignCols, " ", ", ", "", "", "[", "]");
   o << v.format(format);
   return o;
 }
 
-}  // namespace PhaseTracer
+} // namespace PhaseTracer
 
-#endif  // PHASETRACER_OVERLOAD_HPP_
+#endif // PHASETRACER_OVERLOAD_HPP_

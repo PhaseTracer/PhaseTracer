@@ -33,15 +33,16 @@
 #include "action_calculator.hpp"
 #include "transition_graph_util.hpp"
 
-namespace TransitionGraph
-{
-    struct Path;
+namespace TransitionGraph {
+struct Path;
 }
 
 namespace PhaseTracer {
 
 /** Information about root-finding for a transition */
-enum Message {SUCCESS, NON_OVERLAPPING_T, ERROR};
+enum Message { SUCCESS,
+               NON_OVERLAPPING_T,
+               ERROR };
 
 struct Transition {
   /** Data about a particular transition */
@@ -62,7 +63,7 @@ struct Transition {
   size_t id;
 
   /** Pretty-printer for single transition */
-  friend std::ostream& operator << (std::ostream& o, const Transition& a) {
+  friend std::ostream &operator<<(std::ostream &o, const Transition &a) {
     if (a.message == SUCCESS) {
       o << "=== transition from phase " << a.false_phase.key;
       if (a.key == 0) {
@@ -80,30 +81,27 @@ struct Transition {
         << "TN = " << a.TN << std::endl
         << "false vacuum (TN) = " << a.true_vacuum_TN << std::endl
         << "true vacuum (TN) = " << a.false_vacuum_TN << std::endl;
-        // TODO: Ideally we would only print this property if we check for subcritical transitions.
-        // TODO: Unfortunately this is a property of the TransitionFinder and the Transition doesn't have knowledge of
-        // TODO: this. We could store it here but that seems wasteful.
-        // if(check_subcritical_transitions){
-        //  o << "subcritical = " << a.subcritical << std::endl;
-        // }
+      // TODO: Ideally we would only print this property if we check for subcritical transitions.
+      // TODO: Unfortunately this is a property of the TransitionFinder and the Transition doesn't have knowledge of
+      // TODO: this. We could store it here but that seems wasteful.
+      // if(check_subcritical_transitions){
+      //  o << "subcritical = " << a.subcritical << std::endl;
+      // }
     } else {
       o << "=== failure. message =  " << a.message << " ===" << std::endl;
     }
     return o;
   }
-
 };
 
 class TransitionFinder {
- public:
-  explicit TransitionFinder(PhaseFinder& pf_) :
-    pf(pf_), ac(pf_.P){
-      calculate_action = false;
-    }
-  explicit TransitionFinder(PhaseFinder& pf_, ActionCalculator ac_) :
-    pf(pf_), ac(ac_){
-      calculate_action = true;
-    }
+public:
+  explicit TransitionFinder(PhaseFinder &pf_) : pf(pf_), ac(pf_.P) {
+    calculate_action = false;
+  }
+  explicit TransitionFinder(PhaseFinder &pf_, ActionCalculator ac_) : pf(pf_), ac(ac_) {
+    calculate_action = true;
+  }
   virtual ~TransitionFinder() = default;
 
   /** Find all transitions between all phases */
@@ -113,31 +111,31 @@ class TransitionFinder {
   void append_subcritical_transitions();
 
   /** Called from append_subcritical_transitions; checks whether there is a subcritical transition between two phases. */
-  bool checkSubcriticalTransition(const std::vector<PhaseTracer::Phase>& phases, int i, int j, double Tmax,
-    double energyAtTmax, bool checkFromNewPhase, std::vector<bool>& isTransitionedTo);
+  bool checkSubcriticalTransition(const std::vector<PhaseTracer::Phase> &phases, int i, int j, double Tmax,
+                                  double energyAtTmax, bool checkFromNewPhase, std::vector<bool> &isTransitionedTo);
 
   /** Called from find_transitions; checks whether the transition should be kept or rejected. */
-  bool validateTransition(const Transition& transition) const;
+  bool validateTransition(const Transition &transition) const;
 
   /** Find all transition paths  */
-  void find_transition_paths(const EffectivePotential::Potential& model, bool knownHighTPhase);
+  void find_transition_paths(const EffectivePotential::Potential &model, bool knownHighTPhase);
 
   /** Retrieve all transitions between all phases */
   std::vector<Transition> get_transitions() const { return transitions; }
 
-  std::vector<Eigen::VectorXd> get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique=0)const;
+  std::vector<Eigen::VectorXd> get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique = 0) const;
 
   double get_action(Eigen::VectorXd vacuum_1, Eigen::VectorXd vacuum_2, double T) const;
 
-  double get_action(Phase phase1, Phase phase2, double T, size_t i_unique=0) const;
+  double get_action(Phase phase1, Phase phase2, double T, size_t i_unique = 0) const;
 
-  std::vector<double> get_action(Phase phase1, Phase phase2, std::vector<double> T_list, size_t i_unique=0) const;
+  std::vector<double> get_action(Phase phase1, Phase phase2, std::vector<double> T_list, size_t i_unique = 0) const;
 
-  void write_action_to_text(Phase phase1, Phase phase2, std::vector<double> T_list, const std::string &filename, size_t i_unique=0) const;
+  void write_action_to_text(Phase phase1, Phase phase2, std::vector<double> T_list, const std::string &filename, size_t i_unique = 0) const;
 
-  void write_action_to_text(Transition tran, double T_min, double T_max, size_t n_step, const std::string &filename, size_t i_unique=0) const;
+  void write_action_to_text(Transition tran, double T_min, double T_max, size_t n_step, const std::string &filename, size_t i_unique = 0) const;
 
-  void write_action_to_text(Transition tran, const std::string &filename, size_t n_step=50, size_t i_unique=0) const;
+  void write_action_to_text(Transition tran, const std::string &filename, size_t n_step = 50, size_t i_unique = 0) const;
 
   double get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const;
 
@@ -148,13 +146,12 @@ class TransitionFinder {
   std::vector<Phase> get_phases() const { return pf.get_phases(); }
 
   /** Pretty-printer for set of transitions in this object */
-  friend std::ostream& operator << (std::ostream& o, const TransitionFinder& a);
+  friend std::ostream &operator<<(std::ostream &o, const TransitionFinder &a);
 
   /** Object with phases and potential */
   PhaseFinder &pf;
 
- private:
-
+private:
   ActionCalculator ac;
 
   /** Whether already calculated all transitions */
@@ -170,19 +167,19 @@ class TransitionFinder {
   std::vector<Transition> find_transition(Phase p1, Phase p2, double T1, double T2, size_t currentID) const;
 
   /** Find many transitions between two phases at a particular resolution */
-  std::vector<Transition> divide_and_find_transition(const Phase& phase1, const Phase& phase2, double T1, double T2, size_t currentID) const;
+  std::vector<Transition> divide_and_find_transition(const Phase &phase1, const Phase &phase2, double T1, double T2, size_t currentID) const;
 
   /** Check whether two phase are overlapped at T*/
-  bool phases_overlaped(const Phase& phase1, const Phase& phase2, double T) const;
+  bool phases_overlaped(const Phase &phase1, const Phase &phase2, double T) const;
 
   /** Find un-overlapped temperature region between the two phases*/
-  std::vector<double> get_un_overlapped_T_range(const Phase& phase1, const Phase& phase2, double T1, double T2) const;
+  std::vector<double> get_un_overlapped_T_range(const Phase &phase1, const Phase &phase2, double T1, double T2) const;
 
   /** Strength of phase transition for first N fields */
-  double gamma(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, const double TC) const;
+  double gamma(const Eigen::VectorXd &true_vacuum, const Eigen::VectorXd &false_vacuum, const double TC) const;
 
   /** Note which VEVs changed */
-  std::vector<bool> changed(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum) const;
+  std::vector<bool> changed(const Eigen::VectorXd &true_vacuum, const Eigen::VectorXd &false_vacuum) const;
 
   /** Number of scalar fields that could break electroweak symmetry */
   PROPERTY(int, n_ew_scalars, -1)
@@ -206,13 +203,13 @@ class TransitionFinder {
   PROPERTY(bool, calculate_action, false)
 
   /**
-    * Whether we should check for subcritical transitions, i.e. transitions between phases when one phase is strictly of
-    * lower energy than the other. This can occur when a new phase appears near a phase that is not of the highest energy
-    * at that temperature.
-    */
+   * Whether we should check for subcritical transitions, i.e. transitions between phases when one phase is strictly of
+   * lower energy than the other. This can occur when a new phase appears near a phase that is not of the highest energy
+   * at that temperature.
+   */
   PROPERTY(bool, check_subcritical_transitions, false)
 };
 
-}  // namespace PhaseTracer
+} // namespace PhaseTracer
 
-#endif  // PHASETRACER_TRANSITION_FINDER_HPP_
+#endif // PHASETRACER_TRANSITION_FINDER_HPP_

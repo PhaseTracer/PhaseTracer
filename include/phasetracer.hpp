@@ -28,4 +28,4 @@
 #include "potential_line_plotter.hpp"
 #include "spectrum_plotter.hpp"
 
-#endif  //  PHASETRACER_PHASETRACER_HPP_
+#endif //  PHASETRACER_PHASETRACER_HPP_

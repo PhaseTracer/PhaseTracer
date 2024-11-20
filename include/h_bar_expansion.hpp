@@ -27,11 +27,11 @@ namespace PhaseTracer {
 
 /** @brief Gauge-invariant h-bar expansion method */
 class HbarExpansion : public PhaseFinder {
- public:
+public:
   /** @brief H-bar expansion needs a one-loop potential */
   explicit HbarExpansion(EffectivePotential::OneLoopPotential &potential) : PhaseFinder(potential), P1l(potential) {};
   void find_phases() override;
-  Point phase_at_T(const Phase& phase, double T) const override;
+  Point phase_at_T(const Phase &phase, double T) const override;
   /**
    * @brief h-bar expansion may consider one minima and one turning point or maxima
    *
@@ -39,7 +39,7 @@ class HbarExpansion : public PhaseFinder {
    */
   void add_pseudo_phase(Eigen::ArrayXd pseudo_phase) { pseudo_phases.push_back(pseudo_phase); }
 
- private:
+private:
   std::function<double(Eigen::VectorXd)> make_objective(double T) const override;
   std::vector<Eigen::ArrayXd> pseudo_phases;
   EffectivePotential::OneLoopPotential &P1l;
@@ -47,14 +47,15 @@ class HbarExpansion : public PhaseFinder {
 
 /** @brief Trace high-temperature expansion of potential */
 class HTExpansion : public PhaseFinder {
- public:
+public:
   /** @brief High-temperature expansion needs a one-loop potential */
   explicit HTExpansion(EffectivePotential::OneLoopPotential &potential) : PhaseFinder(potential), P1l(potential) {};
- private:
+
+private:
   std::function<double(Eigen::VectorXd)> make_objective(double T) const override;
   EffectivePotential::OneLoopPotential &P1l;
 };
 
-}  // namespace PhaseTracer
+} // namespace PhaseTracer
 
-#endif  // PHASETRACER_H_BAR_EXPANSION_HPP_
+#endif // PHASETRACER_H_BAR_EXPANSION_HPP_

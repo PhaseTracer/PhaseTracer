@@ -6,7 +6,6 @@
 #include "transition_finder.hpp"
 #include "logger.hpp"
 
-
 TEST_CASE("Compute transitions for a one-dimensional model", "[1DTestModel]") {
 
   LOGGER(fatal);

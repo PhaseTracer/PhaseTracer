@@ -21,10 +21,8 @@
 #include <cmath>
 #include "pow.hpp"
 
-
-namespace SM
-{
-    // SM parameters
+namespace SM {
+// SM parameters
 //    const double v = 245.5724484517838;
 //    const double mh = 125;
 ////
@@ -34,31 +32,25 @@ namespace SM
 //    const double yb = 0.01644374858393946;
 //    const double ytau = 0.01023322576907503;
 
-    const double v = 247.4544243292407;
-    const double mh = 125.25;
+const double v = 247.4544243292407;
+const double mh = 125.25;
 //
-    const double g = 0.6477096097526751;
-    const double gp = 0.3585644903737741;
-    const double yt = 0.9341361105006658;
-    const double yb = 0.0154737491181327;
-    const double ytau = 0.01001419077147658;
+const double g = 0.6477096097526751;
+const double gp = 0.3585644903737741;
+const double yt = 0.9341361105006658;
+const double yb = 0.0154737491181327;
+const double ytau = 0.01001419077147658;
 
+const double mZ = 0.5 * std::sqrt(square(g) + square(gp)) * v;
+const double mW = 0.5 * g * v;
 
+const double yt_sq = square(yt);
+const double yb_sq = square(yb);
+const double ytau_sq = square(ytau);
 
-    const double mZ = 0.5*std::sqrt(square(g)+square(gp))*v;
-    const double mW = 0.5*g*v;
-
-    const double yt_sq = square(yt);
-    const double yb_sq = square(yb);
-    const double ytau_sq = square(ytau);
-
-    const double mtop = yt*v/sqrt(2);
-    const double mb = yb*v/sqrt(2);
-    const double mtau = ytau*v/sqrt(2);
-    
-
-
-
+const double mtop = yt * v / sqrt(2);
+const double mb = yb * v / sqrt(2);
+const double mtau = ytau * v / sqrt(2);
 
 } // namespace SM
 

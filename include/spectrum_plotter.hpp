@@ -31,12 +31,12 @@
 
 namespace PhaseTracer {
 
-void spectrum_plotter(PhaseTracer::GravWaveCalculator& gc, std::string prefix = "model", std::string repo = "") {
+void spectrum_plotter(PhaseTracer::GravWaveCalculator &gc, std::string prefix = "model", std::string repo = "") {
 
   auto spectrums = gc.get_spectrums();
   int no_spectrums = spectrums.size();
 
-  for (int ii=0; ii < no_spectrums; ii++){
+  for (int ii = 0; ii < no_spectrums; ii++) {
     gc.write_spectrum_to_text(spectrums[ii], repo + "GW_" + prefix + "_" + std::to_string(ii) + ".txt");
     double peak_freq = spectrums[ii].peak_frequency;
 
@@ -49,9 +49,8 @@ void spectrum_plotter(PhaseTracer::GravWaveCalculator& gc, std::string prefix = 
     LOG(debug) << "Executing " << command;
     const auto result = std::system(command.c_str());
   }
-
 }
 
-}  // namespace PhaseTracer
+} // namespace PhaseTracer
 
-#endif  // PHASETRACER_SPECTRUM_PLOTTER_HPP_
+#endif // PHASETRACER_SPECTRUM_PLOTTER_HPP_

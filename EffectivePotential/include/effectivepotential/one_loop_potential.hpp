@@ -31,14 +31,16 @@ namespace EffectivePotential {
 double xlogx(double);
 
 /** Method for daisy corrections */
-enum class DaisyMethod { None, ArnoldEspinosa, Parwani };
+enum class DaisyMethod { None,
+                         ArnoldEspinosa,
+                         Parwani };
 
 class OneLoopPotential : public Potential {
- public:
+public:
   virtual double V0(Eigen::VectorXd phi) const = 0;
   /** Functions for squared field dependent masses, depending on:
-      a vector of fields and for scalars a xi gauge parameter.  Note the 
-      latter will be unused for potentials implemented in a fixed gauge. */ 
+      a vector of fields and for scalars a xi gauge parameter.  Note the
+      latter will be unused for potentials implemented in a fixed gauge. */
   virtual std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const;
   virtual std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const { return {}; }
   virtual std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const { return {}; }
@@ -93,14 +95,14 @@ class OneLoopPotential : public Potential {
   double get_renormalization_scale() const { return renormalization_scale; }
 
   /** The gauge parameter \xi */
-  void set_xi(double xi_in ) { xi=xi_in; }
+  void set_xi(double xi_in) { xi = xi_in; }
   double get_xi() const { return xi; }
 
   /** Treatment of the thermal masses */
-  void set_daisy_method(DaisyMethod dm ) { daisy_method = dm; }
+  void set_daisy_method(DaisyMethod dm) { daisy_method = dm; }
   DaisyMethod get_daisy_method() const { return daisy_method; }
 
- private:
+private:
   /** The renormalization scale for the effective potential */
   double renormalization_scale = 246.;
   /** The gauge parameter \xi */
@@ -109,6 +111,6 @@ class OneLoopPotential : public Potential {
   DaisyMethod daisy_method = DaisyMethod::ArnoldEspinosa;
 };
 
-}  // namespace EffectivePotential
+} // namespace EffectivePotential
 
-#endif  // EFFECTIVEPOTENTIAL_ONE_LOOP_POTENTIAL_HPP_
+#endif // EFFECTIVEPOTENTIAL_ONE_LOOP_POTENTIAL_HPP_

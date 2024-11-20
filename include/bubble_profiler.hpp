@@ -42,13 +42,10 @@
 
 namespace PhaseTracer {
 
-
-
 class V_BubbleProfiler : public BubbleProfiler::Potential {
 public:
-  explicit V_BubbleProfiler(EffectivePotential::Potential &p_) :
-    P(p_),
-    n_fields(P.get_n_scalars()) {
+  explicit V_BubbleProfiler(EffectivePotential::Potential &p_) : P(p_),
+                                                                 n_fields(P.get_n_scalars()) {
     origin = Eigen::VectorXd::Zero(n_fields);
     origin_translation = origin;
     basis_transform = Eigen::MatrixXd::Identity(n_fields, n_fields);
@@ -57,84 +54,82 @@ public:
 
   EffectivePotential::Potential &P;
 
-  virtual V_BubbleProfiler * clone() const override {
-     return new V_BubbleProfiler(*this);
+  virtual V_BubbleProfiler *clone() const override {
+    return new V_BubbleProfiler(*this);
   };
 
-  double operator()(const Eigen::VectorXd& coords) const override{
+  double operator()(const Eigen::VectorXd &coords) const override {
     Eigen::VectorXd transformed_coords =
-       (basis_transform * coords) + origin_translation;
-    return P.V(transformed_coords,T);
+        (basis_transform * coords) + origin_translation;
+    return P.V(transformed_coords, T);
   }
 
-  double partial(const Eigen::VectorXd& coords, int i) const override{
+  double partial(const Eigen::VectorXd &coords, int i) const override {
     Eigen::VectorXd transformed_coords =
-       (basis_transform * coords) + origin_translation;
-    auto const dV = P.dV_dx(transformed_coords,T);
+        (basis_transform * coords) + origin_translation;
+    auto const dV = P.dV_dx(transformed_coords, T);
     return dV.coeff(i);
   }
-  double partial(const Eigen::VectorXd& coords, int i, int j) const override{
+  double partial(const Eigen::VectorXd &coords, int i, int j) const override {
     Eigen::VectorXd transformed_coords =
-       (basis_transform * coords) + origin_translation;
-    auto const d2V =  P.d2V_dx2(transformed_coords,T);
+        (basis_transform * coords) + origin_translation;
+    auto const d2V = P.d2V_dx2(transformed_coords, T);
     return d2V.coeff(i, j);
   }
-  std::size_t get_number_of_fields() const override{
+  std::size_t get_number_of_fields() const override {
     return P.get_n_scalars();
   }
 
-  void translate_origin(const Eigen::VectorXd& translation) override{
-      origin_translation = translation;
+  void translate_origin(const Eigen::VectorXd &translation) override {
+    origin_translation = translation;
   }
-  void apply_basis_change(const Eigen::MatrixXd& new_basis) override{
-      basis_transform = basis_transform * (new_basis.transpose());
+  void apply_basis_change(const Eigen::MatrixXd &new_basis) override {
+    basis_transform = basis_transform * (new_basis.transpose());
   }
-  void add_constant_term(double constant) override{
-      constant_term += constant;
+  void add_constant_term(double constant) override {
+    constant_term += constant;
   }
 
-  void set_T(double T_) const { const_cast<double&>(T) = T_; }
-
+  void set_T(double T_) const { const_cast<double &>(T) = T_; }
 
   Eigen::VectorXd find_one_dimensional_barrier(
-     const Eigen::VectorXd& true_vacuum_loc,
-     const Eigen::VectorXd& false_vacuum_loc,
-     double TT) const
-  {
-     if (n_fields != 1) {
-       LOG(fatal) << ("automatically locating potential barrier only "
-                      "supported for single field case");
-     }
+      const Eigen::VectorXd &true_vacuum_loc,
+      const Eigen::VectorXd &false_vacuum_loc,
+      double TT) const {
+    if (n_fields != 1) {
+      LOG(fatal) << ("automatically locating potential barrier only "
+                     "supported for single field case");
+    }
 
-     const auto v = [this,TT](const Eigen::VectorXd& coords) {
+    const auto v = [this, TT](const Eigen::VectorXd &coords) {
       Eigen::VectorXd transformed_coords =
           (basis_transform * coords) + origin_translation;
-      return P.V(transformed_coords,TT);
-     };
+      return P.V(transformed_coords, TT);
+    };
 
-     BubbleProfiler::NLopt_optimizer optimizer(v, n_fields);
+    BubbleProfiler::NLopt_optimizer optimizer(v, n_fields);
 
-     // Don't need much precision for location of barrier
-     optimizer.set_xtol_rel(1.e-5); // TODO: need lower than the one used to calcualte dV_dx and d2V_dx2
-     optimizer.set_ftol_rel(1.e-5);
+    // Don't need much precision for location of barrier
+    optimizer.set_xtol_rel(1.e-5); // TODO: need lower than the one used to calcualte dV_dx and d2V_dx2
+    optimizer.set_ftol_rel(1.e-5);
 
-     optimizer.set_extremum_type(BubbleProfiler::NLopt_optimizer::Extremum_type::MAX);
-     optimizer.set_lower_bounds(std::min(true_vacuum_loc(0),
-                                         false_vacuum_loc(0)));
-     optimizer.set_upper_bounds(std::max(true_vacuum_loc(0),
-                                         false_vacuum_loc(0)));
-     optimizer.set_max_time(1E6);
+    optimizer.set_extremum_type(BubbleProfiler::NLopt_optimizer::Extremum_type::MAX);
+    optimizer.set_lower_bounds(std::min(true_vacuum_loc(0),
+                                        false_vacuum_loc(0)));
+    optimizer.set_upper_bounds(std::max(true_vacuum_loc(0),
+                                        false_vacuum_loc(0)));
+    optimizer.set_max_time(1E6);
 
-     Eigen::VectorXd initial_guess(0.5 * (true_vacuum_loc + false_vacuum_loc));
-     const auto status = optimizer.optimize(initial_guess);
+    Eigen::VectorXd initial_guess(0.5 * (true_vacuum_loc + false_vacuum_loc));
+    const auto status = optimizer.optimize(initial_guess);
 
-     if (!BubbleProfiler::optimization_succeeded(status)) {
-        LOG(fatal) << "Error: unable to locate barrier. NLOPT status = "
-                  << status;
-        exit(EXIT_FAILURE);
-     }
+    if (!BubbleProfiler::optimization_succeeded(status)) {
+      LOG(fatal) << "Error: unable to locate barrier. NLOPT status = "
+                 << status;
+      exit(EXIT_FAILURE);
+    }
 
-     return optimizer.get_extremum_location();
+    return optimizer.get_extremum_location();
   }
 
 private:
@@ -146,13 +141,8 @@ private:
   Eigen::VectorXd origin_translation{};
   Eigen::VectorXd mu{};
   Eigen::MatrixXd basis_transform{};
-
 };
 
+} // namespace PhaseTracer
 
-
-
-
-}  // namespace PhaseTracer
-
-#endif  // PHASETRACER_BPROFILER_HPP_
+#endif // PHASETRACER_BPROFILER_HPP_

@@ -32,12 +32,10 @@
 #include "pow.hpp"
 #include "SM_parameters.hpp"
 
-
 namespace EffectivePotential {
 
 class xSM_base : public OneLoopPotential {
- public:
-
+public:
   double V0(Eigen::VectorXd phi) const override {
     return 0.5 * muh_sq * square(phi[0]) +
            0.25 * lambda_h * pow_4(phi[0]) +
@@ -45,7 +43,7 @@ class xSM_base : public OneLoopPotential {
            0.5 * mus_sq * square(phi[1]) +
            0.25 * lambda_s * pow_4(phi[1]);
   }
-  
+
   /**
    * Thermal scalar masses of form c * T^2 etc for high-temperature expansion of potential
    */
@@ -53,7 +51,8 @@ class xSM_base : public OneLoopPotential {
     const double c_h = (9. * square(SM_g) +
                         3. * square(SM_gp) +
                         2. * (6. * SM_yt_sq + 6. * SM_yb_sq +
-                              2. * SM_ytau_sq + 12. * lambda_h + lambda_hs)) / 48.;
+                              2. * SM_ytau_sq + 12. * lambda_h + lambda_hs)) /
+                       48.;
     const double c_s = (2. * lambda_hs + 3. * lambda_s) / 12.;
     return {c_h * square(T), c_s * square(T)};
   }
@@ -62,7 +61,7 @@ class xSM_base : public OneLoopPotential {
   std::vector<double> get_scalar_dofs() const override {
     return {1., 1., 1., 1., 1};
   }
-  
+
   // W, Z, photon
   std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const override {
     return get_vector_debye_sq(phi, 0.);
@@ -70,12 +69,12 @@ class xSM_base : public OneLoopPotential {
 
   std::vector<double> get_ghost_masses_sq(Eigen::VectorXd phi, double xi) const override {
     auto const vector_masses_sq = get_vector_debye_sq(phi, 0.);
-    return {xi*vector_masses_sq[0], xi*vector_masses_sq[1], xi*vector_masses_sq[2]};
+    return {xi * vector_masses_sq[0], xi * vector_masses_sq[1], xi * vector_masses_sq[2]};
   }
   std::vector<double> get_ghost_dofs() const override {
     return {2., 1., 1.};
   }
-  
+
   // W, Z, photon
   std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override {
     const double h_sq = square(phi[0]);
@@ -83,15 +82,13 @@ class xSM_base : public OneLoopPotential {
     const double MW_T_sq = 0.25 * square(SM_g) * h_sq;
     const double MZ_T_sq = 0.25 * (square(SM_g) + square(SM_gp)) * h_sq;
     const double Mphoton_T_sq = 0.;
-    
+
     const double MW_L_sq = 0.25 * square(SM_g) * h_sq + 11. / 6. * square(SM_g) * T_sq;
-		const double a_L = (square(SM_g) + square(SM_gp)) * (3. * h_sq + 22. * T_sq);
-		const double b_L = std::sqrt(9. * square(square(SM_g) + square(SM_gp)) * square(h_sq)
-                     + 132. * square(square(SM_g) - square(SM_gp)) * h_sq * T_sq
-                     + 484. * square(square(SM_g) - square(SM_gp)) * pow_4(T));
-		const double MZ_L_sq = (a_L + b_L) / 24.;
-		const double Mphoton_L_sq = (a_L - b_L) / 24.;
-    
+    const double a_L = (square(SM_g) + square(SM_gp)) * (3. * h_sq + 22. * T_sq);
+    const double b_L = std::sqrt(9. * square(square(SM_g) + square(SM_gp)) * square(h_sq) + 132. * square(square(SM_g) - square(SM_gp)) * h_sq * T_sq + 484. * square(square(SM_g) - square(SM_gp)) * pow_4(T));
+    const double MZ_L_sq = (a_L + b_L) / 24.;
+    const double Mphoton_L_sq = (a_L - b_L) / 24.;
+
     // Mphoton_sq must be put at the end, as it will not be used in the OSlike scheme.
     return {MW_L_sq, MZ_L_sq, Mphoton_L_sq, MW_T_sq, MZ_T_sq, Mphoton_T_sq};
   }
@@ -119,13 +116,13 @@ class xSM_base : public OneLoopPotential {
 
   std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const override {
     auto phi1 = phi;
-    phi1[0] = - phi[0];
+    phi1[0] = -phi[0];
     auto phi2 = phi;
-    phi2[1] = - phi[1];
+    phi2[1] = -phi[1];
     return {phi1, phi2};
   };
-  
-  void set_SM_parameters(std::vector<double> SM_parameters){
+
+  void set_SM_parameters(std::vector<double> SM_parameters) {
     SM_mh = SM_parameters[0];
     SM_v = SM_parameters[1];
     SM_gp = SM_parameters[2];
@@ -134,17 +131,16 @@ class xSM_base : public OneLoopPotential {
     SM_yb_sq = SM_parameters[5];
     SM_ytau_sq = SM_parameters[6];
   }
-  
- protected:
- 
-   // Lagrangian parameters
+
+protected:
+  // Lagrangian parameters
   double ms;
   double lambda_hs;
   double muh_sq;
   double lambda_h;
   double mus_sq;
   double lambda_s;
-  
+
   double SM_mh = SM::mh;
   double SM_v = SM::v;
   double SM_gp = SM::gp;
@@ -152,9 +148,8 @@ class xSM_base : public OneLoopPotential {
   double SM_yt_sq = SM::yt_sq;
   double SM_yb_sq = SM::yb_sq;
   double SM_ytau_sq = SM::ytau_sq;
-  
 };
 
-}  // namespace EffectivePotential
+} // namespace EffectivePotential
 
 #endif

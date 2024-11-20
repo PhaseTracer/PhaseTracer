@@ -41,7 +41,6 @@ TEST_CASE("Check potential for our two-dimensional test model", "[2DTestModel]")
 
   CHECK(model.d2V_dx2(y, T)(0, 1) == Approx(-693.2822294235).epsilon(rel_tol));
   CHECK(model.d2V_dx2(y, T)(0, 0) == Approx(-3077.9320335388).epsilon(rel_tol));
-
 }
 
 TEST_CASE("Check potential for Z2 scalar singlet model", "[Z2ScalarSingletModel]") {
@@ -81,5 +80,4 @@ TEST_CASE("Check potential for Z2 scalar singlet model", "[Z2ScalarSingletModel]
 
   CHECK(model.d2V_dx2(y, T)(0, 1) == Approx(3999.9988250732).epsilon(rel_tol));
   CHECK(model.d2V_dx2(y, T)(0, 0) == Approx(2222.1667480469).epsilon(rel_tol));
-
 }

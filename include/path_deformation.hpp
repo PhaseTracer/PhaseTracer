@@ -35,24 +35,20 @@
 
 namespace PhaseTracer {
 
-
-
-template<typename T>
-std::vector<T> cumulative_trapezoidal_integration(const std::vector<T>& values)
-{
-    std::vector<T> integration_result;
-    integration_result.clear();
-    T sum = T(0);
-    for (size_t i = 0; i < values.size() - 1; ++i)
-    {
-        sum += (values[i] + values[i + 1]) / 2.0;
-        integration_result.push_back(sum);
-    }
-    return integration_result;
+template <typename T>
+std::vector<T> cumulative_trapezoidal_integration(const std::vector<T> &values) {
+  std::vector<T> integration_result;
+  integration_result.clear();
+  T sum = T(0);
+  for (size_t i = 0; i < values.size() - 1; ++i) {
+    sum += (values[i] + values[i + 1]) / 2.0;
+    integration_result.push_back(sum);
+  }
+  return integration_result;
 }
 
 /* Fit a spline to a path in field space, and find the potential on that path */
-class SplinePath: public PotentialForShooting {
+class SplinePath : public PotentialForShooting {
 
 public:
   explicit SplinePath(EffectivePotential::Potential &potential,
@@ -66,12 +62,11 @@ public:
   /* Calculates to 4th order if len(phi) >= 5, otherwise 1st/2nd order. */
   std::vector<Eigen::VectorXd> _pathDeriv(const std::vector<Eigen::VectorXd> phi);
 
-
   double find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0, double guess = 0.);
 
   void get_path_tck(std::vector<double> pdist);
 
-  void dpdx(const double& x, double& dpdx_, double r);
+  void dpdx(const double &x, double &dpdx_, double r);
 
   Eigen::VectorXd vecp(double x);
 
@@ -81,27 +76,26 @@ public:
 
   double d2V(double x) const override;
 
-  double get_path_length(){return length;}
+  double get_path_length() { return length; }
 
 private:
-
   /* Calculates dy/dx to fourth-order using finite differences. */
-  std::vector<Eigen::VectorXd> deriv14_const_dx(const std::vector<Eigen::VectorXd>& y, double dx = 1.) {
+  std::vector<Eigen::VectorXd> deriv14_const_dx(const std::vector<Eigen::VectorXd> &y, double dx = 1.) {
     const int ny = y.size();
-    const double factor = 1.0 / (12.0*dx);
+    const double factor = 1.0 / (12.0 * dx);
     std::vector<Eigen::VectorXd> dy(ny, Eigen::VectorXd::Zero(y[0].size()));
     for (int i = 2; i < ny - 2; ++i) {
-        dy[i] = factor * (-y[i + 2] + 8.0 * y[i + 1] - 8.0 * y[i - 1] + y[i - 2]);
+      dy[i] = factor * (-y[i + 2] + 8.0 * y[i + 1] - 8.0 * y[i - 1] + y[i - 2]);
     }
 
-    dy[0] = factor * (-25*y[0] + 48*y[1] - 36*y[2] + 16*y[3] - 3*y[4]);
-    dy[1] = factor * (-3 *y[0] - 10*y[1] + 18*y[2] - 6 *y[3] +   y[4]);
-    dy[ny-2] = factor * (3*y[ny-1] + 10*y[ny-2] - 18*y[ny-3] + 6*y[ny-4] - y[ny-5]);
-    dy[ny-1] = factor * (25*y[ny-1] - 48*y[ny-2] + 36*y[ny-3] - 16*y[ny-4] + 3*y[ny-5]);
+    dy[0] = factor * (-25 * y[0] + 48 * y[1] - 36 * y[2] + 16 * y[3] - 3 * y[4]);
+    dy[1] = factor * (-3 * y[0] - 10 * y[1] + 18 * y[2] - 6 * y[3] + y[4]);
+    dy[ny - 2] = factor * (3 * y[ny - 1] + 10 * y[ny - 2] - 18 * y[ny - 3] + 6 * y[ny - 4] - y[ny - 5]);
+    dy[ny - 1] = factor * (25 * y[ny - 1] - 48 * y[ny - 2] + 36 * y[ny - 3] - 16 * y[ny - 4] + 3 * y[ny - 5]);
     return dy;
   }
 
-//  TransitionFinder& tf;
+  //  TransitionFinder& tf;
   std::vector<Eigen::VectorXd> pts;
   int V_spline_samples = 140; // larger than 5
   bool extend_to_minima;
@@ -117,12 +111,9 @@ private:
 
   size_t nphi;
   size_t num_nodes;
-
 };
 
-
 /* ************************************************************ */
-
 
 struct FullTunneling {
   double action;
@@ -134,8 +125,7 @@ struct FullTunneling {
 
 class PathDeformation {
 public:
-
-  explicit PathDeformation(EffectivePotential::Potential &potential): P(potential), nphi(potential.get_n_scalars()) {}
+  explicit PathDeformation(EffectivePotential::Potential &potential) : P(potential), nphi(potential.get_n_scalars()) {}
 
   virtual ~PathDeformation() = default;
 
@@ -143,18 +133,16 @@ public:
   void step(double &lastStep, bool &step_reversed, double &fRatio);
 
   // Calculate the normal force and potential gradient on the path
-  void forces(std::vector<Eigen::VectorXd>& F_norm, std::vector<Eigen::VectorXd>& dV);
+  void forces(std::vector<Eigen::VectorXd> &F_norm, std::vector<Eigen::VectorXd> &dV);
 
   std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> Nbspld2(std::vector<double> t, std::vector<double> x, int k = 3);
 
   /* Calculate the instanton solution in multiple field dimension */
   FullTunneling full_tunneling(std::vector<Eigen::VectorXd> path_pts);
 
-  double get_action(){return action_temp;}
-
+  double get_action() { return action_temp; }
 
 private:
-
   EffectivePotential::Potential &P;
 
   double phi_absMin;
@@ -199,22 +187,21 @@ private:
   /* The maximum number of points to be positioned during the integration process. */
   PROPERTY(boost::uintmax_t, max_iter, 100)
 
-
   size_t num_nodes;
   size_t nphi;
-  size_t num_steps=0;
+  size_t num_steps = 0;
 
-  double startstep=2e-3;
-  double fRatioConv=.02;
-  double converge_0=5.;
-  double fRatioIncrease=5.;
+  double startstep = 2e-3;
+  double fRatioConv = .02;
+  double converge_0 = 5.;
+  double fRatioIncrease = 5.;
 
-  double maxstep=.1;
-  double minstep=1e-4;
-  double reverseCheck=.15;
-  double stepIncrease=1.5;
-  double stepDecrease=5.;
-  bool checkAfterFit=true;
+  double maxstep = .1;
+  double minstep = 1e-4;
+  double reverseCheck = .15;
+  double stepIncrease = 1.5;
+  double stepDecrease = 5.;
+  bool checkAfterFit = true;
 
   Eigen::MatrixXd X_node;
   Eigen::MatrixXd dX_node;
@@ -226,17 +213,16 @@ private:
   double totalLength_node;
 
   bool breakLoop = false;
-  bool fix_start=false;
-  bool fix_end=false;
+  bool fix_start = false;
+  bool fix_end = false;
   std::vector<Eigen::VectorXd> phi_prev;
   std::vector<Eigen::VectorXd> F_prev;
-  double action_temp=std::numeric_limits<double>::quiet_NaN();
+  double action_temp = std::numeric_limits<double>::quiet_NaN();
 
   std::vector<std::vector<Eigen::VectorXd>> phi_list;
   std::vector<std::vector<Eigen::VectorXd>> F_list;
-
 };
 
-}  // namespace PhaseTracer
+} // namespace PhaseTracer
 
-#endif  // PHASETRACER_PATH_DEFORMATION_HPP_
+#endif // PHASETRACER_PATH_DEFORMATION_HPP_

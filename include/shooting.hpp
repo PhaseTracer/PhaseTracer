@@ -35,25 +35,24 @@
 #include "property.hpp"
 #include "logger.hpp"
 
-
 namespace PhaseTracer {
 
-
-class PotentialForShooting{
+class PotentialForShooting {
 public:
   virtual double V(double phi) const = 0;
   virtual double dV(double phi) const = 0;
   virtual double d2V(double phi) const = 0;
 };
 
-class OneDimPotentialForShooting: public PotentialForShooting {
+class OneDimPotentialForShooting : public PotentialForShooting {
 public:
-  explicit OneDimPotentialForShooting(EffectivePotential::Potential &P_): P(P_) {}
+  explicit OneDimPotentialForShooting(EffectivePotential::Potential &P_) : P(P_) {}
   virtual ~OneDimPotentialForShooting() = default;
-  double V(double phi) const override { return P.V(Vec(phi),T);}
-  double dV(double phi) const override { return P.dV_dx(Vec(phi),T)(0);}
-  double d2V(double phi) const override { return P.d2V_dx2(Vec(phi),T)(0,0);}
+  double V(double phi) const override { return P.V(Vec(phi), T); }
+  double dV(double phi) const override { return P.dV_dx(Vec(phi), T)(0); }
+  double d2V(double phi) const override { return P.d2V_dx2(Vec(phi), T)(0, 0); }
   PROPERTY(double, T, 0);
+
 private:
   EffectivePotential::Potential &P;
   Eigen::VectorXd Vec(double phi) const {
@@ -66,16 +65,17 @@ private:
 class CubicInterpFunction {
 public:
   CubicInterpFunction(double y0, double dy0, double y1, double dy1, double c_ = 0)
-    : c(c_) {
-      x0 = y0;
-      x1 = y0 + dy0 / 3.0;
-      x2 = y1 - dy1 / 3.0;
-      x3 = y1;
-    }
+      : c(c_) {
+    x0 = y0;
+    x1 = y0 + dy0 / 3.0;
+    x2 = y1 - dy1 / 3.0;
+    x3 = y1;
+  }
   double operator()(double t) const {
     double mt = 1. - t;
     return x0 * pow(mt, 3) + 3.0 * x1 * mt * mt * t + 3.0 * x2 * mt * t * t + x3 * pow(t, 3) - c;
   }
+
 private:
   double x0;
   double x1;
@@ -91,11 +91,9 @@ struct Profile1D {
   double Rerr;
 };
 
-
 class Shooting {
 public:
-  explicit Shooting(PotentialForShooting& ps_, int alpha_) :
-    ps(ps_), alpha(alpha_) {}
+  explicit Shooting(PotentialForShooting &ps_, int alpha_) : ps(ps_), alpha(alpha_) {}
   virtual ~Shooting() = default;
 
   /*Calculates `dV/dphi` at ``phi = phi_absMin + delta_phi``.*/
@@ -106,48 +104,45 @@ public:
   void findRScale();
   /*Find `phi(r)` given `phi(r=0)`, assuming a quadratic potential.*/
   void exactSolution(double r, double phi0, double dV_, double d2V_,
-                     double* phi_r, double* dphi_r);
+                     double *phi_r, double *dphi_r);
   /*Finds the initial conditions, phi(r0) = phi_cutoff, for integration.*/
   void initialConditions(double delta_phi0, double rmin, double delta_phi_cutoff,
-                         double* r0, double* phi_r0, double* dphi_r0);
-  Eigen::Vector2d equationOfMotion(const Eigen::Vector2d y, const double r){
+                         double *r0, double *phi_r0, double *dphi_r0);
+  Eigen::Vector2d equationOfMotion(const Eigen::Vector2d y, const double r) {
     Eigen::Vector2d dydr;
     dydr[0] = y[1];
-    dydr[1] = ps.dV(y[0]) - alpha * y[1] /r ;
+    dydr[1] = ps.dV(y[0]) - alpha * y[1] / r;
     return dydr;
   }
   /* Integrate the bubble wall equation */
-  int integrateProfile(double r0, std::vector<double> y0, double* rf, std::vector<double>* yf,
-      double dr0, std::vector<double> epsabs, std::vector<double> epsfrac, double drmin, double rmax);
+  int integrateProfile(double r0, std::vector<double> y0, double *rf, std::vector<double> *yf,
+                       double dr0, std::vector<double> epsabs, std::vector<double> epsfrac, double drmin, double rmax);
   /* Integrate the bubble profile, saving the output in an array */
   Profile1D integrateAndSaveProfile(Eigen::VectorXd R, std::vector<double> y0,
-      double dr0, std::vector<double> epsabs, std::vector<double> epsfrac, double drmin);
+                                    double dr0, std::vector<double> epsabs, std::vector<double> epsfrac, double drmin);
   /* Calculate the bubble profile */
-  Profile1D findProfile(double metaMin, double absMin, double xguess=NAN, int max_interior_pts=0);
+  Profile1D findProfile(double metaMin, double absMin, double xguess = NAN, int max_interior_pts = 0);
   /* Calculate the Euclidean action for the instanton */
   double calAction(Profile1D profile);
 
   /* Get linearly spaced phi */
-  void evenlySpacedPhi(Profile1D pf, std::vector<double>* p,std::vector<double>* dp,
-                       size_t npoints=100, bool fixAbs=true);
+  void evenlySpacedPhi(Profile1D pf, std::vector<double> *p, std::vector<double> *dp,
+                       size_t npoints = 100, bool fixAbs = true);
 
   Profile1D profile_zero = {
-    Eigen::Vector2d::Zero(2),
-    Eigen::Vector2d::Zero(2),
-    Eigen::Vector2d::Zero(2),
-    0.0
-  };
+      Eigen::Vector2d::Zero(2),
+      Eigen::Vector2d::Zero(2),
+      Eigen::Vector2d::Zero(2),
+      0.0};
 
   Profile1D profile_inf = {
-    Eigen::Vector2d::Ones(2),
-    Eigen::Vector2d::Ones(2),
-    Eigen::Vector2d::Zero(2),
-    0.0
-  };
+      Eigen::Vector2d::Ones(2),
+      Eigen::Vector2d::Ones(2),
+      Eigen::Vector2d::Zero(2),
+      0.0};
 
 private:
-
-  PotentialForShooting& ps;
+  PotentialForShooting &ps;
 
   double phi_absMin;
   double phi_metaMin;
@@ -173,6 +168,6 @@ private:
   PROPERTY(boost::uintmax_t, max_iter, 100)
 };
 
-}  // namespace PhaseTracer
+} // namespace PhaseTracer
 
 #endif // PHASETRACER_SHOOTING_HPP_

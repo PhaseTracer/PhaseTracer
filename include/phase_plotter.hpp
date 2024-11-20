@@ -30,37 +30,33 @@
 #include "logger.hpp"
 #include "transition_finder.hpp"
 
-//#include <sys/stat.h>
+// #include <sys/stat.h>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace PhaseTracer {
 
-void phase_plotter(const PhaseTracer::TransitionFinder& tf, std::string folderName = "", std::string fileName = "model", bool bPlot = true) {
+void phase_plotter(const PhaseTracer::TransitionFinder &tf, std::string folderName = "", std::string fileName = "model", bool bPlot = true) {
   std::ofstream output_file;
   // Increase the output precision, otherwise some of the output phase temperatures are rounded to identical values. This causes issues with
   // the arrow_plot in phase_plotter.py.
   output_file << std::setprecision(10);
 
-  if(folderName == "")
-  {
+  if (folderName == "") {
     output_file.open(fileName + ".dat");
-  }
-  else
-  {
+  } else {
     /*if (!boost::starts_with(folderName, "output/"))
     {
       folderName = "output/" + folderName;
     }*/
-    //char* folderNameCharArray = &folderName[0];
-    //int check = mkdir(folderNameCharArray, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    //std::cout << "check = " << check << std::endl;
+    // char* folderNameCharArray = &folderName[0];
+    // int check = mkdir(folderNameCharArray, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    // std::cout << "check = " << check << std::endl;
     boost::filesystem::create_directories(folderName);
     output_file.open(folderName + "/" + fileName + ".dat");
   }
 
-  if(!output_file)
-  {
+  if (!output_file) {
     std::cout << "Could not open file!" << std::endl;
     return;
   }
@@ -71,7 +67,7 @@ void phase_plotter(const PhaseTracer::TransitionFinder& tf, std::string folderNa
 
   for (auto &p : phases) {
     output_file << "# phase " << p.key << std::endl;
-    //output_file << p.key << " " << std::endl;
+    // output_file << p.key << " " << std::endl;
     for (int i = 0; i < p.X.size(); i++) {
       output_file << p.T[i] << " " << p.V[i];
       for (int j = 0; j < p.X[i].size(); j++) {
@@ -94,38 +90,39 @@ void phase_plotter(const PhaseTracer::TransitionFinder& tf, std::string folderNa
     }
     output_file << " " << t.key;
     output_file << " " << t.id;
-    output_file << " " << int(t.subcritical) << std::endl << std::endl;
+    output_file << " " << int(t.subcritical) << std::endl
+                << std::endl;
   }
 
-  //std::cout << "Writing " << transition_paths.size() << " transition paths to the output file..." << std::endl;
+  // std::cout << "Writing " << transition_paths.size() << " transition paths to the output file..." << std::endl;
 
   for (auto &tp : transition_paths) {
-    //std::cout << "Transition path: " << tp << std::endl;
-    //std::cout << "Size of path: " << tp.transitions.size() << std::endl;
-    
+    // std::cout << "Transition path: " << tp << std::endl;
+    // std::cout << "Size of path: " << tp.transitions.size() << std::endl;
+
     if (tp.transitions.size() == 0) {
       // Prior to 25/05/21 we didn't print a transition path if no transitions were involved. However, it is still useful
       // to know which phase the Universe stayed in, directly from the transition path.
-      //continue;
+      // continue;
 
       output_file << "# transition-path" << std::endl;
       // A negative number represents a phase rather than a transition.
-      output_file << "-" << tp.phases[0] << std::endl << std::endl;
+      output_file << "-" << tp.phases[0] << std::endl
+                  << std::endl;
       continue;
     }
-
 
     output_file << "# transition-path" << std::endl;
     output_file << tp.transitions[0].transitionIndex;
     for (int i = 1; i < tp.transitions.size(); ++i) {
       output_file << " " << tp.transitions[i].transitionIndex;
     }
-    output_file << std::endl << std::endl;
+    output_file << std::endl
+                << std::endl;
   }
   output_file.close();
 
-  if(!bPlot)
-  {
+  if (!bPlot) {
     return;
   }
 
@@ -139,6 +136,6 @@ void phase_plotter(const PhaseTracer::TransitionFinder& tf, std::string folderNa
   const auto result = std::system(command.c_str());
 }
 
-}  // namespace PhaseTracer
+} // namespace PhaseTracer
 
-#endif  // PHASETRACER_PHASE_PLOTTER_HPP_
+#endif // PHASETRACER_PHASE_PLOTTER_HPP_

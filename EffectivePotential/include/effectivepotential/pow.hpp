@@ -41,17 +41,17 @@ inline double pow_int(double x, int n) {
     return pow_int(1. / x, -n);
   }
 
-  double result = 1.;  
+  double result = 1.;
 
   while (n) {
-     if ((n & 1) != 0) {
-        result *= x;
-     }
-     n >>= 1;
-     x *= x;
+    if ((n & 1) != 0) {
+      result *= x;
+    }
+    n >>= 1;
+    x *= x;
   }
 
   return result;
 }
 
-#endif  // EFFECTIVEPOTENTIAL_POW_HPP_
+#endif // EFFECTIVEPOTENTIAL_POW_HPP_

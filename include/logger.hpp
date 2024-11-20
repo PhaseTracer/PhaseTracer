@@ -26,9 +26,9 @@
 #define LOG BOOST_LOG_TRIVIAL
 #include <boost/log/expressions.hpp>
 
-#define LOGGER(level) \
+#define LOGGER(level)                  \
   boost::log::core::get()->set_filter( \
-    boost::log::trivial::severity >= \
-    boost::log::trivial::level);
+      boost::log::trivial::severity >= \
+      boost::log::trivial::level);
 
-#endif  // PHASETRACER_LOGGER_HPP_
+#endif // PHASETRACER_LOGGER_HPP_
