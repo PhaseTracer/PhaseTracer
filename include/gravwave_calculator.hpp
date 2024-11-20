@@ -15,17 +15,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_GRAVWAVECALCULATOR_H
-#define PHASETRACER_GRAVWAVECALCULATOR_H
+#ifndef PHASETRACER_GRAVWAVECALCULATOR_HPP_
+#define PHASETRACER_GRAVWAVECALCULATOR_HPP_
 
 #include <cmath>
 #include <fstream>
+#include <random>
 #include <string>
 #include <tuple>
 #include <vector>
 
 #include "transition_finder.hpp"
-#include <random>
+
 
 namespace PhaseTracer {
 
@@ -182,4 +183,5 @@ private:
 };
 
 }  // namespace PhaseTracer
-#endif //PHASETRACER_GRAVWAVECALCULATOR_H
+
+#endif  // PHASETRACER_GRAVWAVECALCULATOR_HPP_

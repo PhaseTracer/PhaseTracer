@@ -15,19 +15,20 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_SHOOTING_HPP_INCLUDED
-#define PHASETRACER_SHOOTING_HPP_INCLUDED
+#ifndef PHASETRACER_SHOOTING_HPP_
+#define PHASETRACER_SHOOTING_HPP_
 
+#include <algorithm>
 #include <cmath>
 #include <ostream>
 #include <vector>
-#include <Eigen/Core>
-#include <algorithm>
+
 #include <boost/cstdint.hpp>
 #include <boost/math/special_functions/bessel.hpp>
 #include <boost/numeric/odeint.hpp>
 #include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <boost/math/tools/minima.hpp>
+#include <Eigen/Core>
 #include <gsl/gsl_sf_bessel.h>
 
 #include "potential.hpp"
@@ -170,12 +171,8 @@ private:
   PROPERTY(double, rmax, 1e4)
   /* The maximum number of points to be positioned during the integration process. */
   PROPERTY(boost::uintmax_t, max_iter, 100)
-  
-
-
-  
 };
 
 }  // namespace PhaseTracer
 
-#endif
+#endif // PHASETRACER_SHOOTING_HPP_

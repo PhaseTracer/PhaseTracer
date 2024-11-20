@@ -15,14 +15,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_PHASE_PLOTTER_INCLUDED
-#define PHASETRACER_PHASE_PLOTTER_INCLUDED
+#ifndef PHASETRACER_PHASE_PLOTTER_HPP_
+#define PHASETRACER_PHASE_PLOTTER_HPP_
 
-#include <boost/filesystem.hpp>
 #include <cstdlib>
 #include <fstream>
 #include <vector>
 #include <string>
+
+#include <boost/filesystem.hpp>
 
 #include "logger.hpp"
 #include "transition_finder.hpp"
@@ -72,4 +73,4 @@ void phase_plotter(const PhaseTracer::TransitionFinder& tf, std::string prefix =
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_PHASE_PLOTTER_HPP_
