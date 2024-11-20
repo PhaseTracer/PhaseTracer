@@ -24,25 +24,25 @@
 
 namespace PhaseTracer {
 
-std::ostream& operator << (std::ostream& o, const phase_end_descriptor& d) {
+std::ostream &operator<<(std::ostream &o, const phase_end_descriptor &d) {
   switch (d) {
-    case REACHED_T_STOP:
-      o << "Reached tstop";
-      break;
-    case FORBIDDEN_OR_BOUNDS:
-      o << "Reached forbidden or out of bounds region";
-      break;
-    case HESSIAN_SINGULAR:
-      o << "Hessian was singular";
-      break;
-    case HESSIAN_NOT_POSITIVE_DEFINITE:
-      o << "Hessian was not positive definite";
-      break;
-    case JUMP_INDICATED_END:
-      o << "Jump in fields indicated end of phase";
-      break;
-    default:
-      throw std::runtime_error("Unknown type");
+  case REACHED_T_STOP:
+    o << "Reached tstop";
+    break;
+  case FORBIDDEN_OR_BOUNDS:
+    o << "Reached forbidden or out of bounds region";
+    break;
+  case HESSIAN_SINGULAR:
+    o << "Hessian was singular";
+    break;
+  case HESSIAN_NOT_POSITIVE_DEFINITE:
+    o << "Hessian was not positive definite";
+    break;
+  case JUMP_INDICATED_END:
+    o << "Jump in fields indicated end of phase";
+    break;
+  default:
+    throw std::runtime_error("Unknown type");
   }
   return o;
 }
@@ -54,8 +54,7 @@ PhaseFinder::PhaseFinder(EffectivePotential::Potential &potential) : P(potential
   set_seed(seed);
 }
 
-const EffectivePotential::Potential& PhaseFinder::get_potential() const
-{
+const EffectivePotential::Potential &PhaseFinder::get_potential() const {
   return P;
 }
 
@@ -74,11 +73,11 @@ std::vector<Point> PhaseFinder::find_minima_at_t(double T) const {
   std::vector<Point> minima;
   const std::vector<Eigen::VectorXd> test_points = generate_test_points();
 
-  for (const auto& p : test_points) {
+  for (const auto &p : test_points) {
     const auto polished = find_min(p, T, find_min_locate_abs_step);
     bool duplicate = false;
 
-    for (const auto& m : minima) {
+    for (const auto &m : minima) {
       if (identical_within_tol(polished.x, m.x)) {
         duplicate = true;
         break;
@@ -92,7 +91,7 @@ std::vector<Point> PhaseFinder::find_minima_at_t(double T) const {
   return minima;
 }
 
-bool PhaseFinder::consistent_vacuum(const Eigen::VectorXd& x) const {
+bool PhaseFinder::consistent_vacuum(const Eigen::VectorXd &x) const {
   if (n_ew_scalars == 0) {
     return true;
   }
@@ -100,12 +99,12 @@ bool PhaseFinder::consistent_vacuum(const Eigen::VectorXd& x) const {
   return std::abs(found - v) < x_abs_identical;
 }
 
-std::vector<Eigen::VectorXd> PhaseFinder::symmetric_partners(const Eigen::VectorXd& a) const {
+std::vector<Eigen::VectorXd> PhaseFinder::symmetric_partners(const Eigen::VectorXd &a) const {
   std::vector<Eigen::VectorXd> partners;
   partners.push_back(a);
-  for (size_t i=0; i < P.apply_symmetry(a).size(); i++) {
+  for (size_t i = 0; i < P.apply_symmetry(a).size(); i++) {
     const size_t n = partners.size();
-    for (size_t j=0; j< n; j++) {
+    for (size_t j = 0; j < n; j++) {
       const auto x = partners[j];
       const auto x_ = P.apply_symmetry(x)[i];
       partners.push_back(x_);
@@ -114,19 +113,19 @@ std::vector<Eigen::VectorXd> PhaseFinder::symmetric_partners(const Eigen::Vector
   return partners;
 }
 
-bool PhaseFinder::identical_within_tol(const Eigen::VectorXd& a, const Eigen::VectorXd& b) const {
-  double min_distance = (a-b).norm();
+bool PhaseFinder::identical_within_tol(const Eigen::VectorXd &a, const Eigen::VectorXd &b) const {
+  double min_distance = (a - b).norm();
   for (const auto b_ : symmetric_partners(b)) {
-    min_distance = std::min(min_distance, (a-b_).norm());
+    min_distance = std::min(min_distance, (a - b_).norm());
   }
   return min_distance < x_abs_identical + x_rel_identical * std::max(a.norm(), b.norm());
 }
 
-bool PhaseFinder::jump(const Eigen::VectorXd& a, const Eigen::VectorXd& b) const {
+bool PhaseFinder::jump(const Eigen::VectorXd &a, const Eigen::VectorXd &b) const {
   return (a - b).norm() > x_abs_jump + x_rel_jump * std::max(a.norm(), b.norm());
 }
 
-Point PhaseFinder::get_deepest_minima(const std::vector<Point>& minima, double T) const {
+Point PhaseFinder::get_deepest_minima(const std::vector<Point> &minima, double T) const {
   std::vector<double> potential;
   for (const auto &m : minima) {
     potential.push_back(m.potential);
@@ -143,7 +142,7 @@ Point PhaseFinder::get_deepest_minima(const std::vector<Point>& minima, double T
   return deepest;
 }
 
-minima_descriptor PhaseFinder::get_minima_descriptor(const Point& minima) const {
+minima_descriptor PhaseFinder::get_minima_descriptor(const Point &minima) const {
   if (identical_within_tol(minima.x, Eigen::VectorXd::Zero(n_scalars))) {
     return ORIGIN;
   }
@@ -153,12 +152,12 @@ minima_descriptor PhaseFinder::get_minima_descriptor(const Point& minima) const 
   return OTHER;
 }
 
-minima_descriptor PhaseFinder::get_minima_descriptor(const std::vector<Point>& minima, double T) const {
+minima_descriptor PhaseFinder::get_minima_descriptor(const std::vector<Point> &minima, double T) const {
   const Point deepest = get_deepest_minima(minima, T);
   return get_minima_descriptor(deepest);
 }
 
-bool PhaseFinder::origin_unique_minima(const std::vector<Point>& minima) const {
+bool PhaseFinder::origin_unique_minima(const std::vector<Point> &minima) const {
   for (const auto &m : minima) {
     if (!identical_within_tol(m.x, Eigen::VectorXd::Zero(n_scalars))) {
       return false;
@@ -167,8 +166,8 @@ bool PhaseFinder::origin_unique_minima(const std::vector<Point>& minima) const {
   return true;
 }
 
-bool PhaseFinder::belongs_known_phase(const Point& point) const {
-  for (const auto& phase : phases) {
+bool PhaseFinder::belongs_known_phase(const Point &point) const {
+  for (const auto &phase : phases) {
     if (!phase.contains_t(point.t)) {
       continue;
     }
@@ -198,22 +197,24 @@ std::vector<Point> PhaseFinder::get_minima_at_t_high() {
 }
 
 std::vector<Phase> PhaseFinder::get_phases_at_T(double T) {
-  if (phases.size() == 0) find_phases();
+  if (phases.size() == 0)
+    find_phases();
   std::vector<Phase> phases_at_T;
-  for (const auto& pi: phases){
-    if (T >= pi.T.front() and T <= pi.T.back()) phases_at_T.push_back(pi);
+  for (const auto &pi : phases) {
+    if (T >= pi.T.front() and T <= pi.T.back())
+      phases_at_T.push_back(pi);
   }
   return phases_at_T;
 }
 
 Phase PhaseFinder::get_deepest_phase_at_T(double T) {
   const auto phases_at_T = get_phases_at_T(T);
-  if (phases_at_T.size()==0)
-    throw std::runtime_error("There is no phase at T = "+std::to_string(T));
+  if (phases_at_T.size() == 0)
+    throw std::runtime_error("There is no phase at T = " + std::to_string(T));
 
-  size_t i_deepest = 0 ;
-  for (size_t i = 0; i<phases_at_T.size(); i++){
-    if (phase_at_T(phases_at_T[i],T).potential < phase_at_T(phases_at_T[i_deepest],T).potential)
+  size_t i_deepest = 0;
+  for (size_t i = 0; i < phases_at_T.size(); i++) {
+    if (phase_at_T(phases_at_T[i], T).potential < phase_at_T(phases_at_T[i_deepest], T).potential)
       i_deepest = i;
   }
   return phases_at_T.at(i_deepest);
@@ -222,7 +223,7 @@ Phase PhaseFinder::get_deepest_phase_at_T(double T) {
 void PhaseFinder::find_phases() {
   LOG(debug) << "Find global minima from " << guess_points.size() << " guesses";
 
-  for (const auto& g : guess_points) {
+  for (const auto &g : guess_points) {
     if (g.size() != n_scalars) {
       throw std::invalid_argument("Guesses have wrong size compared to number of fields");
     }
@@ -232,7 +233,7 @@ void PhaseFinder::find_phases() {
   minima_at_t_low = find_minima_at_t(t_low);
 
   if (check_vacuum_at_low) {
-      const minima_descriptor location = get_minima_descriptor(minima_at_t_low, t_low);
+    const minima_descriptor location = get_minima_descriptor(minima_at_t_low, t_low);
     if (location == ORIGIN) {
       throw std::runtime_error("No minimum lower than the origin at t_low");
     } else if (location != CONSISTENT_VACUUM) {
@@ -318,21 +319,22 @@ void PhaseFinder::find_phases() {
     dXdT.insert(dXdT.end(), dXdT_up.begin() + 1, dXdT_up.end());
     V.insert(V.end(), V_up.begin() + 1, V_up.end());
 
-//  Ignore short phase may cause endless loop.
-//    if (std::abs(T.front() - T.back()) > phase_min_length) {
-      Phase new_;
-      new_.key = phases.size();
-      new_.X = X;
-      new_.T = T;
-      new_.dXdT = dXdT;
-      new_.V = V;
-      new_.end_low = end_low;
-      new_.end_high = end_high;
-      phases.push_back(new_);
-      LOG(debug) << "Added new phase:" << std::endl << new_;
-//    } else {
-//      LOG(warning) << "Did not add short phase";
-//    }
+    //  Ignore short phase may cause endless loop.
+    //    if (std::abs(T.front() - T.back()) > phase_min_length) {
+    Phase new_;
+    new_.key = phases.size();
+    new_.X = X;
+    new_.T = T;
+    new_.dXdT = dXdT;
+    new_.V = V;
+    new_.end_low = end_low;
+    new_.end_high = end_high;
+    phases.push_back(new_);
+    LOG(debug) << "Added new phase:" << std::endl
+               << new_;
+    //    } else {
+    //      LOG(warning) << "Did not add short phase";
+    //    }
 
     if (end_high == JUMP_INDICATED_END || end_high == HESSIAN_SINGULAR || end_high == HESSIAN_NOT_POSITIVE_DEFINITE) {
       Point top;
@@ -367,17 +369,17 @@ void PhaseFinder::find_phases() {
   if (check_merge_phase_gaps) {
     merge_phase_gaps();
   }
-  
+
   LOG(debug) << "Finished finding phases";
 }
 
 phase_end_descriptor PhaseFinder::trace_minimum(Point start, double tstop,
-                                               double dt_start,
-                                               std::vector<Eigen::VectorXd> *X,
-                                               std::vector<double> *T,
-                                               std::vector<Eigen::VectorXd> *dXdT,
-                                               std::vector<double> *V,
-                                               Point *jumped) const {
+                                                double dt_start,
+                                                std::vector<Eigen::VectorXd> *X,
+                                                std::vector<double> *T,
+                                                std::vector<Eigen::VectorXd> *dXdT,
+                                                std::vector<double> *V,
+                                                Point *jumped) const {
 
   const double time_scale = std::abs(t_high - t_low);
   const double dt_min = std::max(dt_min_rel * time_scale, dt_min_abs);
@@ -522,7 +524,7 @@ phase_end_descriptor PhaseFinder::trace_minimum(Point start, double tstop,
     // Tweak the temperature step to get desired precision (but insure that
     // it remains between maximum and minimum allowed)
 
-    if (identical_within_tol(guess , x1)) {
+    if (identical_within_tol(guess, x1)) {
       dt = sign_dt * std::min(std::abs(dt) * 2., dt_max);
     } else {
       dt = sign_dt * std::max(std::abs(dt) * 0.5, dt_min);
@@ -543,21 +545,21 @@ phase_end_descriptor PhaseFinder::trace_minimum(Point start, double tstop,
   throw std::runtime_error("This should be unreachable");
 }
 
-bool PhaseFinder::hessian_singular(const Eigen::VectorXd& X, double T) const {
+bool PhaseFinder::hessian_singular(const Eigen::VectorXd &X, double T) const {
   return hessian_singular(P.d2V_dx2(X, T), X, T);
 }
 
-bool PhaseFinder::hessian_singular(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const {
+bool PhaseFinder::hessian_singular(const Eigen::MatrixXd &hessian, const Eigen::VectorXd &X, double T) const {
   const double t_min = hessian.eigenvalues().cwiseAbs().minCoeff();
   const double zero_t_min = P.d2V_dx2(X, 0.).eigenvalues().cwiseAbs().minCoeff();
   return std::abs(t_min) < hessian_singular_rel_tol * std::abs(zero_t_min);
 }
 
-bool PhaseFinder::hessian_positive_definite(const Eigen::VectorXd& X, double T) const {
+bool PhaseFinder::hessian_positive_definite(const Eigen::VectorXd &X, double T) const {
   return hessian_positive_definite(P.d2V_dx2(X, T), X, T);
 }
 
-bool PhaseFinder::hessian_positive_definite(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const {
+bool PhaseFinder::hessian_positive_definite(const Eigen::MatrixXd &hessian, const Eigen::VectorXd &X, double T) const {
   auto eivals = hessian.eigenvalues();
   for (int i = 0; i < eivals.size(); i++) {
     if (eivals[i].imag() != 0. || eivals[i].real() < 0.) {
@@ -567,16 +569,16 @@ bool PhaseFinder::hessian_positive_definite(const Eigen::MatrixXd& hessian, cons
   return true;
 }
 
-Eigen::VectorXd PhaseFinder::dx_min_dt(const Eigen::VectorXd& X, double T) const {
+Eigen::VectorXd PhaseFinder::dx_min_dt(const Eigen::VectorXd &X, double T) const {
   return dx_min_dt(P.d2V_dx2(X, T), X, T);
 }
 
-Eigen::VectorXd PhaseFinder::dx_min_dt(const Eigen::MatrixXd& hessian, const Eigen::VectorXd& X, double T) const {
+Eigen::VectorXd PhaseFinder::dx_min_dt(const Eigen::MatrixXd &hessian, const Eigen::VectorXd &X, double T) const {
   const Eigen::VectorXd b = -P.d2V_dxdt(X, T);
   const Eigen::VectorXd dxdt = hessian.colPivHouseholderQr().solve(b);
   const bool check = b.isApprox(hessian * dxdt, linear_algebra_rel_tol);
 
-  if( check_dx_min_dt ) {
+  if (check_dx_min_dt) {
     if (!check) {
       throw std::runtime_error("Failed to find dxdt");
     }
@@ -585,11 +587,11 @@ Eigen::VectorXd PhaseFinder::dx_min_dt(const Eigen::MatrixXd& hessian, const Eig
   return dxdt;
 }
 
-Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T) const {
+Point PhaseFinder::find_min(const Eigen::VectorXd &guess, double T) const {
   return find_min(guess, T, Eigen::VectorXd::Constant(n_scalars, find_min_trace_abs_step));
 }
 
-Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, double abs_step) const {
+Point PhaseFinder::find_min(const Eigen::VectorXd &guess, double T, double abs_step) const {
   return find_min(guess, T, Eigen::VectorXd::Constant(n_scalars, abs_step));
 }
 
@@ -600,7 +602,7 @@ std::function<double(Eigen::VectorXd)> PhaseFinder::make_objective(double T) con
   return objective;
 }
 
-Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, Eigen::VectorXd step) const {
+Point PhaseFinder::find_min(const Eigen::VectorXd &guess, double T, Eigen::VectorXd step) const {
   if (out_of_bounds(guess)) {
     LOG(fatal) << "guess = " << guess << " was out of bounds";
     throw std::runtime_error("guess for nlopt was out of bounds");
@@ -666,7 +668,7 @@ Point PhaseFinder::find_min(const Eigen::VectorXd& guess, double T, Eigen::Vecto
   return {minima_VectorXd, potential_at_minima, T};
 }
 
-Point PhaseFinder::phase_at_T(const Phase& phase, double T) const {
+Point PhaseFinder::phase_at_T(const Phase &phase, double T) const {
   if (T >= phase.T.back()) {
     return {phase.X.back(), phase.V.back(), T};
   }
@@ -693,7 +695,7 @@ Point PhaseFinder::phase_at_T(const Phase& phase, double T) const {
   return {X.back(), V.back(), T};
 }
 
-std::tuple<bool, bool> PhaseFinder::redundant(const Phase& phase1, const Phase& phase2, end_descriptor end) const {
+std::tuple<bool, bool> PhaseFinder::redundant(const Phase &phase1, const Phase &phase2, end_descriptor end) const {
   const double tmax_1 = phase1.T.back();
   const double tmin_1 = phase1.T.front();
   const double tmax_2 = phase2.T.back();
@@ -725,7 +727,7 @@ std::tuple<bool, bool> PhaseFinder::redundant(const Phase& phase1, const Phase& 
     // Check the low temperature endpoint.
     x1 = phase_at_T(phase1, tmin).x;
     x2 = phase_at_T(phase2, tmin).x;
-    
+
     low = identical_within_tol(x1, x2);
   }
 
@@ -769,7 +771,7 @@ void PhaseFinder::merge_phase_gaps() {
   for (size_t i = 0; i < phases.size(); ++i) {
     // Use this as a flag for whether a phase should be deleted after merging has been performed.
     phases[i].redundant = false;
-    
+
     for (size_t j = 0; j < phases.size(); ++j) {
       if (i != j && should_merge_phases(phases[i], phases[j])) {
         // Always merge the higher temperature phase into the lower temperature phase. This convention was chosen
@@ -820,8 +822,7 @@ void PhaseFinder::merge_phase_gaps() {
       if (lowestEnergyPhaseIndex >= 0) {
         LOG(debug) << "The deepest 'to' phase is Phase " << lowestEnergyPhaseIndex;
         LOG(debug) << "Removing all other relevant merges...";
-      }
-      else {
+      } else {
         LOG(debug) << "Unable to determine the deepest 'to' phase, removing all relevant merges...";
       }
 
@@ -835,8 +836,8 @@ void PhaseFinder::merge_phase_gaps() {
   }
 
   // Remove the rejected merges using the erase-remove idiom.
-  merges.erase(std::remove_if(merges.begin(), merges.end(), [&](const PhaseMerge& pm) {return pm.rejected;}),
-    merges.end());
+  merges.erase(std::remove_if(merges.begin(), merges.end(), [&](const PhaseMerge &pm) { return pm.rejected; }),
+               merges.end());
 
   // We need to sort the merges in descending temperature order so that we don't merge into a phase that will be removed
   // later. For instance if we had merges 1->2 and 2->3, doing them in the order 2->3 then 1->2 would not save the data
@@ -850,7 +851,7 @@ void PhaseFinder::merge_phase_gaps() {
   }
 
   // Remove the merged fromPhases using the erase-remove idiom.
-  phases.erase(std::remove_if(phases.begin(), phases.end(), [&](const Phase& p) {return p.redundant;}), phases.end());
+  phases.erase(std::remove_if(phases.begin(), phases.end(), [&](const Phase &p) { return p.redundant; }), phases.end());
 
   // Update phase keys to match their position in the array.
   // TODO: will this break any assumptions throughout the code?
@@ -859,7 +860,7 @@ void PhaseFinder::merge_phase_gaps() {
   }
 }
 
-bool PhaseFinder::should_merge_phases(const Phase& phase1, const Phase& phase2) {
+bool PhaseFinder::should_merge_phases(const Phase &phase1, const Phase &phase2) {
   if (phase1.key == phase2.key) {
     return false;
   }
@@ -877,13 +878,13 @@ bool PhaseFinder::should_merge_phases(const Phase& phase1, const Phase& phase2) 
   // Before saying that we should merge these phases, we need to check if there are any phases existing between the
   // two merge candidates. If a phase is present between the merge candidates, the merging should not take place. It
   // is not correct to merge across another phase. Check at both ends of the temperature interval where the gap exists.
-  for (const Phase& phaseMid : phases) {
+  for (const Phase &phaseMid : phases) {
     if (phaseMid.contains_t(phase1.T.front())) {
-        Eigen::VectorXd x = phase_at_T(phaseMid, phase1.T.front()).x;
+      Eigen::VectorXd x = phase_at_T(phaseMid, phase1.T.front()).x;
 
-        if ((phase1.X.front() - x).norm() < deltaPhi && (phase2.X.back() - x).norm() < deltaPhi) {
-          return false;
-        }
+      if ((phase1.X.front() - x).norm() < deltaPhi && (phase2.X.back() - x).norm() < deltaPhi) {
+        return false;
+      }
     }
 
     if (phaseMid.contains_t(phase2.T.back())) {
@@ -898,7 +899,7 @@ bool PhaseFinder::should_merge_phases(const Phase& phase1, const Phase& phase2) 
   return true;
 }
 
-int PhaseFinder::find_deepest_phase(const std::vector<PhaseMerge>& merges, const std::vector<int>& relevantMerges) {
+int PhaseFinder::find_deepest_phase(const std::vector<PhaseMerge> &merges, const std::vector<int> &relevantMerges) {
   // Search through the high-T energy of the toPhases in relevantMerges to determine which phase would be transitioned
   // to. The expected scenario is that a phase splits into multiple phases as the Universe cools, and this splitting
   // should occur at a particular temperature. Thus we expect the low-T phases to all have a very similar maximum
@@ -913,10 +914,10 @@ int PhaseFinder::find_deepest_phase(const std::vector<PhaseMerge>& merges, const
     toPhaseMaxTemp = phases[merges[relevantMerges[i]].toPhase].T.back();
 
     if (toPhaseMaxTemp < minTemp) {
-      if (minTempIndex >= 0 && toPhaseMaxTemp < minTemp*0.95) {
+      if (minTempIndex >= 0 && toPhaseMaxTemp < minTemp * 0.95) {
         LOG(debug) << "When finding deepest phase for merging, encountered sizable gap between maximum temperature of "
-          "'to' phases: Phase " << minTempIndex << " has Tmax=" << phases[minTempIndex].T.back() << " and Phase " <<
-          merges[relevantMerges[i]].toPhase << " has Tmax=" << toPhaseMaxTemp;
+                      "'to' phases: Phase "
+                   << minTempIndex << " has Tmax=" << phases[minTempIndex].T.back() << " and Phase " << merges[relevantMerges[i]].toPhase << " has Tmax=" << toPhaseMaxTemp;
       }
 
       // Make sure that all relevant phases exist at this temperature. If a phase doesn't exist at this new lowest
@@ -925,9 +926,9 @@ int PhaseFinder::find_deepest_phase(const std::vector<PhaseMerge>& merges, const
       // toPhase first.
       for (size_t j = 0; j < relevantMerges.size(); ++j) {
         if (phases[merges[relevantMerges[j]].toPhase].T.front() > minTemp) {
-          LOG(debug) << "When finding deepest phase for merging, encountered toPhase (" <<
-            merges[relevantMerges[i]].toPhase << ") with a maximum temperature (Tmax=" << toPhaseMaxTemp << ") where "
-            "another toPhase (" << merges[relevantMerges[j]].toPhase << ") no longer exists.";
+          LOG(debug) << "When finding deepest phase for merging, encountered toPhase (" << merges[relevantMerges[i]].toPhase << ") with a maximum temperature (Tmax=" << toPhaseMaxTemp << ") where "
+                                                                                                                                                                                           "another toPhase ("
+                     << merges[relevantMerges[j]].toPhase << ") no longer exists.";
           continue;
         }
       }
@@ -939,8 +940,7 @@ int PhaseFinder::find_deepest_phase(const std::vector<PhaseMerge>& merges, const
 
   if (minTempIndex == -1) {
     // TODO: Hopefully this won't happen! Needs testing.
-    std::cerr << "Unable to find deepest phase to merge to from Phase " << merges[relevantMerges[0]].fromPhase <<
-        std::endl;
+    std::cerr << "Unable to find deepest phase to merge to from Phase " << merges[relevantMerges[0]].fromPhase << std::endl;
     return -1;
   }
 
@@ -951,17 +951,17 @@ int PhaseFinder::find_deepest_phase(const std::vector<PhaseMerge>& merges, const
   // relevantMerges.
   int minEnergyIndex = -1;
   double toPhaseEnergy;
-  //Phase& toPhase;
+  // Phase& toPhase;
 
   // Find which toPhase has the lowest energy at minTemp.
   for (size_t i = 0; i < relevantMerges.size(); ++i) {
-    Phase* toPhase = &phases[merges[relevantMerges[i]].toPhase];
+    Phase *toPhase = &phases[merges[relevantMerges[i]].toPhase];
 
     // Ignore any phases that don't exist at this temperature (we are already guaranteed that T.front() is smaller).
     if (toPhase->T.back() < minTemp) {
       continue;
     }
-    
+
     toPhaseEnergy = phase_at_T(*toPhase, minTemp).potential;
 
     if (toPhaseEnergy < minEnergy) {
@@ -973,7 +973,7 @@ int PhaseFinder::find_deepest_phase(const std::vector<PhaseMerge>& merges, const
   return minEnergyIndex;
 }
 
-void PhaseFinder::perform_phase_merge(const PhaseMerge& merge) {
+void PhaseFinder::perform_phase_merge(const PhaseMerge &merge) {
   if (phases[merge.fromPhase].redundant) {
     LOG(debug) << "While performing merge " << merge << ", fromPhase " << merge.fromPhase << " is already redundant!";
   }
@@ -982,20 +982,20 @@ void PhaseFinder::perform_phase_merge(const PhaseMerge& merge) {
     LOG(debug) << "While performing merge " << merge << ", toPhase " << merge.toPhase << " is redundant!";
   }
 
-  Phase& fromPhase = *&phases[merge.fromPhase];
-  Phase& toPhase = *&phases[merge.toPhase];
+  Phase &fromPhase = *&phases[merge.fromPhase];
+  Phase &toPhase = *&phases[merge.toPhase];
 
   toPhase.X.insert(toPhase.X.end(), fromPhase.X.begin(),
-    fromPhase.X.end());
+                   fromPhase.X.end());
   toPhase.T.insert(toPhase.T.end(), fromPhase.T.begin(),
-    fromPhase.T.end());
+                   fromPhase.T.end());
   toPhase.dXdT.insert(toPhase.dXdT.end(), fromPhase.dXdT.begin(),
-    fromPhase.dXdT.end());
+                      fromPhase.dXdT.end());
   toPhase.V.insert(toPhase.V.end(), fromPhase.V.begin(),
-    fromPhase.V.end());
-  
+                   fromPhase.V.end());
+
   toPhase.end_high = fromPhase.end_low;
-  
+
   fromPhase.redundant = true;
 }
 
@@ -1054,9 +1054,8 @@ void PhaseFinder::remove_redundant() {
             LOG(debug) << "Merged them into phase " << low_key << " and marked "
                        << high_key << " redundant";
           }
-        }
-        else if (isRedundantLow || isRedundantHigh) {
-            split_overlapping_phases(phase1, phase2, isRedundantLow, isRedundantHigh);
+        } else if (isRedundantLow || isRedundantHigh) {
+          split_overlapping_phases(phase1, phase2, isRedundantLow, isRedundantHigh);
         }
       }
     }
@@ -1067,8 +1066,8 @@ void PhaseFinder::remove_redundant() {
   LOG(debug) << "Tracking keys of redundant phases...";
 
   // Track the keys of the redundant phases so we know how to decrement the surviving phases' keys after pruning.
-  for(const auto &phase : phases) {
-    if(phase.redundant) {
+  for (const auto &phase : phases) {
+    if (phase.redundant) {
       prunedKeys.push_back(phase.key);
     }
   }
@@ -1076,15 +1075,15 @@ void PhaseFinder::remove_redundant() {
   LOG(debug) << "Pruning redundant phases...";
 
   // Finally, prune redundant phases
-  phases.erase(std::remove_if(phases.begin(), phases.end(), [](Phase phase) {return phase.redundant;}), phases.end());
+  phases.erase(std::remove_if(phases.begin(), phases.end(), [](Phase phase) { return phase.redundant; }), phases.end());
 
   LOG(debug) << "Determing amount to decrement remaining keys...";
   std::vector<int> decrementAmount(phases.size(), 0);
 
   // Determine how much each phase key needs to be decremented based on the keys of removed phases.
-  for(int i = 0; i < prunedKeys.size(); ++i) {
-    for(int j = 0; j < phases.size(); ++j) {
-      if(phases[j].key > prunedKeys[i]) {
+  for (int i = 0; i < prunedKeys.size(); ++i) {
+    for (int j = 0; j < phases.size(); ++j) {
+      if (phases[j].key > prunedKeys[i]) {
         ++decrementAmount[j];
       }
     }
@@ -1093,14 +1092,14 @@ void PhaseFinder::remove_redundant() {
   LOG(debug) << "Decrementing keys...";
 
   // Decrement phase keys that come after any removed phase keys.
-  for(int i = 0; i < phases.size(); ++i) {
+  for (int i = 0; i < phases.size(); ++i) {
     phases[i].key -= decrementAmount[i];
   }
 
   LOG(debug) << "Done.";
 }
 
-void PhaseFinder::split_overlapping_phases(Phase& phase1, Phase& phase2, bool isRedundantLow, bool isRedundantHigh) {
+void PhaseFinder::split_overlapping_phases(Phase &phase1, Phase &phase2, bool isRedundantLow, bool isRedundantHigh) {
   if (isRedundantLow && isRedundantHigh) {
     LOG(debug) << "Attempted to split overlapping phases that are redundant at both temperature endpoints";
     return;
@@ -1108,7 +1107,8 @@ void PhaseFinder::split_overlapping_phases(Phase& phase1, Phase& phase2, bool is
 
   if (isRedundantLow) {
     std::cerr << "Detected two phases merging as temperature decreases! This is not yet supported and requires further"
-      " investigation." << std::endl;
+                 " investigation."
+              << std::endl;
     return;
   }
 
@@ -1125,22 +1125,18 @@ void PhaseFinder::split_overlapping_phases(Phase& phase1, Phase& phase2, bool is
 
   // TODO: this was an attempt to get the optimiser to not jump to the nearby deeper phase, but it still doesn't work...
   double minimisationStepSize = get_find_min_trace_abs_step();
-  set_find_min_trace_abs_step(0.01*minimisationStepSize);
+  set_find_min_trace_abs_step(0.01 * minimisationStepSize);
 
-  while (Tmax - Tmin > dt_min_rel_split_phase)
-  {
-    Tmid = 0.5*(Tmin + Tmax);
+  while (Tmax - Tmin > dt_min_rel_split_phase) {
+    Tmid = 0.5 * (Tmin + Tmax);
     point1 = phase_at_T(phase1, Tmid);
     point2 = phase_at_T(phase2, Tmid);
-    identical = identical_within_tol(point1.x*10.0, point2.x*10.0);
+    identical = identical_within_tol(point1.x * 10.0, point2.x * 10.0);
     LOG(debug) << "Tmid: " << Tmid << ", dist: " << (point1.x - point2.x).norm() << ", identical: " << identical;
 
-    if (identical)
-    {
+    if (identical) {
       Tmax = Tmid;
-    }
-    else
-    {
+    } else {
       Tmin = Tmid;
       lastNonIdenticalT = Tmid;
       lastNonIdenticalPoint1.x = point1.x;
@@ -1166,10 +1162,10 @@ void PhaseFinder::split_overlapping_phases(Phase& phase1, Phase& phase2, bool is
   // Currently we have two phases that overlap at high temperature and diverge at some lower temperature.
   // Just like we handle phase splitting when we merge phase gaps, we want to determine which phase is
   // deeper just below the split point.
-  Phase& shallowPhase = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? phase2 : phase1;
-  Phase& deeperPhase = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? phase1 : phase2;
-  Point& shallowPoint = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? lastNonIdenticalPoint2 : lastNonIdenticalPoint1;
-  Point& deeperPoint = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? lastNonIdenticalPoint1 : lastNonIdenticalPoint2;
+  Phase &shallowPhase = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? phase2 : phase1;
+  Phase &deeperPhase = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? phase1 : phase2;
+  Point &shallowPoint = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? lastNonIdenticalPoint2 : lastNonIdenticalPoint1;
+  Point &deeperPoint = lastNonIdenticalPoint1.potential < lastNonIdenticalPoint2.potential ? lastNonIdenticalPoint1 : lastNonIdenticalPoint2;
 
   LOG(debug) << "Shallow point: " << shallowPoint;
   LOG(debug) << "Deep point:    " << deeperPoint;
@@ -1193,28 +1189,25 @@ void PhaseFinder::split_overlapping_phases(Phase& phase1, Phase& phase2, bool is
   LOG(debug) << "============================================================================";
   LOG(debug) << "Comparing against lastNonIdenticalT = " << lastNonIdenticalT;
 
-  while (deeperPhase.T[i] < lastNonIdenticalT)
-  {
+  while (deeperPhase.T[i] < lastNonIdenticalT) {
     LOG(debug) << "T[" << i << "] = " << deeperPhase.T[i];
     ++i;
   }
 
   // i now contains the first index above the split point. This is precisely the element we want to insert before.
   // Insert the new deeper phase sample at this position in the data arrays of the deeper phase.
-  deeperPhase.T.insert(deeperPhase.T.begin()+i, deeperPoint.t);
-  deeperPhase.X.insert(deeperPhase.X.begin()+i, deeperPoint.x);
-  deeperPhase.V.insert(deeperPhase.V.begin()+i, deeperPoint.potential);
-  deeperPhase.dXdT.insert(deeperPhase.dXdT.begin()+i, dx_min_dt(deeperPoint.x, deeperPoint.t));
+  deeperPhase.T.insert(deeperPhase.T.begin() + i, deeperPoint.t);
+  deeperPhase.X.insert(deeperPhase.X.begin() + i, deeperPoint.x);
+  deeperPhase.V.insert(deeperPhase.V.begin() + i, deeperPoint.potential);
+  deeperPhase.dXdT.insert(deeperPhase.dXdT.begin() + i, dx_min_dt(deeperPoint.x, deeperPoint.t));
 
-  LOG(debug) << "Adding point {T: " << deeperPhase.T[i] << ", X: " << deeperPhase.X[i] << ", V: " <<
-    deeperPhase.V[i] << ", dXdT: " << deeperPhase.dXdT[i] << "} to the deep phase.";
-  
+  LOG(debug) << "Adding point {T: " << deeperPhase.T[i] << ", X: " << deeperPhase.X[i] << ", V: " << deeperPhase.V[i] << ", dXdT: " << deeperPhase.dXdT[i] << "} to the deep phase.";
+
   // The shallower phase should have all of the overlapping data removed. The split will be handled by merge_phase_gaps.
   i = 0;
 
   // Find the split point in the shallow phase's data arrays.
-  while (shallowPhase.T[i] < lastNonIdenticalT)
-  {
+  while (shallowPhase.T[i] < lastNonIdenticalT) {
     ++i;
   }
 
@@ -1222,29 +1215,27 @@ void PhaseFinder::split_overlapping_phases(Phase& phase1, Phase& phase2, bool is
   --i;
 
   // Remove all data stored in the shallow phase above this split point. This is the overlap region with the deeper phase.
-  shallowPhase.T.resize(i+1);
-  shallowPhase.X.resize(i+1);
-  shallowPhase.V.resize(i+1);
-  shallowPhase.dXdT.resize(i+1);
+  shallowPhase.T.resize(i + 1);
+  shallowPhase.X.resize(i + 1);
+  shallowPhase.V.resize(i + 1);
+  shallowPhase.dXdT.resize(i + 1);
 
   // Add the closest sampled point below the split to the shallow phase. This provides the phase with accurate
   // knowledge of its high temperature endpoint, which might otherwise be significantly below the split.
-  //Point closestPointBelowSplit = point1.potential < point2.potential ? point1 : point2;
+  // Point closestPointBelowSplit = point1.potential < point2.potential ? point1 : point2;
   shallowPhase.T.push_back(shallowPoint.t);
   shallowPhase.X.push_back(shallowPoint.x);
   shallowPhase.V.push_back(shallowPoint.potential);
   shallowPhase.dXdT.push_back(dx_min_dt(shallowPoint.x, shallowPoint.t));
 
-  LOG(debug) << "Adding point {T: " << shallowPhase.T.back() << ", X: " << shallowPhase.X.back() << ", V: " <<
-    shallowPhase.V.back() << ", dXdT: " << shallowPhase.dXdT.back() << "} to the shallow phase.";
+  LOG(debug) << "Adding point {T: " << shallowPhase.T.back() << ", X: " << shallowPhase.X.back() << ", V: " << shallowPhase.V.back() << ", dXdT: " << shallowPhase.dXdT.back() << "} to the shallow phase.";
 
   // TODO: should update the HIGH phase end descriptor for the phase.
 }
 
-bool PhaseFinder::out_of_bounds(const Eigen::VectorXd& x) const {
+bool PhaseFinder::out_of_bounds(const Eigen::VectorXd &x) const {
   std::vector<double> vector_x(x.data(), x.data() + x.rows() * x.cols());
   return (vector_x <= lower_bounds) || (vector_x >= upper_bounds);
 }
 
-
-}  // namespace PhaseTracer
+} // namespace PhaseTracer

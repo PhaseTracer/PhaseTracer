@@ -58,4 +58,4 @@ double J_F(double x) {
   }
 }
 
-}  // namespace EffectivePotential
+} // namespace EffectivePotential

@@ -39,13 +39,13 @@ std::function<double(Eigen::VectorXd)> HbarExpansion::make_objective(double /* T
   return objective;
 }
 
-Point HbarExpansion::phase_at_T(const Phase& phase, double T) const {
+Point HbarExpansion::phase_at_T(const Phase &phase, double T) const {
   // ensure that we see full potential rather than tree-level part that
   // was traced
   Point new_;
   new_.x = phase.X.back();
   new_.t = T;
-  new_.potential = P(new_.x, new_.t);  // full potential
+  new_.potential = P(new_.x, new_.t); // full potential
   return new_;
 }
 
@@ -55,8 +55,8 @@ void HbarExpansion::find_phases() {
   int key = 0;
   const auto zero = Eigen::VectorXd::Zero(n_scalars);
 
-  for (const auto& m : minima) {
-    LOG(debug) << "minima 2= " << m ;
+  for (const auto &m : minima) {
+    LOG(debug) << "minima 2= " << m;
     Phase phase;
     phase.key = key++;
     phase.T = {t_low, t_high};
@@ -72,8 +72,8 @@ void HbarExpansion::find_phases() {
   // of the potential at tree-level, but used for computation
   // for gauge invariance, should be a minima, maxima or saddle point
 
-  for (const auto& p : pseudo_phases) {
-    LOG(debug) << "pseudo_phases 2= " << p ;
+  for (const auto &p : pseudo_phases) {
+    LOG(debug) << "pseudo_phases 2= " << p;
     Phase phase;
     phase.key = key++;
     phase.T = {t_low, t_high};
@@ -87,4 +87,4 @@ void HbarExpansion::find_phases() {
   remove_redundant();
 }
 
-}  // namespace PhaseTracer
+} // namespace PhaseTracer

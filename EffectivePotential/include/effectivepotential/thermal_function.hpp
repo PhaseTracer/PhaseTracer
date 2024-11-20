@@ -23,6 +23,6 @@ namespace EffectivePotential {
 double J_B(double x);
 double J_F(double x);
 
-}  // namespace EffectivePotential
+} // namespace EffectivePotential
 
-#endif  // EFFECTIVEPOTENTIAL_THERMAL_FUNCTION_HPP_
+#endif // EFFECTIVEPOTENTIAL_THERMAL_FUNCTION_HPP_

@@ -5,7 +5,6 @@
 #include "transition_finder.hpp"
 #include "logger.hpp"
 
-
 std::vector<double> h_bar_expansion(bool use_covariant_gauge, double xi) {
   // Construct our model
   const double lambda_hs = 0.3;
@@ -13,7 +12,7 @@ std::vector<double> h_bar_expansion(bool use_covariant_gauge, double xi) {
 
   double ms = 0.5 * SM::mh;
   double lambda_s_min = 2. / square(SM::mh * SM::v) *
-      square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+                        square(square(ms) - 0.5 * lambda_hs * square(SM::v));
   double lambda_s = lambda_s_min + 0.1;
 
   // Construct our model
@@ -43,7 +42,7 @@ std::vector<double> h_bar_expansion(bool use_covariant_gauge, double xi) {
 
   // Use minima with greatest Higgs
   double delta = 0.;
-  for (const auto& m : ht_minima) {
+  for (const auto &m : ht_minima) {
     delta = std::max(delta, std::abs(m.x(0)));
   }
 

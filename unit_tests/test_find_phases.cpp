@@ -4,7 +4,6 @@
 #include "phase_finder.hpp"
 #include "logger.hpp"
 
-
 TEST_CASE("Compute phases for a two-dimensional model", "[2DTestModel]") {
 
   LOGGER(fatal);

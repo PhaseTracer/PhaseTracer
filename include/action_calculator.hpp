@@ -32,9 +32,12 @@
 namespace PhaseTracer {
 
 /** Method for action calculation */
-enum class ActionMethod{ None, BubbleProfiler, PathDeformation, All };
+enum class ActionMethod { None,
+                          BubbleProfiler,
+                          PathDeformation,
+                          All };
 
-class ActionCalculator{
+class ActionCalculator {
 
 private:
   EffectivePotential::Potential &potential;
@@ -86,93 +89,91 @@ private:
   PROPERTY(bool, PD_extend_to_minima, true);
 
 public:
-  explicit ActionCalculator(EffectivePotential::Potential &potential_) :
-    potential(potential_){
+  explicit ActionCalculator(EffectivePotential::Potential &potential_) : potential(potential_) {
   }
   virtual ~ActionCalculator() = default;
 
-  void set_action_calculator(ActionMethod am){
+  void set_action_calculator(ActionMethod am) {
     action_method = am;
-    
+
 #ifndef BUILD_WITH_BP
-    if (action_method == ActionMethod::BubbleProfiler or action_method == ActionMethod::All){
+    if (action_method == ActionMethod::BubbleProfiler or action_method == ActionMethod::All) {
       LOG(fatal) << "Enable BubbleProfiler in CMake configuration before using it.";
       throw std::runtime_error("BubbleProfiler is not installed.");
     }
 #endif
-
   }
 
   ActionMethod get_action_calculator() const { return action_method; }
 
-  double get_action(const Eigen::VectorXd& vacuum_1, const Eigen::VectorXd& vacuum_2, double T) const{
+  double get_action(const Eigen::VectorXd &vacuum_1, const Eigen::VectorXd &vacuum_2, double T) const {
 
     Eigen::VectorXd true_vacuum = vacuum_1;
     Eigen::VectorXd false_vacuum = vacuum_2;
-    if ( potential.V(true_vacuum,T) > potential.V(false_vacuum,T) ) true_vacuum.swap(false_vacuum);
+    if (potential.V(true_vacuum, T) > potential.V(false_vacuum, T))
+      true_vacuum.swap(false_vacuum);
 
 #ifdef BUILD_WITH_BP
-    double action_BP=std::numeric_limits<double>::quiet_NaN();
-    if (action_method == ActionMethod::BubbleProfiler or action_method == ActionMethod::All){
+    double action_BP = std::numeric_limits<double>::quiet_NaN();
+    if (action_method == ActionMethod::BubbleProfiler or action_method == ActionMethod::All) {
       V_BubbleProfiler V_BP(potential); // perturbative_profiler only accept non-const potential
       V_BP.set_T(T);
 
-      if (potential.get_n_scalars() == 1  && !BP_use_perturbative) {
+      if (potential.get_n_scalars() == 1 && !BP_use_perturbative) {
 
         double false_min = false_vacuum[0];
         double true_min = true_vacuum[0];
-        auto barrier_ = V_BP.find_one_dimensional_barrier( true_vacuum, false_vacuum, T);
+        auto barrier_ = V_BP.find_one_dimensional_barrier(true_vacuum, false_vacuum, T);
         double barrier = barrier_[0];
 
         LOG(debug) << "Calculate action(BP) at T=" << T << ", with false, true, barrier = " << false_min << ", " << true_min << ", " << barrier;
 
-        try{
+        try {
           BubbleProfiler::Shooting one_dim;
           one_dim.solve(V_BP, false_min,
-                        true_min,barrier, num_dims, BubbleProfiler::Shooting::Solver_options::Compute_action);
+                        true_min, barrier, num_dims, BubbleProfiler::Shooting::Solver_options::Compute_action);
           action_BP = one_dim.get_euclidean_action();
-        }catch (const std::exception& e) {
-          LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: "   << e.what();
+        } catch (const std::exception &e) {
+          LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: " << e.what();
         }
       } else {
         LOG(debug) << "Calculate action(BP) at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
         BubbleProfiler::RK4_perturbative_profiler profiler;
 
-  //      profiler.set_domain_start(input.domain_start);
-  //      profiler.set_domain_end(input.domain_end);
+        //      profiler.set_domain_start(input.domain_start);
+        //      profiler.set_domain_end(input.domain_end);
         profiler.set_initial_step_size(BP_initial_step_size);
         profiler.set_interpolation_points_fraction(BP_interpolation_points_fraction);
-
 
         profiler.set_false_vacuum_loc(false_vacuum);
         profiler.set_true_vacuum_loc(true_vacuum);
         profiler.set_number_of_dimensions(num_dims);
-        auto root_finder = std::make_shared<BubbleProfiler::GSL_root_finder<Eigen::Dynamic> >();
+        auto root_finder = std::make_shared<BubbleProfiler::GSL_root_finder<Eigen::Dynamic>>();
         profiler.set_root_finder(root_finder);
         std::shared_ptr<BubbleProfiler::Profile_guesser> guesser;
         guesser = std::make_shared<BubbleProfiler::Kink_profile_guesser>();
         profiler.set_initial_guesser(guesser);
         auto convergence_tester = std::make_shared<BubbleProfiler::Relative_convergence_tester>(
-                                  1.e-3, 1.e-3);
+            1.e-3, 1.e-3);
         profiler.set_convergence_tester(convergence_tester);
 
-        try{
+        try {
           profiler.calculate_bubble_profile(V_BP);
           action_BP = profiler.get_euclidean_action();
-        }catch (const std::exception& e) {
-          LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what();
+        } catch (const std::exception &e) {
+          LOG(warning) << "At T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: " << e.what();
         }
       }
       LOG(debug) << " S(BP) = " << action_BP;
     }
 #endif
-    double action_PD=std::numeric_limits<double>::quiet_NaN();
-    if (action_method == ActionMethod::PathDeformation or action_method == ActionMethod::All){
+    double action_PD = std::numeric_limits<double>::quiet_NaN();
+    if (action_method == ActionMethod::PathDeformation or action_method == ActionMethod::All) {
       LOG(debug) << "Calculate action(PD) at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
-      if (potential.get_n_scalars() == 1){
+      if (potential.get_n_scalars() == 1) {
         OneDimPotentialForShooting ps(potential);
         ps.set_T(T);
-        Shooting st(ps,num_dims-1);
+        Shooting st(ps, num_dims - 1);
 
         st.set_xtol(PD_xtol);
         st.set_phitol(PD_phitol);
@@ -181,13 +182,13 @@ public:
         st.set_rmax(PD_rmax);
         st.set_max_iter(PD_max_iter);
 
-        try{
-          auto profile = st.findProfile(false_vacuum[0],true_vacuum[0]);
+        try {
+          auto profile = st.findProfile(false_vacuum[0], true_vacuum[0]);
           action_PD = st.calAction(profile);
-        }catch (const std::exception& e) {
-          LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what();
+        } catch (const std::exception &e) {
+          LOG(warning) << "At T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: " << e.what();
         }
-      } else{
+      } else {
         PathDeformation pd(potential);
 
         pd.set_nb(PD_nb);
@@ -211,41 +212,36 @@ public:
         std::vector<Eigen::VectorXd> path_pts;
         path_pts.push_back(true_vacuum);
         path_pts.push_back(false_vacuum);
-        try{
+        try {
           auto a_pd = pd.full_tunneling(path_pts);
-//          auto path_phi = a_pd.phi;
-//          std::ofstream file("path_1.txt");
-//          for (size_t i = 0; i < path_phi.size(); ++i) {
-//            file << path_phi[i][0] << "\t" << path_phi[i][1] << std::endl;
-//          }
-//          file.close();
-        }catch (const std::exception& e) {
-          LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what();
+          //          auto path_phi = a_pd.phi;
+          //          std::ofstream file("path_1.txt");
+          //          for (size_t i = 0; i < path_phi.size(); ++i) {
+          //            file << path_phi[i][0] << "\t" << path_phi[i][1] << std::endl;
+          //          }
+          //          file.close();
+        } catch (const std::exception &e) {
+          LOG(warning) << "At T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: " << e.what();
         }
         action_PD = pd.get_action();
       }
       LOG(debug) << " S(PD) = " << action_PD;
     }
 
-
-
 #ifdef BUILD_WITH_BP
     if (std::isnan(action_BP)) {
-        return action_PD;
+      return action_PD;
     }
     if (std::isnan(action_PD)) {
-        return action_BP;
+      return action_BP;
     }
-    return std::min(action_BP,action_PD);
+    return std::min(action_BP, action_PD);
 #else
     return action_PD;
 #endif
-
   }
-
 };
 
+} // namespace PhaseTracer
 
-}  // namespace PhaseTracer
-
-#endif  // PHASETRACER_ACTION_CALCULATOR_HPP_
+#endif // PHASETRACER_ACTION_CALCULATOR_HPP_

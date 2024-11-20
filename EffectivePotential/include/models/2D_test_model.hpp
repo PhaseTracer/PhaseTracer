@@ -29,16 +29,12 @@
 #include "one_loop_potential.hpp"
 #include "pow.hpp"
 
-
 namespace EffectivePotential {
 
 class TwoDimModel : public OneLoopPotential {
- public:
-
+public:
   double V0(Eigen::VectorXd phi) const override {
-    return 0.25 * l1 * square(square(phi[0]) - square(v))
-           + 0.25 * l2 * square(square(phi[1]) - square(v))
-           - square(mu) * phi[0] * phi[1];
+    return 0.25 * l1 * square(square(phi[0]) - square(v)) + 0.25 * l2 * square(square(phi[1]) - square(v)) - square(mu) * phi[0] * phi[1];
   }
 
   std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const override {
@@ -47,7 +43,7 @@ class TwoDimModel : public OneLoopPotential {
     const double A = 0.5 * (a + b);
     const double B = std::sqrt(0.25 * square(a - b) + pow_4(mu));
     const double mb_sq = y1 * (square(phi[0]) + square(phi[1])) + y2 * phi[0] * phi[1];
-    return {A + B, A - B,mb_sq};
+    return {A + B, A - B, mb_sq};
   }
 
   std::vector<double> get_scalar_dofs() const override { return {1., 1., 30.}; }
@@ -57,7 +53,7 @@ class TwoDimModel : public OneLoopPotential {
     return {-phi};
   };
 
- private:
+private:
   const double v = 246.;
   const double m1 = 120.;
   const double m2 = 50.;
@@ -68,6 +64,6 @@ class TwoDimModel : public OneLoopPotential {
   const double y2 = 0.15;
 };
 
-}  // namespace EffectivePotential
+} // namespace EffectivePotential
 
 #endif

@@ -33,8 +33,8 @@
 namespace PhaseTracer {
 
 void potential_line_plotter(const EffectivePotential::Potential &P, double T,
-                            const Eigen::VectorXd& false_vacuum,
-                            const Eigen::VectorXd& true_vacuum,
+                            const Eigen::VectorXd &false_vacuum,
+                            const Eigen::VectorXd &true_vacuum,
                             std::string prefix = "model") {
 
   std::ofstream output_file;
@@ -46,12 +46,11 @@ void potential_line_plotter(const EffectivePotential::Potential &P, double T,
   const size_t n = 10000;
 
   for (unsigned int i = 0; i <= n; i++) {
-    double frac = 1.5 * i / static_cast<double>(n) - 0.25;  // from -0.25 to 1.25
+    double frac = 1.5 * i / static_cast<double>(n) - 0.25; // from -0.25 to 1.25
     output_file << frac << " " << P(false_vacuum + frac * delta, T) << std::endl;
   }
 
   output_file.close();
-
 
   const boost::filesystem::path this_file(__FILE__);
   const auto this_dir = this_file.parent_path();
@@ -71,11 +70,11 @@ void potential_line_plotter(EffectivePotential::Potential &P, Transition t, std:
 }
 
 void potential_line_plotter(EffectivePotential::Potential &P, std::vector<Transition> t, std::string prefix = "model") {
-    for (size_t i = 0; i < t.size(); ++i) {
-        potential_line_plotter(P, t[i], prefix + "_" + std::to_string(i));
-    }
+  for (size_t i = 0; i < t.size(); ++i) {
+    potential_line_plotter(P, t[i], prefix + "_" + std::to_string(i));
+  }
 }
 
-}  // namespace PhaseTracer
+} // namespace PhaseTracer
 
-#endif  // PHASETRACER_POTENTIAL_LINE_PLOTTER_HPP_
+#endif // PHASETRACER_POTENTIAL_LINE_PLOTTER_HPP_

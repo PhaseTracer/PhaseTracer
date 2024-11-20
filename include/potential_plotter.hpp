@@ -32,7 +32,7 @@
 
 namespace PhaseTracer {
 
-void potential_plotter(const EffectivePotential::Potential& P,
+void potential_plotter(const EffectivePotential::Potential &P,
                        double T,
                        std::string prefix = "model",
                        double xmin = -100.,
@@ -49,17 +49,17 @@ void potential_plotter(const EffectivePotential::Potential& P,
 
   Eigen::VectorXd X(2);
 
-  output_file << "#\t x\t y\t V" <<std::endl;
+  output_file << "#\t x\t y\t V" << std::endl;
   for (double xx = xmin; xx < xmax; xx += dx) {
     for (double yy = ymin; yy < ymax; yy += dy) {
       X << xx, yy;
       output_file << xx << "\t" << yy << "\t"
                   << P.V(X, T)
                   << std::endl;
-      }
+    }
   }
 
-    output_file.close();
+  output_file.close();
 
   const boost::filesystem::path this_file(__FILE__);
   const auto this_dir = this_file.parent_path();
@@ -74,6 +74,6 @@ void potential_plotter(const EffectivePotential::Potential& P,
   const auto result = std::system(command.c_str());
 }
 
-}  // namespace PhaseTracer
+} // namespace PhaseTracer
 
-#endif  // PHASETRACER_POTENTIAL_LINE_PLOTTER_HPP_
+#endif // PHASETRACER_POTENTIAL_LINE_PLOTTER_HPP_

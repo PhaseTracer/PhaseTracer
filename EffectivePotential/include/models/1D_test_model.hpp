@@ -26,7 +26,7 @@
 namespace EffectivePotential {
 
 class OneDimModel : public Potential {
- public:
+public:
   double V(Eigen::VectorXd x, double T) const override {
     return (c * square(T) - m2) * square(x[0]) + kappa * cube(x[0]) + lambda * pow_4(x[0]);
   }
@@ -38,12 +38,12 @@ class OneDimModel : public Potential {
     d(0) = 2. * (c * square(T) - m2) * phi[0] + 3. * kappa * square(phi[0]) + 4. * lambda * cube(phi[0]);
     return d;
   }
-  
+
   Eigen::VectorXd d2V_dxdt(Eigen::VectorXd phi, double T) const override {
     return 4. * c * T * phi;
   }
 
-  Eigen::MatrixXd d2V_dx2(Eigen::VectorXd phi, double T) const  override {
+  Eigen::MatrixXd d2V_dx2(Eigen::VectorXd phi, double T) const override {
     Eigen::MatrixXd d(1, 1);
     d(0, 0) = 2. * (c * square(T) - m2) + 6. * kappa * phi[0] + 12. * lambda * square(phi[0]);
     return d;
@@ -61,11 +61,11 @@ class OneDimModel : public Potential {
     return 0.;
   }
 
- private:
+private:
   PROPERTY(double, m2, 100.)
   PROPERTY(double, kappa, -10.)
   PROPERTY(double, lambda, 0.1)
   PROPERTY(double, c, 0.1)
 };
 
-}  // namespace EffectivePotential
+} // namespace EffectivePotential
