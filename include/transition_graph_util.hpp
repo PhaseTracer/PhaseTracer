@@ -15,16 +15,19 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef TRANSITIONGRAPH_TRANSITION_GRAPH_UTIL_HPP_INCLUDED
-#define TRANSITIONGRAPH_TRANSITION_GRAPH_UTIL_HPP_INCLUDED
-
-//#include "logger.hpp"
-#include "transition_finder.hpp"
-#include "phase_finder.hpp"
+#ifndef PHASETRACER_TRANSITION_GRAPH_UTIL_HPP_
+#define PHASETRACER_TRANSITION_GRAPH_UTIL_HPP_
 
 #include <assert.h>
 #include <stdlib.h>
+
 #include <limits>
+#include <string>
+#include <vector>
+
+#include "transition_finder.hpp"
+#include "phase_finder.hpp"
+
 
 // Forward declarations.
 namespace PhaseTracer
@@ -423,4 +426,4 @@ std::vector<Path> getPhaseHistory(const PhaseTracer::PhaseFinder& pf, const
 
 } // namespace TransitionGraph
 
-#endif
+#endif  // PHASETRACER_TRANSITION_GRAPH_UTIL_HPP_
