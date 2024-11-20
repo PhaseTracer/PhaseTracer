@@ -5,12 +5,7 @@
 #include <iostream>
 
 #include "models/2D_test_model.hpp" // Located in effective-potential/include/models
-#include "transition_finder.hpp"
-#include "phase_finder.hpp"
-#include "phase_plotter.hpp"
-#include "potential_plotter.hpp"
-#include "potential_line_plotter.hpp"
-#include "logger.hpp"
+#include "phasetracer.hpp" 
 
 
 int main(int argc, char* argv[]) {
@@ -31,13 +26,27 @@ int main(int argc, char* argv[]) {
   PhaseTracer::PhaseFinder pf(model);
   pf.find_phases();
   std::cout << pf;
-
+  
+  // Make ActionCalculator object
+  PhaseTracer::ActionCalculator ac(model);
+  ac.set_action_calculator(PhaseTracer::ActionMethod::PathDeformation);
+  
   // Make TransitionFinder object and find the transitions
-  PhaseTracer::TransitionFinder tf(pf);
+  PhaseTracer::TransitionFinder tf(pf,ac);
   tf.find_transitions();
   std::cout << std::setprecision (15) << tf;
-
+  
+  // Make GravWaveCalculator object
+  PhaseTracer::GravWaveCalculator gc(tf);
+  const auto sps = gc.calc_spectrums();
+  for (size_t ii=0; ii<sps.size(); ii++){
+    std::cout << sps[ii];
+  }
+  
   if (debug_mode) {
+    const auto trans = tf.get_transitions();
+    double action = ac.get_action(trans[0].true_vacuum_TN,trans[0].false_vacuum_TN,trans[0].TN);
+    std::cout << "action = " << std::setprecision (15) << action << std::endl;
     PhaseTracer::potential_plotter(model, tf.get_transitions().front().TC, "2D_test_model", 0., 2., 0.01, -2., 0., 0.01);
     PhaseTracer::potential_line_plotter(model, tf.get_transitions(), "2D_test_model");
     PhaseTracer::phase_plotter(tf, "2D_test_model");

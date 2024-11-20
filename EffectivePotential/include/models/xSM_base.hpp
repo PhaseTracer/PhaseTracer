@@ -20,7 +20,7 @@
 
 /**
  * Common parts of xSM models
- *
+ * See arXiv:2208.01319  [hep-ph] for details
  */
 
 #include <algorithm>

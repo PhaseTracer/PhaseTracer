@@ -20,6 +20,9 @@
 
 #include <vector>
 #include <Eigen/Core>
+#include <boost/numeric/odeint.hpp>
+#include <boost/multiprecision/cpp_complex.hpp>
+#include <interpolation.h>
 
 #include "property.hpp"
 
@@ -38,6 +41,8 @@ class Potential {
   virtual bool forbidden(Eigen::VectorXd phi) const { return false; };
   /** Apply symmetry operation on field */
   virtual std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const { return {}; };
+  /** The gradient of potential*/
+  virtual Eigen::VectorXd dV_dx(Eigen::VectorXd phi, double T) const;
   /** The derivative of the gradient of potential with respect to temperature */
   virtual Eigen::VectorXd d2V_dxdt(Eigen::VectorXd phi, double T) const;
   /** The Hessian matrix of the one-loop potential at finite temperature */
@@ -55,9 +60,12 @@ class Potential {
     coeff_xx = h_4 ? coeff_xx_4 : coeff_xx_2;
   }
 
+  /* For 3D EFT*/
+  virtual void Betas(const std::vector<double>& x, std::vector<double>& dxdt, const double t){};
+  
  protected:
   /** The step-size in all numerical derivatives */
-  PROTECTED_PROPERTY(double, h, 0.1);
+  PROTECTED_PROPERTY(double, h, 0.001);
 
   /** Whether to use a fourth-order approximation */
   PROTECTED_PROPERTY_CUSTOM_SETTER(bool, h_4, false);
@@ -90,6 +98,14 @@ class Potential {
     -1. / 12.};
   const std::vector<double> coeff_xy_2 = {-0.5, 0.5};
   PROTECTED_PROPERTY_CUSTOM_SETTER(std::vector<double>, coeff_xy, {});
+  
+  /*For 3d EFT */
+  const double EulerGamma = 0.5772156649;
+  const double Glaisher = 1.2824271291006226369;
+  std::vector<alglib::spline1dinterpolant> RGEs;
+  alglib::spline1dinterpolant make_cubic_spline(alglib::real_1d_array x, alglib::real_1d_array y);
+  void solveBetas(std::vector<double> x0, double t0=100., double t_start = 20.0, double t_end = 5000.0, double dt = 1);
+  
 };
 
 }  // namespace EffectivePotential

@@ -19,6 +19,7 @@
 #define PHASETRACER_CRITICAL_TEMPERATURES_HPP_INCLUDED
 
 #include <ostream>
+#include <fstream>
 #include <vector>
 #include <Eigen/Core>
 #include <algorithm>
@@ -26,6 +27,8 @@
 
 #include "phase_finder.hpp"
 #include "overload.hpp"
+#include "potential.hpp"
+#include "action_calculator.hpp"
 
 namespace PhaseTracer {
 
@@ -43,6 +46,9 @@ struct Transition {
   double gamma;
   std::vector<bool> changed;
   double delta_potential;
+  double TN;
+  Eigen::VectorXd true_vacuum_TN;
+  Eigen::VectorXd false_vacuum_TN;
   size_t key;
 
   /** Pretty-printer for single transition */
@@ -55,12 +61,15 @@ struct Transition {
         o << " to symmetric partner " << a.key
           << " of phase " << a.true_phase.key << " ===" << std::endl;
       }
-      o << "false vacuum = " << a.false_vacuum << std::endl
-        << "true vacuum = " << a.true_vacuum << std::endl
-        << "changed = " << a.changed << std::endl
+      o << "changed = " << a.changed << std::endl
         << "TC = " << a.TC << std::endl
-        << "gamma = " << a.gamma << std::endl
-        << "delta potential = " << a.delta_potential  << std::endl;
+        << "false vacuum (TC) = " << a.false_vacuum << std::endl
+        << "true vacuum (TC) = " << a.true_vacuum << std::endl
+        << "gamma (TC) = " << a.gamma << std::endl
+        << "delta potential (TC) = " << a.delta_potential << std::endl
+        << "TN = " << a.TN << std::endl
+        << "false vacuum (TN) = " << a.true_vacuum_TN << std::endl
+        << "true vacuum (TN) = " << a.false_vacuum_TN << std::endl;
     } else {
       o << "=== failure. message =  " << a.message << " ===" << std::endl;
     }
@@ -71,7 +80,14 @@ struct Transition {
 
 class TransitionFinder {
  public:
-  explicit TransitionFinder(PhaseFinder& pf_) : pf(pf_) {}
+  explicit TransitionFinder(PhaseFinder& pf_) :
+    pf(pf_), ac(pf_.P){
+      calculate_action = false;
+    }
+  explicit TransitionFinder(PhaseFinder& pf_, ActionCalculator ac_) :
+    pf(pf_), ac(ac_){
+      calculate_action = true;
+    }
   virtual ~TransitionFinder() = default;
 
   /** Find all transitions between all phases */
@@ -80,16 +96,35 @@ class TransitionFinder {
   /** Retrieve all transitions between all phases */
   std::vector<Transition> get_transitions() const { return transitions; }
 
+  std::vector<Eigen::VectorXd> get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique=0)const;
+
+  double get_action(Eigen::VectorXd vacuum_1, Eigen::VectorXd vacuum_2, double T) const;
+  
+  double get_action(Phase phase1, Phase phase2, double T, size_t i_unique=0) const;
+  
+  std::vector<double> get_action(Phase phase1, Phase phase2, std::vector<double> T_list, size_t i_unique=0) const;
+  
+  void write_action_to_text(Phase phase1, Phase phase2, std::vector<double> T_list, const std::string &filename, size_t i_unique=0) const;
+  
+  void write_action_to_text(Transition tran, double T_min, double T_max, size_t n_step, const std::string &filename, size_t i_unique=0) const;
+  
+  void write_action_to_text(Transition tran, const std::string &filename, size_t n_step=50, size_t i_unique=0) const;
+  
+  double get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const;
+  
   /** Retrieve all phases */
   std::vector<Phase> get_phases() const { return pf.get_phases(); }
 
   /** Pretty-printer for set of transitions in this object */
   friend std::ostream& operator << (std::ostream& o, const TransitionFinder& a);
 
- private:
   /** Object with phases and potential */
   PhaseFinder &pf;
-
+  
+ private:
+  
+  ActionCalculator ac;
+  
   /** Whether already calculated all transitions */
   bool calculated_transitions = false;
 
@@ -129,6 +164,12 @@ class TransitionFinder {
   PROPERTY(double, change_rel_tol, 1.e-3)
   /** Absolute tolerance for judging whether a field is changed during a transition */
   PROPERTY(double, change_abs_tol, 1.e-3)
+  PROPERTY(double, Tnuc_step, 1.)
+  /** Relative precision in nucleation temperature */
+  PROPERTY(double, Tnuc_tol_rel, 1.e-3)
+  
+  PROPERTY(bool, calculate_action, false)
+  
 };
 
 }  // namespace PhaseTracer

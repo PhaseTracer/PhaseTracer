@@ -151,10 +151,10 @@ class PhaseFinder {
   
   /** return the deepest phase at T */
   Phase get_deepest_phase_at_T(double T);
-
- protected:
-
+  
   EffectivePotential::Potential &P;
+  
+ protected:
 
   /**
      Find local minima at a particular temperature. The overloads define
@@ -291,6 +291,8 @@ class PhaseFinder {
   PROPERTY(bool, check_vacuum_at_low, true)
   /** Check whether there is a unique vacuum at high temperature */
   PROPERTY(bool, check_vacuum_at_high, true)
+  /** Check whether dx_min_dt is valid - useful for 3dEFT */
+  PROPERTY(bool, check_dx_min_dt, true)
   /** Tolerance for checking whether Hessian was singular */
   PROPERTY(double, hessian_singular_rel_tol, 1.e-2)
   /** Tolerance for checking solutions to linear algebra */

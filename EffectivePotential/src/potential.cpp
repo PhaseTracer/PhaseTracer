@@ -20,6 +20,19 @@
 
 namespace EffectivePotential {
 
+Eigen::VectorXd Potential::dV_dx(Eigen::VectorXd phi, double T) const {
+  Eigen::VectorXd gradient = Eigen::VectorXd::Zero(phi.size());
+  
+  for (int ii = 0; ii < phi.size(); ++ii) {
+    Eigen::VectorXd phi_shifted = phi;
+    for (int jj = 0; jj < n_h_xy.size(); ++jj) {
+      phi_shifted(ii) = phi(ii) + n_h_xy[jj] * h;
+      gradient(ii) += V(phi_shifted, T) * coeff_xy[jj] / h;
+    }
+  }
+  return gradient;
+}
+
 Eigen::VectorXd Potential::d2V_dxdt(Eigen::VectorXd phi, double T) const {
   Eigen::VectorXd gradient = Eigen::VectorXd::Zero(phi.size());
 
@@ -63,6 +76,71 @@ Eigen::MatrixXd Potential::d2V_dx2(Eigen::VectorXd phi, double T) const {
     }
   }
   return hessian;
+}
+
+alglib::spline1dinterpolant Potential::make_cubic_spline(alglib::real_1d_array x, alglib::real_1d_array y) {
+    alglib::spline1dinterpolant spline_;
+    alglib::spline1dbuildcubic(x, y, spline_);
+    return spline_;
+}
+
+void Potential::solveBetas(std::vector<double> x0, double t0, double t_start, double t_end, double dt) {
+
+    // Initialise 
+    using state_type = std::vector<double>;
+    state_type x = x0;
+    state_type t_vec;
+    std::vector<state_type> x_vec;
+
+    // Stepper
+    using stepper_type = boost::numeric::odeint::runge_kutta4<state_type>;
+    stepper_type stepper;
+
+    // From t0 down to t_start
+    boost::numeric::odeint::integrate_const(
+        stepper,
+        [this](const state_type& x, state_type& dxdt, double t) { Betas(x, dxdt, t); },
+        x, t0, t_start, -dt,
+        [&](const state_type& x, double t) {
+            t_vec.push_back(t);
+            x_vec.push_back(x);
+
+        });
+
+    // Reverse order to match below
+    std::reverse(t_vec.begin(), t_vec.end());
+    std::reverse(x_vec.begin(), x_vec.end());
+
+    // Reinitialize for forward integration
+    x = x0;
+
+    // From t0 up to t_end
+    boost::numeric::odeint::integrate_const(
+        stepper,
+        [this](const state_type& x, state_type& dxdt, double t) { Betas(x, dxdt, t); },
+        x, t0, t_end, dt,
+        [&](const state_type& x, double t) {
+            if (t == t0) return;
+            t_vec.push_back(t);
+            x_vec.push_back(x);
+
+        });
+
+    // Splines
+    for (int j = 0; j < x0.size(); j++) {
+        alglib::real_1d_array t_array, x_array;
+        t_array.setlength(t_vec.size());
+        x_array.setlength(t_vec.size());
+
+        for (int i = 0; i < t_vec.size(); i++) {
+            t_array[i] = t_vec[i];
+            x_array[i] = x_vec[i][j];
+        }
+
+        auto RGE = make_cubic_spline(t_array, x_array);
+
+        RGEs.push_back(RGE);
+    }
 }
 
 }  // namespace EffectivePotential
