@@ -18,11 +18,13 @@
 #ifndef PHASETRACER_CRITICAL_TEMPERATURES_HPP_INCLUDED
 #define PHASETRACER_CRITICAL_TEMPERATURES_HPP_INCLUDED
 
+#include <algorithm>
 #include <ostream>
 #include <fstream>
+#include <string>
 #include <vector>
+
 #include <Eigen/Core>
-#include <algorithm>
 #include <boost/cstdint.hpp>
 
 #include "phase_finder.hpp"

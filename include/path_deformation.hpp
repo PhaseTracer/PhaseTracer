@@ -18,13 +18,16 @@
 #ifndef PHASETRACER_PATH_DEFORMATION_HPP_INCLUDED
 #define PHASETRACER_PATH_DEFORMATION_HPP_INCLUDED
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <ostream>
+#include <tuple>
 #include <vector>
+
+#include <boost/cstdint.hpp>
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <algorithm>
-#include <boost/cstdint.hpp>
 #include <nlopt.hpp>
 
 #include "logger.hpp"

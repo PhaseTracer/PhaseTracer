@@ -18,13 +18,14 @@
 #ifndef POTENTIAL_LINE_PLOTTER_INCLUDED
 #define POTENTIAL_LINE_PLOTTER_INCLUDED
 
-#include <boost/filesystem.hpp>
 #include <cstdlib>
 #include <fstream>
-#include <vector>
-#include <cstdlib>
 #include <iostream>
 #include <iomanip>
+#include <string>
+#include <vector>
+
+#include <boost/filesystem.hpp>
 
 #include "logger.hpp"
 #include "potential.hpp"
