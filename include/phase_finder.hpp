@@ -15,19 +15,19 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_PHASE_FINDER_HPP_INCLUDED
-#define PHASETRACER_PHASE_FINDER_HPP_INCLUDED
+#ifndef PHASETRACER_PHASE_FINDER_HPP_
+#define PHASETRACER_PHASE_FINDER_HPP_
 
+#include <ctime>
 #include <ostream>
 #include <vector>
-#include <Eigen/Core>
-#include <ctime>
 
+#include <Eigen/Core>
 #include "nlopt.hpp"
+
 #include "potential.hpp"
 #include "overload.hpp"
 #include "property.hpp"
-
 
 namespace PhaseTracer {
 
@@ -109,7 +109,7 @@ class PhaseFinder {
   /*!
    * @param potential The total finite temperature effective potential object
    */
-  PhaseFinder(EffectivePotential::Potential &potential);
+  explicit PhaseFinder(EffectivePotential::Potential &potential);
   virtual ~PhaseFinder() = default;
 
   /**
@@ -158,7 +158,7 @@ class PhaseFinder {
 
   /** Generate symmetric partner for a point */
   std::vector<Eigen::VectorXd> symmetric_partners(const Eigen::VectorXd& a) const;
-  
+
   /** Check that two minima are identical to within a particular tolerance */
   bool identical_within_tol(const Eigen::VectorXd& a, const Eigen::VectorXd& b) const;
 
@@ -169,15 +169,15 @@ class PhaseFinder {
 
   /** return phases at T */
   std::vector<Phase> get_phases_at_T(double T);
-  
+
   /** return the deepest phase at T */
   Phase get_deepest_phase_at_T(double T);
-  
+
   /** Allow the potential to be visible to other classes such as transition_finder (e.g. for checkSubcriticalTransition). */
   const EffectivePotential::Potential& get_potential() const;
 
   EffectivePotential::Potential &P;
-  
+
  protected:
 
   /**
@@ -345,7 +345,7 @@ class PhaseFinder {
   /** Maximum number of iterations when tracing a minimum */
   PROPERTY(unsigned int, trace_max_iter, 100000)
   /** Minimum length of a phase in temperature */
-  // Discard short phase checking, because it may cause endless loop. 
+  // Discard short phase checking, because it may cause endless loop.
   // PROPERTY(double, phase_min_length, 0.5)
   /** Guesses for locations of minima */
   PROPERTY(std::vector<Eigen::VectorXd>, guess_points, {})
@@ -357,4 +357,4 @@ class PhaseFinder {
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_PHASE_FINDER_HPP_

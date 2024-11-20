@@ -16,10 +16,11 @@
 // ====================================================================
 
 #include <cmath>
-#include <boost/math/tools/roots.hpp>
 
-#include "transition_finder.hpp"
 #include "logger.hpp"
+#include "transition_finder.hpp"
+
+#include <boost/math/tools/roots.hpp>
 
 namespace PhaseTracer {
 
@@ -81,7 +82,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
           std::numeric_limits<double>::quiet_NaN(), {}, {}, i_unique, false, currentID++});
       }
     }
-    
+
     if (calculate_action){
       size_t i_selected = 0;
       if (unique_transitions.size()>1){
@@ -116,7 +117,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
     } else {
       return unique_transitions;
     }
-    
+
   } catch (const std::exception& e) {
     // TODO
     LOG(debug) << e.what() << " - probably no sign change between T = " << T1 << " and " << T2;
@@ -125,24 +126,24 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
 }
 
 double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const{
-  
+
   if (T_begin < T_end) {
     LOG(fatal) << "T_begin < T_end, so swith the values. ";
     T_begin = T_begin + T_end;
     T_end   = T_begin - T_end;
     T_begin = T_begin - T_end;
   }
-  
+
   LOG(debug) << "Find Tnuc between " << phase1.key << " and " << phase2.key << " in [" << T_begin << ", "<< T_end <<"]. ";
-  
-  
+
+
   const auto nucleation_criteria = [this, phase1, phase2, i_unique](double Ttry) {
     return this->get_action(phase1, phase2, Ttry, i_unique)/Ttry - 140.;
   };
 
 //  LOG(debug) << "nucleation_criteria(T_begin)= " << nucleation_criteria(T_begin) ;
 //  LOG(debug) << "nucleation_criteria(T_end)= " << nucleation_criteria(T_end) ;
-    
+
   double Tnuc = std::numeric_limits<double>::quiet_NaN();
   // If action at T_begin is NaN, find the largest valid T_begin
   double nc = nucleation_criteria(T_begin);
@@ -153,12 +154,12 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
     nc = nucleation_criteria(T_begin);
 
   }
-  
+
   if ( nc < 0 ) {
     LOG(debug) << "The tunneling possibility at T_begin satisfys the nucleation condition." ;
     return T_begin;
   }
-  
+
   nc = nucleation_criteria(T_end);
   // If the tunneling possibility at T_end is small, find T_end from T_begin
   if ( nc > 0 or std::isnan(nc) ) {
@@ -170,7 +171,7 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
       T_begin = T_end;
     }
   }
-  
+
   try{
     const double root_bits = 1. - std::log2(Tnuc_tol_rel);
     boost::math::tools::eps_tolerance<double> stop(root_bits);
@@ -191,7 +192,7 @@ std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase
   // TODO
   LOG(warning) << "When assume_only_one_transition is set to false, the calculation of Tnuc will not be performed. " << std::endl;
 #endif
-  
+
   std::vector<Transition> roots;
   for (double T = T1; T <= T2; T += separation) {
     const auto bs = find_transition(phase1, phase2, T, std::min(T + separation, T2), currentID + roots.size());
@@ -207,7 +208,7 @@ std::vector<Eigen::VectorXd> TransitionFinder::get_vacua_at_T(Phase phase1, Phas
   const auto phase2_at_T = pf.phase_at_T(phase2, T);
   const auto true_vacua_at_T = pf.symmetric_partners(phase1_at_T.x);
   const auto false_vacua_at_T =  pf.symmetric_partners(phase2_at_T.x);
-  
+
   return {false_vacua_at_T[0], true_vacua_at_T[i_unique]};
 }
 

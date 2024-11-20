@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_LOGGER_HPP_INCLUDED
-#define PHASETRACER_LOGGER_HPP_INCLUDED
+#ifndef PHASETRACER_LOGGER_HPP_
+#define PHASETRACER_LOGGER_HPP_
 /**
    Convenience macros for logging and setting log level
 */
@@ -31,4 +31,4 @@
     boost::log::trivial::severity >= \
     boost::log::trivial::level);
 
-#endif
+#endif  // PHASETRACER_LOGGER_HPP_
