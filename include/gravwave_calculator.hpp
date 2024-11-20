@@ -17,13 +17,15 @@
 
 #ifndef PHASETRACER_GRAVWAVECALCULATOR_H
 #define PHASETRACER_GRAVWAVECALCULATOR_H
-#include <vector>
-#include <tuple>
-#include <fstream>
+
 #include <cmath>
+#include <fstream>
+#include <string>
+#include <tuple>
+#include <vector>
+
 #include "transition_finder.hpp"
 #include <random>
-
 
 namespace PhaseTracer {
 

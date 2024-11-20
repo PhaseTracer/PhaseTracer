@@ -18,7 +18,11 @@
 #ifndef ACTION_CALCULATOR_HPP_INCLUDED
 #define ACTION_CALCULATOR_HPP_INCLUDED
 
+#include <algorithm>
+#include <limits>
+#include <memory>
 #include <ostream>
+#include <vector>
 
 #ifdef BUILD_WITH_BP
 #include "bubble_profiler.hpp"
