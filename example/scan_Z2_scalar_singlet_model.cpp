@@ -32,8 +32,8 @@ int main() {
 //                 "\tT2_c^PT \tv2_h^T \tv2_s^T \tv2_h^F \tv2_s^F"
               << std::endl;
 
-  const double bins_lambda_hs = 300;
-  const double bins_ms = 300;
+  const double bins_lambda_hs = 30;
+  const double bins_ms = 30;
 
   for (double ii = 0; ii < bins_lambda_hs; ii++) {
     for (double jj = 0; jj < bins_ms; jj++) {
@@ -47,7 +47,7 @@ int main() {
         continue;
       }
 
-//      std::cout << "lambda_hs = " << lambda_hs << ". m_s = " << m_s << std::endl;
+      std::cout << "lambda_hs = " << lambda_hs << ". m_s = " << m_s << std::endl;
 
       // Make PhaseFinder object and find the phases
       PhaseTracer::PhaseFinder pf(model);
@@ -71,7 +71,7 @@ int main() {
       for (auto &t : tf.get_transitions()) {
         output_file << t.TC << "\t" << t.true_vacuum[0] << "\t"
                     << t.true_vacuum[1] << "\t" << t.false_vacuum[0] << "\t"
-                    << t.false_vacuum[1] << "\t";
+                    << t.false_vacuum[1] ;
       }
       output_file << std::endl;
     }

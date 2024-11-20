@@ -1,8 +1,8 @@
 /**
   Z2 real scalar singlet extension of
   the Standard Model 
-  
-  OS-like
+  in OS-like scheme.
+  See arXiv:2208.01319  [hep-ph] for details
   
 */
 
@@ -13,11 +13,7 @@
 #include <iomanip>
 
 #include "models/xSM_OSlike.hpp"
-#include "phase_finder.hpp"
-#include "transition_finder.hpp"
-#include "logger.hpp"
-#include "phase_plotter.hpp"
-#include "thermal_function.hpp"
+#include "phasetracer.hpp" 
 
 std::string toString(std::vector<double> in, std::vector<double> out, std::vector<double> flags) {
   std::stringstream data_str;
@@ -132,7 +128,7 @@ int main(int argc, char* argv[]) {
     return 0;
   }
   if (debug_mode) std::cout << pf;
-
+  
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf);
   tf.find_transitions();
@@ -165,6 +161,8 @@ int main(int argc, char* argv[]) {
     output_file << toString(in, out, flags) << std::endl;
     return 0;
   }
+  
+  tf.write_action_to_text(t[jj],"action_T.txt" );
   
   std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
   

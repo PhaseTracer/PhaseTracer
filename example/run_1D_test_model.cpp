@@ -4,11 +4,9 @@
 
 #include <iostream>
 
-#include "models/1D_test_model.hpp"
-#include "phase_finder.hpp"
-#include "transition_finder.hpp"
-#include "logger.hpp"
-#include "phase_plotter.hpp"
+#include "models/1D_test_model.hpp" // Located in effective-potential/include/models
+#include "phasetracer.hpp" 
+
 
 int main(int argc, char* argv[]) {
 
@@ -29,13 +27,44 @@ int main(int argc, char* argv[]) {
   pf.find_phases();
   std::cout << pf;
 
+  // Make ActionCalculator object
+  PhaseTracer::ActionCalculator ac(model);
+  
   // Make TransitionFinder object and find the transitions
-  PhaseTracer::TransitionFinder tf(pf);
+  PhaseTracer::TransitionFinder tf(pf,ac);
   tf.find_transitions();
   std::cout << tf;
+  
+  // Make GravWaveCalculator object
+  PhaseTracer::GravWaveCalculator gc(tf);
+  gc.set_T_threshold_bubble_collision(1e10);
+  
+  const auto sps = gc.calc_spectrums();
+  for (size_t ii=0; ii<sps.size(); ii++){
+    std::cout << sps[ii];
+    if (debug_mode) {
+      gc.write_spectrum_to_text(sps[ii], "GW_spectrum_1D_test_model"+std::to_string(ii)+".txt");
+    }
+  }
 
   if (debug_mode) {
-    PhaseTracer::phase_plotter(tf, "1D_test_model");
+    PhaseTracer::spectrum_plotter(gc, "1D_test");
+  }
+  
+  if (debug_mode) {
+    // Get actions between the two phases
+    std::ofstream outputFile("action_1D_test_model.txt");
+    LOGGER(fatal);
+    const auto trans = tf.get_transitions();
+    auto phase1 = trans[0].true_phase;
+    auto phase2 = trans[0].false_phase;
+    double min_T = std::max(trans[0].true_phase.T[0],trans[0].false_phase.T[0]);
+    for (double Ttest=min_T; Ttest < trans[0].TC; Ttest += 0.1){
+        auto s = tf.get_action(phase1, phase2, Ttest);
+        auto vacua = tf.get_vacua_at_T(phase1, phase2, Ttest);
+        outputFile << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s << " " << s/Ttest  << std::endl;
+    }
+    outputFile.close();
   }
 
   return 0;

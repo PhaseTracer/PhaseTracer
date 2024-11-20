@@ -9,12 +9,12 @@ option(BUILD_WITH_EXAMPLE "Build example programs" OFF)
 # packages
 
 find_package(Eigen3 3.1 REQUIRED)
-find_package(Alglib REQUIRED)
+find_package(ALGLIB REQUIRED)
 
 # flags
 
 set(CMAKE_CXX_FLAGS "-O3")
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
