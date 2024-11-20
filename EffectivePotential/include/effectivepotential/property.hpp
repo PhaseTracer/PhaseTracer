@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef POTENTIAL_PROPERTY_HPP_INCLUDED
-#define POTENTIAL_PROPERTY_HPP_INCLUDED
+#ifndef EFFECTIVEPOTENTIAL_PROPERTY_HPP_
+#define EFFECTIVEPOTENTIAL_PROPERTY_HPP_
 /**
    Convenience macro for adding getters and setters to our objects
 */
@@ -47,4 +47,4 @@
  protected: \
   type name = default;
 
-#endif
+#endif  // EFFECTIVEPOTENTIAL_PROPERTY_HPP_

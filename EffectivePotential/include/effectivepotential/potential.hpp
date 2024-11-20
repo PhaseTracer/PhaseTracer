@@ -15,13 +15,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef POTENTIAL_POTENTIAL_HPP_INCLUDED
-#define POTENTIAL_POTENTIAL_HPP_INCLUDED
+#ifndef EFFECTIVEPOTENTIAL_POTENTIAL_HPP_
+#define EFFECTIVEPOTENTIAL_POTENTIAL_HPP_
 
 #include <vector>
-#include <Eigen/Core>
-#include <boost/numeric/odeint.hpp>
+
 #include <boost/multiprecision/cpp_complex.hpp>
+#include <boost/numeric/odeint.hpp>
+#include <Eigen/Core>
+
 #include <interpolation.h>
 
 #include "property.hpp"
@@ -110,4 +112,4 @@ class Potential {
 
 }  // namespace EffectivePotential
 
-#endif
+#endif  // EFFECTIVEPOTENTIAL_POTENTIAL_HPP_
