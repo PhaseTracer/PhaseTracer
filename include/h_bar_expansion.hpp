@@ -29,7 +29,7 @@ namespace PhaseTracer {
 class HbarExpansion : public PhaseFinder {
  public:
   /** @brief H-bar expansion needs a one-loop potential */
-  HbarExpansion(EffectivePotential::OneLoopPotential &potential) : PhaseFinder(potential), P1l(potential) {};
+  explicit HbarExpansion(EffectivePotential::OneLoopPotential &potential) : PhaseFinder(potential), P1l(potential) {};
   void find_phases() override;
   Point phase_at_T(const Phase& phase, double T) const override;
   /**
@@ -49,7 +49,7 @@ class HbarExpansion : public PhaseFinder {
 class HTExpansion : public PhaseFinder {
  public:
   /** @brief High-temperature expansion needs a one-loop potential */
-  HTExpansion(EffectivePotential::OneLoopPotential &potential) : PhaseFinder(potential), P1l(potential) {};
+  explicit HTExpansion(EffectivePotential::OneLoopPotential &potential) : PhaseFinder(potential), P1l(potential) {};
  private:
   std::function<double(Eigen::VectorXd)> make_objective(double T) const override;
   EffectivePotential::OneLoopPotential &P1l;
