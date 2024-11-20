@@ -1,17 +1,14 @@
 /**
   Example of h-bar expansion using xSM model.
+  See arXiv:2208.01319  [hep-ph] for details
 */
 
 #include <iostream>
 
 #include "models/xSM_MSbar.hpp"
 #include "models/SM_parameters.hpp"
-#include "transition_finder.hpp"
 #include "h_bar_expansion.hpp"
-#include "phase_plotter.hpp"
-#include "potential_plotter.hpp"
-#include "potential_line_plotter.hpp"
-#include "logger.hpp"
+#include "phasetracer.hpp"
 
 std::string toString(std::vector<double> in, std::vector<double> out, std::vector<double> flags) {
   std::stringstream data_str;
@@ -144,7 +141,7 @@ int main(int argc, char* argv[]) {
   const auto ht_minima = ht.find_minima_at_t(TC);
 
   // Use minima with greatest Higgs/scalar
-  double vs, vh;
+  double vs=0, vh=0;
   for (const auto& m : ht_minima) {
     if (debug_mode) {
       std::cout << "HT minimum = " << m.x << std::endl;

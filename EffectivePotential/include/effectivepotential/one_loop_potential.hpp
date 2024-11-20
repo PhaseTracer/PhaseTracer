@@ -36,15 +36,20 @@ enum class DaisyMethod { None, ArnoldEspinosa, Parwani };
 class OneLoopPotential : public Potential {
  public:
   virtual double V0(Eigen::VectorXd phi) const = 0;
+  /** Functions for squared field dependent masses, depending on:
+      a vector of fields and for scalars a xi gauge parameter.  Note the 
+      latter will be unused for potentials implemented in a fixed gauge. */ 
   virtual std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const;
   virtual std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const { return {}; }
   virtual std::vector<double> get_vector_masses_sq(Eigen::VectorXd phi) const { return {}; }
+  virtual std::vector<double> get_ghost_masses_sq(Eigen::VectorXd phi, double xi) const { return {}; }
   virtual std::vector<double> get_scalar_debye_sq(Eigen::VectorXd phi, double xi, double T) const { return {}; }
   virtual std::vector<double> get_scalar_thermal_sq(double T) const { return {}; }
   virtual std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const { return {}; }
   virtual std::vector<double> get_scalar_dofs() const;
   virtual std::vector<double> get_fermion_dofs() const { return {}; }
   virtual std::vector<double> get_vector_dofs() const { return {}; }
+  virtual std::vector<double> get_ghost_dofs() const { return {}; }
 
   /** The Hessian matrix of tree-level potential */
   Eigen::MatrixXd d2V0_dx2(Eigen::VectorXd phi) const;
@@ -55,12 +60,14 @@ class OneLoopPotential : public Potential {
   /** Zero-temperature one-loop correction */
   virtual double V1(std::vector<double> scalar_masses_sq,
                     std::vector<double> fermion_masses_sq,
-                    std::vector<double> vector_masses_sq) const;
+                    std::vector<double> vector_masses_sq,
+                    std::vector<double> ghost_masses_sq) const;
   virtual double V1(Eigen::VectorXd phi, double T = 0.) const;
   /** Finite-temperature one-loop correction */
   double V1T(std::vector<double> scalar_masses_sq,
              std::vector<double> fermion_masses_sq,
-             std::vector<double> vector_masses_sq, double T) const;
+             std::vector<double> vector_masses_sq,
+             std::vector<double> ghost_masses_sq, double T) const;
   double V1T(Eigen::VectorXd phi, double T) const;
   /** Daisy corrections to potential */
   double daisy(std::vector<double> scalar_masses_sq,
@@ -72,13 +79,11 @@ class OneLoopPotential : public Potential {
   /** Counter-term to potential */
   virtual double counter_term(Eigen::VectorXd phi, double T) const { return 0; }
 
-
   /** High-temperature expansion of potential */
   double VHT(Eigen::VectorXd phi, double T) const;
 
   /** Tree-level scalar masses */
   std::vector<double> get_tree_scalar_masses_sq(Eigen::VectorXd phi) const;
-
 
   /** One-loop scalar masses */
   std::vector<double> get_1l_scalar_masses_sq(Eigen::VectorXd phi, double T) const;

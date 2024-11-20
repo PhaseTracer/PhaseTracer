@@ -1,16 +1,5 @@
-Basically, I use one cpp main file for each scheme, and the c++ codes only calculate one point in parameter space. I use python scripts to scan the parameter space by calling the c++ codes, so that it is easy to change the scan method and ranges. 
+These are codes used for https://arxiv.org/abs/2208.01319
 
-### Building
-
-    mkdir build
-    cd build
-    cmake ..
-    make
-    
- To build the one using FS to run RGE, 
-    cmake -DBUILD_WITH_FS_ScalarSingletZ2DMMhInput=on ..
-    make
-    
 ### run one point
 
   ./bin/run_xSM_MSbar x1 x2 x3 x4 x5 x6 x7
@@ -39,7 +28,7 @@ Basically, I use one cpp main file for each scheme, and the c++ codes only calcu
     ms, lambda_s, lambda_hs, number_of_transitions, TC, true_vacuum[0], true_vacuum[1], false_vacuum[0], false_vacuum[1], Q, xi, daisy_flag, use_1L_EWSB_in_0L_mass
   
   where number_of_number_of_transitionss = -1 or -2 means that can not find phase or transition for this point. 
-  I only saved Tc, vh, vs of the strongest transition. 
+  Only Tc, vh, vs of the strongest transition are saved.
  
  
 ### scan
@@ -47,8 +36,7 @@ Basically, I use one cpp main file for each scheme, and the c++ codes only calcu
   cd example/xSM/
   python grid_scan.py
 
-  There are many flags in grid_scan.py. Turn on them to perfrom scans you need.
-
+  There are many flags in grid_scan.py that can be turn manually.
 
   In the output files, the meanings of each column are same to the above output file, which are
     0 : ms 
@@ -64,22 +52,3 @@ Basically, I use one cpp main file for each scheme, and the c++ codes only calcu
     10 : xi, gauge fixing parameter
     11 : daisy_flag. =0 means no daisy term; =1 means Parwani; =2 means ArnoldEspinosa
     12: use_1L_EWSB_in_0L_mass. =0 means use resum Goldstone contribution; =1 means use_1L_EWSB_in_0L_mass
-
-
-### plot
-
-  cd example/xSM/plot_scripts/
-  python 1d_plot_bks.py
-  python 1d_plot_scale.py
-  
-
-  python3 2d_plot.py xi deltaT
-  python3 2d_plot.py xi T
-  
-
-
-
-### For FS
-./createmodel --name=ScalarSingletZ2DMMhInputMsInput
-./configure --with-models=ScalarSingletZ2DMMhInputMsInput --disable-threads --disable-sqlite
-make -j8

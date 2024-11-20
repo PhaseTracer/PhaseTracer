@@ -102,14 +102,16 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
           //TODO
         }
       }
-        
+
       double TN = get_Tnuc(phase1, phase2, i_selected, TC, T1);
       std::vector<Transition> selected_transition;
       selected_transition.push_back(unique_transitions[i_selected]);
-      const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
       selected_transition[0].TN = TN;
-      selected_transition[0].true_vacuum_TN = vacua[0];
-      selected_transition[0].false_vacuum_TN = vacua[1];
+      if (not std::isnan(TN)){
+        const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
+        selected_transition[0].true_vacuum_TN = vacua[0];
+        selected_transition[0].false_vacuum_TN = vacua[1];
+      }
       return selected_transition;
     } else {
       return unique_transitions;
@@ -140,15 +142,16 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
 
 //  LOG(debug) << "nucleation_criteria(T_begin)= " << nucleation_criteria(T_begin) ;
 //  LOG(debug) << "nucleation_criteria(T_end)= " << nucleation_criteria(T_end) ;
-  
+    
   double Tnuc = std::numeric_limits<double>::quiet_NaN();
   // If action at T_begin is NaN, find the largest valid T_begin
   double nc = nucleation_criteria(T_begin);
-  while (std::isnan(nc)){
+  while (std::isnan(nc) or nc > 10000 ){
     T_begin -= Tnuc_step;
     if (T_begin < T_end)
       return Tnuc;
     nc = nucleation_criteria(T_begin);
+
   }
   
   if ( nc < 0 ) {
@@ -208,14 +211,57 @@ std::vector<Eigen::VectorXd> TransitionFinder::get_vacua_at_T(Phase phase1, Phas
   return {false_vacua_at_T[0], true_vacua_at_T[i_unique]};
 }
 
+
+
+double TransitionFinder::get_action(Eigen::VectorXd vacuum_1, Eigen::VectorXd vacuum_2, double T) const{
+  return ac.get_action(vacuum_1, vacuum_2, T);
+}
+
 double TransitionFinder::get_action(Phase phase1, Phase phase2, double T, size_t i_unique) const{
   const auto vacua = get_vacua_at_T(phase1, phase2, T, i_unique);
   return ac.get_action(vacua[0], vacua[1], T);
 }
 
-double TransitionFinder::get_action(Eigen::VectorXd vacuum_1, Eigen::VectorXd vacuum_2, double T) const{
-  return ac.get_action(vacuum_1, vacuum_2, T);
+std::vector<double> TransitionFinder::get_action(Phase phase1, Phase phase2, std::vector<double> T_list, size_t i_unique) const{
+  std::vector<double> action_list;
+  for (const auto Ti: T_list){
+    double action;
+    try{
+      action = get_action(phase1, phase2, Ti, i_unique);
+    } catch(char *str){
+      LOG(warning) << str << std::endl;
+      action = std::numeric_limits<double>::max();
+    }
+    action_list.push_back(action);
+  }
+  return action_list;
 }
+
+void TransitionFinder::write_action_to_text(Phase phase1, Phase phase2, std::vector<double> T_list, const std::string &filename, size_t i_unique) const{
+  std::vector<double> action_list = get_action(phase1, phase2, T_list, i_unique);
+  std::ofstream outFile(filename);
+  for (size_t i = 0; i < T_list.size(); ++i) {
+      outFile << T_list[i] << " " << action_list[i] << std::endl;
+  }
+  outFile.close();
+}
+
+void TransitionFinder::write_action_to_text(Transition tran, double T_min, double T_max, size_t n_step, const std::string &filename, size_t i_unique) const{
+  std::vector<double> T_list;
+  for (double Ti=T_min; Ti <= T_max; Ti += (T_max-T_min)/n_step){
+    T_list.push_back(Ti);
+  }
+  auto phase1 = tran.true_phase;
+  auto phase2 = tran.false_phase;
+  write_action_to_text(phase1, phase2, T_list, filename, i_unique);
+}
+
+void TransitionFinder::write_action_to_text(Transition tran, const std::string &filename, size_t n_step, size_t i_unique) const{
+  double T_min = std::max(tran.true_phase.T[0],tran.false_phase.T[0]);
+  double T_max = tran.TC;
+  write_action_to_text(tran, T_min, T_max, n_step, filename, i_unique);
+}
+
 
 double TransitionFinder::gamma(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd& false_vacuum, const double TC) const {
   const int b = true_vacuum.size() + 1;

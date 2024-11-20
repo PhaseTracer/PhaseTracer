@@ -1,8 +1,8 @@
 /**
  Z2 real scalar singlet extension of
  the Standard Model
- 
-  High-temperature approximation
+ in High-temperature approximation scheme.
+ See arXiv:2208.01319  [hep-ph] for details
 
 */
 
@@ -12,10 +12,7 @@
 #include <vector>
 
 #include "models/xSM_HT.hpp" 
-#include "phase_finder.hpp"
-#include "transition_finder.hpp"
-#include "logger.hpp"
-#include "phase_plotter.hpp"
+#include "phasetracer.hpp" 
 
 std::string toString(std::vector<double> in, std::vector<double> out) {
   std::stringstream data_str;

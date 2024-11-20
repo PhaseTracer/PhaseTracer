@@ -1,8 +1,9 @@
 /**
   Z2 real scalar singlet extension of
   the Standard Model 
+  in MSbar scheme.
+  See arXiv:2208.01319  [hep-ph] for details
   
-  MSbar
   
 */
 
@@ -15,13 +16,7 @@
 #include <random>
 
 #include "models/xSM_MSbar.hpp"
-#include "phase_finder.hpp"
-#include "transition_finder.hpp"
-#include "logger.hpp"
-#include "phase_plotter.hpp"
-#include "thermal_function.hpp"
-#include "potential_plotter.hpp"
-#include "potential_line_plotter.hpp"
+#include "phasetracer.hpp" 
 
 std::string toString(std::vector<double> in, std::vector<double> out, std::vector<double> flags) {
   std::stringstream data_str;
@@ -51,8 +46,8 @@ int main(int argc, char* argv[]) {
     lambda_s =  0.1;
     lambda_hs = 0.3;
     Q = 86.5;
-    xi = 0.;
-    daisy_flag = 1;
+    xi = 10.;
+    daisy_flag = 2;
     use_1L_EWSB_in_0L_mass = false;
     use_Goldstone_resum = true;
     use_covariant_gauge = false;

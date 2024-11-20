@@ -1,12 +1,12 @@
 # Effective Potential
 
-Library of effective potential used for PhaseTracer and BubbleProfiler
+Library of effective potentials used for `PhaseTracer` and `BubbleProfiler`
 
 To build with cmake:
+    
+    mkdir build
+    cd build
+    cmake .. DBUILD_WITH_EXAMPLE=1
+    cmake --build .
 
-mkdir build
-cd build
-cmake ..
-cmake --build .
-
-This builds the simplified_2d binary under bin/ and the shared library file under lib/
+This builds the `simplified_2d` and `Z2_scalar_singlet ` binaries under `bin/` and the shared object library `libeffectivepotential.so` under `lib/`
