@@ -88,7 +88,7 @@ class PhaseFinder {
   /*!
    * @param potential The total finite temperature effective potential object
    */
-  PhaseFinder(EffectivePotential::Potential &potential);
+  explicit PhaseFinder(EffectivePotential::Potential &potential);
   virtual ~PhaseFinder() = default;
 
   /**
