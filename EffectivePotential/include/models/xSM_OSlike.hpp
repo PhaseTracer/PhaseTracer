@@ -169,7 +169,8 @@ class xSM_OSlike : public xSM_base {
   
   double V1(std::vector<double> scalar_masses_sq,
             std::vector<double> fermion_masses_sq,
-            std::vector<double> vector_masses_sq) const override {
+            std::vector<double> vector_masses_sq,
+            std::vector<double> ghost_masses_sq) const override {
     double correction = 0;
 
     static const auto scalar_dofs = get_scalar_dofs();

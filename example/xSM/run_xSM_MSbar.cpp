@@ -46,8 +46,8 @@ int main(int argc, char* argv[]) {
     lambda_s =  0.1;
     lambda_hs = 0.3;
     Q = 86.5;
-    xi = 0.;
-    daisy_flag = 1;
+    xi = 10.;
+    daisy_flag = 2;
     use_1L_EWSB_in_0L_mass = false;
     use_Goldstone_resum = true;
     use_covariant_gauge = false;

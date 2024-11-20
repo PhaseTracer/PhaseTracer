@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
     return 0;
   }
   
-  tf.write_action_to_text(t[jj],"action_T.txt" );
+//  tf.write_action_to_text(t[jj],"action_T.txt" );
   
   std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
   
