@@ -16,8 +16,8 @@
 // ====================================================================
 
 #include "h_bar_expansion.hpp"
-#include "one_loop_potential.hpp"
 #include "logger.hpp"
+#include "one_loop_potential.hpp"
 
 namespace PhaseTracer {
 

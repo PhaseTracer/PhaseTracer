@@ -16,10 +16,11 @@
 // ====================================================================
 
 #include <cmath>
-#include <boost/math/tools/roots.hpp>
 
-#include "transition_finder.hpp"
 #include "logger.hpp"
+#include "transition_finder.hpp"
+
+#include <boost/math/tools/roots.hpp>
 
 namespace PhaseTracer {
 
