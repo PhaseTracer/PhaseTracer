@@ -21,7 +21,7 @@ You need a C++14 compliant compiler and our dependencies. The dependencies can b
 
 *Ubuntu/Debian*
 
-    sudo apt install libalglib-dev llibnlopt-cxx-dev libeigen3-dev libboost-filesystem-dev libboost-log-dev libgsl-dev
+    sudo apt install libalglib-dev libnlopt-cxx-dev libeigen3-dev libboost-filesystem-dev libboost-log-dev libgsl-dev
     
 *Fedora*
 
