@@ -28,25 +28,25 @@ std::pair<Eigen::Vector2d, Eigen::Vector2d> _rkck(Eigen::Vector2d y, Eigen::Vect
   double b61=1631.0/55296.0, b62=175.0/512.0, b63=575.0/13824.0, b64=44275.0/110592.0, b65=253.0/4096.0, c1=37.0/378.0;
   double c3=250.0/621.0, c4=125.0/594.0, c6=512.0/1771.0, dc5=-277.00/14336.0;
   double dc1=c1-2825.0/27648.0, dc3=c3-18575.0/48384.0, dc4=c4-13525.0/55296.0, dc6=c6-0.25;
-    
+
   Eigen::Vector2d ytemp = y + b21 * dt * dydt;
   Eigen::Vector2d ak2 = f(ytemp, t + a2 * dt);
-    
+
   ytemp = y + dt * (b31 * dydt + b32 * ak2);
   Eigen::Vector2d ak3 = f(ytemp, t + a3 * dt);
-    
+
   ytemp = y + dt * (b41 * dydt + b42 * ak2 + b43 * ak3);
   Eigen::Vector2d ak4 = f(ytemp, t + a4 * dt);
-    
+
   ytemp = y + dt * (b51 * dydt + b52 * ak2 + b53 * ak3 + b54 * ak4);
   Eigen::Vector2d ak5 = f(ytemp, t + a5 * dt);
-    
+
   ytemp = y + dt * (b61 * dydt + b62 * ak2 + b63 * ak3 + b64 * ak4 + b65 * ak5);
   Eigen::Vector2d ak6 = f(ytemp, t + a6 * dt);
-    
+
   Eigen::Vector2d dyout = dt * (c1 * dydt + c3 * ak3 + c4 * ak4 + c6 * ak6);
   Eigen::Vector2d yerr = dt * (dc1 * dydt + dc3 * ak3 + dc4 * ak4 + dc5 * ak5 + dc6 * ak6);
-    
+
   return {dyout, yerr};
 }
 
@@ -72,7 +72,7 @@ rkqs_rval rkqs(Eigen::Vector2d y, Eigen::Vector2d dydt, double t, std::function<
     }
   }
   double dtnext = (errmax > 1.89e-4) ? 0.9 * dt * std::pow(errmax, -0.2) : 5 * dt;
-  
+
   return rkqs_rval(dy, dt, dtnext);
 }
 
@@ -115,26 +115,26 @@ void Shooting::findRScale() {
     double phi_tol = fabs(phi_bar - phi_metaMin) * 1e-6;
     double x1 = std::min(phi_bar, phi_metaMin);
     double x2 = std::max(phi_bar, phi_metaMin);
-    
+
     int bits = std::ceil(std::log2(1.0 / phi_tol));
     std::pair<double, double>  result = boost::math::tools::brent_find_minima(
         [this](double x) { return -ps.V(x); }, x1, x2, bits);
     double phi_bar_top = result.first;
-  
+
     if (phi_bar_top + phi_tol > x2 || phi_bar_top - phi_tol < x1) {
         throw std::runtime_error(
             "Minimization is placing the top of the potential barrier outside of the interval defined by phi_bar and phi_metaMin. Assume that the barrier does not exist.");
     }
-    
+
     LOG(trace) << "phi_bar_top = "<< phi_bar_top;
-  
+
     double Vtop = ps.V(phi_bar_top) - ps.V(phi_metaMin);
     double xtop = phi_bar_top - phi_metaMin;
-    
+
     if (Vtop <= 0) {
         throw std::runtime_error("Barrier height is not positive, does not exist.");
     }
-    
+
     rscale = std::abs(xtop) / std::sqrt(std::abs(6 * Vtop));
     LOG(trace) << "rscale = "<< rscale;
     return;
@@ -182,7 +182,7 @@ void Shooting::exactSolution(double r, double phi0, double dV_, double d2V_,
 //  LOG(debug) << "For phi(r=0) = " << phi0 << " : ";
 //  LOG(debug) << "  beta_r = "<< beta_r << ", d2V[phi(r=0)] = " << d2V_;
 //  LOG(debug) << "  phi(r=" << r <<") = " << phi << ", dphi(r=" << r <<") = " << dphi;
-  
+
   *phi_r = phi;
   *dphi_r = dphi;
 }
@@ -193,9 +193,9 @@ void Shooting::initialConditions(double delta_phi0, double rmin, double delta_ph
   const double phi0 = phi_absMin + delta_phi0;
   const double dV_ = dV_from_absMin(delta_phi0);
   const double d2V_ = ps.d2V(phi0);
-  
+
   *r0 = rmin;
-  
+
   const auto deltaPhiDiff = [this, phi0, dV_, d2V_, phi_r0, dphi_r0, delta_phi_cutoff](double rtry) {
     this->exactSolution(rtry, phi0, dV_, d2V_, phi_r0, dphi_r0);
     return fabs(*phi_r0 - phi_absMin) - fabs(delta_phi_cutoff);
@@ -220,11 +220,11 @@ void Shooting::initialConditions(double delta_phi0, double rmin, double delta_ph
     r *= 10.;
     if ( deltaPhiDiff(r) > 0) break;
   }
-  
+
   // Find phi - phi_absMin == delta_phi_cutoff exactly
   const auto result = boost::math::tools::bisect(deltaPhiDiff, rlast, r, boost::math::tools::eps_tolerance<double>(), max_iter);
   *r0 = (result.first + result.second) * 0.5;
-  
+
   exactSolution(*r0, phi0, dV_, d2V_, phi_r0, dphi_r0);
   LOG(trace) << "Initial point for phi(r=0) = " << phi0 << " : ";
   LOG(trace) << "  r_0 = " << *r0 << ", phi = " << *phi_r0 << ", dphi = " << *dphi_r0;
@@ -235,11 +235,11 @@ int Shooting::integrateProfile(double r0, std::vector<double> y0_,
           double* rf, std::vector<double>* yf,
           double dr0, std::vector<double> epsabs_, std::vector<double> epsfrac_,
           double drmin, double rmax){
-  
+
   Eigen::Map<Eigen::Vector2d> y0(y0_.data());
   Eigen::Map<Eigen::Vector2d> epsabs(epsabs_.data());
   Eigen::Map<Eigen::Vector2d> epsfrac(epsfrac_.data());
-  
+
   double dr = dr0;
   std::function<Eigen::Vector2d(Eigen::Vector2d, double)> dY = [this](Eigen::Vector2d y, double t){
     return equationOfMotion(y, t);
@@ -247,19 +247,19 @@ int Shooting::integrateProfile(double r0, std::vector<double> y0_,
   Eigen::Vector2d dydr0 = dY(y0, r0);
   int ysign = y0[0] > phi_metaMin ? 1 : -1;
   rmax += r0;
-  
+
   int convergence_type;
   while (true) {
     auto rval = rkqs(y0, dydr0, r0, dY, dr, epsfrac, epsabs);
-    
+
     Eigen::Vector2d dy = rval.Delta_y;
     dr = rval.Delta_t;
     double drnext = rval.dtnxt;
-    
+
     double r1 = r0 + dr;
     Eigen::Vector2d y1 = y0 + dy;
     Eigen::Vector2d dydr1 = dY(y1,r1);
-    
+
 //    LOG(trace) << "r = " << r1 << ", phi = " << y1[0] << ", dphi/dr = " << y1[1];
     if (r1 > rmax){
       throw std::runtime_error("r > rmax");
@@ -309,29 +309,29 @@ int Shooting::integrateProfile(double r0, std::vector<double> y0_,
 
 Profile1D Shooting::integrateAndSaveProfile(Eigen::VectorXd R, std::vector<double> y0_,
                       double dr, std::vector<double> epsabs_, std::vector<double> epsfrac_, double drmin){
-  
+
   Eigen::Map<Eigen::Vector2d> y0(y0_.data());
   Eigen::Map<Eigen::Vector2d> epsabs(epsabs_.data());
   Eigen::Map<Eigen::Vector2d> epsfrac(epsfrac_.data());
-  
+
   Profile1D profile;
   int N = R.size();
   Eigen::VectorXd Phi(N);
   Eigen::VectorXd dPhi(N);
   Phi(0) = y0[0];
   dPhi(0) = y0[1];
-  
+
   double r0 = R[0];
   std::function<Eigen::Vector2d(Eigen::Vector2d, double)> dY = [this](Eigen::Vector2d y, double t){
     return equationOfMotion(y, t);
   };
   Eigen::Vector2d dydr0 = dY(y0, r0);
   double Rerr = NAN;
-  
+
   int ii = 1;
   while (ii<N){
     auto rval = rkqs(y0, dydr0, r0, dY, dr, epsfrac, epsabs);
-    
+
     Eigen::Vector2d dy = rval.Delta_y;
     dr = rval.Delta_t;
     double drnext = rval.dtnxt;
@@ -372,7 +372,7 @@ Profile1D Shooting::integrateAndSaveProfile(Eigen::VectorXd R, std::vector<doubl
   profile.Phi = Phi;
   profile.dPhi = dPhi;
   profile.Rerr = Rerr;
-  
+
   return profile;
 }
 
@@ -383,7 +383,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
   LOG(trace) << "phi_metaMin = " << phi_metaMin;
   findBarrierLocation();
   findRScale();
-  
+
   // Set r parameters
   rmin *= rscale;
   double dr0 = rmin;
@@ -404,7 +404,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
   } else {
     x = xguess;
   }
-  
+
   double r0, rf=NAN;
   std::vector<double> y0(2);
   double delta_phi0;
@@ -415,7 +415,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
     }
     double r0_, phi0, dphi0;
     initialConditions(delta_phi0, rmin, delta_phi_cutoff, &r0_, &phi0, &dphi0);
-    
+
     if (not std::isfinite(r0_) or not std::isfinite(x)){
       if (std::isnan(rf)) {
         LOG(fatal) << "Failed to retrieve initial conditions on the first try.";
@@ -423,7 +423,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
       }
       break;
     }
-    
+
     r0 = r0_;
     y0[0] = phi0;
     y0[1] = dphi0;
@@ -439,21 +439,21 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
       xmax = x;
       x = .5*(xmin+xmax);
     }
-    
+
     if ((xmax-xmin) < xtol){
       LOG(debug) << "Reached xtol";
       break;
     }
-  
+
   }
-  
+
   // Getting the points along the path
   Eigen::VectorXd R = Eigen::VectorXd::LinSpaced(npoints, r0, rf);
   Profile1D profile_final = integrateAndSaveProfile(R, y0, dr0, epsabs, epsfrac, drmin);
-  
+
   // Make points interior to the bubble
   Profile1D profile_int;
-  
+
   if (max_interior_pts <= 0) max_interior_pts = int(R.size()/2);
   double dx0 = R[1]-R[0];
   int n = std::ceil(R[0] / dx0);
@@ -475,10 +475,10 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
     profile_int.dPhi.resize(int_size);
     profile_int.Phi[0] = phi_absMin + delta_phi0;
     profile_int.dPhi[0] = 0.0;
-    
+
     double dV_ = dV_from_absMin(delta_phi0);
     double d2V_ = ps.d2V(profile_int.Phi[0]);
-    
+
     for (int i=1; i < int_size; i++ ){
       exactSolution(profile_int.R[i], profile_int.Phi[0], dV_, d2V_, profile_int.Phi.data() + i, profile_int.dPhi.data() + i);
     }
@@ -492,13 +492,13 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
   profile.Phi << profile_int.Phi, profile_final.Phi;
   profile.dPhi << profile_int.dPhi, profile_final.dPhi;
   profile.Rerr = profile_final.Rerr;
-  
+
   return profile;
 
 }
 
 double Shooting::calAction(Profile1D profile){
-  
+
   const auto r = profile.R;
   if (r.size()==2){
     if (r.isApprox(profile_zero.R, xtol)) return 0;
@@ -527,12 +527,12 @@ double Shooting::calAction(Profile1D profile){
 
   alglib::spline1dinterpolant spline;
   alglib::spline1dbuildcubic(x, integrand, spline);
-  
+
   double S = alglib::spline1dintegrate(spline, x[n-1]);
-  
+
   // Find the bulk term in the bubble interior
   double volume = std::pow(r[0], d) * pow(M_PI, d * 0.5) / tgamma(d * 0.5 + 1);
-  
+
   S += volume * (ps.V(phi[0]) - ps.V(phi_metaMin));
   return S;
 }
@@ -540,10 +540,10 @@ double Shooting::calAction(Profile1D profile){
 
 void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double>* p,std::vector<double>* dp,
                      size_t npoints, bool fixAbs){
-  
+
   Eigen::VectorXd phi = pf.Phi;
   Eigen::VectorXd dphi = pf.dPhi;
-  
+
   // Excessively small intervals may cause errors in alglib::spline1dbuildcubic
   Eigen::VectorXd filtered_phi;
   Eigen::VectorXd filtered_dphi;
@@ -599,7 +599,7 @@ void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double>* p,std::vector<
     evenly_phi[jj] = min + jj * step;
     evenly_dphi[jj] = alglib::spline1dcalc(spl, evenly_phi[jj]);
   }
-  
+
   *p = evenly_phi;
   *dp = evenly_dphi;
 }

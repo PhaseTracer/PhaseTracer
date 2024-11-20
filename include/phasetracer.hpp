@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_HPP_INCLUDED
-#define PHASETRACER_HPP_INCLUDED
+#ifndef PHASETRACER_PHASETRACER_HPP_
+#define PHASETRACER_PHASETRACER_HPP_
 
 #include "logger.hpp"
 #include "phase_finder.hpp"
@@ -28,4 +28,4 @@
 #include "potential_line_plotter.hpp"
 #include "spectrum_plotter.hpp"
 
-#endif
+#endif  //  PHASETRACER_PHASETRACER_HPP_

@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef POTENTIAL_THERMAL_FUNCTION_TABLES_HPP_INCLUDED
-#define POTENTIAL_THERMAL_FUNCTION_TABLES_HPP_INCLUDED
+#ifndef EFFECTIVEPOTENTIAL_THERMAL_FUNCTION_TABLES_HPP_
+#define EFFECTIVEPOTENTIAL_THERMAL_FUNCTION_TABLES_HPP_
 
 #include <interpolation.h>
 
@@ -1369,5 +1369,4 @@ const alglib::real_1d_array J_F_Y_DATA ="[\
 
 } // namespace EffectivePotential
 
-#endif
-
+#endif  // EFFECTIVEPOTENTIAL_THERMAL_FUNCTION_TABLES_HPP_

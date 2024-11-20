@@ -15,16 +15,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_OVERLOAD_HPP_INCLUDED
-#define PHASETRACER_OVERLOAD_HPP_INCLUDED
+#ifndef PHASETRACER_OVERLOAD_HPP_
+#define PHASETRACER_OVERLOAD_HPP_
 
-// TODO do these work for boost log?
+#include <algorithm>
+#include <iterator>
+#include <ostream>
+#include <vector>
 
 #include <Eigen/Core>
-#include <ostream>
-#include <iterator>
-#include <vector>
-#include <algorithm>
 
 namespace PhaseTracer {
 
@@ -47,4 +46,4 @@ inline std::ostream& operator<< (std::ostream& o, Eigen::VectorXd v) {
 
 }  // namespace PhaseTracer
 
-#endif
+#endif  // PHASETRACER_OVERLOAD_HPP_

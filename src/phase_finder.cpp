@@ -15,14 +15,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#include <Eigen/Eigenvalues>
-#include <boost/math/special_functions/sign.hpp>
-#include <limits.h>
-#include <iostream>
-
-#include "phase_finder.hpp"
 #include "logger.hpp"
+#include "phase_finder.hpp"
 #include "pow.hpp"
+
+#include <boost/math/special_functions/sign.hpp>
+#include <Eigen/Eigenvalues>
 
 namespace PhaseTracer {
 
@@ -320,7 +318,7 @@ void PhaseFinder::find_phases() {
     dXdT.insert(dXdT.end(), dXdT_up.begin() + 1, dXdT_up.end());
     V.insert(V.end(), V_up.begin() + 1, V_up.end());
 
-//  Ignore short phase may cause endless loop. 
+//  Ignore short phase may cause endless loop.
 //    if (std::abs(T.front() - T.back()) > phase_min_length) {
       Phase new_;
       new_.key = phases.size();

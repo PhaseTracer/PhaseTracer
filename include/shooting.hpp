@@ -15,19 +15,20 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_SHOOTING_HPP_INCLUDED
-#define PHASETRACER_SHOOTING_HPP_INCLUDED
+#ifndef PHASETRACER_SHOOTING_HPP_
+#define PHASETRACER_SHOOTING_HPP_
 
+#include <algorithm>
 #include <cmath>
 #include <ostream>
 #include <vector>
-#include <Eigen/Core>
-#include <algorithm>
+
 #include <boost/cstdint.hpp>
 #include <boost/math/special_functions/bessel.hpp>
 #include <boost/numeric/odeint.hpp>
 #include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <boost/math/tools/minima.hpp>
+#include <Eigen/Core>
 #include <gsl/gsl_sf_bessel.h>
 
 #include "potential.hpp"
@@ -96,7 +97,7 @@ public:
   explicit Shooting(PotentialForShooting& ps_, int alpha_) :
     ps(ps_), alpha(alpha_) {}
   virtual ~Shooting() = default;
-    
+
   /*Calculates `dV/dphi` at ``phi = phi_absMin + delta_phi``.*/
   double dV_from_absMin(double delta_phi);
   /* Find edge of the potential barrier. */
@@ -125,11 +126,11 @@ public:
   Profile1D findProfile(double metaMin, double absMin, double xguess=NAN, int max_interior_pts=0);
   /* Calculate the Euclidean action for the instanton */
   double calAction(Profile1D profile);
-  
+
   /* Get linearly spaced phi */
   void evenlySpacedPhi(Profile1D pf, std::vector<double>* p,std::vector<double>* dp,
                        size_t npoints=100, bool fixAbs=true);
-  
+
   Profile1D profile_zero = {
     Eigen::Vector2d::Zero(2),
     Eigen::Vector2d::Zero(2),
@@ -143,17 +144,17 @@ public:
     Eigen::Vector2d::Zero(2),
     0.0
   };
-  
+
 private:
-  
+
   PotentialForShooting& ps;
-  
+
   double phi_absMin;
   double phi_metaMin;
   double phi_bar;
   double rscale; // approximate radial scale of the instanton
   int alpha;
-  
+
   /* To determine whether the field is considered nearby phi_absMin or not */
   PROPERTY(double, phi_eps_rel, 1e-3)
   /* The precision of field values after taking the logarithm */
@@ -170,12 +171,8 @@ private:
   PROPERTY(double, rmax, 1e4)
   /* The maximum number of points to be positioned during the integration process. */
   PROPERTY(boost::uintmax_t, max_iter, 100)
-  
-
-
-  
 };
 
 }  // namespace PhaseTracer
 
-#endif
+#endif // PHASETRACER_SHOOTING_HPP_

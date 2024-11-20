@@ -15,15 +15,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef POTENTIAL_ONE_LOOP_POTENTIAL_HPP_INCLUDED
-#define POTENTIAL_ONE_LOOP_POTENTIAL_HPP_INCLUDED
+#ifndef EFFECTIVEPOTENTIAL_ONE_LOOP_POTENTIAL_HPP_
+#define EFFECTIVEPOTENTIAL_ONE_LOOP_POTENTIAL_HPP_
 
 #include <vector>
+
 #include <Eigen/Core>
 
 #include "property.hpp"
 #include "potential.hpp"
-
 
 namespace EffectivePotential {
 
@@ -111,4 +111,4 @@ class OneLoopPotential : public Potential {
 
 }  // namespace EffectivePotential
 
-#endif
+#endif  // EFFECTIVEPOTENTIAL_ONE_LOOP_POTENTIAL_HPP_
