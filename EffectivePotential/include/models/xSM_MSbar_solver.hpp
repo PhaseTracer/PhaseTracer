@@ -17,6 +17,9 @@
 
 
 /**
+
+ See arXiv:2208.01319 [hep-ph] for details
+ 
  Determine parameters \mu_h^2, \mu_s^2, \lambda_h and \lambda_s
  for real scalar singlet extension of the Standard Model
  by solving the one-loop corrected tadpole conditions and Higgs masses

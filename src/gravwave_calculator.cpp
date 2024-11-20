@@ -13,12 +13,25 @@ namespace PhaseTracer {
 
 
 std::ostream& operator << (std::ostream& o, const GravWaveCalculator& a){
+  if (a.spectrums.empty()) {
+    o << "found no spectrums" << std::endl;
+    return o;
+  }
+
+  o << "found " << a.spectrums.size() << " spectrum";
+  if (a.spectrums.size() > 1) {
+    o << "s";
+  }
+
+  o << std::endl << std::endl;
+
   for (const auto &t : a.spectrums) {
     o << t << std::endl;
   }
-  o << "=== Summed gravitational wave " << std::endl;
-  o << "    peak_frequency = " << a.total_spectrum.peak_frequency << std::endl
-    << "    peak_amplitude = " << a.total_spectrum.peak_amplitude << std::endl;
+
+  o << "=== total gravitational wave spectrum  ===" << std::endl;
+  o << "peak frequency = " << a.total_spectrum.peak_frequency << std::endl
+    << "peak amplitude = " << a.total_spectrum.peak_amplitude << std::endl;
   return o;
 }
 
@@ -262,6 +275,17 @@ void GravWaveCalculator::write_spectrum_to_text(GravWaveSpectrum sp, const std::
   }
   
   LOG(debug) << "GW spectrum has been written to " << filename;
+}
+
+void GravWaveCalculator::write_spectrum_to_text(int i, const std::string &filename){
+  write_spectrum_to_text(spectrums[i], filename);
+}
+
+void GravWaveCalculator::write_spectrum_to_text(const std::string &filename){
+  LOG(fatal) << spectrums.size();
+  for (int ii=0; ii<spectrums.size(); ii++){
+    write_spectrum_to_text(spectrums[ii], std::to_string(ii) + "_" + filename);
+  }
 }
 
 double GravWaveCalculator::intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref){

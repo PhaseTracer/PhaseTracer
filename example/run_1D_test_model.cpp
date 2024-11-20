@@ -5,11 +5,8 @@
 #include <iostream>
 
 #include "models/1D_test_model.hpp" // Located in effective-potential/include/models
-#include "phase_finder.hpp"
-#include "transition_finder.hpp"
-#include "logger.hpp"
-#include "phase_plotter.hpp"
-#include "gravwave_calculator.hpp"
+#include "phasetracer.hpp" 
+
 
 int main(int argc, char* argv[]) {
 
@@ -32,7 +29,7 @@ int main(int argc, char* argv[]) {
 
   // Make ActionCalculator object
   PhaseTracer::ActionCalculator ac(model);
-  ac.set_action_calculator(PhaseTracer::ActionMethod::PathDeformation);
+  
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf,ac);
   tf.find_transitions();
@@ -40,12 +37,18 @@ int main(int argc, char* argv[]) {
   
   // Make GravWaveCalculator object
   PhaseTracer::GravWaveCalculator gc(tf);
+  gc.set_T_threshold_bubble_collision(1e10);
+  
   const auto sps = gc.calc_spectrums();
   for (size_t ii=0; ii<sps.size(); ii++){
     std::cout << sps[ii];
     if (debug_mode) {
       gc.write_spectrum_to_text(sps[ii], "GW_spectrum_1D_test_model"+std::to_string(ii)+".txt");
     }
+  }
+
+  if (debug_mode) {
+    PhaseTracer::spectrum_plotter(gc, "1D_test");
   }
   
   if (debug_mode) {

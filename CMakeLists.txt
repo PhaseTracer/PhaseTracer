@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 project(PhaseTracer VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 enable_language(CXX)
+enable_testing()
 
 # option for building models with FlexibleSUSY
 option(BUILD_WITH_FS "Build FlexibleSUSY example program (THDMS with NMSSM BCs) " OFF)
@@ -17,6 +18,10 @@ option(BUILD_WITH_BSMPT "Build BSMPT example programs" OFF)
 option(BUILD_WITH_BP "Build example programs including BubbleProfiler" OFF)
 
 # packages
+
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)
+endif()
 
 find_package(Boost 1.53.0 REQUIRED
   COMPONENTS

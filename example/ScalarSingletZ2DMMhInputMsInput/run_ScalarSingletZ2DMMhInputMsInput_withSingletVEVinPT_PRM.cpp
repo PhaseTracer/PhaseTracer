@@ -202,7 +202,7 @@ int main(int argc, char* argv[]) {
 
 
   // Use minima with greatest Higgs/scalar
-  double vs, vh;
+  double vs=0, vh=0;
   for (const auto& m : ht_minima) {
     if (debug_mode) {
       std::cout << "HT minimum = " << m.x << std::endl;

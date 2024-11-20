@@ -224,18 +224,23 @@ public:
         path_pts.push_back(false_vacuum);
         try{
           auto a_pd = pd.full_tunneling(path_pts);
+//          auto path_phi = a_pd.phi;
+//          std::ofstream file("path_1.txt");
+//          for (size_t i = 0; i < path_phi.size(); ++i) {
+//            file << path_phi[i][0] << "\t" << path_phi[i][1] << std::endl;
+//          }
+//          file.close();
         }catch (const std::exception& e) {
           LOG(warning) << "At T=" << T <<  ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: "   << e.what();
         }
         action_PD = pd.get_action();
       }
-      
+      LOG(debug) << " S(PD) = " << action_PD;
     }
     
     
-    LOG(debug) << " S(PD) = " << action_PD;
+    
 #ifdef BUILD_WITH_BP
-    LOG(debug) << " S(BP) = " << action_BP;
     if (std::isnan(action_BP)) {
         return action_PD;
     }

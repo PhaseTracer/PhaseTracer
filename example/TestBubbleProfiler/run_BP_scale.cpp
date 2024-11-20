@@ -33,6 +33,7 @@ int main(int argc, char* argv[]) {
 
   // Make ActionCalculator object and calcualte the action
   PhaseTracer::ActionCalculator ac(model);
+  ac.set_action_calculator(PhaseTracer::ActionMethod::BubbleProfiler);
   
   Eigen::VectorXd true_vacuum(1);
   true_vacuum << 0.;

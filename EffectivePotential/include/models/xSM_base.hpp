@@ -20,7 +20,7 @@
 
 /**
  * Common parts of xSM models
- *
+ * See arXiv:2208.01319  [hep-ph] for details
  */
 
 #include <algorithm>
@@ -68,6 +68,14 @@ class xSM_base : public OneLoopPotential {
     return get_vector_debye_sq(phi, 0.);
   }
 
+  std::vector<double> get_ghost_masses_sq(Eigen::VectorXd phi, double xi) const override {
+    auto const vector_masses_sq = get_vector_debye_sq(phi, 0.);
+    return {xi*vector_masses_sq[0], xi*vector_masses_sq[1], xi*vector_masses_sq[2]};
+  }
+  std::vector<double> get_ghost_dofs() const override {
+    return {2., 1., 1.};
+  }
+  
   // W, Z, photon
   std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override {
     const double h_sq = square(phi[0]);
