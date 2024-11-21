@@ -42,62 +42,61 @@ class ActionCalculator {
 private:
   EffectivePotential::Potential &potential;
 
-  /* Number of dimensions */
+  /** Number of dimensions */
   PROPERTY(size_t, num_dims, 3)
 
-  /* Choose method to calculate the action*/
+  /** Choose method to calculate the action */
   ActionMethod action_method = ActionMethod::PathDeformation;
 
-  /* Set parameters in BubbleProfiler */
-  /* Use perturbative method or not*/
+  /** Set parameters in BubbleProfiler */
+  /** Use perturbative method or not*/
   PROPERTY(bool, BP_use_perturbative, false)
   PROPERTY(double, BP_initial_step_size, 1.e-2)
   PROPERTY(double, BP_interpolation_points_fraction, 1.0)
   // TODD: Add more settings if needed
 
-  /* Set parameters for PathDeformation */
-  /* The precision of field values after taking the logarithm */
+  /** Set parameters for PathDeformation */
+  /** The precision of field values after taking the logarithm */
   PROPERTY(double, PD_xtol, 1e-4)
-  /* The fractional error tolerance in integration*/
+  /** The fractional error tolerance in integration*/
   PROPERTY(double, PD_phitol, 1e-4)
-  /* The cut off for finding the initial conditions for integration */
+  /** The cut off for finding the initial conditions for integration */
   PROPERTY(double, PD_thin_cutoff, .01)
-  /* Number of points to return in the profile */
+  /** Number of points to return in the profile */
   PROPERTY(double, PD_npoints, 500)
-  /* The smallest starting radius */
+  /** The smallest starting radius */
   PROPERTY(double, PD_rmin, 1e-4)
-  /* The maximum allowed integration distance */
+  /** The maximum allowed integration distance */
   PROPERTY(double, PD_rmax, 1e4)
-  /* The maximum number of points to be positioned during the integration process. */
+  /** The maximum number of points to be positioned during the integration process. */
   PROPERTY(boost::uintmax_t, PD_max_iter, 100)
-  /* Number of basis splines to use */
+  /** Number of basis splines to use */
   PROPERTY(size_t, PD_nb, 10);
-  /* Order of basis splines */
+  /** Order of basis splines */
   PROPERTY(size_t, PD_kb, 3);
-  /* Get each step saved */
+  /** Get each step saved */
   PROPERTY(bool, PD_save_all_steps, false);
-  /* The smallest the square of dphidr is allowed to be */
+  /** The smallest the square of dphidr is allowed to be */
   PROPERTY(double, PD_v2min, 0.0);
-  /* Maximum number of steps to take in a deformation */
+  /** Maximum number of steps to take in a deformation */
   PROPERTY(size_t, PD_step_maxiter, 500);
-  /* Maximum number of allowed deformation iterations */
+  /** Maximum number of allowed deformation iterations */
   PROPERTY(size_t, PD_path_maxiter, 20);
-  /* Number of samples to take along the path to create the spline
+  /** Number of samples to take along the path to create the spline
    interpolation functions */
   PROPERTY(size_t, PD_V_spline_samples, 100);
-  /* Flag to extend the path to minimums*/
+  /** Flag to extend the path to minimums*/
   PROPERTY(bool, PD_extend_to_minima, true);
 
 public:
   explicit ActionCalculator(EffectivePotential::Potential &potential_) : potential(potential_) {
   }
-  virtual ~ActionCalculator() = default;
 
   void set_action_calculator(ActionMethod am) {
     action_method = am;
 
 #ifndef BUILD_WITH_BP
-    if (action_method == ActionMethod::BubbleProfiler or action_method == ActionMethod::All) {
+    if (action_method == ActionMethod::BubbleProfiler || action_method == ActionMethod::All) {
       LOG(fatal) << "Enable BubbleProfiler in CMake configuration before using it.";
       throw std::runtime_error("BubbleProfiler is not installed.");
     }
@@ -106,16 +105,14 @@ public:
 
   ActionMethod get_action_calculator() const { return action_method; }
 
-  double get_action(const Eigen::VectorXd &vacuum_1, const Eigen::VectorXd &vacuum_2, double T) const {
+  double get_action(Eigen::VectorXd true_vacuum , Eigen::VectorXd false_vacuum, double T) const {
 
-    Eigen::VectorXd true_vacuum = vacuum_1;
-    Eigen::VectorXd false_vacuum = vacuum_2;
     if (potential.V(true_vacuum, T) > potential.V(false_vacuum, T))
       true_vacuum.swap(false_vacuum);
 
 #ifdef BUILD_WITH_BP
     double action_BP = std::numeric_limits<double>::quiet_NaN();
-    if (action_method == ActionMethod::BubbleProfiler or action_method == ActionMethod::All) {
+    if (action_method == ActionMethod::BubbleProfiler || action_method == ActionMethod::All) {
       V_BubbleProfiler V_BP(potential); // perturbative_profiler only accept non-const potential
       V_BP.set_T(T);
 
@@ -126,7 +123,7 @@ public:
         auto barrier_ = V_BP.find_one_dimensional_barrier(true_vacuum, false_vacuum, T);
         double barrier = barrier_[0];
 
-        LOG(debug) << "Calculate action(BP) at T=" << T << ", with false, true, barrier = " << false_min << ", " << true_min << ", " << barrier;
+        LOG(debug) << "Calculate action (BP) at T=" << T << ", with false, true, barrier = " << false_min << ", " << true_min << ", " << barrier;
 
         try {
           BubbleProfiler::Shooting one_dim;
@@ -137,11 +134,9 @@ public:
           LOG(warning) << "At T=" << T << ", between[" << false_min << "] and [" << true_min << "]: " << e.what();
         }
       } else {
-        LOG(debug) << "Calculate action(BP) at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
+        LOG(debug) << "Calculate action (BP) at T = " << T << ", between " << false_vacuum << " and " << true_vacuum;
         BubbleProfiler::RK4_perturbative_profiler profiler;
 
-        //      profiler.set_domain_start(input.domain_start);
-        //      profiler.set_domain_end(input.domain_end);
         profiler.set_initial_step_size(BP_initial_step_size);
         profiler.set_interpolation_points_fraction(BP_interpolation_points_fraction);
 
@@ -161,15 +156,15 @@ public:
           profiler.calculate_bubble_profile(V_BP);
           action_BP = profiler.get_euclidean_action();
         } catch (const std::exception &e) {
-          LOG(warning) << "At T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: " << e.what();
+          LOG(warning) << "At T = " << T << ", between " << false_vacuum << " and " << true_vacuum << ": " << e.what();
         }
       }
-      LOG(debug) << " S(BP) = " << action_BP;
+      LOG(debug) << "S(BP) = " << action_BP;
     }
 #endif
     double action_PD = std::numeric_limits<double>::quiet_NaN();
-    if (action_method == ActionMethod::PathDeformation or action_method == ActionMethod::All) {
-      LOG(debug) << "Calculate action(PD) at T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]";
+    if (action_method == ActionMethod::PathDeformation || action_method == ActionMethod::All) {
+      LOG(debug) << "Calculate action (PD) at T = " << T << ", between " << false_vacuum << " and " << true_vacuum;
       if (potential.get_n_scalars() == 1) {
         OneDimPotentialForShooting ps(potential);
         ps.set_T(T);
@@ -186,7 +181,7 @@ public:
           auto profile = st.findProfile(false_vacuum[0], true_vacuum[0]);
           action_PD = st.calAction(profile);
         } catch (const std::exception &e) {
-          LOG(warning) << "At T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: " << e.what();
+          LOG(warning) << "At T = " << T << ", between " << false_vacuum << " and " << true_vacuum << ": " << e.what();
         }
       } else {
         PathDeformation pd(potential);
@@ -200,7 +195,7 @@ public:
         pd.set_V_spline_samples(PD_V_spline_samples);
         pd.set_extend_to_minima(PD_extend_to_minima);
 
-        /** Pass through the shooting settings **/
+        /** Pass through the shooting settings */
         pd.set_xtol(PD_xtol);
         pd.set_phitol(PD_phitol);
         pd.set_thin_cutoff(PD_thin_cutoff);
@@ -213,19 +208,13 @@ public:
         path_pts.push_back(true_vacuum);
         path_pts.push_back(false_vacuum);
         try {
-          auto a_pd = pd.full_tunneling(path_pts);
-          //          auto path_phi = a_pd.phi;
-          //          std::ofstream file("path_1.txt");
-          //          for (size_t i = 0; i < path_phi.size(); ++i) {
-          //            file << path_phi[i][0] << "\t" << path_phi[i][1] << std::endl;
-          //          }
-          //          file.close();
+          pd.full_tunneling(path_pts);
         } catch (const std::exception &e) {
-          LOG(warning) << "At T=" << T << ", between [" << false_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "] and [" << true_vacuum.transpose().format(Eigen::IOFormat(4, Eigen::DontAlignCols, " ", " ")) << "]: " << e.what();
+          LOG(warning) << "At T = " << T << ", between " << false_vacuum << " and " << true_vacuum << ": " << e.what();
         }
         action_PD = pd.get_action();
       }
-      LOG(debug) << " S(PD) = " << action_PD;
+      LOG(debug) << "S(PD) = " << action_PD;
     }
 
 #ifdef BUILD_WITH_BP
