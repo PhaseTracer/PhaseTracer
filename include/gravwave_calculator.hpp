@@ -57,55 +57,53 @@ struct GravWaveSpectrum {
 class GravWaveCalculator {
 
 public:
-  explicit GravWaveCalculator(TransitionFinder tf_) : tf(tf_) {
-    std::vector<Transition> trans_ = tf.get_transitions();
-    for (const auto &ti : trans_) {
-      if (std::isnan(ti.TN))
+  explicit GravWaveCalculator(const TransitionFinder &tf_) : tf(tf_) {
+    for (const auto &t : tf.get_transitions()) {
+      if (std::isnan(t.TN))
         LOG(debug) << "Nucleation temperature dose not exist. GW will not be calculated !";
       else
-        trans.push_back(ti);
+        trans.push_back(t);
     }
   }
-  virtual ~GravWaveCalculator() = default;
 
   /** Pretty-printer for set of transitions in this object */
   friend std::ostream &operator<<(std::ostream &o, const GravWaveCalculator &a);
 
-  /** Functions to calculate amplitude at a fixed frequency*/
-  double Kappa_sound_wave(double alpha);
-  double GW_bubble_collision(double f, double alpha, double beta_H, double T_ref);
-  double GW_sound_wave(double f, double alpha, double beta_H, double T_ref);
-  double GW_turbulence(double f, double alpha, double beta_H, double T_ref);
+  /** Functions to calculate amplitude at a fixed frequency */
+  double Kappa_sound_wave(double alpha) const;
+  double GW_bubble_collision(double f, double alpha, double beta_H, double T_ref) const;
+  double GW_sound_wave(double f, double alpha, double beta_H, double T_ref) const;
+  double GW_turbulence(double f, double alpha, double beta_H, double T_ref) const;
 
-  /** Calculate GW spectrum for one transition*/
+  /** Calculate GW spectrum for one transition */
   GravWaveSpectrum calc_spectrum(double alpha, double beta_H, double Tref);
-  /** Calculate GW spectrums for all the transitions*/
+  /** Calculate GW spectrums for all the transitions */
   std::vector<GravWaveSpectrum> calc_spectrums();
-  /** Return GW spectrums for all the transitions*/
-  std::vector<GravWaveSpectrum> get_spectrums() { return spectrums; }
+  /** Return GW spectrums for all the transitions */
+  std::vector<GravWaveSpectrum> get_spectrums() const { return spectrums; }
 
-  /** Sum GW spectrums*/
-  GravWaveSpectrum sum_spectrums(std::vector<GravWaveSpectrum> sps);
-  /** Return the summed GW spectrum*/
-  GravWaveSpectrum get_total_spectrum() { return total_spectrum; }
+  /** Sum GW spectrums */
+  GravWaveSpectrum sum_spectrums(const std::vector<GravWaveSpectrum> &spectrums) const;
+  /** Return the summed GW spectrum */
+  GravWaveSpectrum get_total_spectrum() const { return total_spectrum; }
 
-  /** Write a GW spectrum to a text file*/
-  void write_spectrum_to_text(GravWaveSpectrum sp, const std::string &filename);
-  void write_spectrum_to_text(int i, const std::string &filename);
-  void write_spectrum_to_text(const std::string &filename);
+  /** Write a GW spectrum to a text file */
+  void write_spectrum_to_text(const GravWaveSpectrum &sp, const std::string &filename) const;
+  void write_spectrum_to_text(int i, const std::string &filename) const;
+  void write_spectrum_to_text(const std::string &filename) const;
 
-  /* Calcualte alpha(phase transition strength) with fixed phi */
-  const double get_alpha(const Eigen::VectorXd vacuum_1, const Eigen::VectorXd vacuum_2, double T);
-  /* Calcualte alpha(phase transition strength) along the phases */
-  const double get_alpha(Phase phase1, Phase phase2, double T);
+  /** Calcualte alpha(phase transition strength) with fixed phi */
+  double get_alpha(const Eigen::VectorXd &vacuum_1, const Eigen::VectorXd &vacuum_2, double T) const;
+  /** Calcualte alpha(phase transition strength) along the phases */
+  double get_alpha(const Phase &phase1, const Phase &phase2, double T) const;;
 
-  /* Calcualte beta/H (Inverse phase transition duration) */
-  const double get_beta_H(Phase phase1, Phase phase2, double T, size_t i_unique);
-  /*Sensitivity for LISA*/
-  double intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref);
-  /*Sensitivity for Taiji*/
-  double intergrand_SNR_Taiji(double f, double alpha, double beta_H, double T_ref);
-  std::vector<double> get_SNR(double f_min, double f_max, double T_obs_LISA, double T_obs_Taiji, double alpha, double beta_H, double T_ref);
+  /** Calcualte beta/H (Inverse phase transition duration) */
+  double get_beta_H(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const;
+  /** Sensitivity for LISA */
+  double intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref) const;
+  /** Sensitivity for Taiji */
+  double intergrand_SNR_Taiji(double f, double alpha, double beta_H, double T_ref) const;
+  std::vector<double> get_SNR(double f_min, double f_max, double T_obs_LISA, double T_obs_Taiji, double alpha, double beta_H, double T_ref) const;
 
 private:
   TransitionFinder tf;
@@ -114,7 +112,7 @@ private:
   PROPERTY(double, dof, 106.75);
   /** Velocity of the bubble wall */
   PROPERTY(double, vw, 0.3);
-  /** Ratio of efficiency factor of turbulence to the one of sound wave*/
+  /** Ratio of efficiency factor of turbulence to the one of sound wave */
   PROPERTY(double, epsilon, 0.1);
   /** Gravitational constant */
   const double G = 6.7088e-39;
@@ -122,60 +120,60 @@ private:
   /**Effecive run time**/
   PROPERTY(double, run_time_LISA, 3);
   PROPERTY(double, run_time_Taiji, 3);
-  /**Acquisition time for LISA, Taiji, units second **/
+  /**Acquisition time for LISA, Taiji, units second */
   PROPERTY(double, T_obs_LISA, 3 * 365.25 * 86400);
   PROPERTY(double, T_obs_Taiji, 3 * 365.25 * 86400);
 
-  /**Integrate bound for SNR calculation **/
+  /**Integrate bound for SNR calculation */
   PROPERTY(double, SNR_f_min, 1e-5);
   PROPERTY(double, SNR_f_max, 1e-1);
 
-  /** GW spectrums for all the transitions*/
+  /** GW spectrums for all the transitions */
   std::vector<GravWaveSpectrum> spectrums;
   /** Summed GW spectrum*/
   GravWaveSpectrum total_spectrum;
   /** All transitions with valid TN*/
   std::vector<Transition> trans;
 
-  /** Lower bound on the frequency of the GW spectrum*/
+  /** Lower bound on the frequency of the GW spectrum */
   PROPERTY(double, min_frequency, 1e-4);
-  /** Upper bound on the frequency of the GW spectrum*/
+  /** Upper bound on the frequency of the GW spectrum  */
   PROPERTY(double, max_frequency, 1e1);
-  /** Number of points for  the frequency of the GW spectrum*/
+  /** Number of points for  the frequency of the GW spectrum */
   PROPERTY(int, num_frequency, 500);
-  /** Temperature threshold for using bubble collision*/
+  /** Temperature threshold for using bubble collision */
   PROPERTY(double, T_threshold_bubble_collision, 10);
 
-  /** The step-size in numerical derivative for dVdT*/
+  /** The step-size in numerical derivative for dVdT */
   PROPERTY(double, h_dVdT, 1e-2);
   /** The step-size in numerical derivative for dSdT */
   PROPERTY(double, h_dSdT, 1e-1);
   /** The number of points used in numerical derivative of action */
   PROPERTY(double, np_dSdT, 5);
 
-  /*  */
-  const double rho_R(double T);
+  /**  */
+  double rho_R(double T) const;
 
-  /* Hubble constant */
-  const double H(double T);
+  /** Hubble constant */
+  double H(double T) const;
 
-  /* Functions for calcualting alpha with fixed phi */
-  const double V(const Eigen::VectorXd phi, const double T);
-  const double dVdT(const Eigen::VectorXd phi, const double T);
-  const double rho(const Eigen::VectorXd phi, const double T);
+  /** Functions for calculating alpha with fixed phi */
+  double V(const Eigen::VectorXd &phi, const double T) const;
+  double dVdT(const Eigen::VectorXd &phi, const double T) const;
+  double rho(const Eigen::VectorXd &phi, const double T) const;
 
-  /* Functions for calcualting alpha along the phase */
-  Eigen::VectorXd vacuum_of_phase_at_T(Phase phase1, double T);
-  const double V(Phase phase1, const double T);
-  const double dVdT(Phase phase1, const double T);
-  const double rho(Phase phase1, const double T);
+  /** Functions for calcualting alpha along the phase */
+  Eigen::VectorXd vacuum_of_phase_at_T(const Phase &phase, double T) const;
+  double V(const Phase &phase, const double T) const;
+  double dVdT(const Phase &phase, const double T) const;
+  double rho(const Phase &phase, const double T) const;
 
-  /* Using linear regression for solving the derivative of the action functional. */
-  Eigen::Vector2d LinearRegression(std::vector<double> x_, std::vector<double> y_);
-  /* Get action over temperature */
-  const double S3T(Phase phase1, Phase phase2, double T, size_t i_unique);
-  /* Calculate derivative of S3/T to T */
-  const double dSdT(Phase phase1, Phase phase2, double T, size_t i_unique);
+  /** Using linear regression for solving the derivative of the action functional */
+  Eigen::Vector2d LinearRegression(std::vector<double> &x_, std::vector<double> &y_) const;
+  /** Get action over temperature */
+  double S3T(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const;
+  /** Calculate derivative of S3/T to T */
+  double dSdT(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const;
 };
 
 } // namespace PhaseTracer
