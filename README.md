@@ -53,6 +53,12 @@ If the build was succesful, run the examples and tests with:
     ./bin/run_2D_test_model
     ./bin/scan_Z2_scalar_singlet_model
     ./bin/unit_tests
+    
+If you want to see debugging infromation or obtain plots of the phases and potential for the firts two examples above you cna add the -d flag, i.e.\
+
+    ./bin/run_1D_test_model -d 
+    ./bin/run_2D_test_model -d
+
 
 ## BubbleProfiler
 <details>
