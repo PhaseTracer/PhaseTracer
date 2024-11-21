@@ -94,9 +94,9 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
           }
         }
         if (min_action < std::numeric_limits<double>::max()) {
-          LOG(debug) << "Selcet the symmetric partner " << i_selected << ".";
+          LOG(debug) << "Select the symmetric partner " << i_selected << ".";
         } else {
-          LOG(debug) << "Can not selcet the symmetric partner.";
+          LOG(debug) << "Can not select the symmetric partner.";
           // TODO
         }
       }
