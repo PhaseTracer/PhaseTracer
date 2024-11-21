@@ -122,7 +122,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
   }
 }
 
-double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const {
+double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size_t i_unique, double T_begin, double T_end) const {
 
   if (T_begin < T_end) {
     LOG(fatal) << "T_begin < T_end, so swith the values. ";
@@ -136,9 +136,6 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
   const auto nucleation_criteria = [this, phase1, phase2, i_unique](double Ttry) {
     return this->get_action(phase1, phase2, Ttry, i_unique) / Ttry - 140.;
   };
-
-  //  LOG(debug) << "nucleation_criteria(T_begin)= " << nucleation_criteria(T_begin) ;
-  //  LOG(debug) << "nucleation_criteria(T_end)= " << nucleation_criteria(T_end) ;
 
   double Tnuc = std::numeric_limits<double>::quiet_NaN();
   // If action at T_begin is NaN, find the largest valid T_begin
@@ -185,11 +182,6 @@ double TransitionFinder::get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, d
 
 std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase &phase1, const Phase &phase2, double T1, double T2, size_t currentID) const {
 
-#ifdef CAL_TNUC
-  // TODO
-  LOG(warning) << "When assume_only_one_transition is set to false, the calculation of Tnuc will not be performed. " << std::endl;
-#endif
-
   std::vector<Transition> roots;
   for (double T = T1; T <= T2; T += separation) {
     const auto bs = find_transition(phase1, phase2, T, std::min(T + separation, T2), currentID + roots.size());
@@ -200,7 +192,7 @@ std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase
   return roots;
 }
 
-std::vector<Eigen::VectorXd> TransitionFinder::get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique) const {
+std::vector<Eigen::VectorXd> TransitionFinder::get_vacua_at_T(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const {
   const auto phase1_at_T = pf.phase_at_T(phase1, T);
   const auto phase2_at_T = pf.phase_at_T(phase2, T);
   const auto true_vacua_at_T = pf.symmetric_partners(phase1_at_T.x);
@@ -209,16 +201,16 @@ std::vector<Eigen::VectorXd> TransitionFinder::get_vacua_at_T(Phase phase1, Phas
   return {false_vacua_at_T[0], true_vacua_at_T[i_unique]};
 }
 
-double TransitionFinder::get_action(Eigen::VectorXd vacuum_1, Eigen::VectorXd vacuum_2, double T) const {
+double TransitionFinder::get_action(const Eigen::VectorXd &vacuum_1, const Eigen::VectorXd &vacuum_2, double T) const {
   return ac.get_action(vacuum_1, vacuum_2, T);
 }
 
-double TransitionFinder::get_action(Phase phase1, Phase phase2, double T, size_t i_unique) const {
+double TransitionFinder::get_action(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const {
   const auto vacua = get_vacua_at_T(phase1, phase2, T, i_unique);
   return ac.get_action(vacua[0], vacua[1], T);
 }
 
-std::vector<double> TransitionFinder::get_action(Phase phase1, Phase phase2, std::vector<double> T_list, size_t i_unique) const {
+std::vector<double> TransitionFinder::get_action(const Phase &phase1, const Phase &phase2, std::vector<double> T_list, size_t i_unique) const {
   std::vector<double> action_list;
   for (const auto Ti : T_list) {
     double action;
@@ -233,7 +225,7 @@ std::vector<double> TransitionFinder::get_action(Phase phase1, Phase phase2, std
   return action_list;
 }
 
-void TransitionFinder::write_action_to_text(Phase phase1, Phase phase2, std::vector<double> T_list, const std::string &filename, size_t i_unique) const {
+void TransitionFinder::write_action_to_text(const Phase &phase1, const Phase &phase2, std::vector<double> T_list, const std::string &filename, size_t i_unique) const {
   std::vector<double> action_list = get_action(phase1, phase2, T_list, i_unique);
   std::ofstream outFile(filename);
   for (size_t i = 0; i < T_list.size(); ++i) {
@@ -242,7 +234,7 @@ void TransitionFinder::write_action_to_text(Phase phase1, Phase phase2, std::vec
   outFile.close();
 }
 
-void TransitionFinder::write_action_to_text(Transition tran, double T_min, double T_max, size_t n_step, const std::string &filename, size_t i_unique) const {
+void TransitionFinder::write_action_to_text(const Transition &tran, double T_min, double T_max, size_t n_step, const std::string &filename, size_t i_unique) const {
   std::vector<double> T_list;
   for (double Ti = T_min; Ti <= T_max; Ti += (T_max - T_min) / n_step) {
     T_list.push_back(Ti);
@@ -252,7 +244,7 @@ void TransitionFinder::write_action_to_text(Transition tran, double T_min, doubl
   write_action_to_text(phase1, phase2, T_list, filename, i_unique);
 }
 
-void TransitionFinder::write_action_to_text(Transition tran, const std::string &filename, size_t n_step, size_t i_unique) const {
+void TransitionFinder::write_action_to_text(const Transition &tran, const std::string &filename, size_t n_step, size_t i_unique) const {
   double T_min = std::max(tran.true_phase.T[0], tran.false_phase.T[0]);
   double T_max = tran.TC;
   write_action_to_text(tran, T_min, T_max, n_step, filename, i_unique);

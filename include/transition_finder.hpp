@@ -123,21 +123,21 @@ public:
   /** Retrieve all transitions between all phases */
   std::vector<Transition> get_transitions() const { return transitions; }
 
-  std::vector<Eigen::VectorXd> get_vacua_at_T(Phase phase1, Phase phase2, double T, size_t i_unique = 0) const;
+  std::vector<Eigen::VectorXd> get_vacua_at_T(const Phase &phase1, const Phase &phase2, double T, size_t i_unique = 0) const;
 
-  double get_action(Eigen::VectorXd vacuum_1, Eigen::VectorXd vacuum_2, double T) const;
+  double get_action(const Eigen::VectorXd &vacuum_1, const Eigen::VectorXd &vacuum_2, double T) const;
 
-  double get_action(Phase phase1, Phase phase2, double T, size_t i_unique = 0) const;
+  double get_action(const Phase &phase1, const Phase &phase2, double T, size_t i_unique = 0) const;
 
-  std::vector<double> get_action(Phase phase1, Phase phase2, std::vector<double> T_list, size_t i_unique = 0) const;
+  std::vector<double> get_action(const Phase &phase1, const Phase &phase2, std::vector<double> T_list, size_t i_unique = 0) const;
 
-  void write_action_to_text(Phase phase1, Phase phase2, std::vector<double> T_list, const std::string &filename, size_t i_unique = 0) const;
+  void write_action_to_text(const Phase &phase1, const Phase &phase2, std::vector<double> T_list, const std::string &filename, size_t i_unique = 0) const;
 
-  void write_action_to_text(Transition tran, double T_min, double T_max, size_t n_step, const std::string &filename, size_t i_unique = 0) const;
+  void write_action_to_text(const Transition &tran, double T_min, double T_max, size_t n_step, const std::string &filename, size_t i_unique = 0) const;
 
-  void write_action_to_text(Transition tran, const std::string &filename, size_t n_step = 50, size_t i_unique = 0) const;
+  void write_action_to_text(const Transition &tran, const std::string &filename, size_t n_step = 50, size_t i_unique = 0) const;
 
-  double get_Tnuc(Phase phase1, Phase phase2, size_t i_unique, double T_begin, double T_end) const;
+  double get_Tnuc(const Phase &phase1, const Phase &phase2, size_t i_unique, double T_begin, double T_end) const;
 
   /** Retrieve all transition paths */
   std::vector<TransitionGraph::Path> get_transition_paths() const { return transition_paths; }
