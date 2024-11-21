@@ -53,44 +53,44 @@ std::ostream &operator<<(std::ostream &o, const GravWaveCalculator &a) {
   return o;
 }
 
-const double GravWaveCalculator::rho_R(double T) {
+double GravWaveCalculator::rho_R(double T) const {
   return std::pow(T, 4) * M_PI * M_PI * dof / 30.;
 }
 
-const double GravWaveCalculator::H(double T) {
+double GravWaveCalculator::H(double T) const {
   return std::sqrt(8. * M_PI * G / 3. * rho_R(T));
 }
 
-const double GravWaveCalculator::V(const Eigen::VectorXd phi, const double T) {
+double GravWaveCalculator::V(const Eigen::VectorXd &phi, const double T) const {
   return tf.pf.P.V(phi, T);
 }
-const double GravWaveCalculator::dVdT(const Eigen::VectorXd phi, const double T) {
+double GravWaveCalculator::dVdT(const Eigen::VectorXd &phi, const double T) const {
   return (-V(phi, T + 2 * h_dVdT) + 8 * V(phi, T + h_dVdT) - 8 * V(phi, T - h_dVdT) + V(phi, T - 2 * h_dVdT)) / (12.0 * h_dVdT);
 }
-const double GravWaveCalculator::rho(const Eigen::VectorXd phi, const double T) {
+double GravWaveCalculator::rho(const Eigen::VectorXd &phi, const double T) const {
   return V(phi, T) - 0.25 * T * dVdT(phi, T);
 }
-const double GravWaveCalculator::get_alpha(const Eigen::VectorXd vacuum_1, const Eigen::VectorXd vacuum_2, double T) {
+double GravWaveCalculator::get_alpha(const Eigen::VectorXd &vacuum_1, const Eigen::VectorXd &vacuum_2, double T) const {
   return (rho(vacuum_1, T) - rho(vacuum_2, T)) / rho_R(T);
 }
 
-Eigen::VectorXd GravWaveCalculator::vacuum_of_phase_at_T(Phase phase1, double T) {
-  return tf.pf.phase_at_T(phase1, T).x;
+Eigen::VectorXd GravWaveCalculator::vacuum_of_phase_at_T(const Phase &phase, double T) const {
+  return tf.pf.phase_at_T(phase, T).x;
 }
-const double GravWaveCalculator::V(Phase phase1, const double T) {
-  return tf.pf.P.V(vacuum_of_phase_at_T(phase1, T), T);
+double GravWaveCalculator::V(const Phase &phase, const double T) const {
+  return tf.pf.P.V(vacuum_of_phase_at_T(phase, T), T);
 }
-const double GravWaveCalculator::dVdT(Phase phase1, const double T) {
-  return (-V(phase1, T + 2 * h_dVdT) + 8 * V(phase1, T + h_dVdT) - 8 * V(phase1, T - h_dVdT) + V(phase1, T - 2 * h_dVdT)) / (12.0 * h_dVdT);
+double GravWaveCalculator::dVdT(const Phase &phase, const double T) const {
+  return (-V(phase, T + 2 * h_dVdT) + 8 * V(phase, T + h_dVdT) - 8 * V(phase, T - h_dVdT) + V(phase, T - 2 * h_dVdT)) / (12.0 * h_dVdT);
 }
-const double GravWaveCalculator::rho(Phase phase1, const double T) {
-  return V(phase1, T) - 0.25 * T * dVdT(phase1, T);
+double GravWaveCalculator::rho(const Phase &phase, const double T) const {
+  return V(phase, T) - 0.25 * T * dVdT(phase, T);
 }
-const double GravWaveCalculator::get_alpha(Phase phase1, Phase phase2, double T) {
+double GravWaveCalculator::get_alpha(const Phase &phase1, const Phase &phase2, double T) const {
   return (rho(phase1, T) - rho(phase1, T)) / rho_R(T);
 }
 
-Eigen::Vector2d GravWaveCalculator::LinearRegression(std::vector<double> x_, std::vector<double> y_) {
+Eigen::Vector2d GravWaveCalculator::LinearRegression(std::vector<double> &x_, std::vector<double> &y_) const {
   Eigen::Map<Eigen::VectorXd> x(x_.data(), x_.size());
   Eigen::Map<Eigen::VectorXd> y(y_.data(), y_.size());
   int n = x.size();
@@ -102,16 +102,16 @@ Eigen::Vector2d GravWaveCalculator::LinearRegression(std::vector<double> x_, std
   return coeff;
 }
 
-const double GravWaveCalculator::S3T(Phase phase1, Phase phase2, double T, size_t i_unique) {
+double GravWaveCalculator::S3T(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const {
   return tf.get_action(phase1, phase2, T, i_unique) / T;
 }
 
-const double GravWaveCalculator::dSdT(Phase phase1, Phase phase2, double T, size_t i_unique) {
+double GravWaveCalculator::dSdT(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const {
   std::vector<double> x, y;
   for (int ii = 0; ii <= np_dSdT; ii++) {
     double Ti = T - h_dSdT + ii * 2. * h_dSdT / np_dSdT;
     double S = S3T(phase1, phase2, Ti, i_unique);
-    if ((not std::isnan(S)) and (not std::isinf(S))) {
+    if ((!std::isnan(S)) && (!std::isinf(S))) {
       x.push_back(Ti);
       y.push_back(S);
     }
@@ -120,18 +120,15 @@ const double GravWaveCalculator::dSdT(Phase phase1, Phase phase2, double T, size
     LOG(fatal) << "No enough valid S values in the calculation of dSdT.";
     exit(EXIT_FAILURE);
   }
-  Eigen::Vector2d coeff = LinearRegression(x, y); // coeff[0] + coeff[1]*x
-                                                  //      std::cout << "  T = np.array(" << x << ")" << std::endl;
-                                                  //      std::cout << "  S = np.array(" << y << ")" << std::endl;
-                                                  //      std::cout << "  coeff = np.array(" << coeff[0] << ", "<< coeff[1] << "])" << std::endl;
+  Eigen::Vector2d coeff = LinearRegression(x, y);
   return coeff[1];
 }
 
-const double GravWaveCalculator::get_beta_H(Phase phase1, Phase phase2, double T, size_t i_unique) {
+double GravWaveCalculator::get_beta_H(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const {
   return T * dSdT(phase1, phase2, T, i_unique);
 }
 
-double GravWaveCalculator::GW_bubble_collision(double f, double alpha, double beta_H, double T_ref) {
+double GravWaveCalculator::GW_bubble_collision(double f, double alpha, double beta_H, double T_ref) const {
   double omega_env;
   double s_env;
   double kappa = 1 / (1 + 0.715 * alpha) * (0.715 * alpha + 4. / 27 * sqrt(3 * alpha / 2));
@@ -143,7 +140,7 @@ double GravWaveCalculator::GW_bubble_collision(double f, double alpha, double be
   return omega_env;
 }
 
-double GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, double T_ref) {
+double GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, double T_ref) const {
   double omega_sw;
   double omega_sw_peak;
   double Hstar_R = pow(beta_H, -1.) * pow(8 * 3.1415926, 1. / 3) * vw;
@@ -157,7 +154,7 @@ double GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, 
   return omega_sw;
 }
 
-double GravWaveCalculator::GW_turbulence(double f, double alpha, double beta_H, double T_ref) {
+double GravWaveCalculator::GW_turbulence(double f, double alpha, double beta_H, double T_ref) const {
   double omega_turb;
   double hn = 1.65e-5 * (T_ref / 100) * pow(dof / 100, 1. / 6);
   double f_peak_turb = 2.7e-5 / vw * beta_H * (T_ref / 100) * pow(dof / 100, 1. / 6);
@@ -166,7 +163,7 @@ double GravWaveCalculator::GW_turbulence(double f, double alpha, double beta_H, 
   return omega_turb;
 }
 
-double GravWaveCalculator::Kappa_sound_wave(double alpha) {
+double GravWaveCalculator::Kappa_sound_wave(double alpha) const {
   double kappa_sw;
   double cs = sqrt(1 / 3.);
   double v_cj = 1 / (1 + alpha) * (cs + sqrt(pow(alpha, 2.) + 2. / 3 * alpha));
@@ -230,7 +227,7 @@ GravWaveSpectrum GravWaveCalculator::calc_spectrum(double alpha, double beta_H, 
   return sp;
 }
 
-GravWaveSpectrum GravWaveCalculator::sum_spectrums(std::vector<GravWaveSpectrum> sps) {
+GravWaveSpectrum GravWaveCalculator::sum_spectrums(const std::vector<GravWaveSpectrum> &sps) const {
 
   GravWaveSpectrum summed_sp;
 
@@ -281,7 +278,7 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
   return spectrums;
 }
 
-void GravWaveCalculator::write_spectrum_to_text(GravWaveSpectrum sp, const std::string &filename) {
+void GravWaveCalculator::write_spectrum_to_text(const GravWaveSpectrum &sp, const std::string &filename) const {
   std::ofstream file(filename);
   for (int ii = 0; ii < sp.frequency.size(); ii++) {
     file << sp.frequency[ii] << ", " << sp.total_amplitude[ii] << ", "
@@ -291,18 +288,18 @@ void GravWaveCalculator::write_spectrum_to_text(GravWaveSpectrum sp, const std::
   LOG(debug) << "GW spectrum has been written to " << filename;
 }
 
-void GravWaveCalculator::write_spectrum_to_text(int i, const std::string &filename) {
+void GravWaveCalculator::write_spectrum_to_text(int i, const std::string &filename) const {
   write_spectrum_to_text(spectrums[i], filename);
 }
 
-void GravWaveCalculator::write_spectrum_to_text(const std::string &filename) {
+void GravWaveCalculator::write_spectrum_to_text(const std::string &filename) const {
   LOG(fatal) << spectrums.size();
   for (int ii = 0; ii < spectrums.size(); ii++) {
     write_spectrum_to_text(spectrums[ii], std::to_string(ii) + "_" + filename);
   }
 }
 
-double GravWaveCalculator::intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref) {
+double GravWaveCalculator::intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref) const {
   double P_oms = 3.6e-41;
   double P_acc = 1.44e-48 / pow(2 * M_PI * f, 4) * (1 + pow(0.4e-3 / f, 2));
   double S_A = sqrt(2) * 20. / 3 * (P_oms + 4 * P_acc) * (1 + pow(f / (2.54e-2), 2));
@@ -315,7 +312,7 @@ double GravWaveCalculator::intergrand_SNR_LISA(double f, double alpha, double be
   return omegahsq * omegahsq / (omegahsq_lisa * omegahsq_lisa);
 }
 
-double GravWaveCalculator::intergrand_SNR_Taiji(double f, double alpha, double beta_H, double T_ref) {
+double GravWaveCalculator::intergrand_SNR_Taiji(double f, double alpha, double beta_H, double T_ref) const {
   double P_oms = 64e-24 * (1 + pow(2e-3 / f, 4)) * (2 * M_PI * f / 3e8);
   double P_acc = 9e-30 * (1 + pow(0.4e-3 / f, 2)) * (1 + pow(f / 8e-3, 4)) * (1 / (2 * M_PI * f * 3e8));
   double f_star = 3e8 / (2 * M_PI * 3e9);
@@ -332,7 +329,7 @@ double GravWaveCalculator::intergrand_SNR_Taiji(double f, double alpha, double b
   return omegahsq * omegahsq / (omegahsq_taiji * omegahsq_taiji);
 }
 
-std::vector<double> GravWaveCalculator::get_SNR(double f_min, double f_max, double run_time_LISA, double run_time_Taiji, double alpha, double beta_H, double T_ref) {
+std::vector<double> GravWaveCalculator::get_SNR(double f_min, double f_max, double run_time_LISA, double run_time_Taiji, double alpha, double beta_H, double T_ref) const {
   std::vector<double> SNR_vector;
   double T_obs_LISA = run_time_LISA * 365.25 * 86400;
   double T_obs_Taiji = run_time_Taiji * 365.25 * 86400;
