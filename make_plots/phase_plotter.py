@@ -24,6 +24,7 @@ ARROW_DELTA_T = 10.
 QUIVER_ARROW = {"zorder": 10, "angles": 'xy', "scale_units": 'xy', "scale": 1, "units": 'dots', "width": 2.5, "minlength": 3.}
 LINE = {"lw": 2.5, "alpha": 0.8}
 GEV = ""
+TITLE = ""
 FONTSIZE = "x-small"
 subcriticalTransitionArrowColour = '0.5'
 criticalTransitionArrowColour = '0'
@@ -210,6 +211,7 @@ def plane_phi_phi_one(pi, pj, phases, transitions, folderName="", fileName="plan
     if prevColour is not None:
         QUIVER_ARROW['color'] = prevColour
 
+    plt.gcf().suptitle(TITLE, ha="right", x=0.9, y=0.925, fontsize="small")
     plt.savefig(full_pdf_name, bbox_inches="tight")
 
 
@@ -286,6 +288,7 @@ def plane_T_V(phases, pdf_name="plane.pdf", forced_Tmin=-1.0, forced_Tmax=-1.0):
     correct_limit(ax, x, y)
     #ax.set_xlim(0.75 * t_min, 1.25 * t_max)
     plt.legend()
+    plt.gcf().suptitle(TITLE, ha="right", x=0.9, y=0.925, fontsize="small")
     plt.savefig(pdf_name, bbox_inches="tight")
 
 
@@ -396,6 +399,7 @@ def plane_phi_T(phases, transitions, pdf_name="plane.pdf", forced_Tmin=-1.0, for
     if len(extra_legends) > 0:
         add_arrows_to_leg(axs[-1], extra_legends)
 
+    plt.gcf().suptitle(TITLE, ha="right", x=0.9, y=0.925, fontsize="small")
     plt.savefig(pdf_name, bbox_inches="tight")
 
 
@@ -498,11 +502,23 @@ def constructTransition(text):
 def constructTransitionPath(text):
     return TransitionPath(np.array([int(string) for string in text[1].split()]))
 
+def get_tag():
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    owd = os.getcwd()
+    os.chdir(dir_path)
+    tag = os.popen('git describe --tags --abbrev=0').read().strip()
+    os.chdir(owd)
+    return tag
 
 if __name__ == "__main__":
     np.seterr(all='raise')
     #fileName = "E://Software/PhaseTracer/"
     #fileName = "../bin/output/xSM_MSbar_noZ2/near-g4R-858/395.dat"
+
+    try:
+        tag = get_tag()
+    except IOError:
+        tag = None
 
     try:
         latex = os.environ["MATPLOTLIB_LATEX"]
@@ -512,9 +528,10 @@ if __name__ == "__main__":
         rc('text', usetex=True)
         rc('font', **{'family': 'serif', 'size': 14})
         GEV = r"\ensuremath{\,\textrm{GeV}}"
+        TITLE = r"\texttt{PhaseTracer-" + tag + "}" if tag else r"\texttt{PhaseTracer}"
     else:
         GEV = r" GeV"
-
+        TITLE = f"PhaseTracer-{tag}" if tag else "PhaseTracer"
 
     rc('axes', **{'grid': True})
     rc('grid', **{'ls': ':'})
