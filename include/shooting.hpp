@@ -48,18 +48,13 @@ class OneDimPotentialForShooting : public PotentialForShooting {
 public:
   explicit OneDimPotentialForShooting(EffectivePotential::Potential &P_) : P(P_) {}
   virtual ~OneDimPotentialForShooting() = default;
-  double V(double phi) const override { return P.V(Vec(phi), T); }
-  double dV(double phi) const override { return P.dV_dx(Vec(phi), T)(0); }
-  double d2V(double phi) const override { return P.d2V_dx2(Vec(phi), T)(0, 0); }
+  double V(double phi) const override { return P.V(Eigen::Matrix<double, 1, 1>(phi), T); }
+  double dV(double phi) const override { return P.dV_dx(Eigen::Matrix<double, 1, 1>(phi), T)(0); }
+  double d2V(double phi) const override { return P.d2V_dx2(Eigen::Matrix<double, 1, 1>(phi), T)(0, 0); }
   PROPERTY(double, T, 0);
 
 private:
   EffectivePotential::Potential &P;
-  Eigen::VectorXd Vec(double phi) const {
-    Eigen::VectorXd Vec_(1);
-    Vec_ << phi;
-    return Vec_;
-  };
 };
 
 class CubicInterpFunction {
@@ -96,16 +91,16 @@ public:
   explicit Shooting(PotentialForShooting &ps_, int alpha_) : ps(ps_), alpha(alpha_) {}
   virtual ~Shooting() = default;
 
-  /*Calculates `dV/dphi` at ``phi = phi_absMin + delta_phi``.*/
+  /** Calculates `dV/dphi` at ``phi = phi_absMin + delta_phi`` */
   double dV_from_absMin(double delta_phi);
-  /* Find edge of the potential barrier. */
+  /** Find edge of the potential barrier. */
   void findBarrierLocation();
-  /* Find the characteristic length scale for tunneling over the potential barrier. */
+  /** Find the characteristic length scale for tunneling over the potential barrier */
   void findRScale();
-  /*Find `phi(r)` given `phi(r=0)`, assuming a quadratic potential.*/
+  /** Find `phi(r)` given `phi(r=0)`, assuming a quadratic potential */
   void exactSolution(double r, double phi0, double dV_, double d2V_,
                      double *phi_r, double *dphi_r);
-  /*Finds the initial conditions, phi(r0) = phi_cutoff, for integration.*/
+  /** Finds the initial conditions, phi(r0) = phi_cutoff, for integration */
   void initialConditions(double delta_phi0, double rmin, double delta_phi_cutoff,
                          double *r0, double *phi_r0, double *dphi_r0);
   Eigen::Vector2d equationOfMotion(const Eigen::Vector2d y, const double r) {
@@ -114,18 +109,18 @@ public:
     dydr[1] = ps.dV(y[0]) - alpha * y[1] / r;
     return dydr;
   }
-  /* Integrate the bubble wall equation */
+  /** Integrate the bubble wall equation */
   int integrateProfile(double r0, std::vector<double> y0, double *rf, std::vector<double> *yf,
                        double dr0, std::vector<double> epsabs, std::vector<double> epsfrac, double drmin, double rmax);
-  /* Integrate the bubble profile, saving the output in an array */
+  /** Integrate the bubble profile, saving the output in an array */
   Profile1D integrateAndSaveProfile(Eigen::VectorXd R, std::vector<double> y0,
                                     double dr0, std::vector<double> epsabs, std::vector<double> epsfrac, double drmin);
-  /* Calculate the bubble profile */
+  /** Calculate the bubble profile */
   Profile1D findProfile(double metaMin, double absMin, double xguess = NAN, int max_interior_pts = 0);
-  /* Calculate the Euclidean action for the instanton */
+  /** Calculate the Euclidean action for the instanton */
   double calAction(Profile1D profile);
 
-  /* Get linearly spaced phi */
+  /** Get linearly spaced phi */
   void evenlySpacedPhi(Profile1D pf, std::vector<double> *p, std::vector<double> *dp,
                        size_t npoints = 100, bool fixAbs = true);
 
@@ -147,24 +142,25 @@ private:
   double phi_absMin;
   double phi_metaMin;
   double phi_bar;
-  double rscale; // approximate radial scale of the instanton
+  /** Approximate radial scale of the instanton */
+  double rscale;
   int alpha;
 
-  /* To determine whether the field is considered nearby phi_absMin or not */
+  /** To determine whether the field is considered nearby phi_absMin or not */
   PROPERTY(double, phi_eps_rel, 1e-3)
-  /* The precision of field values after taking the logarithm */
+  /** The precision of field values after taking the logarithm */
   PROPERTY(double, xtol, 1e-4)
-  /* The fractional error tolerance in integration*/
+  /** The fractional error tolerance in integration*/
   PROPERTY(double, phitol, 1e-4)
-  /* The cut off for finding the initial conditions for integration */
+  /** The cut off for finding the initial conditions for integration */
   PROPERTY(double, thin_cutoff, .01)
-  /* Number of points to return in the profile */
+  /** Number of points to return in the profile */
   PROPERTY(double, npoints, 500)
-  /* The smallest starting radius */
+  /** The smallest starting radius */
   PROPERTY(double, rmin, 1e-4)
-  /* The maximum allowed integration distance */
+  /** The maximum allowed integration distance */
   PROPERTY(double, rmax, 1e4)
-  /* The maximum number of points to be positioned during the integration process. */
+  /** The maximum number of points to be positioned during the integration process. */
   PROPERTY(boost::uintmax_t, max_iter, 100)
 };
 
