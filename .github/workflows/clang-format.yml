@@ -14,7 +14,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: dependencies
-      run: sudo apt-get install clang-format
+      run: sudo apt install pipx && pipx install clang-format
+    - name: check version
+      run: clang-format --version
     - name: check phasetracer
       run: clang-format --Werror --dry-run ./src/*.cpp ./include/*.hpp ./unit_tests/*.cpp
     - name: check effectivepotential
