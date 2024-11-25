@@ -73,12 +73,8 @@ double GravWaveCalculator::rho(const Eigen::VectorXd &phi, const double T) const
 double GravWaveCalculator::get_alpha(const Eigen::VectorXd &vacuum_1, const Eigen::VectorXd &vacuum_2, double T) const {
   return (rho(vacuum_1, T) - rho(vacuum_2, T)) / rho_R(T);
 }
-
-Eigen::VectorXd GravWaveCalculator::vacuum_of_phase_at_T(const Phase &phase, double T) const {
-  return tf.pf.phase_at_T(phase, T).x;
-}
 double GravWaveCalculator::V(const Phase &phase, const double T) const {
-  return tf.pf.P.V(vacuum_of_phase_at_T(phase, T), T);
+  return tf.pf.phase_at_T(phase, T).potential;
 }
 double GravWaveCalculator::dVdT(const Phase &phase, const double T) const {
   return (-V(phase, T + 2 * h_dVdT) + 8 * V(phase, T + h_dVdT) - 8 * V(phase, T - h_dVdT) + V(phase, T - 2 * h_dVdT)) / (12.0 * h_dVdT);
