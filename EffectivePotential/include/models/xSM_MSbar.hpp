@@ -101,7 +101,6 @@ public:
     double mhh2 = square(SM_mh);
     double mss2 = square(ms);
 
-    // TODO: will this affect calculation of lambda_h?
     if (mss2 > mhh2) {
       std::swap(mhh2, mss2);
     }
@@ -124,7 +123,7 @@ public:
    */
   bool apply_one_loop(double tol = 0.1) {
     apply_tree_level();
-    muh_sq_use_0L_EWSB = muh_sq; // TODO: this can be deleted?
+    muh_sq_use_0L_EWSB = muh_sq;
 
     size_t ii = 0;
     while (true) {
@@ -243,7 +242,6 @@ public:
     double mhh2 = square(SM_mh);
     double mss2 = square(ms);
 
-    // TODO: will this affect calculation of lambda_h?
     if (mhh2 < mss2) {
       std::swap(mhh2, mss2);
     }
@@ -302,8 +300,8 @@ public:
     const auto fm_sq = get_fermion_masses_sq(phi);
     const auto vm_sq = get_vector_masses_sq(phi);
     const double q_sq = square(get_renormalization_scale());
-    const double sum = 1. / (16. * M_PI * M_PI) * (+3. * lambda_h * (q_sq * xlogx(m11_sq / q_sq) - m11_sq) + 0.5 * lambda_hs * (q_sq * xlogx(m22_sq / q_sq) - m22_sq) - 6. * SM_yt_sq * (q_sq * xlogx(fm_sq[0] / q_sq) - fm_sq[0]) - 6. * SM_yb_sq * (q_sq * xlogx(fm_sq[1] / q_sq) - fm_sq[1]) //  TODO: Need check
-                                                   - 2. * SM_ytau_sq * (q_sq * xlogx(fm_sq[2] / q_sq) - fm_sq[2])                                                                                                                                                                               //  TODO: Need check
+    const double sum = 1. / (16. * M_PI * M_PI) * (+3. * lambda_h * (q_sq * xlogx(m11_sq / q_sq) - m11_sq) + 0.5 * lambda_hs * (q_sq * xlogx(m22_sq / q_sq) - m22_sq) - 6. * SM_yt_sq * (q_sq * xlogx(fm_sq[0] / q_sq) - fm_sq[0]) - 6. * SM_yb_sq * (q_sq * xlogx(fm_sq[1] / q_sq) - fm_sq[1])
+                                                   - 2. * SM_ytau_sq * (q_sq * xlogx(fm_sq[2] / q_sq) - fm_sq[2])
                                                    + 1.5 * square(SM_g) * (q_sq * xlogx(vm_sq[0] / q_sq) - 1. / 3. * vm_sq[0]) + 0.75 * (square(SM_g) + square(SM_gp)) * (q_sq * xlogx(vm_sq[1] / q_sq) - 1. / 3. * vm_sq[1]));
 
     // Goldstone mass
