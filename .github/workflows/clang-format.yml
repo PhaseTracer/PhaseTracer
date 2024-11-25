@@ -20,4 +20,4 @@ jobs:
     - name: check phasetracer
       run: clang-format --Werror --dry-run ./src/*.cpp ./include/*.hpp ./unit_tests/*.cpp
     - name: check effectivepotential
-      run: clang-format --Werror --dry-run ./EffectivePotential/src/*.cpp ./EffectivePotential/include/*.hpp ./EffectivePotential/unit_tests/*.cpp
+      run: clang-format --Werror --dry-run ./EffectivePotential/src/*.cpp ./EffectivePotential/include/*/*.hpp
