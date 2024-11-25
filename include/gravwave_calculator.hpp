@@ -95,7 +95,7 @@ public:
   /** Calcualte alpha(phase transition strength) with fixed phi */
   double get_alpha(const Eigen::VectorXd &vacuum_1, const Eigen::VectorXd &vacuum_2, double T) const;
   /** Calcualte alpha(phase transition strength) along the phases */
-  double get_alpha(const Phase &phase1, const Phase &phase2, double T) const;;
+  double get_alpha(const Phase &phase1, const Phase &phase2, double T) const;
 
   /** Calcualte beta/H (Inverse phase transition duration) */
   double get_beta_H(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const;
