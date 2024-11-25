@@ -4,6 +4,7 @@
 #include "models/Z2_scalar_singlet_model.hpp"
 #include "phase_finder.hpp"
 #include "transition_finder.hpp"
+#include "action_calculator.hpp"
 #include "logger.hpp"
 
 TEST_CASE("Compute transitions for a one-dimensional model", "[1DTestModel]") {
@@ -45,6 +46,85 @@ TEST_CASE("Compute transitions for a one-dimensional model", "[1DTestModel]") {
   SECTION("Check the false vacuum")
 
   CHECK(transitions[0].false_vacuum[0] == Approx(model.get_false_vacuum_from_expression()).margin(abs_tol));
+}
+
+TEST_CASE("Compute nucleation for a one-dimensional model", "[1DTestModel]") {
+
+  LOGGER(fatal);
+
+  // Construct our model
+  EffectivePotential::OneDimModel model;
+
+  const double rel_tol = 1.e-3;
+  const double abs_tol = 1.e-3;
+
+  // Make PhaseFinder object and find the transitions
+  PhaseTracer::PhaseFinder pf(model);
+  pf.set_seed(1);
+  pf.set_find_min_x_tol_rel(1.e-8);
+  pf.set_find_min_x_tol_abs(1.e-8);
+  pf.find_phases();
+
+  PhaseTracer::ActionCalculator ac(model);
+  PhaseTracer::TransitionFinder tf(pf, ac);
+  tf.set_TC_tol_rel(1e-16);
+  tf.find_transitions();
+
+  auto transitions = tf.get_transitions();
+
+  SECTION("Check number of transitions")
+
+  REQUIRE(transitions.size() == 1);
+
+  SECTION("Check the nucleation temperature")
+
+  CHECK(transitions[0].TN == Approx(57.4280983265).epsilon(rel_tol));
+
+  SECTION("Check the true vacuum at nucleation")
+
+  CHECK(std::abs(transitions[0].true_vacuum_TN[0]) == Approx(0.).margin(abs_tol));
+
+  SECTION("Check the false vacuum at nucleation")
+
+  CHECK(std::abs(transitions[0].false_vacuum_TN[0]) == Approx(53.5392255174).epsilon(rel_tol));
+}
+
+TEST_CASE("Compute nucleation for a two-dimensional model", "[2DTestModel]") {
+
+  LOGGER(fatal);
+
+  // Construct our model
+  EffectivePotential::TwoDimModel model;
+
+  // Make PhaseFinder object and find the transitions
+  PhaseTracer::PhaseFinder pf(model);
+  pf.set_seed(1);
+  pf.find_phases();
+
+  PhaseTracer::ActionCalculator ac(model);
+  PhaseTracer::TransitionFinder tf(pf, ac);
+  tf.find_transitions();
+  auto transitions = tf.get_transitions();
+
+  const double rel_tol = 1.e-3;
+
+  SECTION("Check number of transitions")
+
+  REQUIRE(transitions.size() == 1);
+
+  SECTION("Check the nucleation temperature")
+
+  CHECK(transitions[0].TN == Approx(84.1901920318).epsilon(rel_tol));
+
+  SECTION("Check the true vacuum at nucleation")
+
+  CHECK(std::abs(transitions[0].true_vacuum_TN[0]) == Approx(231.122003632).epsilon(rel_tol));
+  CHECK(std::abs(transitions[0].true_vacuum_TN[1]) == Approx(136.7545906901).epsilon(rel_tol));
+
+  SECTION("Check the false vacuum at nucleation")
+
+  CHECK(std::abs(transitions[0].false_vacuum_TN[0]) == Approx(286.4206084948).epsilon(rel_tol));
+  CHECK(std::abs(transitions[0].false_vacuum_TN[1]) == Approx(382.254323455).epsilon(rel_tol));
 }
 
 TEST_CASE("Compute transitions for a two-dimensional model", "[2DTestModel]") {
