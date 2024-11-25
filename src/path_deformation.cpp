@@ -30,7 +30,7 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
   std::vector<Eigen::VectorXd> dpts = _pathDeriv(pts);
   // 2. Extend the path
   if (extend_to_minima) {
-    double xmin = find_loc_min_w_guess(pts[0], dpts[0]); // TODO: This may return global mim
+    double xmin = find_loc_min_w_guess(pts[0], dpts[0]); // TODO: This may return global mim instead of local minimum
     xmin = std::min(xmin, 0.0);
     int nx = static_cast<int>(std::ceil(std::abs(xmin) - .5)) + 1;
     if (nx > 1) {
@@ -80,7 +80,7 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
     typedef double state_type;
     state_type x = 0.0;
     double t_start = 0.0;
-    double dt = pdist.back() * 1E-4; // TODO this need be changed.
+    double dt = pdist.back() * 1E-4;
     using error_stepper_type =
         boost::numeric::odeint::runge_kutta_dopri5<state_type>;
     using controlled_stepper_type =
@@ -275,7 +275,7 @@ bool PathDeformation::deformPath(std::vector<double> dphidr) {
   while (true) {
     num_steps++;
     step(stepsize, step_reversed, fRatio);
-    // TODO add callback
+    // TODO: add a user-defined callback function
 
     if (fRatio < fRatioConv || (num_steps == 1 && fRatio < converge_0 * fRatioConv)) {
       LOG(debug) << "Path deformation converged. "
@@ -297,8 +297,7 @@ bool PathDeformation::deformPath(std::vector<double> dphidr) {
       phi_list.resize(minfRatio_index);
       F_list.resize(minfRatio_index);
       LOG(fatal) << "Deformation doesn't appear to be converging. Stopping at the point of best convergence.";
-      break;
-      // TODO add error
+      throw std::runtime_error("Deformation can not converge");
     }
 
     if (num_steps >= step_maxiter) {
@@ -418,7 +417,7 @@ void PathDeformation::forces(std::vector<Eigen::VectorXd> &F_norm, std::vector<E
         dphi[jj] += beta_node[jj][kk] * dX_node(ii, kk);
         d2phi[jj] += beta_node[jj][kk] * d2X_node(ii, kk);
       }
-      dphi[jj] += phi_node.back()[jj] - phi_node[1][jj]; // TODO Note this is phi[1], not phi[0]
+      dphi[jj] += phi_node.back()[jj] - phi_node[1][jj]; // Note this is phi[1], not phi[0]
     }
 
     double dphi_ = dphi.norm();
@@ -522,12 +521,15 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
     for (size_t ii = 0; ii < num_nodes; ii++) {
       phi_node[ii] = path.vecp(phi_1d[ii]);
     }
-    // TODO add callback
-    // TODO add try and error
-    bool converged = deformPath(dphi_1d);
+    
+    bool converged;
+    try {
+      converged = deformPath(dphi_1d);
+    } catch (const std::runtime_error& e) {
+      converged = false;
+    }
     path_pts = phi_node;
 
-    // TODO check this
     ft.saved_steps.push_back(phi_list);
 
     if (converged and num_steps < 2) {
@@ -540,7 +542,6 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
     LOG(warning) << "Reached maxiter in full_tunneling. No convergence.";
   }
 
-  // TODO
   // Calculate the ratio of max perpendicular force to max gradient.
   // Make sure that we go back a step and use the forces on the path, not the
   // most recently deformed path.
