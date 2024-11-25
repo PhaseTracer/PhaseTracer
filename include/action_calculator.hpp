@@ -105,7 +105,7 @@ public:
 
   ActionMethod get_action_calculator() const { return action_method; }
 
-  double get_action(Eigen::VectorXd true_vacuum , Eigen::VectorXd false_vacuum, double T) const {
+  double get_action(Eigen::VectorXd true_vacuum, Eigen::VectorXd false_vacuum, double T) const {
 
     if (potential.V(true_vacuum, T) > potential.V(false_vacuum, T))
       true_vacuum.swap(false_vacuum);
