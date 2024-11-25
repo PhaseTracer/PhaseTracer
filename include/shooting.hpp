@@ -83,7 +83,6 @@ struct Profile1D {
   Eigen::VectorXd R;
   Eigen::VectorXd Phi;
   Eigen::VectorXd dPhi;
-  double Rerr;
 };
 
 class Shooting {

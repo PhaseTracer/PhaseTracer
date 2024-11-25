@@ -265,7 +265,7 @@ int Shooting::integrateProfile(double r0, std::vector<double> y0_,
     } else if (fabs(y1[0] - phi_metaMin) < 3. * epsabs[0] and fabs(y1[1]) < 3. * epsabs[1]) {
       convergence_type = 0; // converged
       *rf = r1;
-      std::vector<double> y1_(y1.data(), y1.data() + y1.size()); // TODO
+      std::vector<double> y1_(y1.data(), y1.data() + y1.size());
       *yf = y1_;
       break;
     } else if ((y1[0] - phi_metaMin) * ysign < 0 or y1[1] * ysign > 0) {
@@ -323,7 +323,6 @@ Profile1D Shooting::integrateAndSaveProfile(Eigen::VectorXd R, std::vector<doubl
     return equationOfMotion(y, t);
   };
   Eigen::Vector2d dydr0 = dY(y0, r0);
-  double Rerr = NAN;
 
   int ii = 1;
   while (ii < N) {
@@ -339,13 +338,10 @@ Profile1D Shooting::integrateAndSaveProfile(Eigen::VectorXd R, std::vector<doubl
       r1 = r0 + dr;
       y1 = y0 + dy;
     } else {
-      // TODO not checked
       y1 = y0 + dy * drmin / dr;
       drnext = drmin;
       dr = drnext;
       r1 = r0 + drmin;
-      if (not std::isnan(Rerr))
-        Rerr = r1; // TODO
     }
     Eigen::Vector2d dydr1 = dY(y1, r1);
     //    LOG(debug) << "r = " << r1 << ", phi = " << y1[0] << ", dphi/dr = " << y1[1];
@@ -369,7 +365,6 @@ Profile1D Shooting::integrateAndSaveProfile(Eigen::VectorXd R, std::vector<doubl
   profile.R = R;
   profile.Phi = Phi;
   profile.dPhi = dPhi;
-  profile.Rerr = Rerr;
 
   return profile;
 }
@@ -489,7 +484,6 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
   profile.R << profile_int.R, profile_final.R;
   profile.Phi << profile_int.Phi, profile_final.Phi;
   profile.dPhi << profile_int.dPhi, profile_final.dPhi;
-  profile.Rerr = profile_final.Rerr;
 
   return profile;
 }
