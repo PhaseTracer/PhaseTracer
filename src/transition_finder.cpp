@@ -24,30 +24,33 @@
 
 namespace PhaseTracer {
 
+double TransitionFinder::find_critical_temperature(const Phase &phase1, const Phase &phase2, double T1, double T2) const {
+  const auto f = [this, phase1, phase2](double T) { return this->pf.delta_potential_at_T(phase1, phase2, T); };
+  const double root_bits = 1. - std::log2(TC_tol_rel);
+  boost::math::tools::eps_tolerance<double> stop(root_bits);
+  boost::uintmax_t non_const_max_iter = max_iter;
+  const auto result = boost::math::tools::toms748_solve(f, T1, T2, stop, non_const_max_iter);
+  return (result.first + result.second) * 0.5;
+}
+
 std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase phase2, double T1, double T2, size_t currentID) const {
   if (T1 > T2) {
     LOG(debug) << "Phases do not overlap in temperature - no critical temperature";
     return {{NON_OVERLAPPING_T}};
   }
 
-  const auto f = [this, phase1, phase2](double T) { return this->pf.delta_potential_at_T(phase1, phase2, T); };
-  const double root_bits = 1. - std::log2(TC_tol_rel);
-  boost::math::tools::eps_tolerance<double> stop(root_bits);
-  boost::uintmax_t non_const_max_iter = max_iter;
-  std::pair<double, double> result;
+  double TC;
 
   try {
-    result = boost::math::tools::toms748_solve(f, T1, T2, stop, non_const_max_iter);
+    TC = find_critical_temperature(phase1, phase2, T1, T2);
   } catch (const std::exception &e) {
     LOG(debug) << e.what() << " - probably no sign change between T = " << T1 << " and " << T2;
     return {{ERROR}};
   }
 
-  const double TC = (result.first + result.second) * 0.5;
-
   LOG(debug) << "Found critical temperature = " << TC;
 
-  const bool ordered = f(T1) < 0.;
+  const bool ordered = pf.delta_potential_at_T(phase1, phase2, T1) < 0.;
   if (!ordered) {
     std::swap(phase1, phase2);
   }
