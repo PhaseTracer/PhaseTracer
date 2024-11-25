@@ -87,7 +87,7 @@ double GravWaveCalculator::rho(const Phase &phase, const double T) const {
   return V(phase, T) - 0.25 * T * dVdT(phase, T);
 }
 double GravWaveCalculator::get_alpha(const Phase &phase1, const Phase &phase2, double T) const {
-  return (rho(phase1, T) - rho(phase1, T)) / rho_R(T);
+  return (rho(phase1, T) - rho(phase2, T)) / rho_R(T);
 }
 
 Eigen::Vector2d GravWaveCalculator::LinearRegression(std::vector<double> &x_, std::vector<double> &y_) const {
