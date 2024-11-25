@@ -30,95 +30,94 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
     return {{NON_OVERLAPPING_T}};
   }
 
+  const auto f = [this, phase1, phase2](double T) { return this->pf.delta_potential_at_T(phase1, phase2, T); };
+  const double root_bits = 1. - std::log2(TC_tol_rel);
+  boost::math::tools::eps_tolerance<double> stop(root_bits);
+  boost::uintmax_t non_const_max_iter = max_iter;
+  std::pair<double, double> result;
+
   try {
-    const auto f = [this, phase1, phase2](double T) { return this->pf.delta_potential_at_T(phase1, phase2, T); };
-
-    const double root_bits = 1. - std::log2(TC_tol_rel);
-    boost::math::tools::eps_tolerance<double> stop(root_bits);
-    boost::uintmax_t non_const_max_iter = max_iter;
-    const auto result = boost::math::tools::toms748_solve(f, T1, T2, stop, non_const_max_iter);
-    const double TC = (result.first + result.second) * 0.5;
-
-    LOG(debug) << "Found critical temperature = " << TC;
-
-    const bool ordered = f(T1) < 0.;
-    if (!ordered) {
-      std::swap(phase1, phase2);
-    }
-    const auto phase1_at_critical = pf.phase_at_T(phase1, TC);
-    const auto phase2_at_critical = pf.phase_at_T(phase2, TC);
-    const auto delta_potential = phase1_at_critical.potential - phase2_at_critical.potential;
-    const auto true_vacua = pf.symmetric_partners(phase1_at_critical.x);
-    const auto false_vacua = pf.symmetric_partners(phase2_at_critical.x);
-    std::vector<Transition> unique_transitions;
-    // Fix false_vacuum, and loop all possible symmetric partners of true_vacuum
-    const auto false_vacuum = false_vacua[0];
-    auto true_vacuum = true_vacua[0];
-    for (size_t i_unique = 0; i_unique < true_vacua.size(); i_unique++) {
-      true_vacuum = true_vacua[i_unique];
-      bool duplicate = false;
-      const auto fv = pf.symmetric_partners(false_vacuum);
-      const auto tv = pf.symmetric_partners(true_vacuum);
-      LOG(trace) << "False vacuum: " << false_vacuum;
-      LOG(trace) << "and true vacuum: " << true_vacuum;
-      for (const auto tran : unique_transitions) {
-        for (size_t i = 0; i < fv.size(); ++i) {
-          if ((fv[i] - tran.false_vacuum).norm() < change_abs_tol + change_rel_tol * fv[i].norm() && (tv[i] - tran.true_vacuum).norm() < change_abs_tol + change_rel_tol * tv[i].norm()) {
-            LOG(trace) << "are duplicate";
-            duplicate = true;
-            break;
-          }
-        }
-      }
-      if (!duplicate) {
-        LOG(trace) << "are not duplicate";
-        const auto gamma_ = gamma(true_vacuum, false_vacuum, TC);
-        const auto changed_ = changed(true_vacuum, false_vacuum);
-        Eigen::VectorXd NaN_vec(1);
-        NaN_vec[0] = std::numeric_limits<double>::quiet_NaN();
-        unique_transitions.push_back({SUCCESS, TC, phase1, phase2, true_vacuum, false_vacuum, gamma_, changed_, delta_potential, std::numeric_limits<double>::quiet_NaN(), {}, {}, i_unique, false, currentID++});
-      }
-    }
-
-    if (calculate_action) {
-      size_t i_selected = 0;
-      if (unique_transitions.size() > 1) {
-        double min_action = std::numeric_limits<double>::max();
-        for (size_t i_unique = 0; i_unique < unique_transitions.size(); i_unique++) {
-          double Ttry = T1 + 0.9 * (TC - T1);
-          double try_action = get_action(phase1, phase2, Ttry, i_unique);
-          LOG(debug) << "Action at " << Ttry << " for transtion " << i_unique << " is " << try_action;
-          if (try_action < min_action) {
-            min_action = try_action;
-            i_selected = i_unique;
-          }
-        }
-        if (min_action < std::numeric_limits<double>::max()) {
-          LOG(debug) << "Select the symmetric partner " << i_selected << ".";
-        } else {
-          LOG(debug) << "Can not select the symmetric partner.";
-          // TODO
-        }
-      }
-
-      double TN = get_Tnuc(phase1, phase2, i_selected, TC, T1);
-      std::vector<Transition> selected_transition;
-      selected_transition.push_back(unique_transitions[i_selected]);
-      selected_transition[0].TN = TN;
-      if (not std::isnan(TN)) {
-        const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
-        selected_transition[0].true_vacuum_TN = vacua[0];
-        selected_transition[0].false_vacuum_TN = vacua[1];
-      }
-      return selected_transition;
-    } else {
-      return unique_transitions;
-    }
-
+    result = boost::math::tools::toms748_solve(f, T1, T2, stop, non_const_max_iter);
   } catch (const std::exception &e) {
-    // TODO
     LOG(debug) << e.what() << " - probably no sign change between T = " << T1 << " and " << T2;
     return {{ERROR}};
+  }
+
+  const double TC = (result.first + result.second) * 0.5;
+
+  LOG(debug) << "Found critical temperature = " << TC;
+
+  const bool ordered = f(T1) < 0.;
+  if (!ordered) {
+    std::swap(phase1, phase2);
+  }
+
+  const auto phase1_at_critical = pf.phase_at_T(phase1, TC);
+  const auto phase2_at_critical = pf.phase_at_T(phase2, TC);
+  const auto delta_potential = phase1_at_critical.potential - phase2_at_critical.potential;
+  const auto true_vacua = pf.symmetric_partners(phase1_at_critical.x);
+  const auto false_vacua = pf.symmetric_partners(phase2_at_critical.x);
+  std::vector<Transition> unique_transitions;
+  // Fix false_vacuum, and loop all possible symmetric partners of true_vacuum
+  const auto false_vacuum = false_vacua[0];
+  auto true_vacuum = true_vacua[0];
+  for (size_t i_unique = 0; i_unique < true_vacua.size(); i_unique++) {
+    true_vacuum = true_vacua[i_unique];
+    bool duplicate = false;
+    const auto fv = pf.symmetric_partners(false_vacuum);
+    const auto tv = pf.symmetric_partners(true_vacuum);
+    LOG(trace) << "False vacuum: " << false_vacuum;
+    LOG(trace) << "and true vacuum: " << true_vacuum;
+    for (const auto tran : unique_transitions) {
+      for (size_t i = 0; i < fv.size(); ++i) {
+        if ((fv[i] - tran.false_vacuum).norm() < change_abs_tol + change_rel_tol * fv[i].norm() && (tv[i] - tran.true_vacuum).norm() < change_abs_tol + change_rel_tol * tv[i].norm()) {
+          LOG(trace) << "are duplicate";
+          duplicate = true;
+          break;
+        }
+      }
+    }
+    if (!duplicate) {
+      LOG(trace) << "are not duplicate";
+      const auto gamma_ = gamma(true_vacuum, false_vacuum, TC);
+      const auto changed_ = changed(true_vacuum, false_vacuum);
+      unique_transitions.push_back({SUCCESS, TC, phase1, phase2, true_vacuum, false_vacuum, gamma_, changed_, delta_potential, std::numeric_limits<double>::quiet_NaN(), {}, {}, i_unique, false, currentID++});
+    }
+  }
+
+  if (calculate_action) {
+    size_t i_selected = 0;
+    if (unique_transitions.size() > 1) {
+      double min_action = std::numeric_limits<double>::max();
+      for (size_t i_unique = 0; i_unique < unique_transitions.size(); i_unique++) {
+        double Ttry = T1 + 0.9 * (TC - T1);
+        double try_action = get_action(phase1, phase2, Ttry, i_unique);
+        LOG(debug) << "Action at " << Ttry << " for transtion " << i_unique << " is " << try_action;
+        if (try_action < min_action) {
+          min_action = try_action;
+          i_selected = i_unique;
+        }
+      }
+      if (min_action < std::numeric_limits<double>::max()) {
+        LOG(debug) << "Select the symmetric partner " << i_selected << ".";
+      } else {
+        LOG(debug) << "Can not select the symmetric partner.";
+        // TODO
+      }
+    }
+
+    double TN = get_Tnuc(phase1, phase2, i_selected, TC, T1);
+    std::vector<Transition> selected_transition;
+    selected_transition.push_back(unique_transitions[i_selected]);
+    selected_transition[0].TN = TN;
+    if (not std::isnan(TN)) {
+      const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
+      selected_transition[0].true_vacuum_TN = vacua[0];
+      selected_transition[0].false_vacuum_TN = vacua[1];
+    }
+    return selected_transition;
+  } else {
+    return unique_transitions;
   }
 }
 
