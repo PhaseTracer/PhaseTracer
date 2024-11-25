@@ -47,8 +47,8 @@ std::ostream &operator<<(std::ostream &o, const GravWaveCalculator &a) {
     o << t << std::endl;
   }
 
-  o << "=== total gravitational wave spectrum  ===" << std::endl;
-  o << "peak frequency = " << a.total_spectrum.peak_frequency << std::endl
+  o << "=== total gravitational wave spectrum ===" << std::endl
+    << "peak frequency = " << a.total_spectrum.peak_frequency << std::endl
     << "peak amplitude = " << a.total_spectrum.peak_amplitude << std::endl;
   return o;
 }
@@ -117,8 +117,7 @@ double GravWaveCalculator::dSdT(const Phase &phase1, const Phase &phase2, double
     }
   }
   if (x.size() < 2) {
-    LOG(fatal) << "No enough valid S values in the calculation of dSdT.";
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("Not enough valid action values in the calculation of dS/dT");
   }
   Eigen::Vector2d coeff = LinearRegression(x, y);
   return coeff[1];
@@ -164,7 +163,6 @@ double GravWaveCalculator::GW_turbulence(double f, double alpha, double beta_H, 
 }
 
 double GravWaveCalculator::Kappa_sound_wave(double alpha) const {
-  double kappa_sw;
   double cs = sqrt(1 / 3.);
   double v_cj = 1 / (1 + alpha) * (cs + sqrt(pow(alpha, 2.) + 2. / 3 * alpha));
   double kappa_a = pow(vw, 6. / 5) * 6.9 * alpha / (1.36 - 0.037 * sqrt(alpha) + alpha);
@@ -174,26 +172,21 @@ double GravWaveCalculator::Kappa_sound_wave(double alpha) const {
   double delta_kappa = -0.9 * log(sqrt(alpha) / (1 + sqrt(alpha)));
 
   if (0. < vw && vw <= cs) {
-    kappa_sw = pow(cs, 11. / 5) * kappa_a * kappa_b / ((pow(cs, 11. / 5) - pow(vw, 11. / 5)) * kappa_b + vw * pow(cs, 6. / 5) * kappa_a);
+    return pow(cs, 11. / 5) * kappa_a * kappa_b / ((pow(cs, 11. / 5) - pow(vw, 11. / 5)) * kappa_b + vw * pow(cs, 6. / 5) * kappa_a);
   } else if (cs < vw && vw < v_cj) {
-    kappa_sw = kappa_b + (vw - cs) * delta_kappa + pow(vw - cs, 3.) / pow(v_cj - cs, 3.) * (kappa_c - kappa_b - (v_cj - cs) * delta_kappa);
+    return kappa_b + (vw - cs) * delta_kappa + pow(vw - cs, 3.) / pow(v_cj - cs, 3.) * (kappa_c - kappa_b - (v_cj - cs) * delta_kappa);
   } else if (v_cj <= vw && vw <= 1.) {
-    kappa_sw = pow(v_cj - 1, 3.) * pow(v_cj, 5. / 2) * pow(vw, -5. / 2) * kappa_c * kappa_d / ((pow(v_cj - 1, 3.) - pow(vw - 1, 3.)) * pow(v_cj, 5. / 2) * kappa_c + pow(vw - 1, 3.) * kappa_d);
-  } else {
-    LOG(fatal) << "Wrong bubble velocity.";
-    exit(EXIT_FAILURE);
+    return pow(v_cj - 1, 3.) * pow(v_cj, 5. / 2) * pow(vw, -5. / 2) * kappa_c * kappa_d / ((pow(v_cj - 1, 3.) - pow(vw - 1, 3.)) * pow(v_cj, 5. / 2) * kappa_c + pow(vw - 1, 3.) * kappa_d);
   }
-  return kappa_sw;
+  throw std::runtime_error("Invalid bubble wall velocity (vw > 1)");
 }
 
 GravWaveSpectrum GravWaveCalculator::calc_spectrum(double alpha, double beta_H, double Tref) {
   if (num_frequency < 2) {
-    LOG(fatal) << "Number of frequencies must be greater than 1.";
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("Number of frequencies must be greater than 1");
   }
   if (max_frequency < min_frequency) {
-    LOG(fatal) << "Error: max_frequency < min_frequency";
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("max_frequency < min_frequency");
   }
 
   GravWaveSpectrum sp;
@@ -232,8 +225,7 @@ GravWaveSpectrum GravWaveCalculator::sum_spectrums(const std::vector<GravWaveSpe
   GravWaveSpectrum summed_sp;
 
   if (sps.empty()) {
-    LOG(fatal) << "No GW spectrums is generated. Can not sum spectrums";
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("No GW spectrums were given - cannot sum them");
   }
 
   double peak_frequency = 0;
@@ -293,7 +285,7 @@ void GravWaveCalculator::write_spectrum_to_text(int i, const std::string &filena
 }
 
 void GravWaveCalculator::write_spectrum_to_text(const std::string &filename) const {
-  LOG(fatal) << spectrums.size();
+  LOG(info) << "writing " << spectrums.size() << "spectrums to text";
   for (int ii = 0; ii < spectrums.size(); ii++) {
     write_spectrum_to_text(spectrums[ii], std::to_string(ii) + "_" + filename);
   }
