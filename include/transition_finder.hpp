@@ -166,6 +166,9 @@ private:
   /** Find transitions between two phases between two temperatures */
   std::vector<Transition> find_transition(Phase p1, Phase p2, double T1, double T2, size_t currentID) const;
 
+  /** Find critical temperature between two phases */
+  double find_critical_temperature(const Phase &p1, const Phase &p2, double T1, double T2) const;
+
   /** Find many transitions between two phases at a particular resolution */
   std::vector<Transition> divide_and_find_transition(const Phase &phase1, const Phase &phase2, double T1, double T2, size_t currentID) const;
 
