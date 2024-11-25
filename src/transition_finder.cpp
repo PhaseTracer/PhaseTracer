@@ -105,7 +105,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
         LOG(debug) << "Select the symmetric partner " << i_selected << ".";
       } else {
         LOG(debug) << "Can not select the symmetric partner.";
-        // TODO
+        throw std::runtime_error("Get infinity action when selecting the symmetric partner");
       }
     }
 
@@ -176,8 +176,7 @@ double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size
     Tnuc = (result.first + result.second) * 0.5;
     LOG(debug) << "Found nucleation temperature = " << Tnuc;
   } catch (char *str) {
-    std::cout << str << std::endl; // TODO
-    // find the first
+    throw std::runtime_error(str);
   }
   return Tnuc;
 }
