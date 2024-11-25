@@ -126,14 +126,12 @@ public:
   Profile1D profile_zero = {
       Eigen::Vector2d::Zero(2),
       Eigen::Vector2d::Zero(2),
-      Eigen::Vector2d::Zero(2),
-      0.0};
+      Eigen::Vector2d::Zero(2)};
 
   Profile1D profile_inf = {
       Eigen::Vector2d::Ones(2),
       Eigen::Vector2d::Ones(2),
-      Eigen::Vector2d::Zero(2),
-      0.0};
+      Eigen::Vector2d::Zero(2)};
 
 private:
   PotentialForShooting &ps;

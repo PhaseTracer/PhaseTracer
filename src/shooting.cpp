@@ -392,7 +392,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
   double xmax = std::numeric_limits<double>::infinity();
   double x;
 
-  if (std::isnan(xguess)) { // TODO check wheather this works
+  if (std::isnan(xguess)) {
     x = -log(fabs((phi_bar - phi_absMin) / delta_phi));
   } else {
     x = xguess;
