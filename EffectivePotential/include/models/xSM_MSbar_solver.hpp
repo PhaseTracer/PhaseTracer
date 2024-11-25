@@ -105,8 +105,6 @@ private:
   bool Z2_symmetry = false;
 
   // input parameters
-  // TODO PA: we shoudl really chnage the names of these paremeters
-  // to either something more intuitive or something widely used in literature
   double ms;
   double c1;
   double c2;
@@ -262,7 +260,6 @@ private:
     const double a = mhSq + msSq;
     const double discriminant = square(mhSq - msSq) - 4 * square(mhs);
 
-    // TODO
     if (discriminant < 0)
       return false;
     const double b = discriminant < 0 ? 0 : sqrt(discriminant);
@@ -298,7 +295,6 @@ private:
 
     const double a = mhSq + msSq;
     const double discriminant = square(mhSq - msSq) - 4 * square(2 * c1 * v + 4 * c2 * v * vs + d2VCWdhds_);
-    // TODO
     if (discriminant < 0)
       return false;
     const double b = discriminant < 0 ? 0 : sqrt(discriminant);
