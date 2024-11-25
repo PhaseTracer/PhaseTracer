@@ -114,9 +114,6 @@ public:
   bool checkSubcriticalTransition(const std::vector<PhaseTracer::Phase> &phases, int i, int j, double Tmax,
                                   double energyAtTmax, bool checkFromNewPhase, std::vector<bool> &isTransitionedTo);
 
-  /** Called from find_transitions; checks whether the transition should be kept or rejected. */
-  bool validateTransition(const Transition &transition) const;
-
   /** Find all transition paths  */
   void find_transition_paths(const EffectivePotential::Potential &model, bool knownHighTPhase);
 

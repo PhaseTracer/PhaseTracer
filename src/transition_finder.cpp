@@ -348,7 +348,7 @@ void TransitionFinder::find_transitions() {
       const auto found = assume_only_one_transition ? find_transition(phase1, phase2, T_range[0], T_range[1], transitions.size()) : divide_and_find_transition(phase1, phase2, T_range[0], T_range[1], transitions.size());
 
       for (const auto &f : found) {
-        if (f.message == SUCCESS && validateTransition(f)) {
+        if (f.message == SUCCESS) {
           transitions.push_back(f);
         }
       }
@@ -365,15 +365,6 @@ void TransitionFinder::find_transitions() {
   // Finally sort transitions by critical temperature
   std::sort(transitions.begin(), transitions.end(),
             [](const Transition &a, const Transition &b) { return a.TC < b.TC; });
-}
-
-bool TransitionFinder::validateTransition(const Transition &transition) const {
-  // The only validation required at the moment is based on phase splitting. Just as we do for subcritical transitions,
-  // we need to make sure that the transition isn't spurious, arising from
-
-  //  wait, instead of patching everything, how about insert the precise data point into the pre-existing phase too?!
-
-  return true;
 }
 
 void TransitionFinder::append_subcritical_transitions() {
