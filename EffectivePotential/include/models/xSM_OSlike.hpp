@@ -216,9 +216,7 @@ public:
     const auto fm2 = get_fermion_masses_sq(phi);
     const auto vm2 = get_vector_masses_sq(phi);
     const double Qsq = square(Q);
-    const double sum = 1. / (16. * M_PI * M_PI) * (3. * lambda_h * (Qsq * xlogx(mhh2 / Qsq) - mhh2) + 0.5 * lambda_hs * (Qsq * xlogx(mss2 / Qsq) - mss2) - 6. * SM_yt_sq * (Qsq * xlogx(fm2[0] / Qsq) - fm2[0]) - 6. * SM_yb_sq * (Qsq * xlogx(fm2[1] / Qsq) - fm2[1])
-                                                   - 2. * SM_ytau_sq * (Qsq * xlogx(fm2[2] / Qsq) - fm2[2])
-                                                   + 1.5 * square(SM_g) * (Qsq * xlogx(vm2[0] / Qsq) - 1. / 3. * vm2[0]) + 0.75 * (square(SM_g) + square(SM_gp)) * (Qsq * xlogx(vm2[1] / Qsq) - 1. / 3. * vm2[1]));
+    const double sum = 1. / (16. * M_PI * M_PI) * (3. * lambda_h * (Qsq * xlogx(mhh2 / Qsq) - mhh2) + 0.5 * lambda_hs * (Qsq * xlogx(mss2 / Qsq) - mss2) - 6. * SM_yt_sq * (Qsq * xlogx(fm2[0] / Qsq) - fm2[0]) - 6. * SM_yb_sq * (Qsq * xlogx(fm2[1] / Qsq) - fm2[1]) - 2. * SM_ytau_sq * (Qsq * xlogx(fm2[2] / Qsq) - fm2[2]) + 1.5 * square(SM_g) * (Qsq * xlogx(vm2[0] / Qsq) - 1. / 3. * vm2[0]) + 0.75 * (square(SM_g) + square(SM_gp)) * (Qsq * xlogx(vm2[1] / Qsq) - 1. / 3. * vm2[1]));
 
     // Goldstone finite temperature masses
     double mTG02 = mgg2 + thermal_sq[0] + sum;
