@@ -65,8 +65,14 @@ rkqs_rval rkqs(Eigen::Vector2d y, Eigen::Vector2d dydt, double t, std::function<
     errmax = (yerr.array() / epsabs.array()).abs().cwiseMin((yerr.array().abs() / (y.array().abs() + 1E-50) / epsfrac.array())).maxCoeff();
     if (errmax < 1.0)
       break;
-    double dttemp = 0.9 * dt * pow(errmax, -0.25);
-    dt = (dt > 0) ? std::max(dttemp, dt * 0.1) : std::min(dttemp, dt * 0.1);
+
+    if (std::isfinite(errmax)) {
+      double dttemp = 0.9 * dt * pow(errmax, -0.25);
+      dt = (dt > 0) ? std::max(dttemp, dt * 0.1) : std::min(dttemp, dt * 0.1);
+    } else {
+      dt *= 0.1;
+    }
+
     if (t + dt == t) {
       throw std::runtime_error("Stepsize rounds down to zero.");
     }
