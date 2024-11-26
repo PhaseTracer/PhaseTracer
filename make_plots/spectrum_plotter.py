@@ -13,7 +13,7 @@ plot_txt_file = repo + "GW_" + prefix + "_" + str(ii) + ".txt"
 pdf_name = repo + prefix + "_GW_spectrum_" + str(ii) + ".pdf"
 plot_title = "Gravitational Wave Spectrum " + str(ii)
 
-data = np.loadtxt(plot_txt_file, delimiter=', ')
+data = np.loadtxt(plot_txt_file, delimiter=',')
 
 freq = data[:, 0]
 total = data[:, 1]
