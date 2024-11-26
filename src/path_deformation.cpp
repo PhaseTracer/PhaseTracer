@@ -521,7 +521,7 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
     for (size_t ii = 0; ii < num_nodes; ii++) {
       phi_node[ii] = path.vecp(phi_1d[ii]);
     }
-    
+
     bool converged;
     try {
       converged = deformPath(dphi_1d);
