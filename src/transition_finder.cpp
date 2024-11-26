@@ -101,11 +101,11 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
           i_selected = i_unique;
         }
       }
-      if (min_action < std::numeric_limits<double>::max()) {
+      if (std::isfinite(min_action)) {
         LOG(debug) << "Select the symmetric partner " << i_selected << ".";
       } else {
-        LOG(debug) << "Can not select the symmetric partner.";
-        throw std::runtime_error("Get infinity action when selecting the symmetric partner");
+        LOG(debug) << "Cannot select the symmetric partner. min action = " << min_action;
+        throw std::runtime_error("Non-finite action when selecting the symmetric partner");
       }
     }
 
