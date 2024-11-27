@@ -273,35 +273,41 @@ std::vector<bool> TransitionFinder::changed(const Eigen::VectorXd &true_vacuum, 
 }
 
 std::vector<double> TransitionFinder::get_un_overlapped_T_range(const Phase &phase1, const Phase &phase2, double T1, double T2) const {
-  std::vector<double> T_range;
+  const bool o1 = pf.phases_overlap(phase1, phase2, T1);
+  const bool o2 = pf.phases_overlap(phase1, phase2, T2);
 
-  if (!(pf.phases_overlap(phase1, phase2, T1) || pf.phases_overlap(phase1, phase2, T2))) {
-    T_range.push_back(T1);
-    T_range.push_back(T2);
-    return T_range;
+  // no overlap - non-overlap is entire range
+
+  if (!(o1 || o2)) {
+    return {T1, T2};
   }
 
-  if (pf.phases_overlap(phase1, phase2, T1) && pf.phases_overlap(phase1, phase2, T2)) {
+  // complete overlap - non-overlap is empty
+
+  if (o1 && o2) {
     LOG(fatal) << "Phases " << phase1.key << " and " << phase2.key << " are redundant";
-    return T_range;
+    return {};
   }
 
-  double T_same = pf.phases_overlap(phase1, phase2, T1) ? T1 : T2;
-  double T_diff = pf.phases_overlap(phase1, phase2, T2) ? T1 : T2;
-  T_range.push_back(T_diff);
+  // overlap at one end - return temperature at which distinct, and bracket for
+  // point at which they overlap
 
-  while (std::abs(T_diff - T_same) > TC_tol_rel) {
-    double T_mid = 0.5 * (T_same + T_diff);
-    if (pf.phases_overlap(phase1, phase2, T_mid)) {
-      T_same = T_mid;
+  const double distinct = o1 ? T2 : T1;
+  const double overlap = o1 ? T1 : T2;
+
+  double a = distinct;
+  double b = overlap;
+
+  while (std::abs(a - b) > TC_tol_rel * 0.5 * (a + b)) {
+    double T = 0.5 * (a + b);
+    if (pf.phases_overlap(phase1, phase2, T)) {
+      b = T;
     } else {
-      T_diff = T_mid;
+      a = T;
     }
   }
-  T_range.push_back(T_diff);
-  T_range.push_back(T_same);
 
-  return T_range;
+  return {distinct, a, b};
 }
 
 void TransitionFinder::find_transitions() {
