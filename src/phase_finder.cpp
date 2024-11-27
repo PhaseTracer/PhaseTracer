@@ -54,10 +54,6 @@ PhaseFinder::PhaseFinder(EffectivePotential::Potential &potential) : P(potential
   set_seed(seed);
 }
 
-const EffectivePotential::Potential &PhaseFinder::get_potential() const {
-  return P;
-}
-
 std::vector<Eigen::VectorXd> PhaseFinder::generate_test_points() const {
   std::vector<Eigen::VectorXd> test_points(guess_points);
   const auto a = Eigen::Map<const Eigen::ArrayXd, Eigen::Unaligned>(lower_bounds.data(), lower_bounds.size());
@@ -897,6 +893,10 @@ bool PhaseFinder::should_merge_phases(const Phase &phase1, const Phase &phase2) 
   }
 
   return true;
+}
+
+bool PhaseFinder::phases_overlap(const Phase &phase1, const Phase &phase2, double T) const {
+  return identical_within_tol(phase_at_T(phase1, T).x, phase_at_T(phase2, T).x);
 }
 
 int PhaseFinder::find_deepest_phase(const std::vector<PhaseMerge> &merges, const std::vector<int> &relevantMerges) {
