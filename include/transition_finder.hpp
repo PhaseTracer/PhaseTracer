@@ -88,7 +88,6 @@ struct Transition {
                           id(id) {}
 
   void set_subcritical(bool subcritical_) {
-    check_subcritical_transitions = true;
     subcritical = subcritical_;
   }
 
@@ -124,12 +123,8 @@ struct Transition {
         o << "did not calculate action or check nucleation" << std::endl;
       }
 
-      if (a.check_subcritical_transitions) {
-        o << "transition was "
-          << (a.subcritical ? "subcritical" : "not subcritical") << std::endl;
-      } else {
-        o << "did not check subcritical transitions" << std::endl;
-      }
+      o << "transition was "
+        << (a.subcritical ? "subcritical" : "not subcritical") << std::endl;
 
     } else {
       o << "=== failure. message =  " << a.message << " ===" << std::endl;
@@ -138,7 +133,6 @@ struct Transition {
   }
 
 private:
-  bool check_subcritical_transitions = false;
   bool calculate_action = false;
 };
 
