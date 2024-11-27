@@ -33,6 +33,43 @@ double TransitionFinder::find_critical_temperature(const Phase &phase1, const Ph
   return (result.first + result.second) * 0.5;
 }
 
+std::vector<Transition> TransitionFinder::symmetric_partners(const Phase &phase1, const Phase &phase2, double TC, size_t currentID) const {
+
+  const auto phase1_at_critical = pf.phase_at_T(phase1, TC);
+  const auto phase2_at_critical = pf.phase_at_T(phase2, TC);
+  const auto delta_potential = phase1_at_critical.potential - phase2_at_critical.potential;
+  const auto true_vacua = pf.symmetric_partners(phase1_at_critical.x);
+  const auto false_vacua = pf.symmetric_partners(phase2_at_critical.x);
+
+  std::vector<Transition> unique_transitions;
+  // Fix false_vacuum, and loop all possible symmetric partners of true_vacuum
+  const auto false_vacuum = false_vacua[0];
+  auto true_vacuum = true_vacua[0];
+  for (size_t i_unique = 0; i_unique < true_vacua.size(); i_unique++) {
+    true_vacuum = true_vacua[i_unique];
+    bool duplicate = false;
+    const auto fv = pf.symmetric_partners(false_vacuum);
+    const auto tv = pf.symmetric_partners(true_vacuum);
+    
+    for (const auto tran : unique_transitions) {
+      for (size_t i = 0; i < fv.size(); ++i) {
+        if ((fv[i] - tran.false_vacuum).norm() < change_abs_tol + change_rel_tol * fv[i].norm() && (tv[i] - tran.true_vacuum).norm() < change_abs_tol + change_rel_tol * tv[i].norm()) {
+          LOG(trace) << "False vacuum: " << false_vacuum << " and true vacuum: " << true_vacuum << " are duplicate";
+          duplicate = true;
+          break;
+        }
+      }
+    }
+    if (!duplicate) {
+      LOG(trace) << "False vacuum: " << false_vacuum << " and true vacuum: " << true_vacuum << " are not duplicate";
+      const auto gamma_ = gamma(true_vacuum, false_vacuum, TC);
+      const auto changed_ = changed(true_vacuum, false_vacuum);
+      unique_transitions.push_back({SUCCESS, TC, phase1, phase2, true_vacuum, false_vacuum, gamma_, changed_, delta_potential, std::numeric_limits<double>::quiet_NaN(), {}, {}, i_unique, false, currentID++});
+    }
+  }
+  return unique_transitions;
+}
+
 std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase phase2, double T1, double T2, size_t currentID) const {
   if (T1 > T2) {
     LOG(debug) << "Phases do not overlap in temperature - no critical temperature";
@@ -55,38 +92,7 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
     std::swap(phase1, phase2);
   }
 
-  const auto phase1_at_critical = pf.phase_at_T(phase1, TC);
-  const auto phase2_at_critical = pf.phase_at_T(phase2, TC);
-  const auto delta_potential = phase1_at_critical.potential - phase2_at_critical.potential;
-  const auto true_vacua = pf.symmetric_partners(phase1_at_critical.x);
-  const auto false_vacua = pf.symmetric_partners(phase2_at_critical.x);
-  std::vector<Transition> unique_transitions;
-  // Fix false_vacuum, and loop all possible symmetric partners of true_vacuum
-  const auto false_vacuum = false_vacua[0];
-  auto true_vacuum = true_vacua[0];
-  for (size_t i_unique = 0; i_unique < true_vacua.size(); i_unique++) {
-    true_vacuum = true_vacua[i_unique];
-    bool duplicate = false;
-    const auto fv = pf.symmetric_partners(false_vacuum);
-    const auto tv = pf.symmetric_partners(true_vacuum);
-    LOG(trace) << "False vacuum: " << false_vacuum;
-    LOG(trace) << "and true vacuum: " << true_vacuum;
-    for (const auto tran : unique_transitions) {
-      for (size_t i = 0; i < fv.size(); ++i) {
-        if ((fv[i] - tran.false_vacuum).norm() < change_abs_tol + change_rel_tol * fv[i].norm() && (tv[i] - tran.true_vacuum).norm() < change_abs_tol + change_rel_tol * tv[i].norm()) {
-          LOG(trace) << "are duplicate";
-          duplicate = true;
-          break;
-        }
-      }
-    }
-    if (!duplicate) {
-      LOG(trace) << "are not duplicate";
-      const auto gamma_ = gamma(true_vacuum, false_vacuum, TC);
-      const auto changed_ = changed(true_vacuum, false_vacuum);
-      unique_transitions.push_back({SUCCESS, TC, phase1, phase2, true_vacuum, false_vacuum, gamma_, changed_, delta_potential, std::numeric_limits<double>::quiet_NaN(), {}, {}, i_unique, false, currentID++});
-    }
-  }
+  std::vector<Transition> unique_transitions = symmetric_partners(phase1, phase2, TC, currentID);
 
   if (calculate_action) {
     size_t i_selected = 0;
@@ -266,31 +272,27 @@ std::vector<bool> TransitionFinder::changed(const Eigen::VectorXd &true_vacuum, 
   return changed_;
 }
 
-bool TransitionFinder::phases_overlaped(const Phase &phase1, const Phase &phase2, double T) const {
-  return pf.identical_within_tol(pf.phase_at_T(phase1, T).x, pf.phase_at_T(phase2, T).x);
-}
-
 std::vector<double> TransitionFinder::get_un_overlapped_T_range(const Phase &phase1, const Phase &phase2, double T1, double T2) const {
   std::vector<double> T_range;
 
-  if (!(phases_overlaped(phase1, phase2, T1) || phases_overlaped(phase1, phase2, T2))) {
+  if (!(pf.phases_overlap(phase1, phase2, T1) || pf.phases_overlap(phase1, phase2, T2))) {
     T_range.push_back(T1);
     T_range.push_back(T2);
     return T_range;
   }
 
-  if (phases_overlaped(phase1, phase2, T1) && phases_overlaped(phase1, phase2, T2)) {
+  if (pf.phases_overlap(phase1, phase2, T1) && pf.phases_overlap(phase1, phase2, T2)) {
     LOG(fatal) << "Phases " << phase1.key << " and " << phase2.key << " are redundant";
     return T_range;
   }
 
-  double T_same = phases_overlaped(phase1, phase2, T1) ? T1 : T2;
-  double T_diff = phases_overlaped(phase1, phase2, T2) ? T1 : T2;
+  double T_same = pf.phases_overlap(phase1, phase2, T1) ? T1 : T2;
+  double T_diff = pf.phases_overlap(phase1, phase2, T2) ? T1 : T2;
   T_range.push_back(T_diff);
 
   while (std::abs(T_diff - T_same) > TC_tol_rel) {
     double T_mid = 0.5 * (T_same + T_diff);
-    if (phases_overlaped(phase1, phase2, T_mid)) {
+    if (pf.phases_overlap(phase1, phase2, T_mid)) {
       T_same = T_mid;
     } else {
       T_diff = T_mid;
@@ -317,32 +319,35 @@ void TransitionFinder::find_transitions() {
         continue;
       }
 
-      LOG(debug) << "Finding critical temperatures between phases "
+      LOG(debug) << "Finding transition between phases "
                  << phase1.key << " and " << phase2.key;
 
       double tmax = std::min(phase1.T.back(), phase2.T.back());
       double tmin = std::max(phase1.T.front(), phase2.T.front());
 
       if (tmin > tmax) {
-        LOG(debug) << "Phases do not overlap in temperature - no critical temperature";
+        LOG(debug) << "Phases do not coexist in temperature - no transition";
         continue;
       }
 
       auto T_range = get_un_overlapped_T_range(phase1, phase2, tmin, tmax);
 
-      if (T_range.size() == 0)
+      if (T_range.size() == 0) {
+        LOG(debug) << "Phases entirely overlap - no transition";
         continue;
+      }
+
       if (T_range.size() == 3) {
-        const auto TC = T_range[2];
-        const auto TN = T_range[2];
-        LOG(debug) << "Phases " << phase1.key << " and " << phase2.key << " cross at T=" << TC;
-        const auto phase1_at_critical = pf.phase_at_T(phase1, TC);
-        const auto phase2_at_critical = pf.phase_at_T(phase2, TC);
+        const double TC = T_range[2];
+        LOG(debug) << "Phases join at T = " << TC;
+        const auto phase_at_critical = pf.phase_at_T(phase1, TC);
         const double gamma_ = 0.;
-        auto changed_ = changed(phase1_at_critical.x, phase2_at_critical.x);
-        Transition f = {SUCCESS, TC, phase1, phase2, phase1_at_critical.x, phase2_at_critical.x, gamma_, changed_, phase1_at_critical.potential - phase2_at_critical.potential, TC, {}, {}, 0, false, transitions.size()};
+        const std::vector<bool> changed_(pf.get_n_scalars(), false);
+        const Transition f = {SUCCESS, TC, phase1, phase2, phase_at_critical.x, phase_at_critical.x, 0., changed_, 0., TC, {}, {}, 0, false, transitions.size()};
         transitions.push_back(f);
       }
+
+      LOG(debug) << "Phases co-exist - looking for transitions betweeen " << T_range[0] << " and " << T_range[1];
 
       const auto found = assume_only_one_transition ? find_transition(phase1, phase2, T_range[0], T_range[1], transitions.size()) : divide_and_find_transition(phase1, phase2, T_range[0], T_range[1], transitions.size());
 
