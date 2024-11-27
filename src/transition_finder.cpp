@@ -70,7 +70,7 @@ std::vector<Transition> TransitionFinder::symmetric_partners(const Phase &phase1
   return unique_transitions;
 }
 
-std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase phase2, double T1, double T2, size_t currentID) const {
+std::vector<Transition> TransitionFinder::find_transition(const Phase &phase1, const Phase &phase2, double T1, double T2, size_t currentID) const {
   if (T1 > T2) {
     LOG(debug) << "Phases do not overlap in temperature - no critical temperature";
     return {{NON_OVERLAPPING_T}};
@@ -86,11 +86,6 @@ std::vector<Transition> TransitionFinder::find_transition(Phase phase1, Phase ph
   }
 
   LOG(debug) << "Found critical temperature = " << TC;
-
-  const bool ordered = pf.delta_potential_at_T(phase1, phase2, T1) < 0.;
-  if (!ordered) {
-    std::swap(phase1, phase2);
-  }
 
   std::vector<Transition> unique_transitions = symmetric_partners(phase1, phase2, TC, currentID);
 
@@ -355,7 +350,11 @@ void TransitionFinder::find_transitions() {
 
       LOG(debug) << "Phases co-exist - looking for transitions betweeen " << T_range[0] << " and " << T_range[1];
 
-      const auto found = assume_only_one_transition ? find_transition(phase1, phase2, T_range[0], T_range[1], transitions.size()) : divide_and_find_transition(phase1, phase2, T_range[0], T_range[1], transitions.size());
+      const bool ordered = pf.delta_potential_at_T(phase1, phase2, T_range[0]) < 0.;
+      const Phase *tv = ordered ? &phase1 : &phase2;
+      const Phase *fv = ordered ? &phase2 : &phase1;
+
+      const std::vector<Transition> found = assume_only_one_transition ? find_transition(*tv, *fv, T_range[0], T_range[1], transitions.size()) : divide_and_find_transition(phase1, phase2, T_range[0], T_range[1], transitions.size());
 
       for (const auto &f : found) {
         if (f.message == SUCCESS) {

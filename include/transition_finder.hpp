@@ -161,7 +161,7 @@ private:
   std::vector<TransitionGraph::Path> transition_paths;
 
   /** Find transitions between two phases between two temperatures */
-  std::vector<Transition> find_transition(Phase phase1, Phase phase2, double T1, double T2, size_t currentID) const;
+  std::vector<Transition> find_transition(const Phase &phase1, const Phase &phase2, double T1, double T2, size_t currentID) const;
 
   std::vector<Transition> symmetric_partners(const Phase &phase1, const Phase &phase2, double TC, size_t currentID) const;
 
