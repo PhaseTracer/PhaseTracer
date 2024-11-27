@@ -113,13 +113,11 @@ std::vector<Transition> TransitionFinder::find_transition(const Phase &phase1, c
     }
 
     double TN = get_Tnuc(phase1, phase2, i_selected, TC, T1);
-    std::vector<Transition> selected_transition;
-    selected_transition.push_back(unique_transitions[i_selected]);
     if (!std::isnan(TN)) {
       const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
-      selected_transition[0].set_nucleation(TN, vacua[0], vacua[1]);
+      unique_transitions[i_selected].set_nucleation(TN, vacua[0], vacua[1]);
     }
-    return selected_transition;
+    return {unique_transitions[i_selected]};
   } else {
     return unique_transitions;
   }
@@ -128,57 +126,62 @@ std::vector<Transition> TransitionFinder::find_transition(const Phase &phase1, c
 double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size_t i_unique, double T_begin, double T_end) const {
 
   if (T_begin < T_end) {
-    LOG(fatal) << "T_begin < T_end, so swith the values. ";
-    T_begin = T_begin + T_end;
-    T_end = T_begin - T_end;
-    T_begin = T_begin - T_end;
+    LOG(trace) << "T_begin < T_end, so swap the values";
+    std::swap(T_begin, T_end);
   }
 
-  LOG(debug) << "Find Tnuc between " << phase1.key << " and " << phase2.key << " in [" << T_begin << ", " << T_end << "]. ";
+  LOG(debug) << "Find nucleation temperature between " << phase1.key << " and " << phase2.key << " in [" << T_begin << ", " << T_end << "]";
 
   const auto nucleation_criteria = [this, phase1, phase2, i_unique](double Ttry) {
     return this->get_action(phase1, phase2, Ttry, i_unique) / Ttry - 140.;
   };
 
-  double Tnuc = std::numeric_limits<double>::quiet_NaN();
-  // If action at T_begin is NaN, find the largest valid T_begin
+  // check criteria at start
+
   double nc = nucleation_criteria(T_begin);
+
   while (std::isnan(nc) or nc > 10000) {
+    LOG(debug) << "action was nan - stepping down in temperature";
     T_begin -= Tnuc_step;
-    if (T_begin < T_end)
-      return Tnuc;
+    if (T_begin < T_end) {
+      throw std::runtime_error("could not find nucleation temperature");
+    }
     nc = nucleation_criteria(T_begin);
   }
 
   if (nc < 0) {
-    LOG(debug) << "The tunneling possibility at T_begin satisfys the nucleation condition.";
+    LOG(debug) << "The tunneling possibility at T_begin satisfies the nucleation condition";
     return T_begin;
   }
 
+  // check criteria at end
+
   nc = nucleation_criteria(T_end);
-  // If the tunneling possibility at T_end is small, find T_end from T_begin
-  if (nc > 0 or std::isnan(nc)) {
+
+  if (nc > 0 || std::isnan(nc)) {
+    LOG(debug) << "action was nan or no nucleation at end - stepping down in temperature";
     double T_end_ = T_end;
     while (true) {
       T_end = T_begin - Tnuc_step;
-      while (nucleation_criteria(T_end) < 0)
+      if (T_end < T_end_) {
+        throw std::runtime_error("could not find nucleation temperature");
+      }
+      if (nucleation_criteria(T_end) < 0) {
         break;
-      while (T_end < T_end_)
-        return Tnuc;
+      }
       T_begin = T_end;
     }
   }
 
-  try {
-    const double root_bits = 1. - std::log2(Tnuc_tol_rel);
-    boost::math::tools::eps_tolerance<double> stop(root_bits);
-    boost::uintmax_t non_const_max_iter = max_iter;
-    const auto result = boost::math::tools::bisect(nucleation_criteria, T_end, T_begin, stop, non_const_max_iter);
-    Tnuc = (result.first + result.second) * 0.5;
-    LOG(debug) << "Found nucleation temperature = " << Tnuc;
-  } catch (char *str) {
-    throw std::runtime_error(str);
-  }
+  // bisect for nucleation temperature
+
+  const double root_bits = 1. - std::log2(Tnuc_tol_rel);
+  boost::math::tools::eps_tolerance<double> stop(root_bits);
+  boost::uintmax_t non_const_max_iter = max_iter;
+  const auto result = boost::math::tools::toms748_solve(nucleation_criteria, T_end, T_begin, stop, non_const_max_iter);
+  const double Tnuc = (result.first + result.second) * 0.5;
+  LOG(debug) << "Found nucleation temperature = " << Tnuc;
+
   return Tnuc;
 }
 
@@ -198,9 +201,7 @@ std::vector<Eigen::VectorXd> TransitionFinder::get_vacua_at_T(const Phase &phase
   const auto phase1_at_T = pf.phase_at_T(phase1, T);
   const auto phase2_at_T = pf.phase_at_T(phase2, T);
   const auto true_vacua_at_T = pf.symmetric_partners(phase1_at_T.x);
-  const auto false_vacua_at_T = pf.symmetric_partners(phase2_at_T.x);
-
-  return {false_vacua_at_T[0], true_vacua_at_T[i_unique]};
+  return {phase2_at_T.x, true_vacua_at_T[i_unique]};
 }
 
 double TransitionFinder::get_action(const Eigen::VectorXd &vacuum_1, const Eigen::VectorXd &vacuum_2, double T) const {
@@ -342,13 +343,12 @@ void TransitionFinder::find_transitions() {
         const double TC = T_range[2];
         LOG(debug) << "Phases join at T = " << TC;
         const auto phase_at_critical = pf.phase_at_T(phase1, TC);
-        const double gamma_ = 0.;
         const std::vector<bool> changed_(pf.get_n_scalars(), false);
         const Transition f = {SUCCESS, TC, phase1, phase2, phase_at_critical.x, phase_at_critical.x, 0., changed_, 0., 0, transitions.size()};
         transitions.push_back(f);
       }
 
-      LOG(debug) << "Phases co-exist - looking for transitions betweeen " << T_range[0] << " and " << T_range[1];
+      LOG(debug) << "Phases co-exist - looking for transitions between " << T_range[0] << " and " << T_range[1];
 
       const bool ordered = pf.delta_potential_at_T(phase1, phase2, T_range[0]) < 0.;
       const Phase *tv = ordered ? &phase1 : &phase2;
