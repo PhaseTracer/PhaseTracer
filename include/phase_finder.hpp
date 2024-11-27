@@ -164,29 +164,34 @@ public:
     }
   }
 
-  /** Generate symmetric partner for a point */
+  /** Generate symmetric partners for a point */
   std::vector<Eigen::VectorXd> symmetric_partners(const Eigen::VectorXd &a) const;
 
   /** Check that two minima are identical to within a particular tolerance */
   bool identical_within_tol(const Eigen::VectorXd &a, const Eigen::VectorXd &b) const;
+
+  /** Check whether two phases overlap at T */
+  bool phases_overlap(const Phase &phase1, const Phase &phase2, double T) const;
 
   /** return minima at T_low*/
   std::vector<Point> get_minima_at_t_low();
   /** return minima at T_high*/
   std::vector<Point> get_minima_at_t_high();
 
-  /** return phases at T */
+  /** Phases at T */
   std::vector<Phase> get_phases_at_T(double T);
 
-  /** return the deepest phase at T */
+  /** The deepest phase at T */
   Phase get_deepest_phase_at_T(double T);
 
-  /** Allow the potential to be visible to other classes such as transition_finder (e.g. for checkSubcriticalTransition). */
-  const EffectivePotential::Potential &get_potential() const;
+  /** Allow the potential to be visible to other classes */
+  const EffectivePotential::Potential &get_potential() const { return P; };
 
+  /** The potential */
   EffectivePotential::Potential &P;
 
 protected:
+
   /**
      Find local minima at a particular temperature. The overloads define
      different ways of passing an initial step.
