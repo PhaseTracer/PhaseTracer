@@ -64,7 +64,7 @@ std::vector<Transition> TransitionFinder::symmetric_partners(const Phase &phase1
       LOG(trace) << "False vacuum: " << false_vacuum << " and true vacuum: " << true_vacuum << " are not duplicate";
       const auto gamma_ = gamma(true_vacuum, false_vacuum, TC);
       const auto changed_ = changed(true_vacuum, false_vacuum);
-      unique_transitions.push_back({SUCCESS, TC, phase1, phase2, true_vacuum, false_vacuum, gamma_, changed_, delta_potential, std::numeric_limits<double>::quiet_NaN(), {}, {}, i_unique, false, currentID++});
+      unique_transitions.push_back({SUCCESS, TC, phase1, phase2, true_vacuum, false_vacuum, gamma_, changed_, delta_potential, i_unique, currentID++});
     }
   }
   return unique_transitions;
@@ -90,10 +90,12 @@ std::vector<Transition> TransitionFinder::find_transition(const Phase &phase1, c
   std::vector<Transition> unique_transitions = symmetric_partners(phase1, phase2, TC, currentID);
 
   if (calculate_action) {
+
     size_t i_selected = 0;
     if (unique_transitions.size() > 1) {
       double min_action = std::numeric_limits<double>::max();
       for (size_t i_unique = 0; i_unique < unique_transitions.size(); i_unique++) {
+
         double Ttry = T1 + 0.9 * (TC - T1);
         double try_action = get_action(phase1, phase2, Ttry, i_unique);
         LOG(debug) << "Action at " << Ttry << " for transtion " << i_unique << " is " << try_action;
@@ -113,11 +115,9 @@ std::vector<Transition> TransitionFinder::find_transition(const Phase &phase1, c
     double TN = get_Tnuc(phase1, phase2, i_selected, TC, T1);
     std::vector<Transition> selected_transition;
     selected_transition.push_back(unique_transitions[i_selected]);
-    selected_transition[0].TN = TN;
-    if (not std::isnan(TN)) {
+    if (!std::isnan(TN)) {
       const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
-      selected_transition[0].true_vacuum_TN = vacua[0];
-      selected_transition[0].false_vacuum_TN = vacua[1];
+      selected_transition[0].set_nucleation(TN, vacua[0], vacua[1]);
     }
     return selected_transition;
   } else {
@@ -344,7 +344,7 @@ void TransitionFinder::find_transitions() {
         const auto phase_at_critical = pf.phase_at_T(phase1, TC);
         const double gamma_ = 0.;
         const std::vector<bool> changed_(pf.get_n_scalars(), false);
-        const Transition f = {SUCCESS, TC, phase1, phase2, phase_at_critical.x, phase_at_critical.x, 0., changed_, 0., TC, {}, {}, 0, false, transitions.size()};
+        const Transition f = {SUCCESS, TC, phase1, phase2, phase_at_critical.x, phase_at_critical.x, 0., changed_, 0., 0, transitions.size()};
         transitions.push_back(f);
       }
 
@@ -485,7 +485,9 @@ bool TransitionFinder::checkSubcriticalTransition(const std::vector<PhaseTracer:
 
     if (dist > distTol) {
       LOG(debug) << "Adding subcritical transition " << j << " -(" << Tmax << ")-> " << i;
-      transitions.push_back({PhaseTracer::SUCCESS, Tmax, phases[i], phases[j], trueVacuum, falseVacuum, gamma, vevChanged, deltaPotential, Tmax, {}, {}, 0, true, transitions.size()});
+      Transition t{SUCCESS, Tmax, phases[i], phases[j], trueVacuum, falseVacuum, gamma, vevChanged, deltaPotential, 0, transitions.size()};
+      t.set_subcritical(true);
+      transitions.push_back(t);
       isTransitionedTo[i] = true;
     } else {
       LOG(debug) << "Not adding subcritical transition " << j << " -(" << Tmax << ")-> " << i << " from suspected phase splitting.";
@@ -496,7 +498,9 @@ bool TransitionFinder::checkSubcriticalTransition(const std::vector<PhaseTracer:
 
   if (isTransitionedTo[i] || checkFromNewPhase) {
     if (phasejAtTmax.potential < energyAtTmax || dist < distTol) {
-      transitions.push_back({PhaseTracer::SUCCESS, Tmax, phases[j], phases[i], falseVacuum, trueVacuum, -gamma, vevChanged, -deltaPotential, Tmax, {}, {}, 0, true, transitions.size()});
+      Transition t{SUCCESS, Tmax, phases[j], phases[i], falseVacuum, trueVacuum, -gamma, vevChanged, -deltaPotential, 0, transitions.size()};
+      t.set_subcritical(true);
+      transitions.push_back(t);
       isTransitionedTo[j] = true;
     }
   }

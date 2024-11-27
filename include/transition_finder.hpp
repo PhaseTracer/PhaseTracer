@@ -55,12 +55,49 @@ struct Transition {
   double gamma;
   std::vector<bool> changed;
   double delta_potential;
+  size_t key;
+  size_t id;
+
   double TN;
   Eigen::VectorXd true_vacuum_TN;
   Eigen::VectorXd false_vacuum_TN;
-  size_t key;
-  bool subcritical;
-  size_t id;
+  bool subcritical = false;
+
+  Transition(Message message) : message(message) {};
+
+  Transition(Message message,
+             double TC,
+             Phase true_phase,
+             Phase false_phase,
+             Eigen::VectorXd true_vacuum,
+             Eigen::VectorXd false_vacuum,
+             double gamma,
+             std::vector<bool> changed,
+             double delta_potential,
+             size_t key,
+             size_t id) : message(message),
+                          TC(TC),
+                          true_phase(true_phase),
+                          false_phase(false_phase),
+                          true_vacuum(true_vacuum),
+                          false_vacuum(false_vacuum),
+                          gamma(gamma),
+                          changed(changed),
+                          delta_potential(delta_potential),
+                          key(key),
+                          id(id) {}
+
+  void set_subcritical(bool subcritical_) {
+    check_subcritical_transitions = true;
+    subcritical = subcritical_;
+  }
+
+  void set_nucleation(double T, Eigen::VectorXd true_vacuum, Eigen::VectorXd false_vacuum) {
+    calculate_action = true;
+    TN = T;
+    true_vacuum_TN = true_vacuum;
+    false_vacuum_TN = false_vacuum;
+  }
 
   /** Pretty-printer for single transition */
   friend std::ostream &operator<<(std::ostream &o, const Transition &a) {
@@ -77,21 +114,32 @@ struct Transition {
         << "false vacuum (TC) = " << a.false_vacuum << std::endl
         << "true vacuum (TC) = " << a.true_vacuum << std::endl
         << "gamma (TC) = " << a.gamma << std::endl
-        << "delta potential (TC) = " << a.delta_potential << std::endl
-        << "TN = " << a.TN << std::endl
-        << "false vacuum (TN) = " << a.true_vacuum_TN << std::endl
-        << "true vacuum (TN) = " << a.false_vacuum_TN << std::endl;
-      // TODO: Ideally we would only print this property if we check for subcritical transitions.
-      // TODO: Unfortunately this is a property of the TransitionFinder and the Transition doesn't have knowledge of
-      // TODO: this. We could store it here but that seems wasteful.
-      // if(check_subcritical_transitions){
-      //  o << "subcritical = " << a.subcritical << std::endl;
-      // }
+        << "delta potential (TC) = " << a.delta_potential << std::endl;
+
+      if (a.calculate_action) {
+        o << "TN = " << a.TN << std::endl
+          << "false vacuum (TN) = " << a.true_vacuum_TN << std::endl
+          << "true vacuum (TN) = " << a.false_vacuum_TN << std::endl;
+      } else {
+        o << "did not calculate action or check nucleation" << std::endl;
+      }
+
+      if (a.check_subcritical_transitions) {
+        o << "transition was "
+          << (a.subcritical ? "subcritical" : "not subcritical") << std::endl;
+      } else {
+        o << "did not check subcritical transitions" << std::endl;
+      }
+
     } else {
       o << "=== failure. message =  " << a.message << " ===" << std::endl;
     }
     return o;
   }
+
+private:
+  bool check_subcritical_transitions = false;
+  bool calculate_action = false;
 };
 
 class TransitionFinder {
