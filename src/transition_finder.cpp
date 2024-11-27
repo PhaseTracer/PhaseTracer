@@ -516,20 +516,45 @@ std::ostream &operator<<(std::ostream &o, const TransitionFinder &a) {
   if (!a.calculated_transitions) {
     o << "no transitions calculated yet" << std::endl
       << std::endl;
-  } else if (a.transitions.empty()) {
-    o << "found no transitions" << std::endl
-      << std::endl;
-  } else {
-    o << "found " << a.transitions.size() << " transition";
-    if (a.transitions.size() > 1) {
-      o << "s";
+    return o;
+  }
+
+  if (a.transitions.empty()) {
+    o << "found no transitions";
+
+    if (a.check_subcritical_transitions) {
+      o << " and no subcritical transitions";
+    } else {
+      o << ", but did not check for subcritical transitions";
     }
+
     o << std::endl
       << std::endl;
-    for (const auto &t : a.transitions) {
-      o << t << std::endl;
-    }
+
+    return o;
   }
+
+  o << "found " << a.transitions.size() << " transition";
+  if (a.transitions.size() > 1) {
+    o << "s";
+  }
+
+  o << std::endl
+    << std::endl;
+
+  if (a.check_subcritical_transitions) {
+    o << "checked for subcritical transitions";
+  } else {
+    o << "did not check for subcritical transitions";
+  }
+
+  o << std::endl
+    << std::endl;
+
+  for (const auto &t : a.transitions) {
+    o << t << std::endl;
+  }
+
   return o;
 }
 } // namespace PhaseTracer
