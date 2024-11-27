@@ -140,7 +140,7 @@ double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size
 
   double nc = nucleation_criteria(T_begin);
 
-  while (std::isnan(nc) or nc > 10000) {
+  while (std::isnan(nc)) {
     LOG(debug) << "action was nan - stepping down in temperature";
     T_begin -= Tnuc_step;
     if (T_begin < T_end) {
