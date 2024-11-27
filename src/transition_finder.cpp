@@ -50,7 +50,7 @@ std::vector<Transition> TransitionFinder::symmetric_partners(const Phase &phase1
     bool duplicate = false;
     const auto fv = pf.symmetric_partners(false_vacuum);
     const auto tv = pf.symmetric_partners(true_vacuum);
-    
+
     for (const auto tran : unique_transitions) {
       for (size_t i = 0; i < fv.size(); ++i) {
         if ((fv[i] - tran.false_vacuum).norm() < change_abs_tol + change_rel_tol * fv[i].norm() && (tv[i] - tran.true_vacuum).norm() < change_abs_tol + change_rel_tol * tv[i].norm()) {

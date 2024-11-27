@@ -191,7 +191,6 @@ public:
   EffectivePotential::Potential &P;
 
 protected:
-
   /**
      Find local minima at a particular temperature. The overloads define
      different ways of passing an initial step.
