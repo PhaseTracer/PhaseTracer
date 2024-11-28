@@ -592,10 +592,7 @@ Point PhaseFinder::find_min(const Eigen::VectorXd &guess, double T, double abs_s
 }
 
 std::function<double(Eigen::VectorXd)> PhaseFinder::make_objective(double T) const {
-  std::function<double(Eigen::VectorXd)> objective = [this, T](Eigen::VectorXd x) {
-    return this->P.V(x, T);
-  };
-  return objective;
+  return [this, T](Eigen::VectorXd x) { return this->P.V(x, T); };
 }
 
 Point PhaseFinder::find_min(const Eigen::VectorXd &guess, double T, Eigen::VectorXd step) const {
@@ -704,56 +701,28 @@ std::tuple<bool, bool> PhaseFinder::redundant(const Phase &phase1, const Phase &
     return std::make_tuple(false, false);
   }
 
-  Eigen::VectorXd x1, x2;
-
   LOG(debug) << "Checking whether phases " << phase1.key << " and " << phase2.key << " are redundant at endpoint(s) " << end;
 
   bool low = false;
   bool high = false;
 
   if (end != LOW) {
-    // Check the high temperature endpoint.
-    x1 = phase_at_T(phase1, tmax).x;
-    x2 = phase_at_T(phase2, tmax).x;
+    // Check the high temperature endpoint
+    const Eigen::VectorXd x1 = phase_at_T(phase1, tmax).x;
+    const Eigen::VectorXd x2 = phase_at_T(phase2, tmax).x;
 
     high = identical_within_tol(x1, x2);
   }
 
   if (end != HIGH) {
-    // Check the low temperature endpoint.
-    x1 = phase_at_T(phase1, tmin).x;
-    x2 = phase_at_T(phase2, tmin).x;
+    // Check the low temperature endpoint
+    const Eigen::VectorXd x1 = phase_at_T(phase1, tmin).x;
+    const Eigen::VectorXd x2 = phase_at_T(phase2, tmin).x;
 
     low = identical_within_tol(x1, x2);
   }
 
   return std::make_tuple(low, high);
-
-  /*if (end != LOW) {
-    x1 = phase_at_T(phase1, tmax).x;
-    x2 = phase_at_T(phase2, tmax).x;
-
-    if (!identical_within_tol(x1, x2)) {
-      return false, false;
-    } else if (end == HIGH) {
-      LOG(debug) << "Phase " << phase1.key << " is identical to Phase " << phase2.key << " at Tmax: " << tmax;
-      return false, true;
-    }
-  }
-
-  if (end != HIGH) {
-    x1 = phase_at_T(phase1, tmin).x;
-    x2 = phase_at_T(phase2, tmin).x;
-
-    if (!identical_within_tol(x1, x2)) {
-      return false;
-    } else if (end == LOW) {
-      LOG(debug) << "Phase " << phase1.key << " is identical to Phase " << phase2.key << " at Tmin: " << tmin;
-      return true;
-    }
-  }
-
-  return true;*/
 }
 
 void PhaseFinder::merge_phase_gaps() {
