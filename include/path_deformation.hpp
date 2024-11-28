@@ -38,7 +38,6 @@ namespace PhaseTracer {
 template <typename T>
 std::vector<T> cumulative_trapezoidal_integration(const std::vector<T> &values) {
   std::vector<T> integration_result;
-  integration_result.clear();
   T sum = T(0);
   for (size_t i = 0; i < values.size() - 1; ++i) {
     sum += (values[i] + values[i + 1]) / 2.0;
@@ -64,11 +63,11 @@ public:
 
   double find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0, double guess = 0.);
 
-  void get_path_tck(std::vector<double> pdist);
+  void set_path_tck(std::vector<double> pdist);
 
-  void dpdx(const double &x, double &dpdx_, double r);
+  void dpdx(const double &x, double &dpdx_, double r) const;
 
-  Eigen::VectorXd vecp(double x);
+  Eigen::VectorXd vecp(double x) const;
 
   double V(double x) const override;
 
@@ -76,7 +75,7 @@ public:
 
   double d2V(double x) const override;
 
-  double get_path_length() { return length; }
+  double get_path_length() const { return length; }
 
 private:
   /* Calculates dy/dx to fourth-order using finite differences. */
@@ -127,20 +126,18 @@ class PathDeformation {
 public:
   explicit PathDeformation(EffectivePotential::Potential &potential) : P(potential), nphi(potential.get_n_scalars()) {}
 
-  virtual ~PathDeformation() = default;
-
   bool deformPath(std::vector<double> dphidr);
   void step(double &lastStep, bool &step_reversed, double &fRatio);
 
   // Calculate the normal force and potential gradient on the path
   void forces(std::vector<Eigen::VectorXd> &F_norm, std::vector<Eigen::VectorXd> &dV);
 
-  std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> Nbspld2(std::vector<double> t, std::vector<double> x, int k = 3);
+  std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> Nbspld2(std::vector<double> t, std::vector<double> x, int k = 3) const;
 
   /* Calculate the instanton solution in multiple field dimension */
   FullTunneling full_tunneling(std::vector<Eigen::VectorXd> path_pts);
 
-  double get_action() { return action_temp; }
+  double get_action() const { return bounce_action; }
 
 private:
   EffectivePotential::Potential &P;
@@ -217,7 +214,7 @@ private:
   bool fix_end = false;
   std::vector<Eigen::VectorXd> phi_prev;
   std::vector<Eigen::VectorXd> F_prev;
-  double action_temp = std::numeric_limits<double>::quiet_NaN();
+  double bounce_action = std::numeric_limits<double>::quiet_NaN();
 
   std::vector<std::vector<Eigen::VectorXd>> phi_list;
   std::vector<std::vector<Eigen::VectorXd>> F_list;
