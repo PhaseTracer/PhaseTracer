@@ -22,6 +22,7 @@
 #include "one_loop_potential.hpp"
 #include "thermal_function.hpp"
 #include "pow.hpp"
+#include "logger.hpp"
 
 namespace EffectivePotential {
 
@@ -112,78 +113,8 @@ Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const 
   return gradient;
 }
 
-/** Now handles all supported DaisyMethods. .*/
-// Funtion V has handled all supported DaisyMethods
-/*
-Eigen::VectorXd OneLoopPotential::d2V_dxdt(Eigen::VectorXd phi, double T) const
-{
-    Eigen::VectorXd gradient = Eigen::VectorXd::Zero(phi.size());
-    Eigen::VectorXd phi_shifted;
-    double V1_, V1T_, daisy_, counter_term_;
-
-    for(int i = 0; i < phi.size(); ++i)
-    {
-        phi_shifted = phi;
-
-        for(int j = 0; j < n_h_xy.size(); ++j)
-        {
-            phi_shifted(i) = phi(i) + n_h_xy[j]*h;
-
-            const auto scalar_masses_sq = get_scalar_masses_sq(phi_shifted, xi);
-            const auto fermion_masses_sq = get_fermion_masses_sq(phi_shifted);
-            const auto vector_masses_sq = get_vector_masses_sq(phi_shifted);
-            const auto ghost_masses_sq = get_ghost_masses_sq(phi_shifted, xi);
-
-            for(int k = 0; k < n_h_xy.size(); ++k)
-            {
-                const double T_shifted = T + n_h_xy[k]*h;
-
-                counter_term_ = counter_term(phi_shifted, T_shifted);
-
-                switch(daisy_method)
-                {
-                    case DaisyMethod::None:
-                    {
-                        V1T_ = V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq, T_shifted);
-                        gradient(i) += (V1T_ + counter_term_)*coeff_xy[j]*coeff_xy[k] / (h*h);
-                        break;
-                    }
-                    case DaisyMethod::ArnoldEspinosa:
-                    {
-                        const auto scalar_debye_sq = get_scalar_debye_sq(phi_shifted, xi, T_shifted);
-                        const auto vector_debye_sq = get_vector_debye_sq(phi_shifted, T_shifted);
-
-                        V1T_ = V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq, T_shifted);
-                        daisy_ = daisy(scalar_masses_sq, scalar_debye_sq, vector_masses_sq, vector_debye_sq,
-                            T_shifted);
-                        gradient(i) += (V1T_ + daisy_ + counter_term_)*coeff_xy[j]*coeff_xy[k] / (h*h);
-                        break;
-                    }
-                    case DaisyMethod::Parwani:
-                    {
-                        const auto scalar_debye_sq = get_scalar_debye_sq(phi_shifted, xi, T_shifted);
-                        const auto vector_debye_sq = get_vector_debye_sq(phi_shifted, T_shifted);
-
-                        V1_= V1(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, ghost_masses_sq);
-                        V1T_ = V1T(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, ghost_masses_sq, T_shifted);
-
-                        gradient(i) += (V1_ + V1T_ + counter_term_)*coeff_xy[j]*coeff_xy[k] / (h*h);
-                        break;
-                    }
-                    default:
-                        throw std::runtime_error("unknown daisy method");
-                }
-            }
-        }
-    }
-
-    return gradient;
-}
-*/
-
 std::vector<double> OneLoopPotential::get_scalar_dofs() const {
-  const std::vector<double> dof(get_n_scalars(), 1.);
-  return dof;
+  return std::vector<double>(get_n_scalars(), 1.);
 }
 
 double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
@@ -293,7 +224,7 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
   }
 
   if (T == 0.)
-    std::cout << "Correction: " << correction << " initially." << std::endl;
+    LOG(debug) << "Correction: " << correction << " initially";
 
   // scalar correction
   for (size_t i = 0; i < scalar_masses_sq.size(); ++i) {
@@ -301,7 +232,7 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
   }
 
   if (T == 0.)
-    std::cout << "Correction: " << correction << " after scalars." << std::endl;
+    LOG(debug) << "Correction: " << correction << " after scalars";
 
   // fermion correction
   for (size_t i = 0; i < fermion_masses_sq.size(); ++i) {
@@ -309,7 +240,7 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
   }
 
   if (T == 0.)
-    std::cout << "Correction: " << correction << " after fermions." << std::endl;
+    LOG(debug) << "Correction: " << correction << " after fermions";
 
   // vector correction
   for (size_t i = 0; i < vector_masses_sq.size(); ++i) {
@@ -317,7 +248,7 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
   }
 
   if (T == 0.)
-    std::cout << "Correction: " << correction << " after vectors." << std::endl;
+    LOG(debug) << "Correction: " << correction << " after vectors";
 
   // ghost correction
   if (xi != 0.) {
@@ -327,7 +258,7 @@ double OneLoopPotential::V1T(std::vector<double> scalar_masses_sq,
   }
 
   if (T == 0.)
-    std::cout << "Correction: " << correction << " after gauge-dependent vector contributions." << std::endl;
+    LOG(debug) << "Correction: " << correction << " after gauge-dependent vector contributions";
 
   return correction * pow_4(T) / (2. * square(M_PI));
 }
