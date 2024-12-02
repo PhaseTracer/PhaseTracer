@@ -132,6 +132,7 @@ void getCriticalTemperatureDataForPoint(std::string inputFileName, std::string o
 	auto prevPrecision = std::cout.precision(std::numeric_limits<double>::max_digits10);
 	
 	model.set_DEBUG(true);
+	std::cout << "Printing values of the potential in PhaseTracer" << std::endl;
 	std::cout << "V0(0 , 0)     : " << model.V0(origin) << std::endl;
 	std::cout << "V0(vh, vs)    : " << model.V0(vev) << std::endl;
 	std::cout << "V(0 , 0 , 0)  : " << model.V(origin, 0.) << std::endl;
