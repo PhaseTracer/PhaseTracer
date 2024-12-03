@@ -85,5 +85,4 @@ TEST_CASE("Compute gravitational wave spectrum for a two-dimensional model", "[2
 
   Catch::StringMaker<double>::precision = 30;
   REQUIRE(spec[0].peak_amplitude == Approx(1.21499917010577e-16).epsilon(rel_tol));
-
 }
