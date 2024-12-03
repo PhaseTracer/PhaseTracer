@@ -125,6 +125,7 @@ int main(int argc, char* argv[])
 	pf.set_t_high(140);
 	pf.set_check_vacuum_at_high(false);
 	pf.set_check_hessian_singular(false);
+	pf.set_seed(0);
 	pf.find_phases();
 	
 	// Make TransitionFinder object and find the transitions

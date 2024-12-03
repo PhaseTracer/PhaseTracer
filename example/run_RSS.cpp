@@ -166,7 +166,8 @@ void getCriticalTemperatureDataForPoint(std::string inputFileName, std::string o
 	PhaseTracer::PhaseFinder pf(model);
 	pf.set_t_high(maxTemp);
 	pf.set_check_vacuum_at_high(false);
-
+	pf.set_seed(0);
+	
 	if(bModStep)
 	{
 		pf.set_x_abs_jump(10.);

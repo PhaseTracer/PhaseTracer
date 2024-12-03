@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
 	pf.set_check_vacuum_at_high(false);
 	pf.set_check_hessian_singular(false);
 	pf.find_phases();
-	
+	pf.set_seed(0);
 	// Make TransitionFinder object and find the transitions
 	PhaseTracer::TransitionFinder tf(pf);
 	tf.set_check_subcritical_transitions(check_subcrit);
