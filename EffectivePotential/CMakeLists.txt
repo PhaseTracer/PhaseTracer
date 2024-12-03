@@ -11,6 +11,14 @@ option(BUILD_WITH_EXAMPLE "Build example programs" OFF)
 find_package(Eigen3 3.1 REQUIRED)
 find_package(ALGLIB REQUIRED)
 
+find_package(Boost 1.53.0 REQUIRED
+  COMPONENTS
+  filesystem
+  system
+  log
+)
+set(Boost_USE_MULTITHREADED ON)
+
 # flags
 
 set(CMAKE_CXX_FLAGS "-O3")
@@ -21,6 +29,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # includes
 
 include_directories(
+  ${Boost_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${ALGLIB_INCLUDES} 
   ${PROJECT_SOURCE_DIR}/include/effectivepotential
