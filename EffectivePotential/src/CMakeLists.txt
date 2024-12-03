@@ -2,7 +2,7 @@
 
 file(GLOB SRC_FILES *.cpp)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-link_libraries(${ALGLIB_LIBRARIES})
+link_libraries(${ALGLIB_LIBRARIES} ${Boost_LIBRARIES})
 add_library(effectivepotential SHARED ${SRC_FILES})
 
 # add header files here so they are available in the cmake config
