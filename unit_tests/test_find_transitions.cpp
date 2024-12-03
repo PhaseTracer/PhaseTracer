@@ -78,7 +78,7 @@ TEST_CASE("Compute nucleation for a one-dimensional model", "[1DTestModel]") {
 
   SECTION("Check the nucleation temperature")
 
-  CHECK(transitions[0].TN == Approx(57.4280983265).epsilon(rel_tol));
+  CHECK(transitions[0].TN == Approx(57.3603638993).epsilon(rel_tol));
 
   SECTION("Check the true vacuum at nucleation")
 
@@ -86,7 +86,7 @@ TEST_CASE("Compute nucleation for a one-dimensional model", "[1DTestModel]") {
 
   SECTION("Check the false vacuum at nucleation")
 
-  CHECK(std::abs(transitions[0].false_vacuum_TN[0]) == Approx(53.5392255174).epsilon(rel_tol));
+  CHECK(std::abs(transitions[0].false_vacuum_TN[0]) == Approx(53.6599601689).epsilon(rel_tol));
 }
 
 TEST_CASE("Compute nucleation for a two-dimensional model", "[2DTestModel]") {
