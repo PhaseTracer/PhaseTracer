@@ -256,7 +256,7 @@ GravWaveSpectrum GravWaveCalculator::sum_spectrums(const std::vector<GravWaveSpe
 std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
   for (const auto &ti : trans) {
     double Tref = ti.TN;
-    if (Tref < 1.5*h_dSdT) {
+    if (Tref < 1.5 * h_dSdT) {
       continue;
     }
     std::vector<Eigen::VectorXd> vacua = tf.get_vacua_at_T(ti.true_phase, ti.false_phase, Tref, ti.key);
