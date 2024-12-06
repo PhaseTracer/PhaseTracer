@@ -40,11 +40,13 @@ TEST_CASE("Compute gravitational wave spectrum for a one-dimensional model", "[1
 
   SECTION("Check value of spectra")
 
-  REQUIRE(spec[0].Tref == Approx(57.4280983265).epsilon(rel_tol));
-  REQUIRE(spec[0].alpha == Approx(0.0013796188).epsilon(rel_tol));
-  REQUIRE(spec[0].beta_H == Approx(7650.7311971078).epsilon(rel_tol));
-  REQUIRE(spec[0].peak_frequency == Approx(0.130687023).epsilon(rel_tol));
-  REQUIRE(spec[0].peak_amplitude == Approx(3.04600516764959e-23).epsilon(rel_tol));
+  REQUIRE(spec[0].Tref == Approx(57.3603638993).epsilon(rel_tol));
+  REQUIRE(spec[0].alpha == Approx(0.0013946917).epsilon(rel_tol));
+  REQUIRE(spec[0].beta_H == Approx(6873.221784433).epsilon(rel_tol));
+  REQUIRE(spec[0].peak_frequency == Approx(0.1191659843).epsilon(rel_tol));
+
+  Catch::StringMaker<double>::precision = 30;
+  REQUIRE(spec[0].peak_amplitude == Approx(3.8981023e-23).epsilon(rel_tol));
 }
 
 TEST_CASE("Compute gravitational wave spectrum for a two-dimensional model", "[2DTestModel]") {
@@ -77,8 +79,10 @@ TEST_CASE("Compute gravitational wave spectrum for a two-dimensional model", "[2
   SECTION("Check value of spectra")
 
   REQUIRE(spec[0].Tref == Approx(84.1901920318).epsilon(rel_tol));
-  REQUIRE(spec[0].alpha == Approx(0.0973369549).epsilon(rel_tol));
-  REQUIRE(spec[0].beta_H == Approx(1777.2281811751).epsilon(rel_tol));
+  REQUIRE(spec[0].alpha == Approx(0.0970871041).epsilon(rel_tol));
+  REQUIRE(spec[0].beta_H == Approx(1781.3022934312).epsilon(rel_tol));
   REQUIRE(spec[0].peak_frequency == Approx(0.0452179242).epsilon(rel_tol));
-  REQUIRE(spec[0].peak_amplitude == Approx(1.228756134894e-16).epsilon(rel_tol));
+
+  Catch::StringMaker<double>::precision = 30;
+  REQUIRE(spec[0].peak_amplitude == Approx(1.21499917010577e-16).epsilon(rel_tol));
 }

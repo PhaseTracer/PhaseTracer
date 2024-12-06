@@ -144,7 +144,8 @@ double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size
     LOG(debug) << "action was nan - stepping down in temperature";
     T_begin -= Tnuc_step;
     if (T_begin < T_end) {
-      throw std::runtime_error("could not find nucleation temperature");
+      LOG(fatal) << "could not find nucleation temperature";
+      return std::numeric_limits<double>::quiet_NaN();
     }
     nc = nucleation_criteria(T_begin);
   }
@@ -164,7 +165,8 @@ double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size
     while (true) {
       T_end = T_begin - Tnuc_step;
       if (T_end < T_end_) {
-        throw std::runtime_error("could not find nucleation temperature");
+        LOG(fatal) << "could not find nucleation temperature";
+        return std::numeric_limits<double>::quiet_NaN();
       }
       if (nucleation_criteria(T_end) < 0) {
         break;
