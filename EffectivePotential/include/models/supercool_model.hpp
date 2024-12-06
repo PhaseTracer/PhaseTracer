@@ -113,7 +113,8 @@ public:
     return 1;
   }
 
-  // bool forbidden(Eigen::VectorXd phi) const override { return phi[0] < -5.; } // todo: why?
+  // This can be used to forbid symmetric phases when there is a global symmetry, while allowing the origin even with numerical noise that can make the field at the origin slightly negative
+  // bool forbidden(Eigen::VectorXd phi) const override { return phi[0] < -5.; }
 
   std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const override {
     const double higgsSq = 3. * lambda * pow(phi[0], 2) + 2. * kappa * phi[0] - mu0_sq;
@@ -128,7 +129,6 @@ public:
     const double higgsSq = higgsSqZeroT + T2forH * (lambda / 4. + g * g + (g * g + g1 * g1) / 16. + yt * yt / 4.);
     return {higgsSq};
   }
-
   std::vector<double> get_scalar_dofs() const override {
     return {1};
   }
