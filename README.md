@@ -124,6 +124,16 @@ Please note that the BSMPT examples in PhaseTacer are just for checking that Pha
 
 If you use PhaseTracer, please cite the accompanying manual
 
+    @article{Athron:2024xrh,
+        author = "Athron, Peter and Balazs, Csaba and Fowlie, Andrew and Morris, Lachlan and Searle, William and Xiao, Yang and Zhang, Yang",
+        title = "{PhaseTracer2: from the effective potential to gravitational waves}",
+        eprint = "2412.04881",
+        archivePrefix = "arXiv",
+        primaryClass = "astro-ph.CO",
+        month = "12",
+        year = "2024"
+    }
+
     @article{Athron:2020sbe,
         author = "Athron, Peter and Bal\'azs, Csaba and Fowlie, Andrew and Zhang, Yang",
         title = "{PhaseTracer: tracing cosmological phases and calculating transition properties}",
