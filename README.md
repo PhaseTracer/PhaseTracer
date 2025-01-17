@@ -29,7 +29,7 @@ You need a C++14 compliant compiler and our dependencies. The dependencies can b
     
 *Mac*
 
-    brew install alglib nlopt eigen boost gsl
+    brew install nlopt eigen boost gsl alglib
 
 If alglib is not found, see https://github.com/S-Dafarra/alglib-cmake
 
