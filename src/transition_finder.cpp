@@ -117,6 +117,11 @@ std::vector<Transition> TransitionFinder::find_transition(const Phase &phase1, c
       const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
       unique_transitions[i_selected].set_nucleation(TN, vacua[0], vacua[1]);
     }
+    
+    if (calculate_percolation){
+      double Tp = get_percolation_temperature(phase1, phase2, i_selected, TC, T1);
+      unique_transitions[i_selected].set_percolation(Tp);
+    }
     return {unique_transitions[i_selected]};
   } else {
     return unique_transitions;
