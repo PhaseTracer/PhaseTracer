@@ -189,7 +189,7 @@ public:
 
   
   double nucleation_rate(const Phase &phase1, const Phase &phase2, size_t i_unique, double T) const {
-    double S3_over_T = get_action(phase1, phase2, T, i_unique);
+    double S3_over_T = get_action(phase1, phase2, T, i_unique)/T;
     return pow(T, 4) * std::exp(-S3_over_T);
   }
   
@@ -198,7 +198,7 @@ public:
     return -4./3. * M_PI * std::pow(vw, 3) * nucl_rate * pow(1./(T_min * T_min)-1./(T * T), 3) * 1/pow(T, 3);
   }
   
-  double get_false_vacuum_fraction(const Phase &phase1, const Phase &phase2, size_t i_unique, double init_T, double end_T, double vw, double dof = 106.75, int num_T_list = 300) const {
+  double get_false_vacuum_fraction(const Phase &phase1, const Phase &phase2, size_t i_unique, double init_T, double end_T,  int num_T_list = 300) const {
       const double G = 6.7088e-39;
       const double C = std::sqrt(8 * pow(M_PI, 3) * G * dof / 90);
 
@@ -226,19 +226,21 @@ public:
   
   double get_percolation_temperature(const Phase &phase1, const Phase &phase2, size_t i_unique, double init_T, double end_T) const {
       double target = 0.7;
-      double false_vacuum_init = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T, init_T - Tperc_tol_rel, vw, dof, num_T_list) - target;
-      double false_vacuum_end = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T, end_T, vw, dof, num_T_list) - target;
+      double false_vacuum_init = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T, init_T - Tperc_tol_rel, num_T_list) - target;
+      double false_vacuum_end = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T, end_T, num_T_list) - target;
       double Tp;
       double init_T_fix = init_T;
 
       if (false_vacuum_init * false_vacuum_end > 0) {
-          std::cout << "Error: f(a) and f(b) must have opposite signs!" << std::endl;
-          return 0;
+        LOG(error) << "false_vacuum_fraction at T_init = " << false_vacuum_init;
+        LOG(error) << "false_vacuum_end at T_end = " << false_vacuum_init;
+        LOG(error) << "Error: f(a) and f(b) must have opposite signs!";
+        return 0;
       }
 
       while ((init_T - end_T) > Tperc_tol_rel) {
           double mid_T = (init_T + end_T) / 2.0;
-          double fmid = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T_fix, mid_T, vw, dof, num_T_list) - target;
+          double fmid = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T_fix, mid_T,  num_T_list) - target;
 
           if (fabs(fmid) < Tperc_tol_rel) {
               return mid_T;
