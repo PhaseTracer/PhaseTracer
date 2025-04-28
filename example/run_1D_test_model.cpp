@@ -65,6 +65,18 @@ int main(int argc, char* argv[]) {
         outputFile << vacua[0][0] << " " << vacua[1][0] << " " << Ttest << " " << s << " " << s/Ttest  << std::endl;
     }
     outputFile.close();
+    
+    double action = ac.get_action(trans[0].true_vacuum_TN,trans[0].false_vacuum_TN,trans[0].TN);
+    std::cout << "action = " << std::setprecision (15) << action << std::endl;
+    
+    std::ofstream file1("profile1D_for_1d_example.txt");
+    file1 << "R,Phi,dPhi\n";
+    PhaseTracer::Profile1D profile = ac.get_bubble_profile();
+    for (int i = 0; i < profile.R.size(); ++i) {
+      file1 << std::setprecision(10) << profile.R[i] << "," << profile.Phi[i] << "," << profile.dPhi[i] << std::endl;
+    }
+    file1.close();
+    
   }
 
   return 0;

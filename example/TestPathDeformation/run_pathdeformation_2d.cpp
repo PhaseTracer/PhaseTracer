@@ -72,8 +72,9 @@ int main(int argc, char* argv[]) {
   LOG(debug)<< "fRatio = "<< std::setprecision(10) << a.fRatio;
   
   std::ofstream file1("profile1D_for_2d_example.txt");
+  file1 << "R,Phi,dPhi\n";
   for (int i = 0; i < a.profile1D.R.size(); ++i) {
-    file1 << std::setprecision(10) << a.profile1D.R[i] << "\t" << a.profile1D.Phi[i]  << std::endl;
+    file1 << std::setprecision(10) << a.profile1D.R[i] << "," << a.profile1D.Phi[i] << "," << a.profile1D.dPhi[i] << std::endl;
   }
   file1.close();
 

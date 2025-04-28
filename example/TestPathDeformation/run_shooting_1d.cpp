@@ -62,6 +62,16 @@ int main(int argc, char* argv[]) {
     PhaseTracer::Shooting s(p, 2);
     auto profile = s.findProfile(0,1);
     auto action = s.calAction(profile);
+    
+//    std::ofstream profile_file("profile.txt");
+//    if (profile_file.is_open()) {
+//      profile_file << "R,Phi,dPhi\n";
+//      for (int i = 0; i < profile.R.size(); ++i) {
+//        profile_file << profile.R(i) << "," << profile.Phi(i) << "," << profile.dPhi(i) << "\n";
+//      }
+//      profile_file.close();
+//    }
+
 
     std::cout << "k2= "<< k2 << ", action = " << std::setprecision(10) << action << std::endl;
 
