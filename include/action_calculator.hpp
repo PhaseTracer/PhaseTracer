@@ -45,6 +45,10 @@ private:
   /** Number of dimensions */
   PROPERTY(size_t, num_dims, 3)
 
+  // Save the profile and path
+  mutable Profile1D bubble_profile;
+  mutable std::vector<Eigen::VectorXd> tunneling_path;
+  
   /** Choose method to calculate the action */
   ActionMethod action_method = ActionMethod::PathDeformation;
 
@@ -178,8 +182,8 @@ public:
         st.set_max_iter(PD_max_iter);
 
         try {
-          auto profile = st.findProfile(false_vacuum[0], true_vacuum[0]);
-          action_PD = st.calAction(profile);
+          bubble_profile = st.findProfile(false_vacuum[0], true_vacuum[0]);
+          action_PD = st.calAction(bubble_profile);
         } catch (const std::exception &e) {
           LOG(warning) << "At T = " << T << ", between " << false_vacuum << " and " << true_vacuum << ": " << e.what();
         }
@@ -208,7 +212,9 @@ public:
         path_pts.push_back(true_vacuum);
         path_pts.push_back(false_vacuum);
         try {
-          pd.full_tunneling(path_pts);
+          FullTunneling full_tunneling = pd.full_tunneling(path_pts);
+          bubble_profile = full_tunneling.profile1D;
+          tunneling_path = full_tunneling.phi;
         } catch (const std::exception &e) {
           LOG(warning) << "At T = " << T << ", between " << false_vacuum << " and " << true_vacuum << ": " << e.what();
         }
@@ -228,6 +234,12 @@ public:
 #else
     return action_PD;
 #endif
+  }
+  Profile1D get_bubble_profile() {
+    return bubble_profile;
+  }
+  std::vector<Eigen::VectorXd> get_tunneling_path() {
+    return tunneling_path;
   }
 };
 
