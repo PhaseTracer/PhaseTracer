@@ -29,7 +29,7 @@ int main() {
   output_file.open(output_file_name);
   output_file << "l_hs \tm_s \tT_c^EX \tv_h^EX \tv_s^EX "
                  "\tT1_c^PT \tv1_h^T \tv1_s^T \tv1_h^F \tv1_s^F"
-//                 "\tT2_c^PT \tv2_h^T \tv2_s^T \tv2_h^F \tv2_s^F"
+              //                 "\tT2_c^PT \tv2_h^T \tv2_s^T \tv2_h^F \tv2_s^F"
               << std::endl;
 
   const double bins_lambda_hs = 30;
@@ -59,10 +59,10 @@ int main() {
       PhaseTracer::TransitionFinder tf(pf);
       tf.find_transitions();
 
-      if (pf.get_phases().size()!=2 or tf.get_transitions().size() !=1) {
+      if (pf.get_phases().size() != 2 or tf.get_transitions().size() != 1) {
         std::cout << "n_p=" << pf.get_phases().size() << ", n_t=" << tf.get_transitions().size() << ", lambda_hs = " << lambda_hs << ", m_s = " << m_s << std::endl;
       }
-      
+
       // Write results to data file
       output_file << lambda_hs << "\t" << m_s << "\t"
                   << model.get_TC_from_expression() << "\t"
@@ -71,7 +71,7 @@ int main() {
       for (auto &t : tf.get_transitions()) {
         output_file << t.TC << "\t" << t.true_vacuum[0] << "\t"
                     << t.true_vacuum[1] << "\t" << t.false_vacuum[0] << "\t"
-                    << t.false_vacuum[1] ;
+                    << t.false_vacuum[1];
       }
       output_file << std::endl;
     }

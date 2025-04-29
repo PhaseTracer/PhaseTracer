@@ -48,7 +48,7 @@ private:
   // Save the profile and path
   mutable Profile1D bubble_profile;
   mutable std::vector<Eigen::VectorXd> tunneling_path;
-  
+
   /** Choose method to calculate the action */
   ActionMethod action_method = ActionMethod::PathDeformation;
 

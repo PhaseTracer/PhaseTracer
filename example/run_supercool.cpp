@@ -1,5 +1,5 @@
 /**
-	Generates and outputs the phase structure for a toy model.
+        Generates and outputs the phase structure for a toy model.
 */
 
 #include <iostream>
@@ -14,171 +14,153 @@
 
 #include <Eigen/Eigenvalues>
 
-void printPaths(std::vector<TransitionGraph::Path> paths)
-{
-	if (paths.size() == 0)
-	{
-		std::cout << "Found no paths!" << std::endl << std::endl;
-		return;
-	}
+void printPaths(std::vector<TransitionGraph::Path> paths) {
+  if (paths.size() == 0) {
+    std::cout << "Found no paths!" << std::endl
+              << std::endl;
+    return;
+  }
 
-	std::cout << "Found " << paths.size() << " paths:" << std::endl;
+  std::cout << "Found " << paths.size() << " paths:" << std::endl;
 
-	for (int i = 0; i < paths.size(); ++i)
-	{
-		std::cout << "Path " << i + 1 << ": " << paths[i] << std::endl;
-	}
+  for (int i = 0; i < paths.size(); ++i) {
+    std::cout << "Path " << i + 1 << ": " << paths[i] << std::endl;
+  }
 
-	std::cout << std::endl;
+  std::cout << std::endl;
 }
 
-int main(int argc, char* argv[])
-{
-	bool check_subcrit = false;
-	bool allow_phase_oscillation = false;
-	bool bDebug = false;
-	bool bTrace = false;
-	bool bPlot = false;
-	bool bNoTransitionPathFinding = false;
-	bool bUseBoltzmannSuppression = false;
-	double dx = -1;
-	double dt = -1;
+int main(int argc, char *argv[]) {
+  bool check_subcrit = false;
+  bool allow_phase_oscillation = false;
+  bool bDebug = false;
+  bool bTrace = false;
+  bool bPlot = false;
+  bool bNoTransitionPathFinding = false;
+  bool bUseBoltzmannSuppression = false;
+  double dx = -1;
+  double dt = -1;
 
-	std::vector<std::string> args;
+  std::vector<std::string> args;
 
-	if(argc > 1)
-	{
-		// See https://stackoverflow.com/questions/15344714/convert-command-line-argument-to-string
-		// +1 for the starting pointer so we skip over the executable name argv[0].
-		args.assign(argv, argv + argc);
-	}
+  if (argc > 1) {
+    // See https://stackoverflow.com/questions/15344714/convert-command-line-argument-to-string
+    // +1 for the starting pointer so we skip over the executable name argv[0].
+    args.assign(argv, argv + argc);
+  }
 
-	std::string inputFileName = args[1];
-	std::string outputFolderName = args[2];
+  std::string inputFileName = args[1];
+  std::string outputFolderName = args[2];
 
-	// Check for additional input configuration settings.
-	for(int i = 3; i < argc; ++i)
-	{
-		//std::cout << i << ": " << argv[i] << std::endl;
-		
-		if(!bDebug && !bTrace && strcmp(argv[i], "-debug") == 0)
-		{
-			LOGGER(debug);
-			bDebug = true;
-			continue;
-		}
+  // Check for additional input configuration settings.
+  for (int i = 3; i < argc; ++i) {
+    // std::cout << i << ": " << argv[i] << std::endl;
 
-		if(!bTrace && strcmp(argv[i], "-trace") == 0)
-		{
-			LOGGER(trace);
-			bTrace = true;
-			continue;
-		}
+    if (!bDebug && !bTrace && strcmp(argv[i], "-debug") == 0) {
+      LOGGER(debug);
+      bDebug = true;
+      continue;
+    }
 
-		if(!bPlot && strcmp(argv[i], "-plot") == 0)
-		{
-			bPlot = true;
-			continue;
-		}
+    if (!bTrace && strcmp(argv[i], "-trace") == 0) {
+      LOGGER(trace);
+      bTrace = true;
+      continue;
+    }
 
-		if(!check_subcrit && strcmp(argv[i], "-subcrit") == 0)
-		{
-			check_subcrit = true;
-			continue;
-		}
+    if (!bPlot && strcmp(argv[i], "-plot") == 0) {
+      bPlot = true;
+      continue;
+    }
 
-		if(!allow_phase_oscillation && strcmp(argv[i], "-osc") == 0)
-		{
-			allow_phase_oscillation = true;
-			continue;
-		}
+    if (!check_subcrit && strcmp(argv[i], "-subcrit") == 0) {
+      check_subcrit = true;
+      continue;
+    }
 
-		if(!bNoTransitionPathFinding && strcmp(argv[i], "-no_tpf") == 0)
-		{
-			bNoTransitionPathFinding = true;
-			continue;
-		}
-		
-		if(!bUseBoltzmannSuppression && strcmp(argv[i], "-boltz") == 0)
-		{
-			bUseBoltzmannSuppression = true;
-			continue;
-		}
+    if (!allow_phase_oscillation && strcmp(argv[i], "-osc") == 0) {
+      allow_phase_oscillation = true;
+      continue;
+    }
 
-		if(dx < 0 && args[i].compare(0, 3, "dx=") == 0)
-		{
-			dx = std::stod(args[i].substr(3, args[i].size()-3));
-			continue;
-		}
+    if (!bNoTransitionPathFinding && strcmp(argv[i], "-no_tpf") == 0) {
+      bNoTransitionPathFinding = true;
+      continue;
+    }
 
-		if(dt < 0 && args[i].compare(0, 3, "dt=") == 0)
-		{
-			dt = std::stod(args[i].substr(3, args[i].size()-3));
-			continue;
-		}
-	}
-	
-	// Set level of screen output
-	if(!bDebug && !bTrace)
-	{
-		LOGGER(fatal);
-	}
-	
-	// Construct model
-	EffectivePotential::SuperCoolModel model(inputFileName);
-	model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
-	model.set_xi(0);
-	model.set_bUseBoltzmannSuppression(bUseBoltzmannSuppression);
-	
-	Eigen::VectorXd origin(1);
-	origin << 0.;
-	std::cout << "V(0 , 0)     : " << model.V(origin, 0.) << std::endl;
-	std::cout << "V0(0 , 0)    : " << model.V0(origin) << std::endl;
-	Eigen::VectorXd vev(1);
-	vev << 246.;
-	std::cout << "V(v , 0)     : " << model.V(vev, 0.) << std::endl;
-	std::cout << "V0(v , 0)    : " << model.V0(vev) << std::endl;
-	Eigen::VectorXd ten(1);
-	ten << 10.;
-	std::cout << "V(10 , 10)   : " << model.V(ten, 10.) << std::endl;
-	std::cout << "V0(10 , 10)  : " << model.V0(ten) << std::endl;
-	
-	// Make PhaseFinder object and find the phases
-	PhaseTracer::PhaseFinder pf(model);
-	pf.set_t_high(140);
-	pf.set_check_vacuum_at_high(false);
-	pf.set_check_hessian_singular(false);
-	pf.find_phases();
-	pf.set_seed(0);
-	// Make TransitionFinder object and find the transitions
-	PhaseTracer::TransitionFinder tf(pf);
-	tf.set_check_subcritical_transitions(check_subcrit);
-	tf.set_assume_only_one_transition(!allow_phase_oscillation);
-	tf.find_transitions();
-	tf.find_transition_paths(model, false);
+    if (!bUseBoltzmannSuppression && strcmp(argv[i], "-boltz") == 0) {
+      bUseBoltzmannSuppression = true;
+      continue;
+    }
 
-	//std::cout << pf;
-	//std::cout << tf;
+    if (dx < 0 && args[i].compare(0, 3, "dx=") == 0) {
+      dx = std::stod(args[i].substr(3, args[i].size() - 3));
+      continue;
+    }
 
-	if(!bNoTransitionPathFinding)
-	{
-		LOG(debug) << pf;
-		LOG(debug) << "Finding transition paths...";
-		tf.find_transition_paths(model, true);
-	}
+    if (dt < 0 && args[i].compare(0, 3, "dt=") == 0) {
+      dt = std::stod(args[i].substr(3, args[i].size() - 3));
+      continue;
+    }
+  }
 
-	if(bDebug)
-	{
-		std::cout << pf;
-		std::cout << tf;
+  // Set level of screen output
+  if (!bDebug && !bTrace) {
+    LOGGER(fatal);
+  }
 
-		if (!bNoTransitionPathFinding)
-		{
-			printPaths(tf.get_transition_paths());
-		}
-	}
+  // Construct model
+  EffectivePotential::SuperCoolModel model(inputFileName);
+  model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
+  model.set_xi(0);
+  model.set_bUseBoltzmannSuppression(bUseBoltzmannSuppression);
 
-	PhaseTracer::phase_plotter(tf, outputFolderName, "phase_structure", bPlot);
-	
-	return 0;
+  Eigen::VectorXd origin(1);
+  origin << 0.;
+  std::cout << "V(0 , 0)     : " << model.V(origin, 0.) << std::endl;
+  std::cout << "V0(0 , 0)    : " << model.V0(origin) << std::endl;
+  Eigen::VectorXd vev(1);
+  vev << 246.;
+  std::cout << "V(v , 0)     : " << model.V(vev, 0.) << std::endl;
+  std::cout << "V0(v , 0)    : " << model.V0(vev) << std::endl;
+  Eigen::VectorXd ten(1);
+  ten << 10.;
+  std::cout << "V(10 , 10)   : " << model.V(ten, 10.) << std::endl;
+  std::cout << "V0(10 , 10)  : " << model.V0(ten) << std::endl;
+
+  // Make PhaseFinder object and find the phases
+  PhaseTracer::PhaseFinder pf(model);
+  pf.set_t_high(140);
+  pf.set_check_vacuum_at_high(false);
+  pf.set_check_hessian_singular(false);
+  pf.find_phases();
+  pf.set_seed(0);
+  // Make TransitionFinder object and find the transitions
+  PhaseTracer::TransitionFinder tf(pf);
+  tf.set_check_subcritical_transitions(check_subcrit);
+  tf.set_assume_only_one_transition(!allow_phase_oscillation);
+  tf.find_transitions();
+  tf.find_transition_paths(model, false);
+
+  // std::cout << pf;
+  // std::cout << tf;
+
+  if (!bNoTransitionPathFinding) {
+    LOG(debug) << pf;
+    LOG(debug) << "Finding transition paths...";
+    tf.find_transition_paths(model, true);
+  }
+
+  if (bDebug) {
+    std::cout << pf;
+    std::cout << tf;
+
+    if (!bNoTransitionPathFinding) {
+      printPaths(tf.get_transition_paths());
+    }
+  }
+
+  PhaseTracer::phase_plotter(tf, outputFolderName, "phase_structure", bPlot);
+
+  return 0;
 }

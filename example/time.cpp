@@ -9,7 +9,7 @@
 #include "phase_plotter.hpp"
 #include "time.hpp"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 
   LOGGER(fatal)
 
@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
   EffectivePotential::TwoDimModel model;
 
   START_TIMER
-    
+
   // Make PhaseFinder object and find the phases
   PhaseTracer::PhaseFinder pf(model);
   pf.find_phases();
