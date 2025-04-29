@@ -47,6 +47,7 @@ private:
 
   // Save the profile and path
   mutable Profile1D bubble_profile;
+  mutable std::vector<Eigen::VectorXd> phi_for_profile;
   mutable std::vector<Eigen::VectorXd> tunneling_path;
 
   /** Choose method to calculate the action */
@@ -214,6 +215,7 @@ public:
         try {
           FullTunneling full_tunneling = pd.full_tunneling(path_pts);
           bubble_profile = full_tunneling.profile1D;
+          phi_for_profile = full_tunneling.phi_for_profile1D;
           tunneling_path = full_tunneling.phi;
         } catch (const std::exception &e) {
           LOG(warning) << "At T = " << T << ", between " << false_vacuum << " and " << true_vacuum << ": " << e.what();
@@ -240,6 +242,9 @@ public:
   }
   std::vector<Eigen::VectorXd> get_tunneling_path() {
     return tunneling_path;
+  }
+  std::vector<Eigen::VectorXd> get_phi_for_profile() {
+    return phi_for_profile;
   }
 };
 
