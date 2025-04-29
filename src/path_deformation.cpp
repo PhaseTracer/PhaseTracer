@@ -565,6 +565,12 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
   auto action = tobj.calAction(profile);
   bounce_action = action;
 
+  std::vector<Eigen::VectorXd> phi_for_profile1D;
+  for (size_t ii = 0; ii < profile.Phi.size(); ii++) {
+    phi_for_profile1D.push_back(path.vecp(profile.Phi[ii]));
+  }
+  ft.phi_for_profile1D = phi_for_profile1D;
+
   ft.fRatio = fRatio;
   ft.phi = phi_node;
   ft.profile1D = profile;

@@ -118,7 +118,8 @@ struct FullTunneling {
   double action;
   double fRatio;
   Profile1D profile1D;
-  std::vector<Eigen::VectorXd> phi;
+  std::vector<Eigen::VectorXd> phi;               //
+  std::vector<Eigen::VectorXd> phi_for_profile1D; //
   std::vector<std::vector<std::vector<Eigen::VectorXd>>> saved_steps;
 };
 
