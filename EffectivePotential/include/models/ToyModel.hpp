@@ -54,7 +54,7 @@ public:
 
     if (!inputFile) {
       std::cerr << "Cannot open the file: " << inputFileName << std::endl;
-      std::cerr << "Absolute path: " << boost::filesystem::complete(inputFileName) << std::endl;
+      std::cerr << "Absolute path: " << boost::filesystem::system_complete(inputFileName) << std::endl;
       return;
     }
 
