@@ -684,6 +684,7 @@ Point PhaseFinder::phase_at_T(const Phase &phase, double T) const {
   auto end = trace_minimum(start, T, dt_start, &X, &T_, &dXdT, &V, &jumped);
   if (end != REACHED_T_STOP) {
     LOG(warning) << "Expected to reach tstop but end = " << end;
+    return {phase.X[n], P.V(phase.X[n], T), T};
   }
   return {X.back(), V.back(), T};
 }
