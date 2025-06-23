@@ -262,6 +262,10 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
     std::vector<Eigen::VectorXd> vacua = tf.get_vacua_at_T(ti.true_phase, ti.false_phase, Tref, ti.key);
     double alpha = get_alpha(vacua[0], vacua[1], Tref);
     double beta_H = get_beta_H(ti.true_phase, ti.false_phase, Tref, ti.key);
+    if (std::isinf(beta_H) or beta_H < 0) {
+      LOG(warning) << "Wrong beta/H! beta/H = " << beta_H;
+      continue;
+    }
     GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
     spectrums.push_back(spi);
   }
