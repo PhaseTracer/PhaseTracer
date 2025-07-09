@@ -1,5 +1,6 @@
 # Find DeepPhase
 
+option(DeepPhase_GIT_BRANCH "Branch of DeepPhase to clone" "no_matplotlib")
 set(DeepPhase "${PROJECT_SOURCE_DIR}/DeepPhase")
 
 if(Git_FOUND)
@@ -10,9 +11,9 @@ endif()
 
 # Download DeepPhase if required
 if(NOT EXISTS ${DeepPhase})
-  message(STATUS "Downloading DeepPhase")
+  message(STATUS "Downloading DeepPhase (branch: ${DeepPhase_GIT_BRANCH})")
   set(DeepPhase_git_rep "https://github.com/William-Searle/DeepPhase.git")
-  execute_process(COMMAND git clone ${DeepPhase_git_rep} ${DeepPhase}
+  execute_process(COMMAND git clone --branch ${DeepPhase_GIT_BRANCH} --single-branch ${DeepPhase_git_rep} ${DeepPhase}
                  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 	  )
 endif()
