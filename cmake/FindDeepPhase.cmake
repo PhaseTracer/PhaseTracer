@@ -20,8 +20,8 @@ endif()
 # Build DeepPhase if required
 if(NOT EXISTS ${DeepPhase}/lib/libDeepPhaseLib.a)
   message(STATUS "Making DeepPhase")
-  execute_process(COMMAND git checkout tags/v1.0.1
-                 WORKING_DIRECTORY ${DeepPhase})
+  # execute_process(COMMAND git checkout tags/v1.0.0
+  #                WORKING_DIRECTORY ${DeepPhase})
   execute_process(COMMAND cmake -DCMAKE_CXX_FLAGS="-fPIC" .
                   WORKING_DIRECTORY ${DeepPhase})
   execute_process(COMMAND ${CMAKE_MAKE_PROGRAM}
