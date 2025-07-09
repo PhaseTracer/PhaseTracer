@@ -17,6 +17,9 @@ option(BUILD_WITH_BSMPT "Build BSMPT example programs" OFF)
 # option for including BubbleProfiler
 option(BUILD_WITH_BP "Build example programs including BubbleProfiler" OFF)
 
+# option for including DeepPhase
+option(BUILD_WITH_DP "Build example programs including DeepPhase" OFF)
+
 # packages
 
 if(POLICY CMP0167)
@@ -45,10 +48,15 @@ if(BUILD_WITH_BP)
   find_package(BubbleProfiler REQUIRED)
 endif(BUILD_WITH_BP)
 
+if(BUILD_WITH_DP)
+  add_definitions(-DBUILD_WITH_DP)
+  find_package(DeepPhase REQUIRED)
+endif(BUILD_WITH_DP)
+
 # flags
 
 set(CMAKE_CXX_FLAGS "-O3")
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17) # must be 17 for DeepPhase
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -69,6 +77,12 @@ if(BUILD_WITH_BP)
     ${PROJECT_SOURCE_DIR}
   )
 endif(BUILD_WITH_BP)
+
+if(BUILD_WITH_DP)
+  include_directories(
+    ${PROJECT_SOURCE_DIR}
+  )
+endif(BUILD_WITH_DP)
 
 # add relevant dirs
 
