@@ -15,18 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_PHASETRACER_HPP_
-#define PHASETRACER_PHASETRACER_HPP_
+#ifndef PHASETRACER_THERMAL_PARAMETERS_HPP_
+#define PHASETRACER_THERMAL_PARAMETERS_HPP_
 
-#include "logger.hpp"
-#include "phase_finder.hpp"
-#include "transition_finder.hpp"
-#include "action_calculator.hpp"
-#include "gravwave_calculator.hpp"
-#include "phase_plotter.hpp"
-#include "potential_plotter.hpp"
-#include "potential_line_plotter.hpp"
-#include "spectrum_plotter.hpp"
-#include "thermal_parameters.hpp"
 
-#endif //  PHASETRACER_PHASETRACER_HPP_
+#endif // PHASETRACER_THERMAL_PARAMETERS_HPP_
