@@ -1,6 +1,6 @@
 # Find DeepPhase
 
-set(DeepPhase_GIT_BRANCH "no_matplotlib" CACHE STRING "Branch of DeepPhase to clone")
+set(DeepPhase_GIT_BRANCH "dev" CACHE STRING "Branch of DeepPhase to clone")
 set(DeepPhase "${PROJECT_SOURCE_DIR}/DeepPhase")
 
 if(Git_FOUND)

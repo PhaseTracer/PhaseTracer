@@ -147,7 +147,6 @@ int main(int argc, char* argv[]) {
   Hydrodynamics::FluidProfile fluidProfile(paramsPT);
   std::vector<double> momentumVec = logspace(1e-3, 1e+3, 500);
   auto kineticPowerSpectrum = Spectrum::Ekin(momentumVec, fluidProfile);
-  kineticPowerSpectrum.write("string.csv");
   
   return 0;
 }
