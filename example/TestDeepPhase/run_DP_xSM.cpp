@@ -144,7 +144,10 @@ int main(int argc, char* argv[]) {
 
   PhaseTransition::PTParams paramsPT(vw, alpha, beta_H, dtau, wN, PTmodel, nuc_type, un);
   paramsPT.print();
-  // Hydrodynamics::FluidProfile fluidProfile(paramsPT);
+  Hydrodynamics::FluidProfile fluidProfile(paramsPT);
+  std::vector<double> momentumVec = logspace(1e-3, 1e+3, 500);
+  auto kineticPowerSpectrum = Spectrum::Ekin(momentumVec, fluidProfile);
+  kineticPowerSpectrum.write("string.csv");
   
   return 0;
 }
