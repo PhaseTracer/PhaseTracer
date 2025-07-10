@@ -18,7 +18,7 @@ option(BUILD_WITH_BSMPT "Build BSMPT example programs" OFF)
 option(BUILD_WITH_BP "Build example programs including BubbleProfiler" OFF)
 
 # option for including DeepPhase
-option(BUILD_WITH_DP "Build example programs including DeepPhase" ON)
+option(BUILD_WITH_DP "Build example programs including DeepPhase" OFF)
 
 # packages
 
