@@ -5,6 +5,8 @@ bin/
 lib/
 build/
 .vs/
+.vscode/
+.github/
 paper/paper\.synctex\.gz
 paper/paper\.pdf
 paper/paper\.log
