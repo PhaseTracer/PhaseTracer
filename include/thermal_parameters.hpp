@@ -223,30 +223,22 @@ public:
     std::vector<ThermalParams> get_thermal_parameters();
 
 private:
-    void make_hubble_spline(alglib::spline1dinterpolant& hubble_spline, 
-                           Thermodynamics true_phase, 
-                           Thermodynamics false_phase, 
-                           double t_min, 
-                           double t_max, 
-                           double n_temp = 50);
+    void make_hubble_spline(alglib::spline1dinterpolant& hubble_spline, Thermodynamics true_phase, Thermodynamics false_phase, double t_min, double t_max, double n_temp = 50);
 
-    double hubble_integral(alglib::spline1dinterpolant& hubble_spline, 
-                          double T, 
-                          double Tdash);
+    double hubble_integral(alglib::spline1dinterpolant& hubble_spline, double T, double Tdash);
 
-    double false_vacuum_fraction_integrand(alglib::spline1dinterpolant& hubble_spline,
-                                         const Bounce& bounce,
-                                         double T,
-                                         double Tdash);
+    double false_vacuum_fraction_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double Tdash);
 
-    double false_vacuum_fraction(alglib::spline1dinterpolant& hubble_spline,
-                               const Bounce& bounce,
-                               double T,
-                               double vw);
+    double false_vacuum_fraction(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double vw);
 
-    double get_percolation_temperature(alglib::spline1dinterpolant& hubble_spline,
-                                     const Bounce& bounce,
-                                     double vw);
+    double get_percolation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double vw);
+
+    double nucleation_rate_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T);
+
+    double nucleation_rate(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T);
+
+    double get_nucleation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce);
+
 };
 
 } // namespace PhaseTracer
