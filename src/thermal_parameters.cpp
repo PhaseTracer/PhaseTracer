@@ -209,6 +209,9 @@ void ThermalParameters::find_thermal_parameters() {
 		double tp = get_percolation_temperature(hubble_spline, bounce_class, 0.35);
 		std::cout << "Percolation temperature: " << tp << std::endl;
 
+		double tn = get_nucleation_temperature(hubble_spline, bounce_class);
+		std::cout << "Percolation temperature: " << tn << std::endl;
+
 		thermalparameterContainer.push_back(tp_local);
 	}
 }
@@ -313,6 +316,86 @@ double ThermalParameters::get_percolation_temperature(alglib::spline1dinterpolan
 	return Tp;
 }
 
+double ThermalParameters::nucleation_rate_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T) {
+
+	double gamma = alglib::spline1dcalc(bounce.gamma_spline, T);
+	double h = alglib::spline1dcalc(hubble_spline, T); // 1/h !!!
+
+	return gamma * h * h * h;
+}
+
+double ThermalParameters::nucleation_rate(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T) {
+
+	double tc = bounce.maximum_temp;
+	double tmin = T;
+	int n_temp = 250;
+
+	alglib::real_1d_array temp_array, integrand_array;
+	alglib::spline1dinterpolant integrand_spline;
+	temp_array.setlength(n_temp);
+	integrand_array.setlength(n_temp);
+
+	double dt = (tc - tmin) / (n_temp - 1);
+	for (int i = 0; i < n_temp; i++) {
+		double tt = tmin + i * dt;
+		double h = nucleation_rate_integrand(hubble_spline, bounce, tt);
+		temp_array[i] = tt;
+		integrand_array[i] = h;
+	}
+
+	alglib::spline1dbuildcubic(temp_array, integrand_array, integrand_spline);
+
+	double result = 4. * M_PI / 3. * spline1dintegrate(integrand_spline, tc);
+
+	return result;
+}
+
+double ThermalParameters::get_nucleation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce) {
+
+	LOG(debug) << "Beginning nucleation temperature seach.";
+
+	double target = 1.;
+	double Tnuc_tol_rel = 1e-4;
+	double init_T = bounce.maximum_temp - Tnuc_tol_rel;
+	double end_T = bounce.minimum_temp;
+	LOG(debug) << "init_T = " << init_T;
+	LOG(debug) << "end_T = " << end_T;
+	
+
+	double nucleation_init = nucleation_rate(hubble_spline, bounce, init_T) - target;
+	// std::cout << "NT_init = " << nucleation_init + target << "\n";
+	double nucleation_end = nucleation_rate(hubble_spline, bounce, end_T) - target;
+	// std::cout << "NT_end = " << nucleation_end + target << "\n";
+	LOG(debug) << "N(init_T) = " << nucleation_init;
+	LOG(debug) << "N(end_T) = " << nucleation_end;
+
+	double Tn;
+	double init_T_fix = init_T;
+
+	while ((init_T - end_T) > Tnuc_tol_rel) {
+		double mid_T = (init_T + end_T) / 2.0;
+		double fmid = nucleation_rate(hubble_spline, bounce, mid_T) - target;
+		// std::cout << "NT_mid = " << fmid + target << "\n";
+
+		if (fabs(fmid) < Tnuc_tol_rel) {
+			return mid_T;
+		}
+
+		if (nucleation_end * fmid < 0) {
+			init_T = mid_T;
+			nucleation_init = fmid;
+		} else {
+			end_T = mid_T;
+			nucleation_end = fmid;
+		}
+	}
+
+	// std::cout << "(init_t - end_T) = " << init_T - end_T << std::endl;
+	Tn = (init_T + end_T) / 2.0;
+	LOG(debug) << "Found nucleation temperature: " << Tn;
+
+	return Tn;
+}
 
 
 } // namespace PhaseTracer
