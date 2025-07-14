@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
   int potential = 1;
   int matching = 1;
 
-  LOGGER(debug);
+  LOGGER(fatal);
 
   std::string json_filename;
   if ( argc == 1 ) {
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
 
   PhaseTracer::ActionCalculator ac(model);
   PhaseTracer::TransitionFinder tf(pf, ac);
-  tf.set_calculate_action(false); // Don't worry about TN, calculate manually.
+  tf.set_calculate_action(false); // This initialises with ac but stops it from calculating TN.
   tf.find_transitions();
 
   std::cout << pf;
@@ -125,11 +125,14 @@ int main(int argc, char* argv[]) {
   if ( flag == -1 ) {
     output_file << formatOutput(in, -4);
     output_file.close();
-    return 1;
+    return 1;/** number of temperature values for thermo splines  **/
   }
 
+  // testing
+  PhaseTracer::ThermalParameters tp(tf);
+  tp.find_thermal_parameters();
+
   double vw = 0.623436;
-  double tp = 65;
   double alpha = 0.01;
   double beta_H = 0.1;
   double cs_true_tp = 1/sqrt(3.);
