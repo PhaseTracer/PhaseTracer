@@ -131,25 +131,34 @@ int main(int argc, char* argv[]) {
   // testing
   PhaseTracer::ThermalParameters tp(tf);
   tp.find_thermal_parameters();
+  std::cout << tp;
+
+  auto tps = tp.get_thermal_params();
 
   double vw = 0.623436;
-  double alpha = 0.01;
-  double beta_H = 0.1;
+  double alpha = tps[0].alpha_tp;
+  double beta = tps[0].beta_tp;
   double cs_true_tp = 1/sqrt(3.);
   double cs_false_tp = 1/sqrt(3.);
 
   // interface with deepphase
-  double dtau = PhaseTransition::dflt_PTParams::dtau;
+  // double dtau = PhaseTransition::dflt_PTParams::dtau;
+  double dtau = 1/beta;
   double wN = PhaseTransition::dflt_PTParams::wN;
   char* PTmodel = "bag";
   char* nuc_type = "exp";
   PhaseTransition::Universe un;
 
-  PhaseTransition::PTParams paramsPT(vw, alpha, beta_H, dtau, wN, PTmodel, nuc_type, un);
-  paramsPT.print();
+  PhaseTransition::PTParams paramsPT(vw, alpha, beta, dtau, wN, PTmodel, nuc_type, un);
+  // paramsPT.print();
   Hydrodynamics::FluidProfile fluidProfile(paramsPT);
-  std::vector<double> momentumVec = logspace(1e-3, 1e+3, 500);
+  std::vector<double> momentumVec = logspace(1e-5, 1e+2, 500);
   auto kineticPowerSpectrum = Spectrum::Ekin(momentumVec, fluidProfile);
+  // auto gwspec = Spectrum::GWSpec(momentumVec, paramsPT);
+
+  fluidProfile.write("PhaseTracer/fp.csv");
+  kineticPowerSpectrum.write("PhaseTracer/ekin.csv");
+  // gwspec.write("PhaseTracer/gw.csv");
   
   return 0;
 }
