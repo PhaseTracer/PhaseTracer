@@ -142,35 +142,38 @@ Bounce::Bounce(Transition t_in, TransitionFinder tf_in, double minimum_temp_in, 
     spline_evaluations(spline_evaluations_in) {}
 
 void Bounce::get_splines() {
-    alglib::real_1d_array temp_array, action_array, gamma_array;
-    temp_array.setlength(spline_evaluations);
-    action_array.setlength(spline_evaluations);
-    gamma_array.setlength(spline_evaluations);
+	alglib::real_1d_array temp_array, action_array, gamma_array, log_gamma_array;
+	temp_array.setlength(spline_evaluations);
+	action_array.setlength(spline_evaluations);
+	gamma_array.setlength(spline_evaluations);
+	log_gamma_array.setlength(spline_evaluations);
 
-    double dt = (maximum_temp - minimum_temp) / (spline_evaluations - 1);
+	double dt = (maximum_temp - minimum_temp) / (spline_evaluations - 1);
+	const double gamma_min = 1e-100; // Minimum gamma value to avoid log(0)
 
 	for (int i = 0; i < spline_evaluations; i++) {
-			double tt = minimum_temp + i * dt;
-			
-			// Calculate action using optional
-			auto action_opt = calculate_action(tt);
-			double action = action_opt.value_or(1e10);
-			
-			// Calculate gamma only if we have a valid action
-			double gamma = 0.0;
-			if (action_opt.has_value()) {
-					auto gamma_opt = calculate_gamma(tt, action_opt.value());
-					gamma = gamma_opt.value_or(0.0);
-			}
+		double tt = minimum_temp + i * dt;
+		
+		// Calculate action using optional
+		auto action_opt = calculate_action(tt);
+		double action = action_opt.value_or(1e150);
+		
+		// Calculate gamma only if we have a valid action
+		double gamma = gamma_min; // Set minimum value instead of 0
+		if (action_opt.has_value()) {
+			auto gamma_opt = calculate_gamma(tt, action_opt.value());
+			gamma = std::max(gamma_opt.value_or(gamma_min), gamma_min);
+		}
+		std::cout << "t = " << tt << ", action = " << action << ", gamma = " << gamma << std::endl;
+		temp_array[i] = tt;
+		action_array[i] = action;
+		gamma_array[i] = gamma;
+		log_gamma_array[i] = std::log(gamma); // Store log(gamma) for log-space interpolation
+	}
 
-			temp_array[i] = tt;
-			action_array[i] = action;
-			gamma_array[i] = gamma;
-    }
-
-    // make splines
-    alglib::spline1dbuildcubic(temp_array, action_array, this->action_spline);
-    alglib::spline1dbuildcubic(temp_array, gamma_array, this->gamma_spline);
+	// make splines - use log-space for gamma to maintain positivity
+	alglib::spline1dbuildcubic(temp_array, action_array, this->action_spline);
+	alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->gamma_spline);
 }
 
 /*======================================
@@ -188,29 +191,62 @@ void ThermalParameters::find_thermal_parameters() {
 		double maximum_temp = t.TC;
 
 		if(minimum_temp > maximum_temp) { 
-				throw std::runtime_error("Minimum temp exceeds maximum temp.");
+			throw std::runtime_error("Minimum temp exceeds maximum temp.");
 		}
 
 		if(std::abs(maximum_temp - minimum_temp) < dt_tol) {
-				throw std::runtime_error("Temperature range is below set tolerance. Phase may not nucleate.");
+			throw std::runtime_error("Temperature range is below set tolerance. Phase may not nucleate.");
 		}
 
-		// initialise dependables with our parameters
 		Thermodynamics thermo_true(t.true_phase, n_temp, dof);
 		Thermodynamics thermo_false(t.false_phase, n_temp, dof);
 		Bounce bounce_class(t, tf, minimum_temp, maximum_temp, spline_evaluations);
 		bounce_class.get_splines();
 
-		// first fit the hubble spline
 		alglib::spline1dinterpolant hubble_spline;
 		this->make_hubble_spline(hubble_spline, thermo_true, thermo_false, minimum_temp, maximum_temp);
 		tp_local.hubble_spline = hubble_spline;
 
-		double tp = get_percolation_temperature(hubble_spline, bounce_class, 0.35);
-		std::cout << "Percolation temperature: " << tp << std::endl;
+		// int n = 50;
+		// for( double tt = minimum_temp; tt <= maximum_temp - 1e-4; tt += (maximum_temp - minimum_temp) / (n-1) ) {
+		// 	double pf = false_vacuum_fraction(hubble_spline, bounce_class, tt, 0.35);
+		// 	double nt = nucleation_rate(hubble_spline, bounce_class, tt);
+		// 	double gamma = std::exp(alglib::spline1dcalc(bounce_class.gamma_spline, tt)); // exp since we store log(gamma)
+		// 	std::cout << "[" << tt << ", " << gamma << ", " << pf << ", " << nt << "],\n"; 
+		// }
 
-		double tn = get_nucleation_temperature(hubble_spline, bounce_class);
-		std::cout << "Percolation temperature: " << tn << std::endl;
+		double tp = 0.0;
+		try { 
+			tp = get_percolation_temperature(hubble_spline, bounce_class, 0.35); 
+			tp_local.TP = tp;
+			tp_local.percolates = true;
+			std::cout << "Percolation temperature: " << tp << std::endl;
+		} catch (const std::runtime_error &e) {
+			tp_local.percolates = false;
+			std::cout << "Failed to find percolation temperature: " << e.what() << std::endl;
+		}
+
+		double tf = 0.0;
+		try { 
+			tf = get_completion_temperature(hubble_spline, bounce_class, 0.35); 
+			tp_local.TF = tf;
+			tp_local.completes = true;
+			std::cout << "Completion temperature: " << tf << std::endl;
+		} catch (const std::runtime_error &e) {
+			tp_local.completes = false;
+			std::cout << "Failed to find percolation temperature: " << e.what() << std::endl;
+		}
+
+		double tn = 0.0;
+		try { 
+			tn = get_nucleation_temperature(hubble_spline, bounce_class); 
+			tp_local.TN = tn;
+			tp_local.nucleates = true;
+			std::cout << "Nucleation temperature: " << tn << std::endl;
+		} catch (const std::runtime_error &e) {
+			tp_local.nucleates = false;
+			std::cout << "Failed to find percolation temperature: " << e.what() << std::endl;
+		}
 
 		thermalparameterContainer.push_back(tp_local);
 	}
@@ -242,7 +278,7 @@ double ThermalParameters::hubble_integral(alglib::spline1dinterpolant& hubble_sp
 double ThermalParameters::false_vacuum_fraction_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double Tdash) {
 	double h = alglib::spline1dcalc(hubble_spline, Tdash); // 1/h !!!
 	double h_int = hubble_integral(hubble_spline, T, Tdash);
-	double gamma = alglib::spline1dcalc(bounce.gamma_spline, Tdash);
+	double gamma = std::exp(alglib::spline1dcalc(bounce.gamma_spline, Tdash)); // exp since we store log(gamma)
 	double Tfac = 1/(Tdash*Tdash*Tdash*Tdash);
 
 	return Tfac * gamma * h * h_int*h_int*h_int;
@@ -273,54 +309,9 @@ double ThermalParameters::false_vacuum_fraction(alglib::spline1dinterpolant& hub
 	return exp(result);
 }
 
-
-double ThermalParameters::get_percolation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double vw) {
-	LOG(debug) << "Beginning percolation temperature search with vw = " << vw;
-
-	double target = 0.71;
-	double Tperc_tol_abs = 1e-4;
-	double Tperc_tol_rel = 1e-4;
-	double init_T = bounce.maximum_temp - Tperc_tol_abs;
-	double end_T = bounce.minimum_temp;
-	LOG(debug) << "init_T = " << init_T;
-	LOG(debug) << "end_T = " << end_T;
-
-	double false_vacuum_init = false_vacuum_fraction(hubble_spline, bounce, init_T, vw) - target;
-	double false_vacuum_end = false_vacuum_fraction(hubble_spline, bounce, end_T, vw) - target;
-
-	if (false_vacuum_fraction(hubble_spline, bounce, end_T, vw) > target) { 
-		std::cout << "Transition will not percolate (Pf > 0.71 at end of transition)" << std::endl;
-		return bounce.maximum_temp;
-	}
-
-	double Tp;
-	while ((init_T - end_T) > Tperc_tol_rel) {
-		double mid_T = (init_T + end_T) / 2.0;
-		double fmid = false_vacuum_fraction(hubble_spline, bounce, mid_T, vw) - target;
-
-		if (fabs(fmid) < Tperc_tol_rel) {
-			return mid_T;
-		}
-
-		if (false_vacuum_end * fmid < 0) {
-			init_T = mid_T;
-			false_vacuum_init = fmid;
-		} else {
-			end_T = mid_T;
-			false_vacuum_end = fmid;
-		}
-	}
-
-	Tp = (init_T + end_T) / 2.0;
-	LOG(debug) << "Found percolation temperature: " << Tp;
-	return Tp;
-}
-
 double ThermalParameters::nucleation_rate_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T) {
-
-	double gamma = alglib::spline1dcalc(bounce.gamma_spline, T);
+	double gamma = std::exp(alglib::spline1dcalc(bounce.gamma_spline, T)); // exp since we store log(gamma)
 	double h = alglib::spline1dcalc(hubble_spline, T); // 1/h !!!
-
 	return gamma * h * h * h;
 }
 
@@ -346,56 +337,130 @@ double ThermalParameters::nucleation_rate(alglib::spline1dinterpolant& hubble_sp
 	alglib::spline1dbuildcubic(temp_array, integrand_array, integrand_spline);
 
 	double result = 4. * M_PI / 3. * spline1dintegrate(integrand_spline, tc);
-
 	return result;
 }
 
-double ThermalParameters::get_nucleation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce) {
 
-	LOG(debug) << "Beginning nucleation temperature seach.";
-
-	double target = 1.;
-	double Tnuc_tol_rel = 1e-4;
-	double init_T = bounce.maximum_temp - Tnuc_tol_rel;
-	double end_T = bounce.minimum_temp;
-	LOG(debug) << "init_T = " << init_T;
-	LOG(debug) << "end_T = " << end_T;
+double ThermalParameters::find_temperature_binary_search(double init_T, double end_T, double tol_rel, const std::function<double(double)>& calc_value, double target, int max_iterations) {
+	int iterations = 0;
+	double value_init = calc_value(init_T) - target;
+	double value_end = calc_value(end_T) - target;
 	
-
-	double nucleation_init = nucleation_rate(hubble_spline, bounce, init_T) - target;
-	// std::cout << "NT_init = " << nucleation_init + target << "\n";
-	double nucleation_end = nucleation_rate(hubble_spline, bounce, end_T) - target;
-	// std::cout << "NT_end = " << nucleation_end + target << "\n";
-	LOG(debug) << "N(init_T) = " << nucleation_init;
-	LOG(debug) << "N(end_T) = " << nucleation_end;
-
-	double Tn;
-	double init_T_fix = init_T;
-
-	while ((init_T - end_T) > Tnuc_tol_rel) {
+	while ((init_T - end_T) > tol_rel && iterations < max_iterations) {
 		double mid_T = (init_T + end_T) / 2.0;
-		double fmid = nucleation_rate(hubble_spline, bounce, mid_T) - target;
-		// std::cout << "NT_mid = " << fmid + target << "\n";
+		double fmid = calc_value(mid_T) - target;
 
-		if (fabs(fmid) < Tnuc_tol_rel) {
+		if (fabs(fmid) < tol_rel) {
 			return mid_T;
 		}
 
-		if (nucleation_end * fmid < 0) {
+		if (value_end * fmid < 0) {
 			init_T = mid_T;
-			nucleation_init = fmid;
+			value_init = fmid;
 		} else {
 			end_T = mid_T;
-			nucleation_end = fmid;
+			value_end = fmid;
 		}
+		iterations++;
 	}
 
-	// std::cout << "(init_t - end_T) = " << init_T - end_T << std::endl;
-	Tn = (init_T + end_T) / 2.0;
-	LOG(debug) << "Found nucleation temperature: " << Tn;
+	if (iterations >= max_iterations) {
+		throw std::runtime_error("Failed to converge when finding temperature");
+	}
 
-	return Tn;
+	return (init_T + end_T) / 2.0;
 }
 
+double ThermalParameters::get_percolation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double vw) {
+	LOG(debug) << "Beginning percolation temperature search with vw = " << vw;
+
+	if (vw <= 0.0 || vw >= 1.0) {
+		throw std::runtime_error("Wall velocity vw must be between 0 and 1");
+	}
+
+	const double target = 0.71;
+	const double tol_abs = 1e-4;
+	const double tol_rel = 1e-4;
+	double init_T = bounce.maximum_temp - tol_abs;
+	double end_T = bounce.minimum_temp;
+
+	if (init_T <= end_T) {
+		throw std::runtime_error("Invalid temperature range for percolation search");
+	}
+
+	try {
+		// Check if percolation is possible
+		if (false_vacuum_fraction(hubble_spline, bounce, end_T, vw) > target + tol_abs) {
+			throw std::runtime_error("Transition does not percolate");
+		}
+
+		// Create lambda for the binary search
+		auto calc_value = [&](double T) {
+			return false_vacuum_fraction(hubble_spline, bounce, T, vw);
+		};
+
+		return find_temperature_binary_search(init_T, end_T, tol_rel, calc_value, target);
+	} catch (const alglib::ap_error& e) {
+		throw std::runtime_error(std::string("ALGLIB error in percolation temperature calculation: ") + e.msg);
+	}
+}
+
+double ThermalParameters::get_completion_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double vw) {
+	LOG(debug) << "Beginning completion temperature search with vw = " << vw;
+
+	if (vw <= 0.0 || vw >= 1.0) {
+		throw std::runtime_error("Wall velocity vw must be between 0 and 1");
+	}
+
+	const double target = 0.01;
+	const double tol_abs = 1e-4;
+	const double tol_rel = 1e-4;
+	double init_T = bounce.maximum_temp - tol_abs;
+	double end_T = bounce.minimum_temp;
+
+	if (init_T <= end_T) {
+		throw std::runtime_error("Invalid temperature range for completion search");
+	}
+
+	try {
+		// Check if completion is possible
+		if (false_vacuum_fraction(hubble_spline, bounce, end_T, vw) > target + tol_abs) {
+			throw std::runtime_error("Transition does not complete");
+		}
+
+		// Create lambda for the binary search
+		auto calc_value = [&](double T) {
+			return false_vacuum_fraction(hubble_spline, bounce, T, vw);
+		};
+
+		return find_temperature_binary_search(init_T, end_T, tol_rel, calc_value, target);
+	} catch (const alglib::ap_error& e) {
+		throw std::runtime_error(std::string("ALGLIB error in completion temperature calculation: ") + e.msg);
+	}
+}
+
+double ThermalParameters::get_nucleation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce) {
+	LOG(debug) << "Beginning nucleation temperature search";
+
+	const double target = 1.0;
+	const double tol_rel = 1e-4;
+	double init_T = bounce.maximum_temp - tol_rel;
+	double end_T = bounce.minimum_temp;
+
+	if (init_T <= end_T) {
+		throw std::runtime_error("Invalid temperature range for nucleation search");
+	}
+
+	try {
+		// Create lambda for the binary search
+		auto calc_value = [&](double T) {
+			return nucleation_rate(hubble_spline, bounce, T);
+		};
+
+		return find_temperature_binary_search(init_T, end_T, tol_rel, calc_value, target);
+	} catch (const alglib::ap_error& e) {
+		throw std::runtime_error(std::string("ALGLIB error in nucleation temperature calculation: ") + e.msg);
+	}
+}
 
 } // namespace PhaseTracer

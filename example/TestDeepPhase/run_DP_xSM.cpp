@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
   if ( flag == -1 ) {
     output_file << formatOutput(in, -4);
     output_file.close();
-    return 1;/** number of temperature values for thermo splines  **/
+    return 1;
   }
 
   // testing
