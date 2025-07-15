@@ -146,19 +146,17 @@ public:
 private:
     /** Calculate action at given temperature */
     std::optional<double> calculate_action(double temperature) const {
-        double action = tf.get_action(t.true_phase, t.false_phase, temperature) / temperature;
-        if (std::isnan(action) || action >= 1e10) {
-            return std::nullopt;
-        }
-        return action;
+      double action = tf.get_action(t.true_phase, t.false_phase, temperature) / temperature;
+      if (std::isnan(action) || std::isinf(action) || action > 1e150) {
+        return std::nullopt;
+      }
+      return action;
     }
 
     /** Calculate gamma at given temperature and action */
     std::optional<double> calculate_gamma(double temperature, double action) const {
-        double gamma = temperature*temperature*temperature*temperature 
-                      * std::pow(action/(2*M_PI), 1.5) 
-                      * std::exp(-action);
-        return std::isnan(gamma) ? std::nullopt : std::optional<double>(gamma);
+      double log_gamma = 4*log(temperature) + 1.5*log(action/(2.*M_PI)) - action;
+      return log_gamma < -700 ? std::nullopt : std::optional<double>(exp(log_gamma));
     }
 };
 
@@ -173,9 +171,13 @@ struct ThermalParams {
 	double TC;
   double TN;
 	double TP;
+	double TF;
 	double alpha;
 	double betaH;
 	double beta;
+  bool percolates;
+  bool nucleates;
+  bool completes;
 
   /** Pretty-printer for single phase */
   friend std::ostream &operator<<(std::ostream &o, const ThermalParams &tp) {
@@ -204,7 +206,7 @@ private:
     PROPERTY(double, dof, 106.75);
 
     /** number of temp values for the action spline */
-    PROPERTY(int, spline_evaluations, 100);
+    PROPERTY(int, spline_evaluations, 50);
 
     /** uses percolation temp if true, otherwise nucleation temp */
     PROPERTY(bool, use_percolation_temp, false);
@@ -212,7 +214,7 @@ private:
     /** minimum temperature interval a phase must exist. */
     PROPERTY(double, dt_tol, 1.0);
 
-    /** minimum temperature interval a phase must exist.  */
+    /** Newtons constant in GeV  */
     PROPERTY(double, G, 1/((1.22 * 1e19)*(1.22 * 1e19)));
 
 public:
@@ -223,22 +225,120 @@ public:
     std::vector<ThermalParams> get_thermal_parameters();
 
 private:
-    void make_hubble_spline(alglib::spline1dinterpolant& hubble_spline, Thermodynamics true_phase, Thermodynamics false_phase, double t_min, double t_max, double n_temp = 50);
+    /**
+     * @brief Creates a spline for the Hubble parameter
+     * @param hubble_spline Output parameter for the spline
+     * @param true_phase True vacuum phase thermodynamics
+     * @param false_phase False vacuum phase thermodynamics
+     * @param t_min Minimum temperature
+     * @param t_max Maximum temperature
+     * @param n_temp Number of temperature points for spline
+     */
+    void make_hubble_spline(alglib::spline1dinterpolant& hubble_spline, 
+                           Thermodynamics true_phase, 
+                           Thermodynamics false_phase, 
+                           double t_min, double t_max, 
+                           double n_temp = 50);
 
+    /**
+     * @brief Calculates the integral of the Hubble parameter
+     * @param hubble_spline The Hubble parameter spline
+     * @param T Lower temperature bound
+     * @param Tdash Upper temperature bound
+     * @return The integral value
+     */
     double hubble_integral(alglib::spline1dinterpolant& hubble_spline, double T, double Tdash);
 
-    double false_vacuum_fraction_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double Tdash);
+    /**
+     * @brief Calculates the integrand for the false vacuum fraction
+     * @param hubble_spline The Hubble parameter spline
+     * @param bounce The bounce solution
+     * @param T Temperature
+     * @param Tdash Integration variable temperature
+     * @return The integrand value
+     */
+    double false_vacuum_fraction_integrand(alglib::spline1dinterpolant& hubble_spline, 
+                                         const Bounce& bounce, double T, double Tdash);
 
-    double false_vacuum_fraction(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double vw);
+    /**
+     * @brief Calculates the false vacuum fraction
+     * @param hubble_spline The Hubble parameter spline
+     * @param bounce The bounce solution
+     * @param T Temperature
+     * @param vw Wall velocity
+     * @return The false vacuum fraction
+     */
+    double false_vacuum_fraction(alglib::spline1dinterpolant& hubble_spline, 
+                               const Bounce& bounce, double T, double vw);
 
-    double get_percolation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double vw);
+    /**
+     * @brief Helper function for binary search to find critical temperatures
+     * @param init_T Initial (upper) temperature
+     * @param end_T End (lower) temperature
+     * @param tol_rel Relative tolerance for convergence
+     * @param calc_value Function that calculates the value to match against target
+     * @param target Target value to find
+     * @param max_iterations Maximum number of iterations
+     * @return The found temperature
+     * @throws std::runtime_error if the search fails to converge
+     */
+    static double find_temperature_binary_search(double init_T, double end_T, 
+                                               double tol_rel,
+                                               const std::function<double(double)>& calc_value,
+                                               double target, 
+                                               int max_iterations = 1000);
 
-    double nucleation_rate_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T);
+    /**
+     * @brief Gets the percolation temperature
+     * @param hubble_spline The Hubble parameter spline
+     * @param bounce The bounce solution
+     * @param vw Wall velocity (must be between 0 and 1)
+     * @return The percolation temperature
+     * @throws std::runtime_error if the transition does not percolate or parameters are invalid
+     */
+    double get_percolation_temperature(alglib::spline1dinterpolant& hubble_spline, 
+                                     const Bounce& bounce, double vw);
 
-    double nucleation_rate(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T);
+    /**
+     * @brief Gets the completion temperature
+     * @param hubble_spline The Hubble parameter spline
+     * @param bounce The bounce solution
+     * @param vw Wall velocity (must be between 0 and 1)
+     * @return The completion temperature
+     * @throws std::runtime_error if the transition does not complete or parameters are invalid
+     */
+    double get_completion_temperature(alglib::spline1dinterpolant& hubble_spline, 
+                                    const Bounce& bounce, double vw);
 
-    double get_nucleation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce);
+    /**
+     * @brief Calculates the nucleation rate integrand
+     * @param hubble_spline The Hubble parameter spline
+     * @param bounce The bounce solution
+     * @param T Temperature
+     * @return The integrand value
+     */
+    double nucleation_rate_integrand(alglib::spline1dinterpolant& hubble_spline, 
+                                   const Bounce& bounce, double T);
 
+    /**
+     * @brief Calculates the nucleation rate
+     * @param hubble_spline The Hubble parameter spline
+     * @param bounce The bounce solution
+     * @param T Temperature
+     * @return The nucleation rate
+     */
+    double nucleation_rate(alglib::spline1dinterpolant& hubble_spline, 
+                          const Bounce& bounce, double T);
+
+    /**
+     * @brief Gets the nucleation temperature
+     * @param hubble_spline The Hubble parameter spline
+     * @param bounce The bounce solution
+     * @return The nucleation temperature
+     * @throws std::runtime_error if the temperature range is invalid or calculation fails
+     */
+    double get_nucleation_temperature(alglib::spline1dinterpolant& hubble_spline, 
+                                    const Bounce& bounce);
 };
 
 } // namespace PhaseTracer
