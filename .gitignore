@@ -19,7 +19,7 @@ paper/paper\.spl
 paper/paper\.toc
 *__pycache__*
 build
-
-
-
-
+/deepvenv/
+ekin.csv
+fp.csv
+test_profiles.ipynb

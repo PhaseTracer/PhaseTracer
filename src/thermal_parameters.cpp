@@ -28,12 +28,12 @@ namespace PhaseTracer {
 
 Thermodynamics::Thermodynamics(Phase phase_in, int n_temp_in, double dof_in)
   : phase(phase_in),
-    potential_values(phase.V),
-    temperature_values(phase.T),
-    t_min(phase.T.front()),
-    t_max(phase.T.back()),
-    n_temp(n_temp_in),
-    dof(dof_in) {
+	potential_values(phase.V),
+	temperature_values(phase.T),
+	t_min(phase.T.front()),
+	t_max(phase.T.back()),
+	n_temp(n_temp_in),
+	dof(dof_in) {
 
   alglib::real_1d_array t, v;
   v.setcontent(potential_values.size(), potential_values.data());
@@ -43,7 +43,7 @@ Thermodynamics::Thermodynamics(Phase phase_in, int n_temp_in, double dof_in)
   temperature.resize(n_temp);
   double dT = std::abs(t_max - t_min) / (n_temp - 1);
   for (int i = 0; i < n_temp; ++i) {
-    temperature[i] = t_min + i * dT;
+	temperature[i] = t_min + i * dT;
   }
 
 	if (temperature.size() != n_temp) {
@@ -61,18 +61,18 @@ void Thermodynamics::get_thermodynamic_splines() {
   entropy.resize(n_temp);
 
   for (int i = 0; i < n_temp; ++i) {
-    double temp = temperature[i];
-    double v, dvdT, ddvdT;
-    alglib::spline1ddiff(this->potential, temp, v, dvdT, ddvdT);
+	double temp = temperature[i];
+	double v, dvdT, ddvdT;
+	alglib::spline1ddiff(this->potential, temp, v, dvdT, ddvdT);
 
-    double temp2 = temp * temp;
-    double temp4 = temp2 * temp2;
-    double pres_bag = dof * M_PI * M_PI / 90.0 * temp4;
+	double temp2 = temp * temp;
+	double temp4 = temp2 * temp2;
+	double pres_bag = dof * M_PI * M_PI / 90.0 * temp4;
 
-    pressure[i] = pres_bag - v;
-    energy[i] = 3.0 * pres_bag + v - temp * dvdT;
-    enthalpy[i] = 4.0 * pres_bag - temp * dvdT;
-    entropy[i] = 4.0 * pres_bag / temp - dvdT;
+	pressure[i] = pres_bag - v;
+	energy[i] = 3.0 * pres_bag + v - temp * dvdT;
+	enthalpy[i] = 4.0 * pres_bag - temp * dvdT;
+	entropy[i] = 4.0 * pres_bag / temp - dvdT;
   }
 
   alglib::real_1d_array t_array, p_array, e_array, w_array, s_array;
@@ -136,42 +136,48 @@ double Thermodynamics::get_entropy(double T) const {
 
 Bounce::Bounce(Transition t_in, TransitionFinder tf_in, double minimum_temp_in, double maximum_temp_in, int spline_evaluations_in)
   : t(t_in),
-    tf(tf_in),
-    minimum_temp(minimum_temp_in),
-    maximum_temp(maximum_temp_in),
-    spline_evaluations(spline_evaluations_in) {}
+	tf(tf_in),
+	minimum_temp(minimum_temp_in),
+	maximum_temp(maximum_temp_in),
+	spline_evaluations(spline_evaluations_in) {}
 
 void Bounce::get_splines() {
-	alglib::real_1d_array temp_array, action_array, gamma_array, log_gamma_array;
-	temp_array.setlength(spline_evaluations);
-	action_array.setlength(spline_evaluations);
-	gamma_array.setlength(spline_evaluations);
-	log_gamma_array.setlength(spline_evaluations);
+	//alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->gamma_spline);
 
+	// Use vectors to collect only valid points
+	std::vector<double> valid_temps, valid_actions, valid_log_gammas;
 	double dt = (maximum_temp - minimum_temp) / (spline_evaluations - 1);
-	const double gamma_min = 1e-100; // Minimum gamma value to avoid log(0)
+	const double gamma_min = 1e-100;
 
 	for (int i = 0; i < spline_evaluations; i++) {
 		double tt = minimum_temp + i * dt;
-		
-		// Calculate action using optional
 		auto action_opt = calculate_action(tt);
-		double action = action_opt.value_or(1e150);
-		
-		// Calculate gamma only if we have a valid action
-		double gamma = gamma_min; // Set minimum value instead of 0
 		if (action_opt.has_value()) {
-			auto gamma_opt = calculate_gamma(tt, action_opt.value());
-			gamma = std::max(gamma_opt.value_or(gamma_min), gamma_min);
+			double action = action_opt.value();
+			auto gamma_opt = calculate_gamma(tt, action);
+			double gamma = gamma_min;
+			if (gamma_opt.has_value()) {
+				gamma = std::max(gamma_opt.value(), gamma_min);
+			}
+			// std::cout << "t = " << tt << ", action = " << action << ", gamma = " << gamma << std::endl;
+			valid_temps.push_back(tt);
+			valid_actions.push_back(action);
+			valid_log_gammas.push_back(std::log(gamma));
+		} else {
+			std::cout << "t = " << tt << ", action = INVALID" << std::endl;
 		}
-		std::cout << "t = " << tt << ", action = " << action << ", gamma = " << gamma << std::endl;
-		temp_array[i] = tt;
-		action_array[i] = action;
-		gamma_array[i] = gamma;
-		log_gamma_array[i] = std::log(gamma); // Store log(gamma) for log-space interpolation
 	}
 
-	// make splines - use log-space for gamma to maintain positivity
+	if (valid_temps.size() < 2) {
+		throw std::runtime_error("Not enough valid action points to build spline.");
+	}
+
+	alglib::real_1d_array temp_array, action_array, log_gamma_array;
+	temp_array.setcontent(valid_temps.size(), valid_temps.data());
+	action_array.setcontent(valid_actions.size(), valid_actions.data());
+	log_gamma_array.setcontent(valid_log_gammas.size(), valid_log_gammas.data());
+
+	alglib::spline1dbuildcubic(temp_array, action_array, this->action_spline);
 	alglib::spline1dbuildcubic(temp_array, action_array, this->action_spline);
 	alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->gamma_spline);
 }
@@ -181,7 +187,13 @@ void Bounce::get_splines() {
 	the ThermalParameters class
 	======================================*/
 
-void ThermalParameters::find_thermal_parameters() { 
+void ThermalParameters::find_thermal_parameters() {
+
+	if (calculated_thermal_params) {
+    return;
+  }
+	
+	calculated_thermal_params = true;
 	std::vector<Transition> trans = tf.get_transitions();
 
 	for (auto t : trans) {
@@ -189,6 +201,7 @@ void ThermalParameters::find_thermal_parameters() {
 
 		double minimum_temp = t.false_phase.T.front();
 		double maximum_temp = t.TC;
+		tp_local.TC = maximum_temp;
 
 		if(minimum_temp > maximum_temp) { 
 			throw std::runtime_error("Minimum temp exceeds maximum temp.");
@@ -207,31 +220,26 @@ void ThermalParameters::find_thermal_parameters() {
 		this->make_hubble_spline(hubble_spline, thermo_true, thermo_false, minimum_temp, maximum_temp);
 		tp_local.hubble_spline = hubble_spline;
 
-		// int n = 50;
-		// for( double tt = minimum_temp; tt <= maximum_temp - 1e-4; tt += (maximum_temp - minimum_temp) / (n-1) ) {
-		// 	double pf = false_vacuum_fraction(hubble_spline, bounce_class, tt, 0.35);
-		// 	double nt = nucleation_rate(hubble_spline, bounce_class, tt);
-		// 	double gamma = std::exp(alglib::spline1dcalc(bounce_class.gamma_spline, tt)); // exp since we store log(gamma)
-		// 	std::cout << "[" << tt << ", " << gamma << ", " << pf << ", " << nt << "],\n"; 
-		// }
-
 		double tp = 0.0;
 		try { 
 			tp = get_percolation_temperature(hubble_spline, bounce_class, 0.35); 
 			tp_local.TP = tp;
+			tp_local.alpha_tp = get_alpha(tp, thermo_true, thermo_false);
+			tp_local.betaH_tp = get_betaH(tp, bounce_class);
+			tp_local.H_tp = get_hubble_rate(tp, thermo_true, thermo_false);
+			tp_local.beta_tp = tp_local.betaH_tp * tp_local.H_tp;
 			tp_local.percolates = true;
-			std::cout << "Percolation temperature: " << tp << std::endl;
 		} catch (const std::runtime_error &e) {
 			tp_local.percolates = false;
 			std::cout << "Failed to find percolation temperature: " << e.what() << std::endl;
 		}
+		
 
 		double tf = 0.0;
 		try { 
 			tf = get_completion_temperature(hubble_spline, bounce_class, 0.35); 
 			tp_local.TF = tf;
 			tp_local.completes = true;
-			std::cout << "Completion temperature: " << tf << std::endl;
 		} catch (const std::runtime_error &e) {
 			tp_local.completes = false;
 			std::cout << "Failed to find percolation temperature: " << e.what() << std::endl;
@@ -241,8 +249,11 @@ void ThermalParameters::find_thermal_parameters() {
 		try { 
 			tn = get_nucleation_temperature(hubble_spline, bounce_class); 
 			tp_local.TN = tn;
+			tp_local.alpha_tn = get_alpha(tn, thermo_true, thermo_false);
+			tp_local.betaH_tn = get_betaH(tn, bounce_class);
+			tp_local.H_tn = get_hubble_rate(tn, thermo_true, thermo_false);
+			tp_local.beta_tn = tp_local.betaH_tn * tp_local.H_tn;
 			tp_local.nucleates = true;
-			std::cout << "Nucleation temperature: " << tn << std::endl;
 		} catch (const std::runtime_error &e) {
 			tp_local.nucleates = false;
 			std::cout << "Failed to find percolation temperature: " << e.what() << std::endl;
@@ -250,6 +261,23 @@ void ThermalParameters::find_thermal_parameters() {
 
 		thermalparameterContainer.push_back(tp_local);
 	}
+}
+
+double ThermalParameters::get_alpha(double T, Thermodynamics true_thermo, Thermodynamics false_thermo) {
+	return abs(true_thermo.get_theta(T) - false_thermo.get_theta(T))/false_thermo.get_enthalpy(T) * 4./3.;
+}
+
+double ThermalParameters::get_hubble_rate(double T, Thermodynamics true_thermo, Thermodynamics false_thermo) {
+	double rho =  dof/30. * M_PI*M_PI * T*T*T*T + (true_thermo.get_energy(T) - false_thermo.get_energy(T));
+	double h = sqrt( 8. * M_PI * G/3. * rho);
+	return h;
+}
+
+double ThermalParameters::get_betaH(double T, Bounce bounce) {
+	double y, dy, ddy;
+	alglib::spline1ddiff(bounce.action_spline, T, y, dy, ddy);
+	std::cout << "T = " << T << ", y = " << y << ", dy = " << dy << std::endl;
+	return T * dy;
 }
 
 void ThermalParameters::make_hubble_spline(alglib::spline1dinterpolant& hubble_spline, Thermodynamics true_thermo, Thermodynamics false_thermo, double t_min, double t_max, double n_temp) {
@@ -261,8 +289,7 @@ void ThermalParameters::make_hubble_spline(alglib::spline1dinterpolant& hubble_s
 	double dt = (t_max - t_min) / (n_temp - 1);
 	for (int i = 0; i < n_temp; i++) {
 		double tt = t_min + i * dt;
-		double rho =  dof/30. * M_PI*M_PI * tt*tt*tt*tt + (true_thermo.get_energy(tt) - false_thermo.get_energy(tt));
-		double h = sqrt( 8. * M_PI * G/3. * rho);
+		double h = get_hubble_rate(tt, true_thermo, false_thermo);
 		temp_array[i] = tt;
 		integrand_array[i] = 1./h;
 	}
