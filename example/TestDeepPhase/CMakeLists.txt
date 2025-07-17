@@ -1,5 +1,6 @@
 if(BUILD_WITH_DP)
 
+# find OpenMP (required by deepphase)
 find_package(OpenMP REQUIRED)
 
 link_libraries(
