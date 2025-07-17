@@ -12,10 +12,10 @@ endif()
 # Download DeepPhase if required
 if(NOT EXISTS ${DeepPhase})
   message(STATUS "Downloading DeepPhase (branch: ${DeepPhase_GIT_BRANCH})")
-  set(DeepPhase_git_rep "https://github.com/William-Searle/DeepPhase.git")
+  set(DeepPhase_git_rep "https://github.com/Comparison-Project/DeepPhase.git")
   execute_process(COMMAND git clone --branch ${DeepPhase_GIT_BRANCH} --single-branch ${DeepPhase_git_rep} ${DeepPhase}
                  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-	  )
+    )
 endif()
 
 # Build DeepPhase if required
@@ -23,7 +23,7 @@ if(NOT EXISTS ${DeepPhase}/lib/libDeepPhaseLib.a)
   message(STATUS "Making DeepPhase")
   # execute_process(COMMAND git checkout tags/v1.0.0
   #                WORKING_DIRECTORY ${DeepPhase})
-  execute_process(COMMAND cmake -DCMAKE_CXX_FLAGS="-fPIC" .
+  execute_process(COMMAND cmake -DCMAKE_CXX_FLAGS="-fPIC" -DBUILD_WITH_UNIT_TESTS=OFF -DBUILD_WITH_EXAMPLES=OFF .
                   WORKING_DIRECTORY ${DeepPhase})
   execute_process(COMMAND ${CMAKE_MAKE_PROGRAM}
                  WORKING_DIRECTORY ${DeepPhase})
