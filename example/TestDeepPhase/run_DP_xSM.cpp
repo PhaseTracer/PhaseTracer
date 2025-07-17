@@ -142,23 +142,24 @@ int main(int argc, char* argv[]) {
   double cs_false_tp = 1/sqrt(3.);
 
   // interface with deepphase
-  // double dtau = PhaseTransition::dflt_PTParams::dtau;
   double dtau = 1/beta;
-  double wN = PhaseTransition::dflt_PTParams::wN;
-  char* PTmodel = "bag";
-  char* nuc_type = "exp";
+  double wN = 1.71;
+  std::string PTmodel = "bag";
+  std::string nuc_type = "exp";
   PhaseTransition::Universe un;
 
   PhaseTransition::PTParams paramsPT(vw, alpha, beta, dtau, wN, PTmodel, nuc_type, un);
-  // paramsPT.print();
-  Hydrodynamics::FluidProfile fluidProfile(paramsPT);
-  std::vector<double> momentumVec = logspace(1e-5, 1e+2, 500);
-  auto kineticPowerSpectrum = Spectrum::Ekin(momentumVec, fluidProfile);
-  // auto gwspec = Spectrum::GWSpec(momentumVec, paramsPT);
+  std::vector<double> momentumVec = logspace(1e-3, 1e+3, 100);
+  Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec(momentumVec, paramsPT);
+  OmegaGW.write("gw_spec.csv");
 
-  fluidProfile.write("PhaseTracer/fp.csv");
-  kineticPowerSpectrum.write("PhaseTracer/ekin.csv");
-  // gwspec.write("PhaseTracer/gw.csv");
-  
+  PhaseTracer::GravWaveCalculator gc(tf);
+  gc.set_min_frequency(1e-3);
+  gc.set_max_frequency(1e+3);
+  gc.set_num_frequency(100);
+
+  PhaseTracer::GravWaveSpectrum gw = gc.calc_spectrum(alpha, tps[0].betaH_tp, tps[0].TP);
+  gc.write_spectrum_to_text(gw, "gw_spec_pt.csv");
+
   return 0;
 }

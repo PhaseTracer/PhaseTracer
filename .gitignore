@@ -23,3 +23,6 @@ build
 ekin.csv
 fp.csv
 test_profiles.ipynb
+*.csv
+*.png
+*.ipynb
