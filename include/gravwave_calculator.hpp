@@ -27,6 +27,9 @@
 
 #include "transition_finder.hpp"
 #include "thermal_parameters.hpp"
+#ifdef BUILD_WITH_DP
+#include "deep_phase.hpp"
+#endif
 
 namespace PhaseTracer {
 
@@ -42,6 +45,9 @@ struct GravWaveSpectrum {
   std::vector<double> bubble_collision;
   std::vector<double> total_amplitude;
   std::vector<double> SNR;
+  #ifdef BUILD_WITH_DP
+  std::vector<double> amplitude_ssm;
+  #endif
 
   /** Pretty-printer for GravWaveSpectrum */
   friend std::ostream &operator<<(std::ostream &o, const GravWaveSpectrum &a) {
