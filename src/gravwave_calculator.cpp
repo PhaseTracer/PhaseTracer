@@ -62,7 +62,7 @@ double GravWaveCalculator::H(double T) const {
 }
 
 double GravWaveCalculator::V(const Eigen::VectorXd &phi, const double T) const {
-  return tf.pf.P.V(phi, T);
+  return tf->pf.P.V(phi, T);
 }
 double GravWaveCalculator::dVdT(const Eigen::VectorXd &phi, const double T) const {
   return (-V(phi, T + 2 * h_dVdT) + 8 * V(phi, T + h_dVdT) - 8 * V(phi, T - h_dVdT) + V(phi, T - 2 * h_dVdT)) / (12.0 * h_dVdT);
@@ -74,7 +74,7 @@ double GravWaveCalculator::get_alpha(const Eigen::VectorXd &vacuum_1, const Eige
   return (rho(vacuum_1, T) - rho(vacuum_2, T)) / rho_R(T);
 }
 double GravWaveCalculator::V(const Phase &phase, const double T) const {
-  return tf.pf.phase_at_T(phase, T).potential;
+  return tf->pf.phase_at_T(phase, T).potential;
 }
 double GravWaveCalculator::dVdT(const Phase &phase, const double T) const {
   return (-V(phase, T + 2 * h_dVdT) + 8 * V(phase, T + h_dVdT) - 8 * V(phase, T - h_dVdT) + V(phase, T - 2 * h_dVdT)) / (12.0 * h_dVdT);
@@ -99,7 +99,7 @@ Eigen::Vector2d GravWaveCalculator::LinearRegression(std::vector<double> &x_, st
 }
 
 double GravWaveCalculator::S3T(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const {
-  return tf.get_action(phase1, phase2, T, i_unique) / T;
+  return tf->get_action(phase1, phase2, T, i_unique) / T;
 }
 
 double GravWaveCalculator::dSdT(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const {
@@ -254,16 +254,28 @@ GravWaveSpectrum GravWaveCalculator::sum_spectrums(const std::vector<GravWaveSpe
 }
 
 std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
-  for (const auto &ti : trans) {
-    double Tref = ti.TN;
-    if (Tref < 1.5 * h_dSdT) {
-      continue;
+  if(mode == GWCalcMode::FromTransition) {
+    if (!tf) { throw std::runtime_error("TransitionFinder is not set for GravWaveCalculator");}
+    for (const auto &ti : trans) {
+      double Tref = ti.TN;
+      if (Tref < 1.5 * h_dSdT) {
+        continue;
+      }
+      std::vector<Eigen::VectorXd> vacua = tf->get_vacua_at_T(ti.true_phase, ti.false_phase, Tref, ti.key);
+      double alpha = get_alpha(vacua[0], vacua[1], Tref);
+      double beta_H = get_beta_H(ti.true_phase, ti.false_phase, Tref, ti.key);
+      GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
+      spectrums.push_back(spi);
     }
-    std::vector<Eigen::VectorXd> vacua = tf.get_vacua_at_T(ti.true_phase, ti.false_phase, Tref, ti.key);
-    double alpha = get_alpha(vacua[0], vacua[1], Tref);
-    double beta_H = get_beta_H(ti.true_phase, ti.false_phase, Tref, ti.key);
-    GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
-    spectrums.push_back(spi);
+  } else if (mode == GWCalcMode::FromThermalParameters) {
+    if(!tp) {throw std::runtime_error("ThermalParams is not set for GravWaveCalculator");}
+    for (const auto &tps : thermal_params) {
+      double Tref = tps.TP;
+      double alpha = tps.alpha_tp;
+      double beta_H = tps.betaH_tp;
+      GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
+      spectrums.push_back(spi);
+    }
   }
   total_spectrum = sum_spectrums(spectrums);
   return spectrums;

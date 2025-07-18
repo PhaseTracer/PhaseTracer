@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "transition_finder.hpp"
+#include "thermal_parameters.hpp"
 
 namespace PhaseTracer {
 
@@ -54,15 +55,27 @@ struct GravWaveSpectrum {
   }
 };
 
+/** Whether gc is initialused with TransitionFinder or ThermalParameters */
+enum class GWCalcMode { FromTransition, FromThermalParameters };
+
 class GravWaveCalculator {
 
 public:
-  explicit GravWaveCalculator(const TransitionFinder &tf_) : tf(tf_) {
-    for (const auto &t : tf.get_transitions()) {
+  explicit GravWaveCalculator(const TransitionFinder &tf_) : tf(std::make_unique<TransitionFinder>(tf_)), tp(nullptr), mode(GWCalcMode::FromTransition) {
+    for (const auto &t : tf->get_transitions()) {
       if (std::isnan(t.TN))
         LOG(debug) << "Nucleation temperature dose not exist. GW will not be calculated !";
       else
         trans.push_back(t);
+    }
+  }
+
+  explicit GravWaveCalculator(const ThermalParameters &tp_) : tf(nullptr), tp(std::make_unique<ThermalParameters>(tp_)), mode(GWCalcMode::FromThermalParameters) {
+    for (const auto &tps : tp->get_thermal_params()) {
+      if (std::isnan(tps.TP))
+        LOG(debug) << "Percolation temperature dose not exist. GW will not be calculated!";
+      else
+        thermal_params.push_back(tps);
     }
   }
 
@@ -106,7 +119,9 @@ public:
   std::vector<double> get_SNR(double f_min, double f_max, double T_obs_LISA, double T_obs_Taiji, double alpha, double beta_H, double T_ref) const;
 
 private:
-  TransitionFinder tf;
+  std::unique_ptr<TransitionFinder> tf;
+  std::unique_ptr<ThermalParameters> tp;
+  GWCalcMode mode;
 
   /** Degree of freedom */
   PROPERTY(double, dof, 106.75);
@@ -134,6 +149,8 @@ private:
   GravWaveSpectrum total_spectrum;
   /** All transitions with valid TN*/
   std::vector<Transition> trans;
+  /** All thermal params with valid temp*/
+  std::vector<ThermalParams> thermal_params;
 
   /** Lower bound on the frequency of the GW spectrum */
   PROPERTY(double, min_frequency, 1e-4);
