@@ -185,19 +185,19 @@ struct ThermalParams {
     o << "=== transition @ TC = " << tp.TC << " ===" << std::endl;
     if(tp.percolates) {
       o << "percolation temperature = " << tp.TP << std::endl
-      << "alpha (TP) = " << tp.alpha_tp << std::endl
-      << "beta (TP) = " << tp.beta_tp << std::endl
-      << "beta/H (TP) = " << tp.betaH_tp << std::endl
-      << "H (TP) = " << tp.H_tp << std::endl;
+      << "  alpha = " << tp.alpha_tp << std::endl
+      << "  beta/H = " << tp.betaH_tp << std::endl
+      << "  beta (s⁻¹) = " << tp.beta_tp << std::endl
+      << "  H (GeV⁻¹) = " << tp.H_tp << std::endl;
     } else {
       o << "transition does not percolate." << std::endl;
     }
     if(tp.nucleates) {
       o << "nucleation temperature = " << tp.TN << std::endl
-      << "alpha (TN) = " << tp.alpha_tn << std::endl
-      << "beta (TN) = " << tp.beta_tn << std::endl
-      << "beta/H (TN) = " << tp.betaH_tn << std::endl
-      << "H (TN) = " << tp.H_tn << std::endl;
+      << "  alpha = " << tp.alpha_tn << std::endl
+      << "  beta/H = " << tp.betaH_tn << std::endl
+      << "  beta (s⁻¹) = " << tp.beta_tn << std::endl
+      << "  H (GeV⁻¹) = " << tp.H_tn << std::endl;
     } else {
       o << "transition does not nucleate." << std::endl;
     }
@@ -240,6 +240,9 @@ private:
 
   /** Newtons constant in GeV  */
   PROPERTY(double, G, 1/((1.22 * 1e19)*(1.22 * 1e19)));
+
+  /** Converts units of GeV to units of 1/s  */
+  PROPERTY(double, time_conversion, 1.51926e24);
 
 public:
 

@@ -227,7 +227,7 @@ void ThermalParameters::find_thermal_parameters() {
 			tp_local.alpha_tp = get_alpha(tp, thermo_true, thermo_false);
 			tp_local.betaH_tp = get_betaH(tp, bounce_class);
 			tp_local.H_tp = get_hubble_rate(tp, thermo_true, thermo_false);
-			tp_local.beta_tp = tp_local.betaH_tp * tp_local.H_tp;
+			tp_local.beta_tp = tp_local.betaH_tp * tp_local.H_tp * time_conversion;
 			tp_local.percolates = true;
 		} catch (const std::runtime_error &e) {
 			tp_local.percolates = false;
@@ -252,7 +252,7 @@ void ThermalParameters::find_thermal_parameters() {
 			tp_local.alpha_tn = get_alpha(tn, thermo_true, thermo_false);
 			tp_local.betaH_tn = get_betaH(tn, bounce_class);
 			tp_local.H_tn = get_hubble_rate(tn, thermo_true, thermo_false);
-			tp_local.beta_tn = tp_local.betaH_tn * tp_local.H_tn;
+			tp_local.beta_tn = tp_local.betaH_tn * tp_local.H_tn * time_conversion;
 			tp_local.nucleates = true;
 		} catch (const std::runtime_error &e) {
 			tp_local.nucleates = false;
