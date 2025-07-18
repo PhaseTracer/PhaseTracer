@@ -274,6 +274,9 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
       double alpha = tps.alpha_tp;
       double beta_H = tps.betaH_tp;
       GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
+      #ifdef BUILD_WITH_DP
+      spi.amplitude_ssm = get_ssm_amplitude(tps, vw, dof, min_frequency, max_frequency, num_frequency);
+      #endif
       spectrums.push_back(spi);
     }
   }
@@ -284,8 +287,11 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
 void GravWaveCalculator::write_spectrum_to_text(const GravWaveSpectrum &sp, const std::string &filename) const {
   std::ofstream file(filename);
   for (int ii = 0; ii < sp.frequency.size(); ii++) {
-    file << sp.frequency[ii] << ", " << sp.total_amplitude[ii] << ", "
-         << sp.sound_wave[ii] << ", " << sp.turbulence[ii] << ", " << sp.bubble_collision[ii] << std::endl;
+    file << sp.frequency[ii] << ", " << sp.total_amplitude[ii] << ", " << sp.sound_wave[ii] << ", " << sp.turbulence[ii] << ", " << sp.bubble_collision[ii];
+    #ifdef BUILD_WITH_DP
+    file << ", " << sp.amplitude_ssm[ii];
+    #endif
+    file << std::endl;
   }
 
   LOG(debug) << "GW spectrum has been written to " << filename;

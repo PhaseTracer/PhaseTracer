@@ -17,6 +17,14 @@ if(BUILD_WITH_BP)
   )
 endif(BUILD_WITH_BP)
 
+if(BUILD_WITH_DP)
+  find_package(OpenMP REQUIRED) # this line might not be needed
+  link_libraries(
+    ${DeepPhase_LIB}
+    OpenMP::OpenMP_CXX
+  )
+endif(BUILD_WITH_DP)
+
 if(THREADS_HAVE_PTHREAD_ARG)
   target_compile_options(phasetracer "-pthread")
 endif()

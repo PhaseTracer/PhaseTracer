@@ -16,7 +16,7 @@
 
 #include "DP_xSM.hpp"
 #include "phasetracer.hpp"
-#include "DeepPhase/include/deepphase.hpp"
+// #include "DeepPhase/include/deepphase.hpp"
 
 using json = nlohmann::json;
 
@@ -135,31 +135,16 @@ int main(int argc, char* argv[]) {
 
   auto tps = tp.get_thermal_params();
 
-  double vw = 0.623436;
-  double alpha = tps[0].alpha_tp;
-  double beta = tps[0].beta_tp;
-  double cs_true_tp = 1/sqrt(3.);
-  double cs_false_tp = 1/sqrt(3.);
-
-  // interface with deepphase
-  double dtau = 1/beta;
-  double wN = 1.71;
-  std::string PTmodel = "bag";
-  std::string nuc_type = "exp";
-  PhaseTransition::Universe un;
-
-  PhaseTransition::PTParams paramsPT(vw, alpha, beta, dtau, wN, PTmodel, nuc_type, un);
-  std::vector<double> momentumVec = logspace(1e-3, 1e+3, 100);
-  Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec(momentumVec, paramsPT);
-  OmegaGW.write("gw_spec.csv");
-
-  PhaseTracer::GravWaveCalculator gc(tf);
-  gc.set_min_frequency(1e-3);
-  gc.set_max_frequency(1e+3);
+  PhaseTracer::GravWaveCalculator gc(tp);
+  gc.set_min_frequency(1e-4);
+  gc.set_max_frequency(1e+1);
   gc.set_num_frequency(100);
+  gc.calc_spectrums();
 
-  PhaseTracer::GravWaveSpectrum gw = gc.calc_spectrum(alpha, tps[0].betaH_tp, tps[0].TP);
-  gc.write_spectrum_to_text(gw, "gw_spec_pt.csv");
+  auto gw = gc.get_spectrums();
+
+  // PhaseTracer::GravWaveSpectrum gw = gc.calc_spectrum(alpha, tps[0].betaH_tp, tps[0].TP);
+  gc.write_spectrum_to_text(gw[0], "gw_spec_pt.csv");
 
   return 0;
 }
