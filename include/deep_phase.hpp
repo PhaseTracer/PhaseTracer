@@ -65,18 +65,28 @@ protected:
 	}
 };
 
-std::vector<double> get_ssm_amplitude(ThermalParams tps, double vw, double dof, double min_frequency, double max_frequency, int num_frequency) {
-
+PhaseTransition::Universe get_universe(ThermalParams tps, double dof) {
 	// Validate inputs
-	if (tps.beta_tp == 0.0) {
-		throw std::invalid_argument("beta_tp cannot be zero");
+	if (tps.TP <= 0 || tps.H_tp <= 0) {
+		throw std::invalid_argument("Invalid thermal parameters for universe creation");
 	}
-	if (min_frequency <= 0 || max_frequency <= 0 || min_frequency >= max_frequency) {
-		throw std::invalid_argument("Invalid frequency range");
+	return PhaseTransition::Universe(tps.TP, tps.H_tp, dof);
+}
+
+PhaseTransition::PTParams get_pt_params(ThermalParams tps, double vw, double dof) {
+	// Validate inputs
+	if (tps.alpha_tp <= 0 || tps.betaH_tp <= 0 || tps.beta_tp <= 0) {
+		throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
 	}
-	if (num_frequency < 2) {
-		throw std::invalid_argument("num_frequency must be at least 2");
-	}
+	double alpha = tps.alpha_tp;
+	double betaH = tps.betaH_tp;
+	double Tref = tps.TP;
+	double wN = 1.33; // Default value
+	PhaseTransition::Universe un = get_universe(tps, dof);
+	return PhaseTransition::PTParams(vw, alpha, betaH, wN, "exp", un);
+}
+
+std::vector<double> get_ssm_amplitude(ThermalParams tps, double vw, double dof, double min_frequency, double max_frequency, int num_frequency) {
 
 	// Redirect stdout to LOG(debug) instead of suppressing it
 	std::streambuf* orig_buf = std::cout.rdbuf();
@@ -85,34 +95,21 @@ std::vector<double> get_ssm_amplitude(ThermalParams tps, double vw, double dof, 
 	try {
 		std::cout.rdbuf(&log_buffer);
 		
-		// Create PT params object
-		double alpha = tps.alpha_tp;
-		double beta = tps.beta_tp;
-		double Tref = tps.TP;
-		double Hstar = tps.H_tp;
-		double dtau = 1.0 / beta;
-		double wN = 1.71;
-		std::string PTmodel = "bag";
-		std::string nuc_type = "exp";
-		PhaseTransition::Universe un;
-		PhaseTransition::PTParams paramsPT(vw, alpha, beta, dtau, wN, PTmodel, nuc_type, un);
-		paramsPT.print();
-		double Rs = paramsPT.Rs();
+		auto un = get_universe(tps, dof);
+		auto params = get_pt_params(tps, vw, dof);
+		params.print();
 
-		double den = pow(8 * M_PI, 1./3.) * vw / tps.betaH_tp;
-		std::cout << "den = den = " << den << "\n";
-
-		double shift_factor = (1.65e-5) / (den) * (Tref/100) * pow(dof/100., 1./6.);
-		// double shift_factor = (1.65e-5) / (Rs * Hstar) * (Tref/100) * pow(dof/100., 1./6.);
+		double Rs = params.Rs();
+		double tau = params.tau_s();
 
 		double kmin = 2*M_PI*min_frequency;
 		double kmax = 2*M_PI*max_frequency;
 
-		double Kmin = kmin / shift_factor; std::cout << "Kmin = " << Kmin << "\n";
-		double Kmax = kmax / shift_factor; std::cout << "Kmax = " << Kmax << "\n";
+		double Kmin = kmin; std::cout << "Kmin = " << Kmin << "\n";
+		double Kmax = kmax; std::cout << "Kmax = " << Kmax << "\n";
 		std::vector<double> momentumVec = logspace(Kmin, Kmax, static_cast<std::size_t>(num_frequency));
 
-		Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec(momentumVec, paramsPT);
+		Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec(momentumVec, params);
 
 		OmegaGW.write("gw_spec.csv");
 

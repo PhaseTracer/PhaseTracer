@@ -26,7 +26,7 @@ using json = nlohmann::json;
 int main(int argc, char* argv[]) {
 
   // default output
-  std::string output_filename = "example/Comparison/results_xsm.csv";
+  std::string output_filename = "results_xsm.csv";
   bool file_has_data = file_exists_and_not_empty(output_filename);
 
   std::ofstream output_file(output_filename, std::ios::app);
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
   int potential = 1;
   int matching = 1;
 
-  LOGGER(debug);
+  LOGGER(fatal);
 
   std::string json_filename;
   if ( argc == 1 ) {
