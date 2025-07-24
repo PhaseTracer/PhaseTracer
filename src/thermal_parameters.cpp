@@ -43,8 +43,12 @@ Thermodynamics::Thermodynamics(Phase phase_in, int n_temp_in, double dof_in)
   temperature.resize(n_temp);
   double dT = std::abs(t_max - t_min) / (n_temp - 1);
   for (int i = 0; i < n_temp; ++i) {
-	temperature[i] = t_min + i * dT;
-  }
+		temperature[i] = t_min + i * dT;
+	}
+
+	if (temperature.front() != t_min || temperature.back() != t_max) {
+		throw std::runtime_error("Temperature vector does not match phase temperature bounds.");
+	}
 
 	if (temperature.size() != n_temp) {
 		throw std::runtime_error("Temperature vector size does not match n_temp.");
@@ -61,18 +65,23 @@ void Thermodynamics::get_thermodynamic_splines() {
   entropy.resize(n_temp);
 
   for (int i = 0; i < n_temp; ++i) {
-	double temp = temperature[i];
-	double v, dvdT, ddvdT;
-	alglib::spline1ddiff(this->potential, temp, v, dvdT, ddvdT);
+		double temp = temperature[i];
+		double v, dvdT, ddvdT;
+		try {
+			alglib::spline1ddiff(this->potential, temp, v, dvdT, ddvdT);
+		} catch (const std::exception& e) {
+			LOG(error) << "Error in spline1ddiff: " << e.what() << "for temperature " << temp << std::endl;
+			continue;
+		}
 
-	double temp2 = temp * temp;
-	double temp4 = temp2 * temp2;
-	double pres_bag = dof * M_PI * M_PI / 90.0 * temp4;
+		double temp2 = temp * temp;
+		double temp4 = temp2 * temp2;
+		double pres_bag = dof * M_PI * M_PI / 90.0 * temp4;
 
-	pressure[i] = pres_bag - v;
-	energy[i] = 3.0 * pres_bag + v - temp * dvdT;
-	enthalpy[i] = 4.0 * pres_bag - temp * dvdT;
-	entropy[i] = 4.0 * pres_bag / temp - dvdT;
+		pressure[i] = pres_bag - v;
+		energy[i] = 3.0 * pres_bag + v - temp * dvdT;
+		enthalpy[i] = 4.0 * pres_bag - temp * dvdT;
+		entropy[i] = 4.0 * pres_bag / temp - dvdT;
   }
 
   alglib::real_1d_array t_array, p_array, e_array, w_array, s_array;
@@ -82,10 +91,15 @@ void Thermodynamics::get_thermodynamic_splines() {
   w_array.setcontent(n_temp, enthalpy.data());
   s_array.setcontent(n_temp, entropy.data());
 
-  alglib::spline1dbuildcubic(t_array, p_array, this->p);
-  alglib::spline1dbuildcubic(t_array, e_array, this->e);
-  alglib::spline1dbuildcubic(t_array, w_array, this->w);
-  alglib::spline1dbuildcubic(t_array, s_array, this->s);
+	try {
+		alglib::spline1dbuildcubic(t_array, p_array, this->p);
+		alglib::spline1dbuildcubic(t_array, e_array, this->e);
+		alglib::spline1dbuildcubic(t_array, w_array, this->w);
+		alglib::spline1dbuildcubic(t_array, s_array, this->s);
+	} catch (const std::exception& e) {
+		LOG(error) << "Error in spline1dbuildcubic: " << e.what() << std::endl;
+		throw std::runtime_error("Failed to build thermodynamic splines");
+	}
 }
 
 double Thermodynamics::get_cs(double T) const {
@@ -142,9 +156,11 @@ Bounce::Bounce(Transition t_in, TransitionFinder tf_in, double minimum_temp_in, 
 	spline_evaluations(spline_evaluations_in) {}
 
 void Bounce::get_splines() {
-	//alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->gamma_spline);
 
-	// Use vectors to collect only valid points
+	if (spline_evaluations < 2) {
+		throw std::runtime_error("Spline evaluations must be at least 2.");
+	}
+
 	std::vector<double> valid_temps, valid_actions, valid_log_gammas;
 	double dt = (maximum_temp - minimum_temp) / (spline_evaluations - 1);
 	const double gamma_min = 1e-100;
@@ -159,12 +175,11 @@ void Bounce::get_splines() {
 			if (gamma_opt.has_value()) {
 				gamma = std::max(gamma_opt.value(), gamma_min);
 			}
-			// std::cout << "t = " << tt << ", action = " << action << ", gamma = " << gamma << std::endl;
 			valid_temps.push_back(tt);
 			valid_actions.push_back(action);
 			valid_log_gammas.push_back(std::log(gamma));
 		} else {
-			std::cout << "t = " << tt << ", action = INVALID" << std::endl;
+			LOG(debug) << "t = " << tt << ", action = INVALID" << std::endl;
 		}
 	}
 
@@ -190,8 +205,8 @@ void Bounce::get_splines() {
 void ThermalParameters::find_thermal_parameters() {
 
 	if (calculated_thermal_params) {
-    return;
-  }
+		return;
+	}
 	
 	calculated_thermal_params = true;
 	std::vector<Transition> trans = tf.get_transitions();
@@ -222,16 +237,23 @@ void ThermalParameters::find_thermal_parameters() {
 
 		double tp = 0.0;
 		try { 
+
 			tp = get_percolation_temperature(hubble_spline, bounce_class, 0.35); 
 			tp_local.TP = tp;
-			tp_local.alpha_tp = get_alpha(tp, thermo_true, thermo_false);
-			tp_local.betaH_tp = get_betaH(tp, bounce_class);
-			tp_local.H_tp = get_hubble_rate(tp, thermo_true, thermo_false);
-			tp_local.beta_tp = tp_local.betaH_tp * tp_local.H_tp * time_conversion;
+
+			double alpha = get_alpha(tp, thermo_true, thermo_false);
+			tp_local.alpha_tp = alpha;
+			double betaH = get_betaH(tp, bounce_class);
+			tp_local.betaH_tp = betaH;
+			double H = get_hubble_rate(tp, thermo_true, thermo_false);
+			tp_local.H_tp = H;
+			double beta = betaH * H;
+			tp_local.beta_tp = beta;
+
 			tp_local.percolates = true;
 		} catch (const std::runtime_error &e) {
 			tp_local.percolates = false;
-			std::cout << "Failed to find percolation temperature: " << e.what() << std::endl;
+			LOG(debug) << "Failed to find percolation temperature: " << e.what() << std::endl;
 		}
 		
 
@@ -242,21 +264,27 @@ void ThermalParameters::find_thermal_parameters() {
 			tp_local.completes = true;
 		} catch (const std::runtime_error &e) {
 			tp_local.completes = false;
-			std::cout << "Failed to find percolation temperature: " << e.what() << std::endl;
+			LOG(debug) << "Failed to find completion temperature: " << e.what() << std::endl;
 		}
 
 		double tn = 0.0;
 		try { 
 			tn = get_nucleation_temperature(hubble_spline, bounce_class); 
 			tp_local.TN = tn;
-			tp_local.alpha_tn = get_alpha(tn, thermo_true, thermo_false);
-			tp_local.betaH_tn = get_betaH(tn, bounce_class);
-			tp_local.H_tn = get_hubble_rate(tn, thermo_true, thermo_false);
-			tp_local.beta_tn = tp_local.betaH_tn * tp_local.H_tn * time_conversion;
+
+			double alpha = get_alpha(tn, thermo_true, thermo_false);
+			tp_local.alpha_tn = alpha;
+			double betaH = get_betaH(tn, bounce_class);
+			tp_local.betaH_tn = betaH;
+			double H = get_hubble_rate(tn, thermo_true, thermo_false);
+			tp_local.H_tn = H;
+			double beta = betaH * H;
+			tp_local.beta_tn = beta;
+
 			tp_local.nucleates = true;
 		} catch (const std::runtime_error &e) {
 			tp_local.nucleates = false;
-			std::cout << "Failed to find percolation temperature: " << e.what() << std::endl;
+			LOG(debug) << "Failed to find nucleation temperature: " << e.what() << std::endl;
 		}
 
 		thermalparameterContainer.push_back(tp_local);
@@ -276,7 +304,7 @@ double ThermalParameters::get_hubble_rate(double T, Thermodynamics true_thermo, 
 double ThermalParameters::get_betaH(double T, Bounce bounce) {
 	double y, dy, ddy;
 	alglib::spline1ddiff(bounce.action_spline, T, y, dy, ddy);
-	std::cout << "T = " << T << ", y = " << y << ", dy = " << dy << std::endl;
+	LOG(debug) << "For betaH calc: T = " << T << ", y = " << y << ", dy = " << dy << std::endl;
 	return T * dy;
 }
 
