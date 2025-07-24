@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
   int potential = 1;
   int matching = 1;
 
-  LOGGER(fatal);
+  LOGGER(debug);
 
   std::string json_filename;
   if ( argc == 1 ) {
@@ -112,21 +112,21 @@ int main(int argc, char* argv[]) {
   }
   
 
-  // extract the correct transition (probably unnecessary)
-  int flag = -1;
-  for ( auto trans : t) {
-    if ( 
-      (abs(trans.false_vacuum[0]) < 1e-4 && abs(trans.false_vacuum[1]) > 5.) &&
-      (abs(trans.true_vacuum[0]) > 10. &&  abs(trans.true_vacuum[1]) < 1e-4 ) ) {
-        flag = trans.key;
-      }
-  }
-  // should place a check for flag = -1 here.
-  if ( flag == -1 ) {
-    output_file << formatOutput(in, -4);
-    output_file.close();
-    return 1;
-  }
+  // // extract the correct transition (probably unnecessary)
+  // int flag = -1;
+  // for ( auto trans : t) {
+  //   if ( 
+  //     (abs(trans.false_vacuum[0]) < 1e-4 && abs(trans.false_vacuum[1]) > 5.) &&
+  //     (abs(trans.true_vacuum[0]) > 10. &&  abs(trans.true_vacuum[1]) < 1e-4 ) ) {
+  //       flag = trans.key;
+  //     }
+  // }
+  // // should place a check for flag = -1 here.
+  // if ( flag == -1 ) {
+  //   output_file << formatOutput(in, -4);
+  //   output_file.close();
+  //   return 1;
+  // }
 
   // testing
   PhaseTracer::ThermalParameters tp(tf);
@@ -140,6 +140,8 @@ int main(int argc, char* argv[]) {
   gc.set_max_frequency(1e+1);
   gc.set_num_frequency(100);
   gc.calc_spectrums();
+
+  std::cout << gc;
 
   auto gw = gc.get_spectrums();
 

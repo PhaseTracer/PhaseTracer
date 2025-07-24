@@ -26,3 +26,4 @@ test_profiles.ipynb
 *.csv
 *.png
 *.ipynb
+*.sh
