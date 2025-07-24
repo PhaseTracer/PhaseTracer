@@ -187,7 +187,7 @@ struct ThermalParams {
       o << "percolation temperature = " << tp.TP << std::endl
       << "  alpha = " << tp.alpha_tp << std::endl
       << "  beta/H = " << tp.betaH_tp << std::endl
-      << "  beta (s⁻¹) = " << tp.beta_tp << std::endl
+      << "  beta (GeV) = " << tp.beta_tp << std::endl
       << "  H (GeV⁻¹) = " << tp.H_tp << std::endl;
     } else {
       o << "transition does not percolate." << std::endl;
@@ -196,7 +196,7 @@ struct ThermalParams {
       o << "nucleation temperature = " << tp.TN << std::endl
       << "  alpha = " << tp.alpha_tn << std::endl
       << "  beta/H = " << tp.betaH_tn << std::endl
-      << "  beta (s⁻¹) = " << tp.beta_tn << std::endl
+      << "  beta (GeV) = " << tp.beta_tn << std::endl
       << "  H (GeV⁻¹) = " << tp.H_tn << std::endl;
     } else {
       o << "transition does not nucleate." << std::endl;
