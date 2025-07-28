@@ -192,9 +192,10 @@ void Bounce::get_splines() {
 	action_array.setcontent(valid_actions.size(), valid_actions.data());
 	log_gamma_array.setcontent(valid_log_gammas.size(), valid_log_gammas.data());
 
-	alglib::spline1dbuildcubic(temp_array, action_array, this->action_spline);
+	LOG(debug) << "Building action and gamma arrays";
 	alglib::spline1dbuildcubic(temp_array, action_array, this->action_spline);
 	alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->gamma_spline);
+	LOG(debug) << "Action and gamma arrays built.";
 }
 
 /*======================================
@@ -226,19 +227,26 @@ void ThermalParameters::find_thermal_parameters() {
 			throw std::runtime_error("Temperature range is below set tolerance. Phase may not nucleate.");
 		}
 
+		LOG(debug) << "Creating Thermodynamics classes";
 		Thermodynamics thermo_true(t.true_phase, n_temp, dof);
 		Thermodynamics thermo_false(t.false_phase, n_temp, dof);
+
+		LOG(debug) << "Creating bounce class";
 		Bounce bounce_class(t, tf, minimum_temp, maximum_temp, spline_evaluations);
+		LOG(debug) << "Creating bounce spline";
 		bounce_class.get_splines();
+		LOG(debug) << "Bounce.get_splines() successful.";
 
 		alglib::spline1dinterpolant hubble_spline;
 		this->make_hubble_spline(hubble_spline, thermo_true, thermo_false, minimum_temp, maximum_temp);
 		tp_local.hubble_spline = hubble_spline;
+		LOG(debug) << "Created Hubble spline.";
 
 		double tp = 0.0;
 		try { 
 
-			tp = get_percolation_temperature(hubble_spline, bounce_class, 0.35); 
+			tp = get_percolation_temperature(hubble_spline, bounce_class, 0.35);
+			LOG(debug) << "Found percolation temp " << tp; 
 			tp_local.TP = tp;
 
 			double alpha = get_alpha(tp, thermo_true, thermo_false);
@@ -259,7 +267,8 @@ void ThermalParameters::find_thermal_parameters() {
 
 		double tf = 0.0;
 		try { 
-			tf = get_completion_temperature(hubble_spline, bounce_class, 0.35); 
+			tf = get_completion_temperature(hubble_spline, bounce_class, 0.35);
+			LOG(debug) << "Found completion temp " << tf; 
 			tp_local.TF = tf;
 			tp_local.completes = true;
 		} catch (const std::runtime_error &e) {
@@ -270,6 +279,7 @@ void ThermalParameters::find_thermal_parameters() {
 		double tn = 0.0;
 		try { 
 			tn = get_nucleation_temperature(hubble_spline, bounce_class); 
+			LOG(debug) << "Found nucleation temp " << tn; 
 			tp_local.TN = tn;
 
 			double alpha = get_alpha(tn, thermo_true, thermo_false);
@@ -297,6 +307,7 @@ double ThermalParameters::get_alpha(double T, Thermodynamics true_thermo, Thermo
 
 double ThermalParameters::get_hubble_rate(double T, Thermodynamics true_thermo, Thermodynamics false_thermo) {
 	double rho =  dof/30. * M_PI*M_PI * T*T*T*T + (true_thermo.get_energy(T) - false_thermo.get_energy(T));
+	if(isnan(rho) || rho < 0.0) { rho = dof/30. * M_PI*M_PI * T*T*T*T; } // fall back to RD result
 	double h = sqrt( 8. * M_PI * G/3. * rho);
 	return h;
 }
