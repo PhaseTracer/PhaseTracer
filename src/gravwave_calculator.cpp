@@ -269,13 +269,29 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
     }
   } else if (mode == GWCalcMode::FromThermalParameters) {
     if(!tp) {throw std::runtime_error("ThermalParams is not set for GravWaveCalculator");}
+    #ifdef BUILD_WITH_DP
+    GW_DeepPhase dp;
+    #endif
     for (const auto &tps : thermal_params) {
-      double Tref = tps.TP;
-      double alpha = tps.alpha_tp;
-      double beta_H = tps.betaH_tp;
+      double Tref, alpha, beta_H;
+      if (tps.nucleates) {
+        Tref = tps.TN;
+        alpha = tps.alpha_tn;
+        beta_H = tps.betaH_tn;
+      } else if (tps.percolates) {
+        Tref = tps.TP;
+        alpha = tps.alpha_tp;
+        beta_H = tps.betaH_tp;
+      } // no handling of failure in both
       GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
       #ifdef BUILD_WITH_DP
-      spi.amplitude_ssm = get_ssm_amplitude(tps, vw, dof, min_frequency, max_frequency, num_frequency);
+      spi.amplitude_ssm = dp.get_ssm_amplitude(tps, vw, dof, min_frequency, max_frequency, num_frequency);
+      auto maxes = dp.get_ssm_max(spi.amplitude_ssm, spi.frequency);
+      LOG(debug) << "SSM peak amplitude = " << maxes.first << ", frequency = " << maxes.second;
+      if (maxes.first > spi.peak_amplitude) {
+        spi.peak_amplitude = maxes.first;
+        spi.peak_frequency = maxes.second;
+      }
       #endif
       spectrums.push_back(spi);
     }

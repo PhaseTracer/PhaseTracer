@@ -65,68 +65,115 @@ protected:
 	}
 };
 
-PhaseTransition::Universe get_universe(ThermalParams tps, double dof) {
-	// Validate inputs
-	if (tps.TP <= 0 || tps.H_tp <= 0) {
-		throw std::invalid_argument("Invalid thermal parameters for universe creation");
-	}
-	return PhaseTransition::Universe(tps.TP, tps.H_tp, dof);
-}
+class GW_DeepPhase {
 
-PhaseTransition::PTParams get_pt_params(ThermalParams tps, double vw, double dof) {
-	// Validate inputs
-	if (tps.alpha_tp <= 0 || tps.betaH_tp <= 0 || tps.beta_tp <= 0) {
-		throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
-	}
-	double alpha = tps.alpha_tp;
-	double betaH = tps.betaH_tp;
-	double Tref = tps.TP;
-	double wN = 1.33; // Default value
-	PhaseTransition::Universe un = get_universe(tps, dof);
-	return PhaseTransition::PTParams(vw, alpha, betaH, wN, "exp", un);
-}
+public:
 
-std::vector<double> get_ssm_amplitude(ThermalParams tps, double vw, double dof, double min_frequency, double max_frequency, int num_frequency) {
+  GW_DeepPhase() = default;
+  ~GW_DeepPhase() = default;
 
-	// Redirect stdout to LOG(debug) instead of suppressing it
-	std::streambuf* orig_buf = std::cout.rdbuf();
-	LogStreamBuffer log_buffer;
-	
-	try {
-		std::cout.rdbuf(&log_buffer);
+	std::vector<double> get_ssm_amplitude(ThermalParams tps, double vw, double dof, double min_frequency, double max_frequency, int num_frequency) {
+
+		// Redirect stdout to LOG(debug) instead of suppressing it
+		std::streambuf* orig_buf = std::cout.rdbuf();
+		LogStreamBuffer log_buffer;
 		
-		auto un = get_universe(tps, dof);
-		auto params = get_pt_params(tps, vw, dof);
-		params.print();
+		try {
+			std::cout.rdbuf(&log_buffer);
+			
+			auto params = get_pt_params(tps, vw, dof);
+			params.print();
 
-		double Rs = params.Rs();
-		double tau = params.tau_s();
+			double Rs = params.Rs();
+			double tau = params.tau_s();
 
-		double kmin = 2*M_PI*min_frequency;
-		double kmax = 2*M_PI*max_frequency;
+			double kmin = 2*M_PI*min_frequency;
+			double kmax = 2*M_PI*max_frequency;
 
-		double Kmin = kmin; std::cout << "Kmin = " << Kmin << "\n";
-		double Kmax = kmax; std::cout << "Kmax = " << Kmax << "\n";
-		std::vector<double> momentumVec = logspace(Kmin, Kmax, static_cast<std::size_t>(num_frequency));
+			double Kmin = kmin; std::cout << "Kmin = " << Kmin << "\n";
+			double Kmax = kmax; std::cout << "Kmax = " << Kmax << "\n";
+			std::vector<double> momentumVec = logspace(Kmin, Kmax, static_cast<std::size_t>(num_frequency));
 
-		Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec(momentumVec, params);
+			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec(momentumVec, params);
 
-		OmegaGW.write("gw_spec.csv");
+			// OmegaGW.write("gw_spec.csv");
 
-		// Restore stdout
-		std::cout.rdbuf(orig_buf);
-		// Flush any remaining content in the log buffer
-		log_buffer.pubsync();
+			// Restore stdout
+			std::cout.rdbuf(orig_buf);
+			// Flush any remaining content in the log buffer
+			log_buffer.pubsync();
 
-		return OmegaGW.P();
-		
-	} catch (...) {
-		// Ensure stdout is restored even if an exception occurs
-		std::cout.rdbuf(orig_buf);
-		log_buffer.pubsync();
-		throw;
+			return OmegaGW.P();
+			
+		} catch (...) {
+			// Ensure stdout is restored even if an exception occurs
+			std::cout.rdbuf(orig_buf);
+			log_buffer.pubsync();
+			throw;
+		}
 	}
-}
+
+	std::pair<double, double> get_ssm_max(const std::vector<double> amp, const std::vector<double> freq) {
+		double max_freq = 0;
+		double max_amp = 0;
+		for (size_t i = 0; i < amp.size(); i++) {
+			if( amp[i] > max_amp ) {
+				max_amp = amp[i];
+				max_freq = freq[i];
+			}
+		}
+		return {max_amp, max_freq};
+	}
+
+private :
+
+	PhaseTransition::Universe get_universe(ThermalParams tps, double dof) {
+		if ( tps.nucleates ) {
+			// Validate inputs
+			if (tps.TN <= 0 || tps.H_tn <= 0) {
+				throw std::invalid_argument("Invalid thermal parameters for universe creation");
+			}
+			return PhaseTransition::Universe(tps.TN, tps.H_tn, dof);
+		} else if (tps.percolates) {
+			// Validate inputs
+			if (tps.TP <= 0 || tps.H_tp <= 0) {
+				throw std::invalid_argument("Invalid thermal parameters for universe creation");
+			}
+			return PhaseTransition::Universe(tps.TP, tps.H_tp, dof);
+		}
+		PhaseTransition::Universe un;
+		return un;
+	}
+
+	PhaseTransition::PTParams get_pt_params(ThermalParams tps, double vw, double dof) {
+		if (tps.nucleates) {
+			// Validate inputs
+			if (tps.alpha_tn <= 0 || tps.betaH_tn <= 0 || tps.beta_tn <= 0) {
+				throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
+			}
+			double alpha = tps.alpha_tn;
+			double betaH = tps.betaH_tn;
+			double Tref = tps.TN;
+			double wN = 1.33; // Default value
+			PhaseTransition::Universe un = get_universe(tps, dof);
+			return PhaseTransition::PTParams(vw, alpha, betaH, wN, "exp", un);
+		} else if (tps.percolates) {
+			// Validate inputs
+			if (tps.alpha_tp <= 0 || tps.betaH_tp <= 0 || tps.beta_tp <= 0) {
+				throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
+			}
+			double alpha = tps.alpha_tp;
+			double betaH = tps.betaH_tp;
+			double Tref = tps.TP;
+			double wN = 1.33; // Default value
+			PhaseTransition::Universe un = get_universe(tps, dof);
+			return PhaseTransition::PTParams(vw, alpha, betaH, wN, "exp", un);
+		}
+		PhaseTransition::PTParams pt;
+		return pt;
+	}
+
+};
 
 } // namespace PhaseTracer
 

@@ -44,11 +44,9 @@ struct GravWaveSpectrum {
   std::vector<double> turbulence;
   std::vector<double> bubble_collision;
   std::vector<double> total_amplitude;
-  std::vector<double> SNR;
-  #ifdef BUILD_WITH_DP
   std::vector<double> amplitude_ssm;
-  #endif
-
+  std::vector<double> SNR;
+  
   /** Pretty-printer for GravWaveSpectrum */
   friend std::ostream &operator<<(std::ostream &o, const GravWaveSpectrum &a) {
     o << "=== gravitational wave spectrum generated at T = " << a.Tref << " ===" << "\n"

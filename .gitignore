@@ -27,3 +27,9 @@ test_profiles.ipynb
 *.png
 *.ipynb
 *.sh
+inputFiles/
+example/TestDeepPhase/run_DP_xSM.cpp
+plot_gw_spectrum.py
+.gitignore
+scan.py
+*.json

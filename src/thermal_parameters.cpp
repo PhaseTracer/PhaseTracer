@@ -223,9 +223,10 @@ void ThermalParameters::find_thermal_parameters() {
 			throw std::runtime_error("Minimum temp exceeds maximum temp.");
 		}
 
-		if(std::abs(maximum_temp - minimum_temp) < dt_tol) {
-			throw std::runtime_error("Temperature range is below set tolerance. Phase may not nucleate.");
-		}
+	   if(std::abs(maximum_temp - minimum_temp) < dt_tol) {
+		   // throw std::runtime_error("Temperature range is below set tolerance. Phase may not nucleate.");
+		   continue;
+	   }
 
 		LOG(debug) << "Creating Thermodynamics classes";
 		Thermodynamics thermo_true(t.true_phase, n_temp, dof);
@@ -246,7 +247,11 @@ void ThermalParameters::find_thermal_parameters() {
 		try { 
 
 			tp = get_percolation_temperature(hubble_spline, bounce_class, 0.35);
-			LOG(debug) << "Found percolation temp " << tp; 
+			LOG(debug) << "Found percolation temp " << tp;
+			if(abs(tp-t.TC) <= 1e-3) {
+				LOG(debug) << "Percolation temperature is close to critical temperature, setting to 0.";
+				continue;
+			}
 			tp_local.TP = tp;
 
 			double alpha = get_alpha(tp, thermo_true, thermo_false);
@@ -269,6 +274,10 @@ void ThermalParameters::find_thermal_parameters() {
 		try { 
 			tf = get_completion_temperature(hubble_spline, bounce_class, 0.35);
 			LOG(debug) << "Found completion temp " << tf; 
+			if(abs(tf-t.TC) <= 1e-3) {
+				LOG(debug) << "Completion temperature is close to critical temperature, setting to 0.";
+				continue;
+			}
 			tp_local.TF = tf;
 			tp_local.completes = true;
 		} catch (const std::runtime_error &e) {
@@ -280,6 +289,10 @@ void ThermalParameters::find_thermal_parameters() {
 		try { 
 			tn = get_nucleation_temperature(hubble_spline, bounce_class); 
 			LOG(debug) << "Found nucleation temp " << tn; 
+			if(abs(tn-t.TC) <= 1e-3) {
+				LOG(debug) << "Nucleation temperature is close to critical temperature, setting to 0.";
+				continue;
+			}
 			tp_local.TN = tn;
 
 			double alpha = get_alpha(tn, thermo_true, thermo_false);
