@@ -50,6 +50,7 @@ private:
   alglib::spline1dinterpolant s;
 
   std::vector<double> temperature;
+
   std::vector<double> pressure;
   std::vector<double> entropy;
   std::vector<double> energy;
@@ -62,6 +63,13 @@ public:
   Thermodynamics(Phase phase_in, int n_temp_in, double dof_in);
 
   void get_thermodynamic_splines();
+
+  /**
+   * @brief Returns the V, dVdT, and ddVdT for a given temperature
+   * @param T Temperature at which to evaluate
+   * @return Vector of potential values at T
+   */
+  std::vector<double> get_potential(double T);
 
 	/**
 	 * @brief Computes the sound speed.
@@ -172,6 +180,7 @@ struct ThermalParams {
   double TN;
 	double TP;
 	double TF;
+  double dt;
 	double alpha_tp, alpha_tn;
 	double betaH_tp, betaH_tn;
 	double beta_tp, beta_tn;
@@ -182,29 +191,35 @@ struct ThermalParams {
 
   /** Pretty-printer for single phase */
   friend std::ostream &operator<<(std::ostream &o, const ThermalParams &tp) {
-    o << "=== transition @ TC = " << tp.TC << " ===" << std::endl;
+    o << "=== transition @ TC = " << tp.TC << " ===" << "\n";
     if(tp.percolates) {
-      o << "percolation temperature = " << tp.TP << std::endl
-      << "  alpha = " << tp.alpha_tp << std::endl
-      << "  beta/H = " << tp.betaH_tp << std::endl
-      << "  beta (GeV) = " << tp.beta_tp << std::endl
-      << "  H (GeV⁻¹) = " << tp.H_tp << std::endl;
+      o << "percolation temperature = " << tp.TP << "\n"
+      << "  alpha = " << tp.alpha_tp << "\n"
+      << "  beta/H = " << tp.betaH_tp << "\n"
+      << "  beta (GeV) = " << tp.beta_tp << "\n"
+      << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tp << "\n"
+      << "  H (GeV⁻¹) = " << tp.H_tp << "\n";
     } else {
-      o << "transition does not percolate." << std::endl;
+      o << "transition does not percolate." << "\n";
     }
     if(tp.nucleates) {
-      o << "nucleation temperature = " << tp.TN << std::endl
-      << "  alpha = " << tp.alpha_tn << std::endl
-      << "  beta/H = " << tp.betaH_tn << std::endl
-      << "  beta (GeV) = " << tp.beta_tn << std::endl
-      << "  H (GeV⁻¹) = " << tp.H_tn << std::endl;
+      o << "nucleation temperature = " << tp.TN << "\n";
+      if(tp.completes && tp.TF > tp.TN) {
+        o << "  transition completes before nucleating!" << "\n";
+      }
+      o << "  alpha = " << tp.alpha_tn << "\n"
+      << "  beta/H = " << tp.betaH_tn << "\n"
+      << "  beta (GeV) = " << tp.beta_tn << "\n"
+      << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tn << "\n"
+      << "  H (GeV⁻¹) = " << tp.H_tn << "\n";
     } else {
-      o << "transition does not nucleate." << std::endl;
+      o << "transition does not nucleate." << "\n";
     }
     if(tp.completes) {
-      o << "completion temperature = " << tp.TF << std::endl;
+      o << "completion temperature = " << tp.TF << "\n";
+      o << "  tf - tc = " << tp.dt << "\n";
     } else {
-      o << "transition does not complete." << std::endl;
+      o << "transition does not complete." << "\n";
     }
     return o;
   }
@@ -273,6 +288,21 @@ public:
   std::vector<ThermalParams> get_thermal_parameters();
 
 private:
+
+  /**
+   * @brief Calculates the duration of the transition
+   * @param TC Critical temperature
+   * @param TF Final temperature
+   * @param true_thermo True vacuum phase thermodynamics
+   * @return Duration of the transition in GeV⁻¹
+   */
+  double get_duration(
+    double TC, 
+    double TF, 
+    Thermodynamics true_thermo,
+    Thermodynamics false_thermo
+  );
+
   /**
    * @brief Calculates alpha parameter
    * @param T Temperature at which to evaluate
@@ -280,12 +310,23 @@ private:
    * @param false_thermo False vacuum phase thermodynamics
    * @return Alpha parameter at T
    */
-  double get_alpha(double T,
-                  Thermodynamics true_thermo,
-                  Thermodynamics false_thermo);
+  double get_alpha(
+    double T,
+    Thermodynamics true_thermo,
+    Thermodynamics false_thermo
+  );
 
-  double get_betaH(double T,
-                  Bounce bounce);
+  /**
+   * @brief Calculates the beta/H
+   * @param T Temperature at which to evaluate
+   * @param bounce Instance of bounce class
+   * @return beta/H at T
+   */
+  double get_betaH(
+    double T,
+    Bounce bounce
+  );
+
   /**
    * @brief Calculates the Hubble rate at a given temperature
    * @param T Temperature at which to evaluate
@@ -293,9 +334,11 @@ private:
    * @param false_phase False vacuum phase thermodynamics
    * @return Hubble rate at T
    */
-  double get_hubble_rate(double T,
-                        Thermodynamics true_thermo, 
-                        Thermodynamics false_thermo);
+  double get_hubble_rate(
+    double T,
+    Thermodynamics true_thermo, 
+    Thermodynamics false_thermo
+  );
 
   /**
    * @brief Creates a spline for the Hubble parameter
@@ -306,11 +349,14 @@ private:
    * @param t_max Maximum temperature
    * @param n_temp Number of temperature points for spline
    */
-  void make_hubble_spline(alglib::spline1dinterpolant& hubble_spline, 
-                          Thermodynamics true_phase, 
-                          Thermodynamics false_phase, 
-                          double t_min, double t_max, 
-                          double n_temp = 50);
+  void make_hubble_spline(
+    alglib::spline1dinterpolant& hubble_spline, 
+    Thermodynamics true_phase, 
+    Thermodynamics false_phase, 
+    double t_min, 
+    double t_max, 
+    double n_temp = 50
+  );
 
   /**
    * @brief Calculates the integral of the Hubble parameter
@@ -319,7 +365,11 @@ private:
    * @param Tdash Upper temperature bound
    * @return The integral value
    */
-  double hubble_integral(alglib::spline1dinterpolant& hubble_spline, double T, double Tdash);
+  double hubble_integral(
+    alglib::spline1dinterpolant& hubble_spline, 
+    double T, 
+    double Tdash
+  );
 
   /**
    * @brief Calculates the integrand for the false vacuum fraction
@@ -329,8 +379,12 @@ private:
    * @param Tdash Integration variable temperature
    * @return The integrand value
    */
-  double false_vacuum_fraction_integrand(alglib::spline1dinterpolant& hubble_spline, 
-                                        const Bounce& bounce, double T, double Tdash);
+  double false_vacuum_fraction_integrand(
+    alglib::spline1dinterpolant& hubble_spline, 
+    const Bounce& bounce, 
+    double T, 
+    double Tdash
+  );
 
   /**
    * @brief Calculates the false vacuum fraction
@@ -340,8 +394,12 @@ private:
    * @param vw Wall velocity
    * @return The false vacuum fraction
    */
-  double false_vacuum_fraction(alglib::spline1dinterpolant& hubble_spline, 
-                              const Bounce& bounce, double T, double vw);
+  double false_vacuum_fraction(
+    alglib::spline1dinterpolant& hubble_spline, 
+    const Bounce& bounce, 
+    double T, 
+    double vw
+  );
 
   /**
    * @brief Helper function for binary search to find critical temperatures
@@ -354,11 +412,14 @@ private:
    * @return The found temperature
    * @throws std::runtime_error if the search fails to converge
    */
-  static double find_temperature_binary_search(double init_T, double end_T, 
-                                              double tol_rel,
-                                              const std::function<double(double)>& calc_value,
-                                              double target, 
-                                              int max_iterations = 1000);
+  static double find_temperature_binary_search(
+    double init_T, 
+    double end_T, 
+    double tol_rel,
+    const std::function<double(double)>& calc_value,
+    double target, 
+    int max_iterations = 1000
+  );
 
   /**
    * @brief Gets the percolation temperature
@@ -368,8 +429,11 @@ private:
    * @return The percolation temperature
    * @throws std::runtime_error if the transition does not percolate or parameters are invalid
    */
-  double get_percolation_temperature(alglib::spline1dinterpolant& hubble_spline, 
-                                    const Bounce& bounce, double vw);
+  double get_percolation_temperature(
+    alglib::spline1dinterpolant& hubble_spline, 
+    const Bounce& bounce, 
+    double vw
+  );
 
   /**
    * @brief Gets the completion temperature
@@ -379,8 +443,11 @@ private:
    * @return The completion temperature
    * @throws std::runtime_error if the transition does not complete or parameters are invalid
    */
-  double get_completion_temperature(alglib::spline1dinterpolant& hubble_spline, 
-                                  const Bounce& bounce, double vw);
+  double get_completion_temperature(
+    alglib::spline1dinterpolant& hubble_spline, 
+    const Bounce& bounce, 
+    double vw
+  );
 
   /**
    * @brief Calculates the nucleation rate integrand
@@ -389,8 +456,11 @@ private:
    * @param T Temperature
    * @return The integrand value
    */
-  double nucleation_rate_integrand(alglib::spline1dinterpolant& hubble_spline, 
-                                  const Bounce& bounce, double T);
+  double nucleation_rate_integrand(
+    alglib::spline1dinterpolant& hubble_spline, 
+    const Bounce& bounce, 
+    double T
+  );
 
   /**
    * @brief Calculates the nucleation rate
@@ -399,8 +469,11 @@ private:
    * @param T Temperature
    * @return The nucleation rate
    */
-  double nucleation_rate(alglib::spline1dinterpolant& hubble_spline, 
-                        const Bounce& bounce, double T);
+  double nucleation_rate(
+    alglib::spline1dinterpolant& hubble_spline, 
+    const Bounce& bounce, 
+    double T
+  );
 
   /**
    * @brief Gets the nucleation temperature
@@ -409,8 +482,11 @@ private:
    * @return The nucleation temperature
    * @throws std::runtime_error if the temperature range is invalid or calculation fails
    */
-  double get_nucleation_temperature(alglib::spline1dinterpolant& hubble_spline, 
-                                  const Bounce& bounce);
+  double get_nucleation_temperature(
+    alglib::spline1dinterpolant& hubble_spline, 
+    const Bounce& bounce
+  );
+
 };
 
 } // namespace PhaseTracer
