@@ -113,6 +113,13 @@ public:
 	 */
   double get_entropy(double T) const;
 
+  /**
+   * @brief Computes the entropy and its derivatives at a given temperature.
+   * @param T Temperature at which to evaluate.
+   * @return Vector containing entropy, dS/dT, and d²S/dT².
+   */
+  std::vector<double> get_entropy_derivs(double T) const;
+
 private:
   /**
    * @brief Checks if temperature is within valid range
