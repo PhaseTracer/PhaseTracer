@@ -102,6 +102,13 @@ void Thermodynamics::get_thermodynamic_splines() {
 	}
 }
 
+std::vector<double> Thermodynamics::get_potential(double T) {
+  check_temperature_range(T, "get_potential");
+  double v, dvdT, ddvdT;
+  alglib::spline1ddiff(this->potential, T, v, dvdT, ddvdT);
+  return {v, dvdT, ddvdT};
+}
+
 double Thermodynamics::get_cs(double T) const {
   check_temperature_range(T, "get_cs");
   
@@ -249,7 +256,7 @@ void ThermalParameters::find_thermal_parameters() {
 			tp = get_percolation_temperature(hubble_spline, bounce_class, 0.35);
 			LOG(debug) << "Found percolation temp " << tp;
 			if(abs(tp-t.TC) <= 1e-3) {
-				LOG(debug) << "Percolation temperature is close to critical temperature, setting to 0.";
+				LOG(debug) << "Percolation temperature is close to critical temperature.";
 				continue;
 			}
 			tp_local.TP = tp;
@@ -275,10 +282,11 @@ void ThermalParameters::find_thermal_parameters() {
 			tf = get_completion_temperature(hubble_spline, bounce_class, 0.35);
 			LOG(debug) << "Found completion temp " << tf; 
 			if(abs(tf-t.TC) <= 1e-3) {
-				LOG(debug) << "Completion temperature is close to critical temperature, setting to 0.";
+				LOG(debug) << "Completion temperature is close to critical temperature.";
 				continue;
 			}
 			tp_local.TF = tf;
+			tp_local.dt = get_duration(maximum_temp, tf, thermo_true, thermo_false);
 			tp_local.completes = true;
 		} catch (const std::runtime_error &e) {
 			tp_local.completes = false;
@@ -288,9 +296,9 @@ void ThermalParameters::find_thermal_parameters() {
 		double tn = 0.0;
 		try { 
 			tn = get_nucleation_temperature(hubble_spline, bounce_class); 
-			LOG(debug) << "Found nucleation temp " << tn; 
+			LOG(debug) << "Found nucleation temp " << tn;
 			if(abs(tn-t.TC) <= 1e-3) {
-				LOG(debug) << "Nucleation temperature is close to critical temperature, setting to 0.";
+				LOG(debug) << "Nucleation temperature is close to critical temperature.";
 				continue;
 			}
 			tp_local.TN = tn;
@@ -312,6 +320,33 @@ void ThermalParameters::find_thermal_parameters() {
 
 		thermalparameterContainer.push_back(tp_local);
 	}
+}
+
+double ThermalParameters::get_duration(double TC, double TF, Thermodynamics true_thermo, Thermodynamics false_thermo) {
+
+	int N = 25;
+	double dt = (TC - TF)/(N - 1);
+	std::vector<double> temp_vec, dtdT_vec;
+	
+	for (double tt = TC; tt > TF; tt -= dt) {
+		std::vector<double> potential_vals = true_thermo.get_potential(tt);
+		double dvdT = potential_vals[1];
+		double ddvdT = potential_vals[2];
+		double dTdt = -3. * get_hubble_rate(tt, true_thermo, false_thermo) * dvdT/ddvdT;
+		temp_vec.push_back(tt);
+		dtdT_vec.push_back(1/dTdt);
+	}
+	
+	alglib::real_1d_array temp_array, dtdT_array;
+	temp_array.setcontent(temp_vec.size(), temp_vec.data());
+	dtdT_array.setcontent(dtdT_vec.size(), dtdT_vec.data());
+	
+	alglib::spline1dinterpolant dtdT_spline;
+	alglib::spline1dbuildcubic(temp_array, dtdT_array, dtdT_spline);
+
+	double duration = alglib::spline1dintegrate(dtdT_spline, TF) - alglib::spline1dintegrate(dtdT_spline, TC);
+	LOG(debug) << "Computed duration dt = " << duration << std::endl;
+	return duration;
 }
 
 double ThermalParameters::get_alpha(double T, Thermodynamics true_thermo, Thermodynamics false_thermo) {
