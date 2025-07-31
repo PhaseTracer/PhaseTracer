@@ -274,11 +274,11 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
     #endif
     for (const auto &tps : thermal_params) {
       double Tref, alpha, beta_H;
-      if (tps.nucleates) {
+      if (tps.nucleates == MilestoneStatus::YES) {
         Tref = tps.TN;
         alpha = tps.alpha_tn;
         beta_H = tps.betaH_tn;
-      } else if (tps.percolates) {
+      } else if (tps.percolates == MilestoneStatus::YES) {
         Tref = tps.TP;
         alpha = tps.alpha_tp;
         beta_H = tps.betaH_tp;

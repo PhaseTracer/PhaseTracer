@@ -169,6 +169,16 @@ private:
 };
 
 /**
+  @enum MilestoneStatus
+  @brief Represents the status of a milestone in the phase transition process
+ */
+enum class MilestoneStatus {
+  YES,
+  NO,
+  INVALID
+};
+
+/**
  * @struct Contains all thermal_parameters
  */
 struct ThermalParams {
@@ -185,14 +195,14 @@ struct ThermalParams {
 	double betaH_tp, betaH_tn;
 	double beta_tp, beta_tn;
 	double H_tp, H_tn;
-  bool percolates;
-  bool nucleates;
-  bool completes;
+  MilestoneStatus percolates;
+  MilestoneStatus nucleates;
+  MilestoneStatus completes;
 
   /** Pretty-printer for single phase */
   friend std::ostream &operator<<(std::ostream &o, const ThermalParams &tp) {
     o << "=== transition @ TC = " << tp.TC << " ===" << "\n";
-    if(tp.percolates) {
+    if(tp.percolates == MilestoneStatus::YES) {
       o << "percolation temperature = " << tp.TP << "\n"
       << "  alpha = " << tp.alpha_tp << "\n"
       << "  beta/H = " << tp.betaH_tp << "\n"
@@ -202,12 +212,17 @@ struct ThermalParams {
     } else {
       o << "transition does not percolate." << "\n";
     }
-    if(tp.nucleates) {
-      o << "nucleation temperature = " << tp.TN << "\n";
-      if(tp.completes && tp.TF > tp.TN) {
-        o << "  transition completes before nucleating!" << "\n";
-      }
-      o << "  alpha = " << tp.alpha_tn << "\n"
+    if(tp.nucleates == MilestoneStatus::YES) {
+      o << "nucleation temperature = " << tp.TN << "\n"
+      << "  alpha = " << tp.alpha_tn << "\n"
+      << "  beta/H = " << tp.betaH_tn << "\n"
+      << "  beta (GeV) = " << tp.beta_tn << "\n"
+      << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tn << "\n"
+      << "  H (GeV⁻¹) = " << tp.H_tn << "\n";
+    } else if (tp.nucleates == MilestoneStatus::INVALID) {
+      o << "nucleation temperature = " << tp.TN << "\n"
+      << "  transition nucleates after completion!" << "\n"
+      << "  alpha = " << tp.alpha_tn << "\n"
       << "  beta/H = " << tp.betaH_tn << "\n"
       << "  beta (GeV) = " << tp.beta_tn << "\n"
       << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tn << "\n"
@@ -215,7 +230,7 @@ struct ThermalParams {
     } else {
       o << "transition does not nucleate." << "\n";
     }
-    if(tp.completes) {
+    if(tp.completes == MilestoneStatus::YES) {
       o << "completion temperature = " << tp.TF << "\n";
       o << "  tf - tc = " << tp.dt << "\n";
     } else {

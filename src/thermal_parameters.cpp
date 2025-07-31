@@ -270,9 +270,9 @@ void ThermalParameters::find_thermal_parameters() {
 			double beta = betaH * H;
 			tp_local.beta_tp = beta;
 
-			tp_local.percolates = true;
+			tp_local.percolates = MilestoneStatus::YES;
 		} catch (const std::runtime_error &e) {
-			tp_local.percolates = false;
+			tp_local.percolates = MilestoneStatus::NO;
 			LOG(debug) << "Failed to find percolation temperature: " << e.what() << std::endl;
 		}
 		
@@ -287,9 +287,9 @@ void ThermalParameters::find_thermal_parameters() {
 			}
 			tp_local.TF = tf;
 			tp_local.dt = get_duration(maximum_temp, tf, thermo_true, thermo_false);
-			tp_local.completes = true;
+			tp_local.completes = MilestoneStatus::YES;
 		} catch (const std::runtime_error &e) {
-			tp_local.completes = false;
+			tp_local.completes = MilestoneStatus::NO;
 			LOG(debug) << "Failed to find completion temperature: " << e.what() << std::endl;
 		}
 
@@ -312,9 +312,14 @@ void ThermalParameters::find_thermal_parameters() {
 			double beta = betaH * H;
 			tp_local.beta_tn = beta;
 
-			tp_local.nucleates = true;
+			if ( tp_local.completes == MilestoneStatus::YES && tf > tn ) {
+				// transition does nucleate, but after the completion temp
+				tp_local.nucleates = MilestoneStatus::INVALID;
+			} else {
+				tp_local.nucleates = MilestoneStatus::YES;
+			}
 		} catch (const std::runtime_error &e) {
-			tp_local.nucleates = false;
+			tp_local.nucleates = MilestoneStatus::NO;
 			LOG(debug) << "Failed to find nucleation temperature: " << e.what() << std::endl;
 		}
 

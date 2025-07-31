@@ -128,13 +128,13 @@ public:
 private :
 
 	PhaseTransition::Universe get_universe(ThermalParams tps, double dof) {
-		if ( tps.nucleates ) {
+		if ( tps.nucleates == MilestoneStatus::YES ) {
 			// Validate inputs
 			if (tps.TN <= 0 || tps.H_tn <= 0) {
 				throw std::invalid_argument("Invalid thermal parameters for universe creation");
 			}
 			return PhaseTransition::Universe(tps.TN, tps.H_tn, dof);
-		} else if (tps.percolates) {
+		} else if (tps.percolates == MilestoneStatus::YES) {
 			// Validate inputs
 			if (tps.TP <= 0 || tps.H_tp <= 0) {
 				throw std::invalid_argument("Invalid thermal parameters for universe creation");
@@ -146,7 +146,7 @@ private :
 	}
 
 	PhaseTransition::PTParams get_pt_params(ThermalParams tps, double vw, double dof) {
-		if (tps.nucleates) {
+		if (tps.nucleates == MilestoneStatus::YES) {
 			// Validate inputs
 			if (tps.alpha_tn <= 0 || tps.betaH_tn <= 0 || tps.beta_tn <= 0) {
 				throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
@@ -157,7 +157,7 @@ private :
 			double wN = 1.33; // Default value
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			return PhaseTransition::PTParams(vw, alpha, betaH, wN, "exp", un);
-		} else if (tps.percolates) {
+		} else if (tps.percolates == MilestoneStatus::YES) {
 			// Validate inputs
 			if (tps.alpha_tp <= 0 || tps.betaH_tp <= 0 || tps.beta_tp <= 0) {
 				throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
