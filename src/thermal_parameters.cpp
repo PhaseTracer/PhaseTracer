@@ -135,6 +135,15 @@ double Thermodynamics::get_pressure(double T) const {
   return alglib::spline1dcalc(this->p, T);
 }
 
+std::vector<double> Thermodynamics::get_entropy_derivs(double T) const {
+  check_temperature_range(T, "get_entropy_derivs");
+  
+  double s, ds, dds;
+  alglib::spline1ddiff(this->s, T, s, ds, dds);
+  
+  return {s, ds, dds};
+}
+
 double Thermodynamics::get_energy(double T) const {
   check_temperature_range(T, "get_energy");
   return alglib::spline1dcalc(this->e, T);
@@ -333,11 +342,11 @@ double ThermalParameters::get_duration(double TC, double TF, Thermodynamics true
 	double dt = (TC - TF)/(N - 1);
 	std::vector<double> temp_vec, dtdT_vec;
 	
-	for (double tt = TC; tt > TF; tt -= dt) {
-		std::vector<double> potential_vals = true_thermo.get_potential(tt);
-		double dvdT = potential_vals[1];
-		double ddvdT = potential_vals[2];
-		double dTdt = -3. * get_hubble_rate(tt, true_thermo, false_thermo) * dvdT/ddvdT;
+	for (double tt = TF; tt < TC; tt += dt) {
+		std::vector<double> entropy_vals = true_thermo.get_potential(tt);
+		double s = entropy_vals[0];
+		double ds = entropy_vals[1];
+		double dTdt = -3. * get_hubble_rate(tt, true_thermo, false_thermo) * s/ds;
 		temp_vec.push_back(tt);
 		dtdT_vec.push_back(1/dTdt);
 	}
@@ -349,7 +358,7 @@ double ThermalParameters::get_duration(double TC, double TF, Thermodynamics true
 	alglib::spline1dinterpolant dtdT_spline;
 	alglib::spline1dbuildcubic(temp_array, dtdT_array, dtdT_spline);
 
-	double duration = alglib::spline1dintegrate(dtdT_spline, TF) - alglib::spline1dintegrate(dtdT_spline, TC);
+	double duration = alglib::spline1dintegrate(dtdT_spline, TC);
 	LOG(debug) << "Computed duration dt = " << duration << std::endl;
 	return duration;
 }
