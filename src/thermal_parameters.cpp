@@ -286,16 +286,16 @@ void ThermalParameters::find_thermal_parameters() {
 		}
 		
 
-		double tf = 0.0;
+		double tfin = 0.0;
 		try { 
-			tf = get_completion_temperature(hubble_spline, bounce_class, 0.35);
-			LOG(debug) << "Found completion temp " << tf; 
-			if(abs(tf-t.TC) <= 1e-3) {
+			tfin = get_completion_temperature(hubble_spline, bounce_class, 0.35);
+			LOG(debug) << "Found completion temp " << tfin; 
+			if(abs(tfin-t.TC) <= 1e-3) {
 				LOG(debug) << "Completion temperature is close to critical temperature.";
 				continue;
 			}
-			tp_local.TF = tf;
-			tp_local.dt = get_duration(maximum_temp, tf, thermo_true, thermo_false);
+			tp_local.TF = tfin;
+			tp_local.dt = get_duration(maximum_temp, tfin, thermo_true, thermo_false);
 			tp_local.completes = MilestoneStatus::YES;
 		} catch (const std::runtime_error &e) {
 			tp_local.completes = MilestoneStatus::NO;
@@ -321,7 +321,7 @@ void ThermalParameters::find_thermal_parameters() {
 			double beta = betaH * H;
 			tp_local.beta_tn = beta;
 
-			if ( tp_local.completes == MilestoneStatus::YES && tf > tn ) {
+			if ( tp_local.completes == MilestoneStatus::YES && tfin > tn ) {
 				// transition does nucleate, but after the completion temp
 				tp_local.nucleates = MilestoneStatus::INVALID;
 			} else {
