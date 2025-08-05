@@ -218,8 +218,6 @@ struct EoS {
  */
 struct ThermalParams {
   size_t key;
-  std::vector<double> pressure_density_true, pressure_density_false;
-  std::vector<double> energy_density_true, energy_density_false;
 	alglib::spline1dinterpolant hubble_spline;
 	double TC;
   double TN;
@@ -230,6 +228,7 @@ struct ThermalParams {
 	double betaH_tp, betaH_tn;
 	double beta_tp, beta_tn;
 	double H_tp, H_tn;
+  double we_tn, we_tp;
   EoS eos;
   MilestoneStatus percolates;
   MilestoneStatus nucleates;
@@ -245,7 +244,8 @@ struct ThermalParams {
       << "  beta/H = " << tp.betaH_tp << "\n"
       << "  beta (GeV) = " << tp.beta_tp << "\n"
       << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tp << "\n"
-      << "  H (GeV⁻¹) = " << tp.H_tp << "\n";
+      << "  H (GeV⁻¹) = " << tp.H_tp << "\n"
+      << "  enthalpy/energy ratio = " << tp.we_tp << "\n";
     } else {
       o << "transition does not percolate." << "\n";
     }
@@ -255,7 +255,8 @@ struct ThermalParams {
       << "  beta/H = " << tp.betaH_tn << "\n"
       << "  beta (GeV) = " << tp.beta_tn << "\n"
       << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tn << "\n"
-      << "  H (GeV⁻¹) = " << tp.H_tn << "\n";
+      << "  H (GeV⁻¹) = " << tp.H_tn << "\n"
+      << "  enthalpy/energy ratio = " << tp.we_tn << "\n";
     } else if (tp.nucleates == MilestoneStatus::INVALID) {
       o << "nucleation temperature = " << tp.TN << "\n"
       << "  transition nucleates after completion!" << "\n"
@@ -263,7 +264,8 @@ struct ThermalParams {
       << "  beta/H = " << tp.betaH_tn << "\n"
       << "  beta (GeV) = " << tp.beta_tn << "\n"
       << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tn << "\n"
-      << "  H (GeV⁻¹) = " << tp.H_tn << "\n";
+      << "  H (GeV⁻¹) = " << tp.H_tn << "\n"
+      << "  enthalpy/energy ratio = " << tp.we_tn << "\n";
     } else {
       o << "transition does not nucleate." << "\n";
     }
@@ -346,6 +348,11 @@ public:
   std::vector<ThermalParams> get_thermal_parameters();
 
 private:
+
+  double get_we(
+    double Tref,
+    Thermodynamics true_thermo
+  );
 
   /**
    * @brief Calculates the equation of state for a transition.

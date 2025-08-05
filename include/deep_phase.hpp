@@ -88,16 +88,16 @@ public:
 			double R0 = 1./(1.65e-5 / (params.Rs() * Hconf) * (params.un().Ts() / 100) * std::pow(params.un().gs() / 100, 1./6.));
 			std::cout << "R0 = " << R0 << "\n";
 			std::cout << "Hconf = " << Hconf << "\n";
-			R0 = 1; // TODO
+			// R0 = 1; // TODO
 
-			double kmin = 2*M_PI*min_frequency*R0;
-			double kmax = 2*M_PI*max_frequency*R0;
+			double kmin = 2*M_PI*min_frequency;
+			double kmax = 2*M_PI*max_frequency;
 
-			double Kmin = kmin; std::cout << "Kmin = " << Kmin << "\n";
-			double Kmax = kmax; std::cout << "Kmax = " << Kmax << "\n";
+			double Kmin = kmin*R0; std::cout << "Kmin = " << Kmin << "\n";
+			double Kmax = kmax*R0; std::cout << "Kmax = " << Kmax << "\n";
 			std::vector<double> momentumVec = logspace(Kmin, Kmax, static_cast<std::size_t>(num_frequency));
 
-			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec(momentumVec, params);
+			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec2(momentumVec, params);
 
 			// OmegaGW.write("gw_spec.csv");
 
@@ -157,9 +157,9 @@ private :
 			double alpha = tps.alpha_tn;
 			double betaH = tps.betaH_tn;
 			double Tref = tps.TN;
-			double wN = 1.33; // Default value
+			double wN = tps.we_tn;
 			PhaseTransition::Universe un = get_universe(tps, dof);
-			return PhaseTransition::PTParams(vw, alpha, betaH, 0.1, wN, "exp", un);
+			return PhaseTransition::PTParams(vw, alpha, betaH, 0.001, wN, "exp", un);
 		} else if (tps.percolates == MilestoneStatus::YES) {
 			// Validate inputs
 			if (tps.alpha_tp <= 0 || tps.betaH_tp <= 0 || tps.beta_tp <= 0) {
@@ -168,9 +168,9 @@ private :
 			double alpha = tps.alpha_tp;
 			double betaH = tps.betaH_tp;
 			double Tref = tps.TP;
-			double wN = 1.33; // Default value
+			double wN = tps.we_tp;
 			PhaseTransition::Universe un = get_universe(tps, dof);
-			return PhaseTransition::PTParams(vw, alpha, betaH, 0.1, wN, "exp", un);
+			return PhaseTransition::PTParams(vw, alpha, betaH, 0.001, wN, "exp", un);
 		}
 		PhaseTransition::PTParams pt;
 		return pt;
