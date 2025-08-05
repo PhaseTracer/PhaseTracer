@@ -313,6 +313,8 @@ void ThermalParameters::find_thermal_parameters() {
 			tp_local.H_tp = H;
 			double beta = betaH * H;
 			tp_local.beta_tp = beta;
+			double we = get_we(tp, thermo_true);
+			tp_local.we_tp = we;
 
 			tp_local.eos = get_eos(minimum_temp, maximum_temp, tp, thermo_true, thermo_false);
 
@@ -357,6 +359,8 @@ void ThermalParameters::find_thermal_parameters() {
 			tp_local.H_tn = H;
 			double beta = betaH * H;
 			tp_local.beta_tn = beta;
+			double we = get_we(tn, thermo_true);
+			tp_local.we_tn = we;
 
 			if ( tp_local.completes == MilestoneStatus::YES && tfin > tn ) {
 				// transition does nucleate, but after the completion temp
@@ -395,6 +399,10 @@ EoS ThermalParameters::get_eos(double Tmin, double Tmax, double Tref, Thermodyna
 	}
 
 	return out;
+}
+
+double ThermalParameters::get_we(double Tref, Thermodynamics true_thermo) {
+	return true_thermo.get_enthalpy(Tref)/true_thermo.get_energy(Tref);
 }
 
 double ThermalParameters::get_duration(double TC, double TF, Thermodynamics true_thermo, Thermodynamics false_thermo) {
