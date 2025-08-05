@@ -407,7 +407,12 @@ std::string formatOutput( std::vector<double> in, std::vector<double> out ) {
   return output;
 }
 std::string formatOutput( std::vector<double> in, double out ) {
-  std::vector<double> full_out = {out, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
+  std::vector<double> full_out = {out, 0., 0., 0.};
+  return formatOutput(in, full_out);
+}
+
+std::string formatOutputNN( std::vector<double> in) {
+  std::vector<double> full_out = {0., 0., 0., 1.};
   return formatOutput(in, full_out);
 }
 
