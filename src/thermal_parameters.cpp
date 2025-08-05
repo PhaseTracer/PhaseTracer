@@ -82,7 +82,7 @@ void Thermodynamics::get_thermodynamic_splines() {
 		energy[i] = 3.0 * pres_bag + v - temp * dvdT;
 		enthalpy[i] = 4.0 * pres_bag - temp * dvdT;
 		entropy[i] = 4.0 * pres_bag / temp - dvdT;
-    }
+	}
 
   alglib::real_1d_array t_array, p_array, e_array, w_array, s_array;
   t_array.setcontent(n_temp, temperature.data());
@@ -179,21 +179,21 @@ void Bounce::get_splines() {
 
 	std::vector<double> valid_temps, valid_actions, valid_log_gammas;
 	double dt = (maximum_temp - minimum_temp) / (spline_evaluations - 1);
-	const double gamma_min = 1e-100;
+	const double log_gamma_min = -700;
 
 	for (int i = 0; i < spline_evaluations; i++) {
 		double tt = minimum_temp + i * dt;
 		auto action_opt = calculate_action(tt);
 		if (action_opt.has_value()) {
 			double action = action_opt.value();
-			auto gamma_opt = calculate_gamma(tt, action);
-			double gamma = gamma_min;
-			if (gamma_opt.has_value()) {
-				gamma = std::max(gamma_opt.value(), gamma_min);
-			}
-			valid_temps.push_back(tt);
-			valid_actions.push_back(action);
-			valid_log_gammas.push_back(std::log(gamma));
+	auto log_gamma_opt = calculate_log_gamma(tt, action);
+	double log_gamma = log_gamma_min;
+	if (log_gamma_opt.has_value()) {
+		log_gamma = std::max(log_gamma_opt.value(), log_gamma_min);
+	}
+	valid_temps.push_back(tt);
+	valid_actions.push_back(action);
+	valid_log_gammas.push_back(log_gamma);
 		} else {
 			LOG(debug) << "t = " << tt << ", action = INVALID" << std::endl;
 		}
@@ -210,8 +210,8 @@ void Bounce::get_splines() {
 
 	LOG(debug) << "Building action and gamma arrays";
 	alglib::spline1dbuildcubic(temp_array, action_array, this->action_spline);
-	alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->gamma_spline);
-	LOG(debug) << "Action and gamma arrays built.";
+	alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->log_gamma_spline);
+	LOG(debug) << "Action and log(gamma) arrays built.";
 }
 
 /*======================================
@@ -274,9 +274,9 @@ void ThermalParameters::find_thermal_parameters() {
 				double nt;
 				try {nt = nucleation_rate(hubble_spline, bounce_class, tt);} catch (...) {nt = 0.0;}
 				debug_local.nt.push_back(nt);
-				double gamma;
-				try {gamma = std::exp(alglib::spline1dcalc(bounce_class.gamma_spline, tt));} catch (...) {gamma = 0.0;}
-				debug_local.gamma.push_back(gamma);
+			   double gamma;
+			   try {gamma = std::exp(alglib::spline1dcalc(bounce_class.log_gamma_spline, tt));} catch (...) {gamma = 0.0;}
+			   debug_local.gamma.push_back(gamma);
 				double hubble_rate = get_hubble_rate(tt, thermo_true, thermo_false);
 				debug_local.hubble.push_back(hubble_rate);
 				double t;
@@ -472,12 +472,13 @@ double ThermalParameters::hubble_integral(alglib::spline1dinterpolant& hubble_sp
 }
 
 double ThermalParameters::false_vacuum_fraction_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double Tdash) {
-	double h = alglib::spline1dcalc(hubble_spline, Tdash); // 1/h !!!
-	double h_int = hubble_integral(hubble_spline, T, Tdash);
-	double gamma = std::exp(alglib::spline1dcalc(bounce.gamma_spline, Tdash)); // exp since we store log(gamma)
-	double Tfac = 1/(Tdash*Tdash*Tdash*Tdash);
+  double h = alglib::spline1dcalc(hubble_spline, Tdash); // 1/h !!!
+  double h_int = hubble_integral(hubble_spline, T, Tdash);
+  double log_gamma = alglib::spline1dcalc(bounce.log_gamma_spline, Tdash); // log(gamma)
+  double gamma = std::exp(log_gamma);
+  double Tfac = 1/(Tdash*Tdash*Tdash*Tdash);
 
-	return Tfac * gamma * h * h_int*h_int*h_int;
+  return Tfac * gamma * h * h_int*h_int*h_int;
 }
 
 double ThermalParameters::false_vacuum_fraction(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double vw) {
@@ -506,9 +507,10 @@ double ThermalParameters::false_vacuum_fraction(alglib::spline1dinterpolant& hub
 }
 
 double ThermalParameters::nucleation_rate_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T) {
-	double gamma = std::exp(alglib::spline1dcalc(bounce.gamma_spline, T)); // exp since we store log(gamma)
-	double h = alglib::spline1dcalc(hubble_spline, T); // 1/h !!!
-	return gamma * h * h * h;
+  double log_gamma = alglib::spline1dcalc(bounce.log_gamma_spline, T); // log(gamma)
+  double gamma = std::exp(log_gamma);
+  double h = alglib::spline1dcalc(hubble_spline, T); // 1/h !!!
+  return gamma * h * h * h;
 }
 
 double ThermalParameters::nucleation_rate(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T) {
