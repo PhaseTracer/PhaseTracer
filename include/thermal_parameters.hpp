@@ -114,11 +114,11 @@ public:
   double get_entropy(double T) const;
 
   /**
-   * @brief Computes the entropy and its derivatives at a given temperature.
+   * @brief Computes the pressure and its derivatives at a given temperature.
    * @param T Temperature at which to evaluate.
-   * @return Vector containing entropy, dS/dT, and d²S/dT².
+   * @return Vector containing pressure, dP/dT, and d²P/dT².
    */
-  std::vector<double> get_entropy_derivs(double T) const;
+  std::vector<double> get_pressure_derivs(double T) const;
 
 private:
   /**
@@ -176,8 +176,8 @@ private:
 };
 
 /**
-  @enum MilestoneStatus
-  @brief Represents the status of a milestone in the phase transition process
+ * @enum MilestoneStatus
+ * @brief Represents the status of a milestone in the phase transition process
  */
 enum class MilestoneStatus {
   YES,
@@ -186,7 +186,35 @@ enum class MilestoneStatus {
 };
 
 /**
- * @struct Contains all thermal_parameters
+ * @struct ThermalDEBUG
+ * @brief Contains debugging information for thermal parameters
+*/
+struct ThermalDEBUG {
+  double tmin;
+  double tmax;
+  std::vector<double> temp;
+  std::vector<double> pf;
+  std::vector<double> nt;
+  std::vector<double> gamma;
+  std::vector<double> hubble;
+  std::vector<double> t;
+};
+
+/**
+ * @struct EoS
+  * @brief Contains the equation of state data for a phase transition
+*/
+struct EoS {
+  std::vector<double> temp;
+  std::vector<double> pressure;
+  std::vector<double> energy;
+  std::vector<double> enthalpy;
+  std::vector<double> entropy;
+};
+
+/**
+ * @struct ThermalParams
+  * @brief Contains thermal parameters for a phase transition
  */
 struct ThermalParams {
   size_t key;
@@ -202,9 +230,11 @@ struct ThermalParams {
 	double betaH_tp, betaH_tn;
 	double beta_tp, beta_tn;
 	double H_tp, H_tn;
+  EoS eos;
   MilestoneStatus percolates;
   MilestoneStatus nucleates;
   MilestoneStatus completes;
+  ThermalDEBUG debug_info;
 
   /** Pretty-printer for single phase */
   friend std::ostream &operator<<(std::ostream &o, const ThermalParams &tp) {
@@ -260,11 +290,17 @@ private:
 
   bool calculated_thermal_params = false;
 
+  /** whether to compute additional debugging information  **/
+  PROPERTY(bool, compute_debug, false);
+
   /** number of temperature values for thermo splines  **/
   PROPERTY(int, n_temp, 250);
 
   /** relativistic degrees of freedom  **/
   PROPERTY(double, dof, 106.75);
+
+  /** bubble wall velocity  **/
+  PROPERTY(double, vw, 0.35);
 
   /** number of temp values for the action spline */
   PROPERTY(int, spline_evaluations, 50);
@@ -310,6 +346,23 @@ public:
   std::vector<ThermalParams> get_thermal_parameters();
 
 private:
+
+  /**
+   * @brief Calculates the equation of state for a transition.
+   * @param Tmin Minimum temperature for the EoS
+   * @param Tmax Maximum temperature for the EoS
+   * @param Tref Reference temperature for the EoS
+   * @param true_thermo Thermodynamics of the true vacuum phase
+   * @param false_thermo Thermodynamics of the false vacuum phase
+   * @return EoS object containing temperature, pressure, energy, enthalpy,
+   *         and entropy vectors.
+  */
+  EoS get_eos(
+    double Tmin,
+    double Tmax,
+    double Tref, 
+    Thermodynamics true_thermo, 
+    Thermodynamics false_thermo);
 
   /**
    * @brief Calculates the duration of the transition
