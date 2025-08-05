@@ -40,28 +40,6 @@ Thermodynamics::Thermodynamics(Phase phase_in, int n_temp_in, double dof_in)
 	t.setcontent(temperature_values.size(), temperature_values.data());
 	alglib::spline1dbuildcubic(t, v, this->potential);
 
-	// std::cout << "potential_values" << "\n";
-	// for ( size_t j = 0; j < potential_values.size(); j++) {
-	// 	std::cout << potential_values[j] << " ";
-	// 	if( j % 5 == 4) {
-	// 	std::cout << "\n";
-	// 	}
-	// }
-	// std::cout << "\nv" << "\n";
-	// for ( size_t j = 0; j < potential_values.size(); j++) {
-	// 	std::cout << v[j] << " ";
-	// 	if( j % 5 == 4) {
-	// 	std::cout << "\n";
-	// 	}
-	// }
-	// std::cout << "\nspline_vals" << "\n";
-	// for ( size_t j = 0; j < potential_values.size(); j++) {
-	// 	std::cout << alglib::spline1dcalc(this->potential, temperature_values[j]) << " ";
-	// 	if( j % 5 == 4) {
-	// 	std::cout << "\n";
-	// 	}
-	// }
-
   temperature.resize(n_temp);
   double dT = std::abs(t_max - t_min) / (n_temp - 1);
   for (int i = 0; i < n_temp; ++i) {
