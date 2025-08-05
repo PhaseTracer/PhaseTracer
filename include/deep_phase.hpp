@@ -88,7 +88,7 @@ public:
 			double R0 = 1./(1.65e-5 / (params.Rs() * Hconf) * (params.un().Ts() / 100) * std::pow(params.un().gs() / 100, 1./6.));
 			std::cout << "R0 = " << R0 << "\n";
 			std::cout << "Hconf = " << Hconf << "\n";
-			// R0 = 1; // TODO
+			R0 = 1; // TODO
 
 			double kmin = 2*M_PI*min_frequency;
 			double kmax = 2*M_PI*max_frequency;

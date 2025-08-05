@@ -71,46 +71,46 @@ public:
    */
   std::vector<double> get_potential(double T);
 
-	/**
-	 * @brief Computes the sound speed.
-	 * @param T Temperature at which to evaluate
-	 * @return Sound speed at T.
-	 */
+  /**
+   * @brief Computes the sound speed.
+   * @param T Temperature at which to evaluate
+   * @return Sound speed at T.
+   */
   double get_cs(double T) const;
 
-	/**
-	 * @brief Computes the trace anomoly.
-	 * @param T Temperature at which to evaluate.
-	 * @return Trace anomoly at T.
-	 */
+  /**
+   * @brief Computes the trace anomoly.
+   * @param T Temperature at which to evaluate.
+   * @return Trace anomoly at T.
+   */
   double get_theta(double T) const;
 
-	/**
-	 * @brief Computes the pressure density in the phase.
-	 * @param T Temperature at which to evaluate.
-	 * @return Pressure density at T.
-	 */
+  /**
+   * @brief Computes the pressure density in the phase.
+   * @param T Temperature at which to evaluate.
+   * @return Pressure density at T.
+   */
   double get_pressure(double T) const;
 
-	/**
-	 * @brief Computes the energy density in the phase.
-	 * @param T Temperature at which to evaluate.
-	 * @return Energy density at T.
-	 */
+  /**
+   * @brief Computes the energy density in the phase.
+   * @param T Temperature at which to evaluate.
+   * @return Energy density at T.
+   */
   double get_energy(double T) const;
 
-	/**
-	 * @brief Computes the enthalpy density in the phase.
-	 * @param T Temperature at which to evaluate.
-	 * @return Enthalpy density at T.
-	 */
+  /**
+   * @brief Computes the enthalpy density in the phase.
+   * @param T Temperature at which to evaluate.
+   * @return Enthalpy density at T.
+   */
   double get_enthalpy(double T) const;
 
-	/**
-	 * @brief Computes the entropy density in the phase.
-	 * @param T Temperature at which to evaluate.
-	 * @return Entropy density at T.
-	 */
+  /**
+   * @brief Computes the entropy density in the phase.
+   * @param T Temperature at which to evaluate.
+   * @return Entropy density at T.
+   */
   double get_entropy(double T) const;
 
   /**
@@ -142,21 +142,21 @@ class Bounce {
 
 private:
   TransitionFinder tf;
-	Transition t;
+  Transition t;
   int spline_evaluations;
 
 public:
-	double minimum_temp, maximum_temp;
-	alglib::spline1dinterpolant action_spline, gamma_spline;
+  double minimum_temp, maximum_temp;
+  alglib::spline1dinterpolant action_spline, log_gamma_spline;
 
-	Bounce();
-	Bounce(Transition t_in, TransitionFinder tf_in, double minimum_temp_in, double maximum_temp_in, int spline_evaluations_in);
+  Bounce();
+  Bounce(Transition t_in, TransitionFinder tf_in, double minimum_temp_in, double maximum_temp_in, int spline_evaluations_in);
 
-	/**
-	 * @brief Computes the bounce and gamma splines for given transition.
-	 * @return void.
-	 */
-	void get_splines();
+  /**
+   * @brief Computes the bounce and log(gamma) splines for given transition.
+   * @return void.
+   */
+  void get_splines();
 
 private:
   /** Calculate action at given temperature */
@@ -168,10 +168,10 @@ private:
     return action;
   }
 
-  /** Calculate gamma at given temperature and action */
-  std::optional<double> calculate_gamma(double temperature, double action) const {
+  /** Calculate log(gamma) at given temperature and action */
+  std::optional<double> calculate_log_gamma(double temperature, double action) const {
     double log_gamma = 4*log(temperature) + 1.5*log(action/(2.*M_PI)) - action;
-    return log_gamma < -700 ? std::nullopt : std::optional<double>(exp(log_gamma));
+    return log_gamma < -700 ? std::nullopt : std::optional<double>(log_gamma);
   }
 };
 
@@ -218,16 +218,16 @@ struct EoS {
  */
 struct ThermalParams {
   size_t key;
-	alglib::spline1dinterpolant hubble_spline;
-	double TC;
+  alglib::spline1dinterpolant hubble_spline;
+  double TC;
   double TN;
-	double TP;
-	double TF;
+  double TP;
+  double TF;
   double dt;
-	double alpha_tp, alpha_tn;
-	double betaH_tp, betaH_tn;
-	double beta_tp, beta_tn;
-	double H_tp, H_tn;
+  double alpha_tp, alpha_tn;
+  double betaH_tp, betaH_tn;
+  double beta_tp, beta_tn;
+  double H_tp, H_tn;
   double we_tn, we_tp;
   EoS eos;
   MilestoneStatus percolates;
