@@ -84,11 +84,14 @@ public:
 			auto params = get_pt_params(tps, vw, dof);
 			params.print();
 
-			double Rs = params.Rs();
-			double tau = params.tau_s();
+			double Hconf = params.un().Hs() /(std::pow(params.un().gs() / params.un().g0(), 1./3.) * params.un().Ts() / params.un().T0());
+			double R0 = 1./(1.65e-5 / (params.Rs() * Hconf) * (params.un().Ts() / 100) * std::pow(params.un().gs() / 100, 1./6.));
+			std::cout << "R0 = " << R0 << "\n";
+			std::cout << "Hconf = " << Hconf << "\n";
+			R0 = 1; // TODO
 
-			double kmin = 2*M_PI*min_frequency;
-			double kmax = 2*M_PI*max_frequency;
+			double kmin = 2*M_PI*min_frequency*R0;
+			double kmax = 2*M_PI*max_frequency*R0;
 
 			double Kmin = kmin; std::cout << "Kmin = " << Kmin << "\n";
 			double Kmax = kmax; std::cout << "Kmax = " << Kmax << "\n";
@@ -156,7 +159,7 @@ private :
 			double Tref = tps.TN;
 			double wN = 1.33; // Default value
 			PhaseTransition::Universe un = get_universe(tps, dof);
-			return PhaseTransition::PTParams(vw, alpha, betaH, wN, "exp", un);
+			return PhaseTransition::PTParams(vw, alpha, betaH, 0.1, wN, "exp", un);
 		} else if (tps.percolates == MilestoneStatus::YES) {
 			// Validate inputs
 			if (tps.alpha_tp <= 0 || tps.betaH_tp <= 0 || tps.beta_tp <= 0) {
@@ -167,7 +170,7 @@ private :
 			double Tref = tps.TP;
 			double wN = 1.33; // Default value
 			PhaseTransition::Universe un = get_universe(tps, dof);
-			return PhaseTransition::PTParams(vw, alpha, betaH, wN, "exp", un);
+			return PhaseTransition::PTParams(vw, alpha, betaH, 0.1, wN, "exp", un);
 		}
 		PhaseTransition::PTParams pt;
 		return pt;

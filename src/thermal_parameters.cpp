@@ -35,10 +35,32 @@ Thermodynamics::Thermodynamics(Phase phase_in, int n_temp_in, double dof_in)
 	n_temp(n_temp_in),
 	dof(dof_in) {
 
-  alglib::real_1d_array t, v;
-  v.setcontent(potential_values.size(), potential_values.data());
-  t.setcontent(temperature_values.size(), temperature_values.data());
-  alglib::spline1dbuildcubic(t, v, this->potential);
+	alglib::real_1d_array t, v;
+	v.setcontent(potential_values.size(), potential_values.data());
+	t.setcontent(temperature_values.size(), temperature_values.data());
+	alglib::spline1dbuildcubic(t, v, this->potential);
+
+	// std::cout << "potential_values" << "\n";
+	// for ( size_t j = 0; j < potential_values.size(); j++) {
+	// 	std::cout << potential_values[j] << " ";
+	// 	if( j % 5 == 4) {
+	// 	std::cout << "\n";
+	// 	}
+	// }
+	// std::cout << "\nv" << "\n";
+	// for ( size_t j = 0; j < potential_values.size(); j++) {
+	// 	std::cout << v[j] << " ";
+	// 	if( j % 5 == 4) {
+	// 	std::cout << "\n";
+	// 	}
+	// }
+	// std::cout << "\nspline_vals" << "\n";
+	// for ( size_t j = 0; j < potential_values.size(); j++) {
+	// 	std::cout << alglib::spline1dcalc(this->potential, temperature_values[j]) << " ";
+	// 	if( j % 5 == 4) {
+	// 	std::cout << "\n";
+	// 	}
+	// }
 
   temperature.resize(n_temp);
   double dT = std::abs(t_max - t_min) / (n_temp - 1);
@@ -82,7 +104,7 @@ void Thermodynamics::get_thermodynamic_splines() {
 		energy[i] = 3.0 * pres_bag + v - temp * dvdT;
 		enthalpy[i] = 4.0 * pres_bag - temp * dvdT;
 		entropy[i] = 4.0 * pres_bag / temp - dvdT;
-  }
+    }
 
   alglib::real_1d_array t_array, p_array, e_array, w_array, s_array;
   t_array.setcontent(n_temp, temperature.data());
@@ -135,13 +157,13 @@ double Thermodynamics::get_pressure(double T) const {
   return alglib::spline1dcalc(this->p, T);
 }
 
-std::vector<double> Thermodynamics::get_entropy_derivs(double T) const {
-  check_temperature_range(T, "get_entropy_derivs");
-  
-  double s, ds, dds;
-  alglib::spline1ddiff(this->s, T, s, ds, dds);
-  
-  return {s, ds, dds};
+std::vector<double> Thermodynamics::get_pressure_derivs(double T) const {
+  check_temperature_range(T, "get_pressure_derivs");
+
+  double pp, dp, ddp;
+  alglib::spline1ddiff(this->p, T, pp, dp, ddp);
+
+  return {pp, dp, ddp};
 }
 
 double Thermodynamics::get_energy(double T) const {
@@ -239,13 +261,14 @@ void ThermalParameters::find_thermal_parameters() {
 			throw std::runtime_error("Minimum temp exceeds maximum temp.");
 		}
 
-	   if(std::abs(maximum_temp - minimum_temp) < dt_tol) {
-		   // throw std::runtime_error("Temperature range is below set tolerance. Phase may not nucleate.");
-		   continue;
-	   }
+		if(std::abs(maximum_temp - minimum_temp) < dt_tol) {
+			// throw std::runtime_error("Temperature range is below set tolerance. Phase may not nucleate.");
+			continue;
+		}
 
-		LOG(debug) << "Creating Thermodynamics classes";
+		LOG(debug) << "Creating true phase Thermodynamics class";
 		Thermodynamics thermo_true(t.true_phase, n_temp, dof);
+		LOG(debug) << "Creating false phase Thermodynamics class";
 		Thermodynamics thermo_false(t.false_phase, n_temp, dof);
 
 		LOG(debug) << "Creating bounce class";
@@ -259,10 +282,44 @@ void ThermalParameters::find_thermal_parameters() {
 		tp_local.hubble_spline = hubble_spline;
 		LOG(debug) << "Created Hubble spline.";
 
+		// some debug information
+		if(compute_debug) {
+			LOG(debug) << "Creating debug info for thermal parameters";
+			ThermalDEBUG debug_local;
+			int n = 75;
+			double dt = (maximum_temp - minimum_temp)/(n-1.);
+			for (double tt = minimum_temp; tt < maximum_temp; tt += dt) {
+				debug_local.temp.push_back(tt);
+				double pf;
+				try {pf = false_vacuum_fraction(hubble_spline, bounce_class, tt, vw);} catch (...) {pf = 1.0;}
+				debug_local.pf.push_back(pf);
+				double nt;
+				try {nt = nucleation_rate(hubble_spline, bounce_class, tt);} catch (...) {nt = 0.0;}
+				debug_local.nt.push_back(nt);
+				double gamma;
+				try {gamma = std::exp(alglib::spline1dcalc(bounce_class.gamma_spline, tt));} catch (...) {gamma = 0.0;}
+				debug_local.gamma.push_back(gamma);
+				double hubble_rate = get_hubble_rate(tt, thermo_true, thermo_false);
+				debug_local.hubble.push_back(hubble_rate);
+				double t;
+				try {t = get_duration(maximum_temp, tt, thermo_true, thermo_false);} catch (...) {t = 0.0;}
+				debug_local.t.push_back(t);
+				LOG(debug) << "Debug info for T = " << tt << ": pf = " << pf
+					<< ", nt = " << nt << ", gamma = " << gamma
+					<< ", hubble_rate = " << hubble_rate
+					<< ", t = " << t;
+			}
+			debug_local.tmin = minimum_temp;
+			debug_local.tmax = maximum_temp;
+			tp_local.debug_info = debug_local;
+			LOG(debug) << "Debug info created.";
+		}
+		
+
 		double tp = 0.0;
 		try { 
 
-			tp = get_percolation_temperature(hubble_spline, bounce_class, 0.35);
+			tp = get_percolation_temperature(hubble_spline, bounce_class, vw);
 			LOG(debug) << "Found percolation temp " << tp;
 			if(abs(tp-t.TC) <= 1e-3) {
 				LOG(debug) << "Percolation temperature is close to critical temperature.";
@@ -278,6 +335,8 @@ void ThermalParameters::find_thermal_parameters() {
 			tp_local.H_tp = H;
 			double beta = betaH * H;
 			tp_local.beta_tp = beta;
+
+			tp_local.eos = get_eos(minimum_temp, maximum_temp, tp, thermo_true, thermo_false);
 
 			tp_local.percolates = MilestoneStatus::YES;
 		} catch (const std::runtime_error &e) {
@@ -336,17 +395,41 @@ void ThermalParameters::find_thermal_parameters() {
 	}
 }
 
+EoS ThermalParameters::get_eos(double Tmin, double Tmax, double Tref, Thermodynamics true_thermo, Thermodynamics false_thermo) {
+
+	EoS out;
+	int N = 50;
+	if(N % 2 == 1) { N += 1; }
+	double dt = (Tmax-Tmin)/(N-1);
+	for (double tt = Tmin; tt < Tref; tt += dt) {
+		out.temp.push_back(tt);
+		out.pressure.push_back(true_thermo.get_pressure(tt));
+		out.energy.push_back(true_thermo.get_energy(tt));
+		out.enthalpy.push_back(true_thermo.get_enthalpy(tt));
+		out.entropy.push_back(true_thermo.get_entropy(tt));
+	}
+	for (double tt = Tref; tt < Tmax; tt += dt) {
+		out.temp.push_back(tt);
+		out.pressure.push_back(false_thermo.get_pressure(tt));
+		out.energy.push_back(false_thermo.get_energy(tt));
+		out.enthalpy.push_back(false_thermo.get_enthalpy(tt));
+		out.entropy.push_back(false_thermo.get_entropy(tt));
+	}
+
+	return out;
+}
+
 double ThermalParameters::get_duration(double TC, double TF, Thermodynamics true_thermo, Thermodynamics false_thermo) {
 
-	int N = 25;
+	int N = 100;
 	double dt = (TC - TF)/(N - 1);
 	std::vector<double> temp_vec, dtdT_vec;
 	
 	for (double tt = TF; tt < TC; tt += dt) {
-		std::vector<double> entropy_vals = true_thermo.get_potential(tt);
-		double s = entropy_vals[0];
-		double ds = entropy_vals[1];
-		double dTdt = -3. * get_hubble_rate(tt, true_thermo, false_thermo) * s/ds;
+		std::vector<double> pressure_vals = true_thermo.get_pressure_derivs(tt);
+		double dp = pressure_vals[1];
+		double ddp = pressure_vals[2];
+		double dTdt = 3. * get_hubble_rate(tt, true_thermo, false_thermo) * dp/ddp;
 		temp_vec.push_back(tt);
 		dtdT_vec.push_back(1/dTdt);
 	}
@@ -359,7 +442,6 @@ double ThermalParameters::get_duration(double TC, double TF, Thermodynamics true
 	alglib::spline1dbuildcubic(temp_array, dtdT_array, dtdT_spline);
 
 	double duration = alglib::spline1dintegrate(dtdT_spline, TC);
-	LOG(debug) << "Computed duration dt = " << duration << std::endl;
 	return duration;
 }
 
@@ -368,7 +450,7 @@ double ThermalParameters::get_alpha(double T, Thermodynamics true_thermo, Thermo
 }
 
 double ThermalParameters::get_hubble_rate(double T, Thermodynamics true_thermo, Thermodynamics false_thermo) {
-	double rho =  dof/30. * M_PI*M_PI * T*T*T*T + (true_thermo.get_energy(T) - false_thermo.get_energy(T));
+	double rho = dof/30. * M_PI*M_PI * T*T*T*T + abs(true_thermo.get_energy(T) - false_thermo.get_energy(T));
 	if(isnan(rho) || rho < 0.0) { rho = dof/30. * M_PI*M_PI * T*T*T*T; } // fall back to RD result
 	double h = sqrt( 8. * M_PI * G/3. * rho);
 	return h;
