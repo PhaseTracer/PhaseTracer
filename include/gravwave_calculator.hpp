@@ -44,8 +44,10 @@ struct GravWaveSpectrum {
   std::vector<double> turbulence;
   std::vector<double> bubble_collision;
   std::vector<double> total_amplitude;
-  std::vector<double> amplitude_ssm;
   std::vector<double> SNR;
+
+  std::vector<double> freq_ssm;
+  std::vector<double> amplitude_ssm;
   
   /** Pretty-printer for GravWaveSpectrum */
   friend std::ostream &operator<<(std::ostream &o, const GravWaveSpectrum &a) {

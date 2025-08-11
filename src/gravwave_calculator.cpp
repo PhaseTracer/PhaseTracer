@@ -285,7 +285,8 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
       } // no handling of failure in both
       GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
       #ifdef BUILD_WITH_DP
-      spi.amplitude_ssm = dp.get_ssm_amplitude(tps, vw, dof, min_frequency, max_frequency, num_frequency);
+      spi.freq_ssm = dp.get_ssm_amplitude(tps, vw, dof, min_frequency, max_frequency, num_frequency).first;
+      spi.amplitude_ssm = dp.get_ssm_amplitude(tps, vw, dof, min_frequency, max_frequency, num_frequency).second;
       auto maxes = dp.get_ssm_max(spi.amplitude_ssm, spi.frequency);
       LOG(debug) << "SSM peak amplitude = " << maxes.first << ", frequency = " << maxes.second;
       if (maxes.first > spi.peak_amplitude) {
@@ -305,7 +306,7 @@ void GravWaveCalculator::write_spectrum_to_text(const GravWaveSpectrum &sp, cons
   for (int ii = 0; ii < sp.frequency.size(); ii++) {
     file << sp.frequency[ii] << ", " << sp.total_amplitude[ii] << ", " << sp.sound_wave[ii] << ", " << sp.turbulence[ii] << ", " << sp.bubble_collision[ii];
     #ifdef BUILD_WITH_DP
-    file << ", " << sp.amplitude_ssm[ii];
+    file << ", " <<  sp.freq_ssm[ii] << ", " << sp.amplitude_ssm[ii];
     #endif
     file << std::endl;
   }

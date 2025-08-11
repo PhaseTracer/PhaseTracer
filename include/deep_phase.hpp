@@ -72,7 +72,7 @@ public:
   GW_DeepPhase() = default;
   ~GW_DeepPhase() = default;
 
-	std::vector<double> get_ssm_amplitude(ThermalParams tps, double vw, double dof, double min_frequency, double max_frequency, int num_frequency) {
+	std::pair<std::vector<double>, std::vector<double>> get_ssm_amplitude(ThermalParams tps, double vw, double dof, double min_frequency, double max_frequency, int num_frequency) {
 
 		// Redirect stdout to LOG(debug) instead of suppressing it
 		std::streambuf* orig_buf = std::cout.rdbuf();
@@ -84,30 +84,25 @@ public:
 			auto params = get_pt_params(tps, vw, dof);
 			params.print();
 
-			double Hconf = params.un().Hs() /(std::pow(params.un().gs() / params.un().g0(), 1./3.) * params.un().Ts() / params.un().T0());
-			double R0 = 1./(1.65e-5 / (params.Rs() * Hconf) * (params.un().Ts() / 100) * std::pow(params.un().gs() / 100, 1./6.));
-			std::cout << "R0 = " << R0 << "\n";
-			std::cout << "Hconf = " << Hconf << "\n";
-			R0 = 1; // TODO
-
-			double kmin = 2*M_PI*min_frequency;
-			double kmax = 2*M_PI*max_frequency;
-
-			double Kmin = kmin*R0; std::cout << "Kmin = " << Kmin << "\n";
-			double Kmax = kmax*R0; std::cout << "Kmax = " << Kmax << "\n";
-			std::vector<double> momentumVec = logspace(Kmin, Kmax, static_cast<std::size_t>(num_frequency));
+			std::vector<double> momentumVec = logspace(1e-3, 1e2, static_cast<std::size_t>(num_frequency));
 
 			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec2(momentumVec, params);
 
-			// OmegaGW.write("gw_spec.csv");
+			double Rs0_inv = 1.65e-5 / params.Rs() * (params.un().Ts() / 100) * std::pow(params.un().gs() / 100, 1./6.);
+			std::vector<double> ssmfreqVec;
+			for (const auto& K : momentumVec) {
+				double k = K * Rs0_inv;
+				double f = k/(2.*M_PI);
+				ssmfreqVec.push_back(f);
+			}
 
 			// Restore stdout
 			std::cout.rdbuf(orig_buf);
 			// Flush any remaining content in the log buffer
 			log_buffer.pubsync();
 
-			return OmegaGW.P();
-			
+			return {ssmfreqVec, OmegaGW.P()};
+
 		} catch (...) {
 			// Ensure stdout is restored even if an exception occurs
 			std::cout.rdbuf(orig_buf);
@@ -158,8 +153,9 @@ private :
 			double betaH = tps.betaH_tn;
 			double Tref = tps.TN;
 			double wN = tps.we_tn;
+			double dtau = tps.dt * tps.H_tn;
 			PhaseTransition::Universe un = get_universe(tps, dof);
-			return PhaseTransition::PTParams(vw, alpha, betaH, 0.001, wN, "exp", un);
+			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
 		} else if (tps.percolates == MilestoneStatus::YES) {
 			// Validate inputs
 			if (tps.alpha_tp <= 0 || tps.betaH_tp <= 0 || tps.beta_tp <= 0) {
@@ -169,8 +165,9 @@ private :
 			double betaH = tps.betaH_tp;
 			double Tref = tps.TP;
 			double wN = tps.we_tp;
+			double dtau = tps.dt * tps.H_tp;
 			PhaseTransition::Universe un = get_universe(tps, dof);
-			return PhaseTransition::PTParams(vw, alpha, betaH, 0.001, wN, "exp", un);
+			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
 		}
 		PhaseTransition::PTParams pt;
 		return pt;
