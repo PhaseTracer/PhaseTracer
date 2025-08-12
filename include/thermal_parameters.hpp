@@ -219,11 +219,12 @@ struct EoS {
 struct ThermalParams {
   size_t key;
   alglib::spline1dinterpolant hubble_spline;
+  alglib::spline1dinterpolant dtdT_spline;
   double TC;
   double TN;
   double TP;
   double TF;
-  double dt;
+  double dtf_tc, dtf_tp, dtf_tn;
   double alpha_tp, alpha_tn;
   double betaH_tp, betaH_tn;
   double beta_tp, beta_tn;
@@ -256,7 +257,8 @@ struct ThermalParams {
       << "  beta (GeV) = " << tp.beta_tn << "\n"
       << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tn << "\n"
       << "  H (GeV⁻¹) = " << tp.H_tn << "\n"
-      << "  enthalpy/energy ratio = " << tp.we_tn << "\n";
+      << "  enthalpy/energy ratio = " << tp.we_tn << "\n"
+      << "  tf - tn = " << tp.dtf_tn << "\n";
     } else if (tp.nucleates == MilestoneStatus::INVALID) {
       o << "nucleation temperature = " << tp.TN << "\n"
       << "  transition nucleates after completion!" << "\n"
@@ -271,7 +273,8 @@ struct ThermalParams {
     }
     if(tp.completes == MilestoneStatus::YES) {
       o << "completion temperature = " << tp.TF << "\n";
-      o << "  tf - tc = " << tp.dt << "\n";
+      o << "  tf - tc = " << tp.dtf_tc << "\n";
+      o << "  tf - tp = " << tp.dtf_tp << "\n";
     } else {
       o << "transition does not complete." << "\n";
     }
@@ -373,16 +376,15 @@ private:
 
   /**
    * @brief Calculates the duration of the transition
-   * @param TC Critical temperature
-   * @param TF Final temperature
-   * @param true_thermo True vacuum phase thermodynamics
+   * @param dtdT_spline Time temperature relation
+   * @param tStart Start temperature
+   * @param tEnd End temperature
    * @return Duration of the transition in GeV⁻¹
    */
   double get_duration(
-    double TC, 
-    double TF, 
-    Thermodynamics true_thermo,
-    Thermodynamics false_thermo
+    alglib::spline1dinterpolant& dtdT_spline,
+    double tStart, 
+    double tEnd
   );
 
   /**
@@ -437,7 +439,25 @@ private:
     Thermodynamics false_phase, 
     double t_min, 
     double t_max, 
-    double n_temp = 50
+    double n_temp = 100
+  );
+
+  /**
+   * @brief Solves the time temp relation through the transition
+   * @param dtdT_spline Output parameter for the spline
+   * @param true_phase True vacuum phase thermodynamics
+   * @param false_phase False vacuum phase thermodynamics
+   * @param t_min Minimum temperature
+   * @param t_max Maximum temperature
+   * @param n_temp Number of temperature points for spline
+   */
+  void make_dtdT_spline(
+    alglib::spline1dinterpolant& dtdT_spline, 
+    Thermodynamics true_phase, 
+    Thermodynamics false_phase, 
+    double t_min, 
+    double t_max, 
+    double n_temp = 100
   );
 
   /**

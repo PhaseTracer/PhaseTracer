@@ -260,7 +260,13 @@ void ThermalParameters::find_thermal_parameters() {
 		tp_local.hubble_spline = hubble_spline;
 		LOG(debug) << "Created Hubble spline.";
 
+		alglib::spline1dinterpolant dtdT_spline;
+		this->make_dtdT_spline(dtdT_spline, thermo_true, thermo_false, minimum_temp, maximum_temp);
+		tp_local.dtdT_spline = dtdT_spline;
+		LOG(debug) << "Created dtdT spline.";
+
 		// some debug information
+		// this could be renamed down the line
 		if(compute_debug) {
 			LOG(debug) << "Creating debug info for thermal parameters";
 			ThermalDEBUG debug_local;
@@ -280,7 +286,7 @@ void ThermalParameters::find_thermal_parameters() {
 				double hubble_rate = get_hubble_rate(tt, thermo_true, thermo_false);
 				debug_local.hubble.push_back(hubble_rate);
 				double t;
-				try {t = get_duration(maximum_temp, tt, thermo_true, thermo_false);} catch (...) {t = 0.0;}
+				try {t = get_duration(dtdT_spline, maximum_temp, tt);} catch (...) {t = 0.0;}
 				debug_local.t.push_back(t);
 				LOG(debug) << "Debug info for T = " << tt << ": pf = " << pf
 					<< ", nt = " << nt << ", gamma = " << gamma
@@ -334,7 +340,8 @@ void ThermalParameters::find_thermal_parameters() {
 				continue;
 			}
 			tp_local.TF = tfin;
-			tp_local.dt = get_duration(maximum_temp, tfin, thermo_true, thermo_false);
+			tp_local.dtf_tc = get_duration(dtdT_spline, maximum_temp, tfin);
+			tp_local.dtf_tp = get_duration(dtdT_spline, tp, tfin);
 			tp_local.completes = MilestoneStatus::YES;
 		} catch (const std::runtime_error &e) {
 			tp_local.completes = MilestoneStatus::NO;
@@ -367,6 +374,7 @@ void ThermalParameters::find_thermal_parameters() {
 				tp_local.nucleates = MilestoneStatus::INVALID;
 			} else {
 				tp_local.nucleates = MilestoneStatus::YES;
+				tp_local.dtf_tn = get_duration(dtdT_spline, tn, tfin);
 			}
 		} catch (const std::runtime_error &e) {
 			tp_local.nucleates = MilestoneStatus::NO;
@@ -405,29 +413,9 @@ double ThermalParameters::get_we(double Tref, Thermodynamics true_thermo) {
 	return true_thermo.get_enthalpy(Tref)/true_thermo.get_energy(Tref);
 }
 
-double ThermalParameters::get_duration(double TC, double TF, Thermodynamics true_thermo, Thermodynamics false_thermo) {
+double ThermalParameters::get_duration(alglib::spline1dinterpolant& dtdT_spline, double tStart, double tEnd) {
 
-	int N = 100;
-	double dt = (TC - TF)/(N - 1);
-	std::vector<double> temp_vec, dtdT_vec;
-	
-	for (double tt = TF; tt < TC; tt += dt) {
-		std::vector<double> pressure_vals = true_thermo.get_pressure_derivs(tt);
-		double dp = pressure_vals[1];
-		double ddp = pressure_vals[2];
-		double dTdt = 3. * get_hubble_rate(tt, true_thermo, false_thermo) * dp/ddp;
-		temp_vec.push_back(tt);
-		dtdT_vec.push_back(1/dTdt);
-	}
-	
-	alglib::real_1d_array temp_array, dtdT_array;
-	temp_array.setcontent(temp_vec.size(), temp_vec.data());
-	dtdT_array.setcontent(dtdT_vec.size(), dtdT_vec.data());
-	
-	alglib::spline1dinterpolant dtdT_spline;
-	alglib::spline1dbuildcubic(temp_array, dtdT_array, dtdT_spline);
-
-	double duration = alglib::spline1dintegrate(dtdT_spline, TC);
+	double duration = alglib::spline1dintegrate(dtdT_spline, tStart) - alglib::spline1dintegrate(dtdT_spline, tEnd);
 	return duration;
 }
 
@@ -464,6 +452,26 @@ void ThermalParameters::make_hubble_spline(alglib::spline1dinterpolant& hubble_s
 	}
 
 	alglib::spline1dbuildcubic(temp_array, integrand_array, hubble_spline);
+}
+
+void ThermalParameters::make_dtdT_spline(alglib::spline1dinterpolant& dtdT_spline, Thermodynamics true_thermo, Thermodynamics false_thermo, double t_min, double t_max, double n_temp) {
+
+	alglib::real_1d_array temp_array, dtdT_array;
+	temp_array.setlength(n_temp);
+	dtdT_array.setlength(n_temp);
+
+	double dt = (t_max - t_min) / (n_temp - 1);
+	for (int i = 0; i < n_temp; i++) {
+		double tt = t_min + i * dt;
+		std::vector<double> pressure_vals = true_thermo.get_pressure_derivs(tt);
+		double dp = pressure_vals[1];
+		double ddp = pressure_vals[2];
+		double dTdt = 3. * get_hubble_rate(tt, true_thermo, false_thermo) * dp/ddp;
+		temp_array[i] = tt;
+		dtdT_array[i] = 1/dTdt;
+	}
+
+	alglib::spline1dbuildcubic(temp_array, dtdT_array, dtdT_spline);
 }
 
 double ThermalParameters::hubble_integral(alglib::spline1dinterpolant& hubble_spline, double T, double Tdash) {
