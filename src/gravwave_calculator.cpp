@@ -285,9 +285,10 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
       } // no handling of failure in both
       GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
       #ifdef BUILD_WITH_DP
-      spi.freq_ssm = dp.get_ssm_amplitude(tps, vw, dof, min_frequency, max_frequency, num_frequency).first;
-      spi.amplitude_ssm = dp.get_ssm_amplitude(tps, vw, dof, min_frequency, max_frequency, num_frequency).second;
-      auto maxes = dp.get_ssm_max(spi.amplitude_ssm, spi.frequency);
+      std::pair<std::vector<double>, std::vector<double>> ssm_spectrum = dp.get_ssm_amplitude(tps, vw, dof, min_frequency, max_frequency, num_frequency_ssm);
+      spi.freq_ssm = ssm_spectrum.first;
+      spi.amplitude_ssm = ssm_spectrum.second;
+      auto maxes = dp.get_ssm_max(spi.amplitude_ssm, spi.freq_ssm);
       LOG(debug) << "SSM peak amplitude = " << maxes.first << ", frequency = " << maxes.second;
       if (maxes.first > spi.peak_amplitude) {
         spi.peak_amplitude = maxes.first;
