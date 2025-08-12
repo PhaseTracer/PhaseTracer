@@ -252,8 +252,7 @@ struct ThermalParams {
       << "  alpha = " << tp.alpha_tn << "\n"
       << "  beta/H = " << tp.betaH_tn << "\n"
       << "  H (GeV⁻¹) = " << tp.H_tn << "\n"
-      << "  enthalpy/energy ratio = " << tp.we_tn << "\n"
-      << "  tf - tn = " << tp.dtf_tn << "\n";
+      << "  enthalpy/energy ratio = " << tp.we_tn << "\n";
     } else if (tp.nucleates == MilestoneStatus::INVALID) {
       o << "nucleation temperature = " << tp.TN << "\n"
       << "  transition nucleates after completion!" << "\n"
@@ -265,9 +264,12 @@ struct ThermalParams {
       o << "transition does not nucleate." << "\n";
     }
     if(tp.completes == MilestoneStatus::YES) {
-      o << "completion temperature = " << tp.TF << "\n";
-      o << "  tf - tc = " << tp.dtf_tc << "\n";
-      o << "  tf - tp = " << tp.dtf_tp << "\n";
+      o << "completion temperature = " << tp.TF << "\n"
+      << "  tf - tc = " << tp.dtf_tc << "\n"
+      << "  tf - tp = " << tp.dtf_tp << "\n";
+      if (tp.nucleates == MilestoneStatus::YES) {
+        o << "  tf - tn = " << tp.dtf_tn << "\n";
+      }
     } else {
       o << "transition does not complete." << "\n";
     }

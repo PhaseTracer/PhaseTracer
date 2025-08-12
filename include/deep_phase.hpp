@@ -154,7 +154,7 @@ private :
 			double betaH = tps.betaH_tn;
 			double Tref = tps.TN;
 			double wN = tps.we_tn;
-			double dtau = tps.dtf_tc * tps.H_tn;
+			double dtau = tps.dtf_tc;
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
 		} else if (tps.percolates == MilestoneStatus::YES) {
@@ -166,7 +166,7 @@ private :
 			double betaH = tps.betaH_tp;
 			double Tref = tps.TP;
 			double wN = tps.we_tp;
-			double dtau = tps.dtf_tc * tps.H_tp;
+			double dtau = tps.dtf_tc;
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
 		}
