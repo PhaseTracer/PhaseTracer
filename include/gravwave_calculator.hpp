@@ -164,6 +164,8 @@ private:
   PROPERTY(double, max_frequency, 1e1);
   /** Number of points for  the frequency of the GW spectrum */
   PROPERTY(int, num_frequency, 500);
+  /** Number of points for  the frequency of the SSM GW spectrum */
+  PROPERTY(int, num_frequency_ssm, 100);
   /** Temperature threshold for using bubble collision */
   PROPERTY(double, T_threshold_bubble_collision, 10);
 

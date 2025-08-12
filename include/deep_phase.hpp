@@ -72,7 +72,7 @@ public:
   GW_DeepPhase() = default;
   ~GW_DeepPhase() = default;
 
-	std::pair<std::vector<double>, std::vector<double>> get_ssm_amplitude(ThermalParams tps, double vw, double dof, double min_frequency, double max_frequency, int num_frequency) {
+	std::pair<std::vector<double>, std::vector<double>> get_ssm_amplitude(ThermalParams tps, double vw, double dof, double min_frequency, double max_frequency, int num_frequency_ssm) {
 
 		// Redirect stdout to LOG(debug) instead of suppressing it
 		std::streambuf* orig_buf = std::cout.rdbuf();
@@ -84,7 +84,7 @@ public:
 			auto params = get_pt_params(tps, vw, dof);
 			params.print();
 
-			std::vector<double> momentumVec = logspace(1e-3, 1e2, static_cast<std::size_t>(num_frequency));
+			std::vector<double> momentumVec = logspace(1e-3, 1e2, static_cast<std::size_t>(num_frequency_ssm));
 
 			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec2(momentumVec, params);
 
