@@ -227,7 +227,6 @@ struct ThermalParams {
   double dtf_tc, dtf_tp, dtf_tn;
   double alpha_tp, alpha_tn;
   double betaH_tp, betaH_tn;
-  double beta_tp, beta_tn;
   double H_tp, H_tn;
   double we_tn, we_tp;
   EoS eos;
@@ -243,8 +242,6 @@ struct ThermalParams {
       o << "percolation temperature = " << tp.TP << "\n"
       << "  alpha = " << tp.alpha_tp << "\n"
       << "  beta/H = " << tp.betaH_tp << "\n"
-      << "  beta (GeV) = " << tp.beta_tp << "\n"
-      << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tp << "\n"
       << "  H (GeV⁻¹) = " << tp.H_tp << "\n"
       << "  enthalpy/energy ratio = " << tp.we_tp << "\n";
     } else {
@@ -254,8 +251,6 @@ struct ThermalParams {
       o << "nucleation temperature = " << tp.TN << "\n"
       << "  alpha = " << tp.alpha_tn << "\n"
       << "  beta/H = " << tp.betaH_tn << "\n"
-      << "  beta (GeV) = " << tp.beta_tn << "\n"
-      << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tn << "\n"
       << "  H (GeV⁻¹) = " << tp.H_tn << "\n"
       << "  enthalpy/energy ratio = " << tp.we_tn << "\n"
       << "  tf - tn = " << tp.dtf_tn << "\n";
@@ -264,8 +259,6 @@ struct ThermalParams {
       << "  transition nucleates after completion!" << "\n"
       << "  alpha = " << tp.alpha_tn << "\n"
       << "  beta/H = " << tp.betaH_tn << "\n"
-      << "  beta (GeV) = " << tp.beta_tn << "\n"
-      << "  1/beta (GeV⁻¹) = " << 1/tp.beta_tn << "\n"
       << "  H (GeV⁻¹) = " << tp.H_tn << "\n"
       << "  enthalpy/energy ratio = " << tp.we_tn << "\n";
     } else {

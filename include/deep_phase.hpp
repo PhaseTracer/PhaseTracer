@@ -88,11 +88,12 @@ public:
 
 			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec2(momentumVec, params);
 
-			double Rs0_inv = 1.65e-5 / params.Rs() * (params.un().Ts() / 100) * std::pow(params.un().gs() / 100, 1./6.);
+			double Rs_inv = 1/params.Rs();
+			double Rs0_inv = 1.65e-5 * Rs_inv * (params.un().Ts() / 100) * std::pow(params.un().gs() / 100, 1./6.);
 			std::vector<double> ssmfreqVec;
 			for (const auto& K : momentumVec) {
 				double k = K * Rs0_inv;
-				double f = k/(2.*M_PI);
+				double f = k / (2.*M_PI);
 				ssmfreqVec.push_back(f);
 			}
 
@@ -146,26 +147,26 @@ private :
 	PhaseTransition::PTParams get_pt_params(ThermalParams tps, double vw, double dof) {
 		if (tps.nucleates == MilestoneStatus::YES) {
 			// Validate inputs
-			if (tps.alpha_tn <= 0 || tps.betaH_tn <= 0 || tps.beta_tn <= 0) {
+			if (tps.alpha_tn <= 0 || tps.betaH_tn <= 0) {
 				throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
 			}
 			double alpha = tps.alpha_tn;
 			double betaH = tps.betaH_tn;
 			double Tref = tps.TN;
 			double wN = tps.we_tn;
-			double dtau = tps.dt * tps.H_tn;
+			double dtau = tps.dtf_tc * tps.H_tn;
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
 		} else if (tps.percolates == MilestoneStatus::YES) {
 			// Validate inputs
-			if (tps.alpha_tp <= 0 || tps.betaH_tp <= 0 || tps.beta_tp <= 0) {
+			if (tps.alpha_tp <= 0 || tps.betaH_tp <= 0) {
 				throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
 			}
 			double alpha = tps.alpha_tp;
 			double betaH = tps.betaH_tp;
 			double Tref = tps.TP;
 			double wN = tps.we_tp;
-			double dtau = tps.dt * tps.H_tp;
+			double dtau = tps.dtf_tc * tps.H_tp;
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
 		}

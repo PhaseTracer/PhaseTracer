@@ -317,8 +317,6 @@ void ThermalParameters::find_thermal_parameters() {
 			tp_local.betaH_tp = betaH;
 			double H = get_hubble_rate(tp, thermo_true, thermo_false);
 			tp_local.H_tp = H;
-			double beta = betaH * H;
-			tp_local.beta_tp = beta;
 			double we = get_we(tp, thermo_true);
 			tp_local.we_tp = we;
 
@@ -364,8 +362,6 @@ void ThermalParameters::find_thermal_parameters() {
 			tp_local.betaH_tn = betaH;
 			double H = get_hubble_rate(tn, thermo_true, thermo_false);
 			tp_local.H_tn = H;
-			double beta = betaH * H;
-			tp_local.beta_tn = beta;
 			double we = get_we(tn, thermo_true);
 			tp_local.we_tn = we;
 
