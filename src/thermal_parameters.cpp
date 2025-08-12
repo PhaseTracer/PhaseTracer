@@ -338,8 +338,8 @@ void ThermalParameters::find_thermal_parameters() {
 				continue;
 			}
 			tp_local.TF = tfin;
-			tp_local.dtf_tc = get_duration(dtdT_spline, maximum_temp, tfin);
-			tp_local.dtf_tp = get_duration(dtdT_spline, tp, tfin);
+			tp_local.dtf_tc = get_duration(dtdT_spline, maximum_temp, tfin) * tp_local.H_tp;
+			tp_local.dtf_tp = get_duration(dtdT_spline, tp, tfin) * tp_local.H_tp;
 			tp_local.completes = MilestoneStatus::YES;
 		} catch (const std::runtime_error &e) {
 			tp_local.completes = MilestoneStatus::NO;
@@ -370,7 +370,7 @@ void ThermalParameters::find_thermal_parameters() {
 				tp_local.nucleates = MilestoneStatus::INVALID;
 			} else {
 				tp_local.nucleates = MilestoneStatus::YES;
-				tp_local.dtf_tn = get_duration(dtdT_spline, tn, tfin);
+				tp_local.dtf_tn = get_duration(dtdT_spline, tn, tfin) * tp_local.H_tn;
 			}
 		} catch (const std::runtime_error &e) {
 			tp_local.nucleates = MilestoneStatus::NO;
