@@ -92,6 +92,7 @@ public:
   double Kappa_sound_wave(double alpha) const;
   double GW_bubble_collision(double f, double alpha, double beta_H, double T_ref) const;
   double GW_sound_wave(double f, double alpha, double beta_H, double T_ref) const;
+  double GW_sound_wave(double f, double alpha, double beta_H, double T_ref, double zp, double Gamma) const;
   double GW_turbulence(double f, double alpha, double beta_H, double T_ref) const;
 
   /** Calculate GW spectrum for one transition */

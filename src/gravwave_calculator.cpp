@@ -135,10 +135,8 @@ double GravWaveCalculator::GW_bubble_collision(double f, double alpha, double be
   return omega_env;
 }
 
-double GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, double T_ref) const {
+double GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, double T_ref, double zp, double Gamma) const {
   double F_gw0 = 3.57e-5 * pow(100/dof, 1./3.);
-  double zp = 10;
-  double Gamma = 4./3.;
   double HRs = pow(8.*M_PI, 1./3.) * vw / beta_H;
   double f_peak_sw = 2.6e-5 * (zp/10) * (T_ref/100.) * pow(dof/100., 1./6.) / HRs;
   double S_sw = (f/f_peak_sw) * (f/f_peak_sw) * (f/f_peak_sw) * pow(7./(4. + 3.*(f/f_peak_sw)*(f/f_peak_sw)), 7./2.);
@@ -148,6 +146,10 @@ double GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, 
   double H_tau = HRs / sqrt(K_sw / Gamma);
   omega_sw = omega_sw * std::min(1.0, H_tau);
   return omega_sw;
+}
+
+double GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, double T_ref) const {
+  return GravWaveCalculator::GW_sound_wave(f, alpha, beta_H, T_ref, 10., 4./3.);
 }
 
 double GravWaveCalculator::GW_turbulence(double f, double alpha, double beta_H, double T_ref) const {
