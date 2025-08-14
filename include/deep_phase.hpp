@@ -69,8 +69,9 @@ class GW_DeepPhase {
 
 public:
 
-  GW_DeepPhase() = default;
-  ~GW_DeepPhase() = default;
+	GW_DeepPhase() = default;
+	~GW_DeepPhase() = default;
+	double zp;
 
 	std::pair<std::vector<double>, std::vector<double>> get_ssm_amplitude(ThermalParams tps, double vw, double dof, double min_frequency, double max_frequency, int num_frequency_ssm) {
 
@@ -87,6 +88,17 @@ public:
 			std::vector<double> momentumVec = logspace(1e-3, 1e2, static_cast<std::size_t>(num_frequency_ssm));
 
 			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec2(momentumVec, params);
+		
+			// optional code to evaluate zp to feed into GravWaveCalculator
+			double zp_temp = 0;
+			double p_max = 0;
+			for (size_t i = 0; i < OmegaGW.P().size(); i++) {
+				if (OmegaGW.P()[i] > p_max) {
+					p_max = OmegaGW.P()[i];
+					zp_temp = OmegaGW.K()[i];
+				}
+			}
+			zp = zp_temp;
 
 			double Rs_inv = 1/params.Rs();
 			double Rs0_inv = 1.65e-5 * Rs_inv * (params.un().Ts() / 100) * std::pow(params.un().gs() / 100, 1./6.);
@@ -155,7 +167,9 @@ private :
 			double Tref = tps.TN;
 			double wN = tps.we_tn;
 			double dtau = tps.dtf_tc;
+			dtau = 1/betaH;
 			PhaseTransition::Universe un = get_universe(tps, dof);
+			un.print();
 			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
 		} else if (tps.percolates == MilestoneStatus::YES) {
 			// Validate inputs
@@ -167,7 +181,9 @@ private :
 			double Tref = tps.TP;
 			double wN = tps.we_tp;
 			double dtau = tps.dtf_tc;
+			dtau = 1/betaH;
 			PhaseTransition::Universe un = get_universe(tps, dof);
+			un.print();
 			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
 		}
 		PhaseTransition::PTParams pt;
