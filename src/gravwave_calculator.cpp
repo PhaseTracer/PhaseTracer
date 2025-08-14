@@ -136,15 +136,16 @@ double GravWaveCalculator::GW_bubble_collision(double f, double alpha, double be
 }
 
 double GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, double T_ref) const {
-  double omega_sw;
-  double omega_sw_peak;
-  double Hstar_R = pow(beta_H, -1.) * pow(8 * 3.1415926, 1. / 3) * vw;
-  double f_peak_sw = 2.6e-5 / Hstar_R * (T_ref / 100) * pow(dof / 100, 1. / 6);
+  double F_gw0 = 3.57e-5 * pow(100/dof, 1./3.);
+  double zp = 10;
+  double Gamma = 4./3.;
+  double HRs = pow(8.*M_PI, 1./3.) * vw / beta_H;
+  double f_peak_sw = 2.6e-5 * (zp/10) * (T_ref/100.) * pow(dof/100., 1./6.) / HRs;
+  double S_sw = (f/f_peak_sw) * (f/f_peak_sw) * (f/f_peak_sw) * pow(7./(4. + 3.*(f/f_peak_sw)*(f/f_peak_sw)), 7./2.);
   double K_sw = Kappa_sound_wave(alpha) * alpha / (1 + alpha);
-  double H_tau = Hstar_R / sqrt(3 * K_sw / 4);
-  omega_sw_peak = 2.061 * 0.678 * 0.678 * 3.57e-5 * pow(100 / dof, 1. / 3) * 0.012 * Hstar_R * pow(K_sw, 2.);
-  omega_sw = omega_sw_peak * pow(f / f_peak_sw, 3.) *
-             pow(7. / (4. + 3. * pow(f / f_peak_sw, 2.)), 7. / 2);
+  double omega_sw_peak = 2.061 * 0.678*0.678 * F_gw0 * K_sw*K_sw * HRs * 0.012;
+  double omega_sw = omega_sw_peak * S_sw;
+  double H_tau = HRs / sqrt(K_sw / Gamma);
   omega_sw = omega_sw * std::min(1.0, H_tau);
   return omega_sw;
 }
