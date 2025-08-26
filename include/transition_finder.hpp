@@ -44,6 +44,113 @@ enum Message { SUCCESS,
                NON_OVERLAPPING_T,
                ERROR };
 
+// A polynomial fitting function created by DeepSeek.
+class PolynomialFitterEigen {
+public:
+  void fit(const std::vector<double> &x, const std::vector<double> &y, double TC_, int degree) {
+    TC = TC_;
+
+    int n = x.size();
+    if (n < degree * 2)
+      return;
+
+    Eigen::MatrixXd X(n, degree + 1);
+    Eigen::VectorXd Y(n);
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j <= degree; j++) {
+        X(i, j) = std::pow(x[i], j);
+      }
+      Y(i) = y[i];
+    }
+    coefficients = (X.transpose() * X).ldlt().solve(X.transpose() * Y);
+  }
+  double predict(double x) const {
+    double result = 0.0;
+    for (int i = 0; i < coefficients.size(); i++) {
+      result += coefficients[i] * std::pow(x, i);
+    }
+    return result;
+  }
+  std::vector<double> predict(const std::vector<double> &x) const {
+    std::vector<double> result;
+    result.reserve(x.size());
+    for (int i = 0; i < x.size(); i++) {
+      result.push_back(predict(x[i]));
+    }
+    return result;
+  }
+
+  double derivative(double x) const {
+    double result = 0.0;
+    for (int i = 1; i < coefficients.size(); i++) {
+      result += i * coefficients[i] * std::pow(x, i - 1);
+    }
+    return result;
+  }
+  double secondDerivative(double x) const {
+    double result = 0.0;
+    for (int i = 2; i < coefficients.size(); i++) {
+      result += i * (i - 1) * coefficients[i] * std::pow(x, i - 2);
+    }
+    return result;
+  }
+
+  double findLocalMinimum(double initial_guess = 0.0, double tolerance = 1e-4, int max_iterations = 100) const {
+    double x = initial_guess;
+    for (int i = 0; i < max_iterations; i++) {
+      double f = derivative(x);
+      double f_prime = secondDerivative(x);
+      if (std::abs(f_prime) < 1e-12 || f_prime < 0) {
+        x = x - 0.1 * f;
+        continue;
+      }
+      double delta = f / f_prime;
+      x = x - delta;
+      if (std::abs(delta) < tolerance && f_prime > 0) {
+        break;
+      }
+    }
+    if (secondDerivative(x) > 0) {
+      return x;
+    } else {
+      return std::numeric_limits<double>::quiet_NaN();
+    }
+  }
+
+  const Eigen::VectorXd &getCoefficients() const {
+    return coefficients;
+  }
+
+  const void cal_MSE(const std::vector<double> &x, const std::vector<double> &y) {
+    MSE = 0;
+    std::vector<double> fitted_y = predict(x);
+    for (size_t i = 0; i < y.size(); ++i) {
+      MSE += pow(y[i] / pow(TC - x[i], 2) / x[i] - fitted_y[i] / pow(TC - x[i], 2) / x[i], 2);
+    }
+    MSE = MSE / y.size();
+    if (MSE < 10) {
+      success = true;
+    }
+  }
+  const double get_MSE() const {
+    return MSE;
+  }
+  const bool get_success() const {
+    return success;
+  }
+
+  const double get_S3T(double x) const {
+    double S3T = predict(x) / pow(TC - x, 2) / x;
+    return std::min(S3T, 1E30);
+  }
+
+private:
+  Eigen::VectorXd coefficients;
+  double TC;
+  double MSE = 1E10;
+  bool success = false;
+};
+
 struct Transition {
   /** Data about a particular transition */
   Message message;
@@ -62,6 +169,8 @@ struct Transition {
   Eigen::VectorXd true_vacuum_TN;
   Eigen::VectorXd false_vacuum_TN;
   bool subcritical = false;
+
+  PolynomialFitterEigen action_curve;
 
   Transition(Message message) : message(message) {};
 
@@ -98,6 +207,9 @@ struct Transition {
     false_vacuum_TN = false_vacuum;
   }
 
+  void set_action_curve(PolynomialFitterEigen action_curve_) {
+    action_curve = action_curve_;
+  }
   /** Pretty-printer for single transition */
   friend std::ostream &operator<<(std::ostream &o, const Transition &a) {
     if (a.message == SUCCESS) {
@@ -116,6 +228,13 @@ struct Transition {
         << "delta potential (TC) = " << a.delta_potential << std::endl;
 
       if (a.calculate_action) {
+        if (a.action_curve.get_success()) {
+          o << "Action curve fitting succeeded with MSE = "
+            << a.action_curve.get_MSE() << std::endl;
+        } else {
+          o << "Action curve fitting failed, MSE = "
+            << a.action_curve.get_MSE() << std::endl;
+        }
         o << "TN = " << a.TN << std::endl
           << "false vacuum (TN) = " << a.true_vacuum_TN << std::endl
           << "true vacuum (TN) = " << a.false_vacuum_TN << std::endl;
@@ -176,7 +295,9 @@ public:
 
   void write_action_to_text(const Transition &tran, const std::string &filename, size_t n_step = 50, size_t i_unique = 0) const;
 
-  double get_Tnuc(const Phase &phase1, const Phase &phase2, size_t i_unique, double T_begin, double T_end) const;
+  PolynomialFitterEigen get_action_curve(const Phase &phase1, const Phase &phase2, size_t i_unique, double T_begin, double T_end) const;
+
+  std::pair<double, PolynomialFitterEigen> get_Tnuc(const Phase &phase1, const Phase &phase2, size_t i_unique, double T_begin, double T_end) const;
 
   /** Retrieve all transition paths */
   std::vector<TransitionGraph::Path> get_transition_paths() const { return transition_paths; }
@@ -240,6 +361,11 @@ private:
   PROPERTY(double, Tnuc_step, 1.)
   /** Relative precision in nucleation temperature */
   PROPERTY(double, Tnuc_tol_rel, 1.e-3)
+
+  /** Number of nodes for getting action curve */
+  PROPERTY(double, action_curve_nodes, 30)
+  /** Order of polynomial fitting for action curve */
+  PROPERTY(double, action_curve_order, 6)
 
   PROPERTY(bool, calculate_action, false)
 

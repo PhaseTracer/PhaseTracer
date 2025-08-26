@@ -112,10 +112,11 @@ std::vector<Transition> TransitionFinder::find_transition(const Phase &phase1, c
       }
     }
 
-    double TN = get_Tnuc(phase1, phase2, i_selected, TC, T1);
+    auto [TN, action_curve] = get_Tnuc(phase1, phase2, i_selected, TC, T1);
     if (!std::isnan(TN)) {
       const auto vacua = get_vacua_at_T(phase1, phase2, TN, i_selected);
       unique_transitions[i_selected].set_nucleation(TN, vacua[0], vacua[1]);
+      unique_transitions[i_selected].set_action_curve(action_curve);
     }
     return {unique_transitions[i_selected]};
   } else {
@@ -123,7 +124,58 @@ std::vector<Transition> TransitionFinder::find_transition(const Phase &phase1, c
   }
 }
 
-double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size_t i_unique, double T_begin, double T_end) const {
+PolynomialFitterEigen TransitionFinder::get_action_curve(const Phase &phase1, const Phase &phase2, size_t i_unique, double TC, double T_end) const {
+
+  PolynomialFitterEigen action_curve;
+
+  // Get the nodes
+  std::vector<double> T_list;
+  double Tmax = TC - Tnuc_tol_rel;             // At TC action = infinity
+  double Tmin = std::max(T_end, Tnuc_tol_rel); // We need S/T, so Tmin != 0
+  if (Tmax <= Tmin) {
+    return action_curve;
+  }
+  for (double Ti = Tmin; Ti <= Tmax; Ti += (Tmax - Tmin) / action_curve_nodes) {
+    T_list.push_back(Ti);
+  }
+  std::vector<double> action_list = get_action(phase1, phase2, T_list, i_unique);
+
+  // Filter the nodes
+  std::vector<double> x;
+  std::vector<double> y;
+  x.reserve(action_list.size());
+  y.reserve(action_list.size());
+  for (size_t i = 0; i < action_list.size(); ++i) {
+    double S3T = action_list[i] / T_list[i];
+    if (S3T > 1 and S3T < 1000) {
+      x.push_back(T_list[i]);
+      y.push_back(action_list[i] * pow(TC - T_list[i], 2));
+    }
+  }
+  x.shrink_to_fit();
+  y.shrink_to_fit();
+
+  // Perform fit
+  action_curve.fit(x, y, TC, action_curve_order);
+  action_curve.cal_MSE(x, y);
+
+  std::ofstream output_file;
+  output_file.open("action_curve_output.txt");
+  output_file << T_end << "\t" << TC << "\t";
+  Eigen::VectorXd ki = action_curve.getCoefficients();
+  for (int i = 0; i < ki.size(); i++) {
+    output_file << std::setprecision(15) << ki[i] << "\t";
+  }
+  output_file << action_curve.get_MSE() << std::endl;
+  for (size_t i = 0; i < x.size(); ++i) {
+    output_file << x[i] << "\t" << y[i] / pow(TC - x[i], 2) << std::endl;
+  }
+  output_file.close();
+
+  return action_curve;
+}
+
+std::pair<double, PolynomialFitterEigen> TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size_t i_unique, double T_begin, double T_end) const {
 
   if (T_begin < T_end) {
     LOG(trace) << "T_begin < T_end, so swap the values";
@@ -132,12 +184,17 @@ double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size
 
   LOG(debug) << "Find nucleation temperature between " << phase1.key << " and " << phase2.key << " in [" << T_begin << ", " << T_end << "]";
 
-  const auto nucleation_criteria = [this, phase1, phase2, i_unique](double Ttry) {
-    return this->get_action(phase1, phase2, Ttry, i_unique) / Ttry - 140.;
+  PolynomialFitterEigen action_curve = get_action_curve(phase1, phase2, i_unique, T_begin, T_end);
+
+  const auto nucleation_criteria = [this, phase1, phase2, i_unique, action_curve](double Ttry) {
+    if (action_curve.get_success()) {
+      return action_curve.get_S3T(Ttry) - 140.;
+    } else {
+      return this->get_action(phase1, phase2, Ttry, i_unique) / Ttry - 140.;
+    }
   };
 
   // check criteria at start
-
   double nc = nucleation_criteria(T_begin);
 
   while (std::isnan(nc)) {
@@ -145,14 +202,14 @@ double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size
     T_begin -= Tnuc_step;
     if (T_begin < T_end) {
       LOG(fatal) << "could not find nucleation temperature";
-      return std::numeric_limits<double>::quiet_NaN();
+      return std::make_pair(std::numeric_limits<double>::quiet_NaN(), action_curve);
     }
     nc = nucleation_criteria(T_begin);
   }
 
   if (nc < 0) {
     LOG(debug) << "The tunneling possibility at T_begin satisfies the nucleation condition";
-    return T_begin;
+    return std::make_pair(T_begin, action_curve);
   }
 
   // check criteria at end
@@ -166,7 +223,7 @@ double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size
       T_end = T_begin - Tnuc_step;
       if (T_end < T_end_) {
         LOG(fatal) << "could not find nucleation temperature";
-        return std::numeric_limits<double>::quiet_NaN();
+        return std::make_pair(std::numeric_limits<double>::quiet_NaN(), action_curve);
       }
       if (nucleation_criteria(T_end) < 0) {
         break;
@@ -184,7 +241,7 @@ double TransitionFinder::get_Tnuc(const Phase &phase1, const Phase &phase2, size
   const double Tnuc = (result.first + result.second) * 0.5;
   LOG(debug) << "Found nucleation temperature = " << Tnuc;
 
-  return Tnuc;
+  return std::make_pair(Tnuc, action_curve);
 }
 
 std::vector<Transition> TransitionFinder::divide_and_find_transition(const Phase &phase1, const Phase &phase2, double T1, double T2, size_t currentID) const {
