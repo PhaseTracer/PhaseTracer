@@ -49,6 +49,7 @@ class PolynomialFitterEigen {
 public:
   void fit(const std::vector<double> &x, const std::vector<double> &y, double TC_, int degree) {
     TC = TC_;
+    fit_flag = true;
 
     int n = x.size();
     if (n < degree * 2)
@@ -144,11 +145,16 @@ public:
     return std::min(S3T, 1E30);
   }
 
+  const double get_fit_flag() const {
+    return fit_flag;
+  }
+
 private:
   Eigen::VectorXd coefficients;
   double TC;
   double MSE = 1E10;
   bool success = false;
+  bool fit_flag = false;
 };
 
 struct Transition {
@@ -228,12 +234,14 @@ struct Transition {
         << "delta potential (TC) = " << a.delta_potential << std::endl;
 
       if (a.calculate_action) {
-        if (a.action_curve.get_success()) {
-          o << "Action curve fitting succeeded with MSE = "
-            << a.action_curve.get_MSE() << std::endl;
-        } else {
-          o << "Action curve fitting failed, MSE = "
-            << a.action_curve.get_MSE() << std::endl;
+        if (a.action_curve.get_fit_flag()) {
+          if (a.action_curve.get_success()) {
+            o << "Action curve fitting succeeded with MSE = "
+              << a.action_curve.get_MSE() << std::endl;
+          } else {
+            o << "Action curve fitting failed, MSE = "
+              << a.action_curve.get_MSE() << std::endl;
+          }
         }
         o << "TN = " << a.TN << std::endl
           << "false vacuum (TN) = " << a.true_vacuum_TN << std::endl
@@ -362,6 +370,7 @@ private:
   /** Relative precision in nucleation temperature */
   PROPERTY(double, Tnuc_tol_rel, 1.e-3)
 
+  PROPERTY(bool, fit_action_curve, false)
   /** Number of nodes for getting action curve */
   PROPERTY(double, action_curve_nodes, 30)
   /** Order of polynomial fitting for action curve */

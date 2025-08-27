@@ -184,7 +184,10 @@ std::pair<double, PolynomialFitterEigen> TransitionFinder::get_Tnuc(const Phase 
 
   LOG(debug) << "Find nucleation temperature between " << phase1.key << " and " << phase2.key << " in [" << T_begin << ", " << T_end << "]";
 
-  PolynomialFitterEigen action_curve = get_action_curve(phase1, phase2, i_unique, T_begin, T_end);
+  PolynomialFitterEigen action_curve;
+  if (fit_action_curve) {
+    action_curve = get_action_curve(phase1, phase2, i_unique, T_begin, T_end);
+  }
 
   const auto nucleation_criteria = [this, phase1, phase2, i_unique, action_curve](double Ttry) {
     if (action_curve.get_success()) {
