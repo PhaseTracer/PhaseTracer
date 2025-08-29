@@ -138,39 +138,10 @@ PolynomialFitterEigen TransitionFinder::get_action_curve(const Phase &phase1, co
   for (double Ti = Tmin; Ti <= Tmax; Ti += (Tmax - Tmin) / action_curve_nodes) {
     T_list.push_back(Ti);
   }
-  std::vector<double> action_list = get_action(phase1, phase2, T_list, i_unique);
-
-  // Filter the nodes
-  std::vector<double> x;
-  std::vector<double> y;
-  x.reserve(action_list.size());
-  y.reserve(action_list.size());
-  for (size_t i = 0; i < action_list.size(); ++i) {
-    double S3T = action_list[i] / T_list[i];
-    if (S3T > 1 and S3T < 1000) {
-      x.push_back(T_list[i]);
-      y.push_back(action_list[i] * pow(TC - T_list[i], 2));
-    }
-  }
-  x.shrink_to_fit();
-  y.shrink_to_fit();
+  std::vector<double> S_list = get_action(phase1, phase2, T_list, i_unique);
 
   // Perform fit
-  action_curve.fit(x, y, TC, action_curve_order);
-  action_curve.cal_MSE(x, y);
-
-  std::ofstream output_file;
-  output_file.open("action_curve_output.txt");
-  output_file << T_end << "\t" << TC << "\t";
-  Eigen::VectorXd ki = action_curve.getCoefficients();
-  for (int i = 0; i < ki.size(); i++) {
-    output_file << std::setprecision(15) << ki[i] << "\t";
-  }
-  output_file << action_curve.get_MSE() << std::endl;
-  for (size_t i = 0; i < x.size(); ++i) {
-    output_file << x[i] << "\t" << y[i] / pow(TC - x[i], 2) << std::endl;
-  }
-  output_file.close();
+  action_curve.fit(T_list, S_list, TC, action_curve_order);
 
   return action_curve;
 }

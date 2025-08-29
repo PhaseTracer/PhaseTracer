@@ -47,11 +47,34 @@ enum Message { SUCCESS,
 // A polynomial fitting function created by DeepSeek.
 class PolynomialFitterEigen {
 public:
-  void fit(const std::vector<double> &x, const std::vector<double> &y, double TC_, int degree) {
+  void fit(const std::vector<double> &T_list, const std::vector<double> &S_list, double TC_, int degree) {
     TC = TC_;
     fit_flag = true;
 
-    int n = x.size();
+    // Filter the nodes
+    T_select.clear();
+    S_select.clear();
+    T_select.reserve(T_list.size());
+    S_select.reserve(T_list.size());
+    for (size_t i = 0; i < T_list.size(); ++i) {
+      double S3T = S_list[i] / T_list[i];
+      if (S3T > 1 and S3T < 1000) {
+        T_select.push_back(T_list[i]);
+        S_select.push_back(S_list[i]);
+      }
+    }
+    T_select.shrink_to_fit();
+    S_select.shrink_to_fit();
+
+    int n = T_select.size();
+    std::vector<double> x = T_select;
+    std::vector<double> y;
+    y.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+      y.push_back(S_select[i] * pow(TC - T_select[i], 2));
+    }
+    y.shrink_to_fit();
+
     if (n < degree * 2)
       return;
 
@@ -64,7 +87,22 @@ public:
       Y(i) = y[i];
     }
     coefficients = (X.transpose() * X).ldlt().solve(X.transpose() * Y);
+
+    // Calculate mean square error
+    MSE = 0;
+    S_predict.clear();
+    S_predict.reserve(n);
+    for (size_t i = 0; i < T_select.size(); ++i) {
+      S_predict.push_back(predict(T_select[i]));
+      MSE += pow(S_select[i] / T_select[i] - S_predict[i] / pow(TC - T_select[i], 2) / T_select[i], 2);
+    }
+    S_predict.shrink_to_fit();
+    MSE = MSE / n;
+    if (MSE < 10) {
+      success = true;
+    }
   }
+
   double predict(double x) const {
     double result = 0.0;
     for (int i = 0; i < coefficients.size(); i++) {
@@ -122,22 +160,8 @@ public:
     return coefficients;
   }
 
-  const void cal_MSE(const std::vector<double> &x, const std::vector<double> &y) {
-    MSE = 0;
-    std::vector<double> fitted_y = predict(x);
-    for (size_t i = 0; i < y.size(); ++i) {
-      MSE += pow(y[i] / pow(TC - x[i], 2) / x[i] - fitted_y[i] / pow(TC - x[i], 2) / x[i], 2);
-    }
-    MSE = MSE / y.size();
-    if (MSE < 10) {
-      success = true;
-    }
-  }
   const double get_MSE() const {
     return MSE;
-  }
-  const bool get_success() const {
-    return success;
   }
 
   const double get_S3T(double x) const {
@@ -149,9 +173,24 @@ public:
     return fit_flag;
   }
 
+  const bool get_success() const {
+    return success;
+  }
+
+  const std::vector<double> get_T_list() const {
+    return T_select;
+  }
+
+  const std::vector<double> get_S_list() const {
+    return S_select;
+  }
+
 private:
   Eigen::VectorXd coefficients;
   double TC;
+  std::vector<double> T_select;
+  std::vector<double> S_select;
+  std::vector<double> S_predict;
   double MSE = 1E10;
   bool success = false;
   bool fit_flag = false;
@@ -370,7 +409,7 @@ private:
   /** Relative precision in nucleation temperature */
   PROPERTY(double, Tnuc_tol_rel, 1.e-3)
 
-  PROPERTY(bool, fit_action_curve, false)
+  PROPERTY(bool, fit_action_curve, true)
   /** Number of nodes for getting action curve */
   PROPERTY(double, action_curve_nodes, 30)
   /** Order of polynomial fitting for action curve */
