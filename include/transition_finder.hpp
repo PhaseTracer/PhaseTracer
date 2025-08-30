@@ -80,7 +80,7 @@ public:
     LOG(debug) << "MSE of action fit = " << MSE;
 //    if (MSE < 10)
       success = true;
-//  }
+  }
 
   double fit_(const std::vector<double> T_select, const std::vector<double> S_select, int degree) {
 
