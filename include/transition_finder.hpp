@@ -70,7 +70,7 @@ public:
 
     // TODO: this is only for test
     MSE_pre = fit_(T_select, S_select, degree);
-    LOG(debug) << "MSE of action fit (pre selection) = " << MSE_;
+    LOG(debug) << "MSE of action fit (pre selection) = " << MSE_pre;
 
     select(T_select, S_select);
     if (T_select.size() < degree * 2)
@@ -78,9 +78,9 @@ public:
 
     MSE = fit_(T_select, S_select, degree);
     LOG(debug) << "MSE of action fit = " << MSE;
-    if (MSE < 10)
+//    if (MSE < 10)
       success = true;
-  }
+//  }
 
   double fit_(const std::vector<double> T_select, const std::vector<double> S_select, int degree) {
 
