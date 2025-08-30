@@ -47,13 +47,15 @@ enum Message { SUCCESS,
 // A polynomial fitting function created by DeepSeek.
 class PolynomialFitterEigen {
 public:
-  void fit(const std::vector<double> &T_list, const std::vector<double> &S_list, double TC_, int degree) {
+  void fit(const std::vector<double> &T_list_, const std::vector<double> &S_list_, double TC_, int degree) {
     TC = TC_;
+    T_list = T_list_;
+    S_list = S_list_;
     fit_flag = true;
 
     // Filter the nodes
-    T_select.clear();
-    S_select.clear();
+    std::vector<double> T_select;
+    std::vector<double> S_select;
     T_select.reserve(T_list.size());
     S_select.reserve(T_list.size());
     for (size_t i = 0; i < T_list.size(); ++i) {
@@ -66,6 +68,22 @@ public:
     T_select.shrink_to_fit();
     S_select.shrink_to_fit();
 
+    // TODO: this is only for test
+    MSE_pre = fit_(T_select, S_select, degree);
+    LOG(debug) << "MSE of action fit (pre selection) = " << MSE_;
+
+    select(T_select, S_select);
+    if (T_select.size() < degree * 2)
+      return;
+
+    MSE = fit_(T_select, S_select, degree);
+    LOG(debug) << "MSE of action fit = " << MSE;
+    if (MSE < 10)
+      success = true;
+  }
+
+  double fit_(const std::vector<double> T_select, const std::vector<double> S_select, int degree) {
+
     int n = T_select.size();
     std::vector<double> x = T_select;
     std::vector<double> y;
@@ -74,9 +92,6 @@ public:
       y.push_back(S_select[i] * pow(TC - T_select[i], 2));
     }
     y.shrink_to_fit();
-
-    if (n < degree * 2)
-      return;
 
     Eigen::MatrixXd X(n, degree + 1);
     Eigen::VectorXd Y(n);
@@ -88,22 +103,67 @@ public:
     }
     coefficients = (X.transpose() * X).ldlt().solve(X.transpose() * Y);
 
+    fit_range_min = *std::min_element(T_select.begin(), T_select.end());
+    fit_range_max = *std::max_element(T_select.begin(), T_select.end());
+
     // Calculate mean square error
-    MSE = 0;
+    double MSE_ = 0;
     S_predict.clear();
     S_predict.reserve(n);
-    for (size_t i = 0; i < T_select.size(); ++i) {
+    for (size_t i = 0; i < n; ++i) {
       S_predict.push_back(predict(T_select[i]));
-      MSE += pow(S_select[i] / T_select[i] - S_predict[i] / pow(TC - T_select[i], 2) / T_select[i], 2);
+      MSE_ += pow(S_select[i] / T_select[i] - S_predict[i] / pow(TC - T_select[i], 2) / T_select[i], 2);
     }
     S_predict.shrink_to_fit();
-    MSE = MSE / n;
-    if (MSE < 10) {
-      success = true;
+    MSE_ = MSE_ / n;
+    return MSE_;
+  }
+
+  void select(std::vector<double> &x, std::vector<double> &y) {
+
+    if (x.size() != y.size() || x.size() < 3) {
+      throw std::runtime_error("Need at least 3 points for action fit");
     }
+    if (x[0] < x.back()) {
+      std::reverse(x.begin(), x.end());
+      std::reverse(x.begin(), x.end());
+    }
+    std::vector<int> selected_indices;
+    for (size_t i = 0; i < y.size() - 1; ++i) {
+      if (y[i + 1] - y[i] < 0) {
+        selected_indices.push_back(i);
+        selected_indices.push_back(i + 1);
+        break;
+      }
+    }
+    if (selected_indices.empty()) {
+      return;
+    }
+
+    double y_prev = y[selected_indices.back()];
+    double diff1_prev = y[selected_indices[1]] - y[selected_indices[0]];
+    for (size_t i = selected_indices.back() + 1; i < y.size(); ++i) {
+      double diff1 = y[i] - y_prev;
+      if (diff1 < 0 && std::abs(diff1) < std::abs(diff1_prev * 2)) {
+        selected_indices.push_back(i);
+        diff1_prev = diff1;
+        y_prev = y[i];
+      }
+    }
+    std::vector<double> x_selected;
+    std::vector<double> y_selected;
+    for (int idx : selected_indices) {
+      x_selected.push_back(x[idx]);
+      y_selected.push_back(y[idx]);
+    }
+    x = std::move(x_selected);
+    y = std::move(y_selected);
   }
 
   double predict(double x) const {
+    if (x < fit_range_min or x > fit_range_max) {
+      LOG(warning) << "Input value exceeds the action fitting function's domain.";
+    }
     double result = 0.0;
     for (int i = 0; i < coefficients.size(); i++) {
       result += coefficients[i] * std::pow(x, i);
@@ -164,6 +224,10 @@ public:
     return MSE;
   }
 
+  const double get_MSE_pre() const {
+    return MSE_pre;
+  }
+
   const double get_S3T(double x) const {
     double S3T = predict(x) / pow(TC - x, 2) / x;
     return std::min(S3T, 1E30);
@@ -178,20 +242,23 @@ public:
   }
 
   const std::vector<double> get_T_list() const {
-    return T_select;
+    return T_list;
   }
 
   const std::vector<double> get_S_list() const {
-    return S_select;
+    return S_list;
   }
 
 private:
   Eigen::VectorXd coefficients;
   double TC;
-  std::vector<double> T_select;
-  std::vector<double> S_select;
+  std::vector<double> T_list;
+  std::vector<double> S_list;
   std::vector<double> S_predict;
+  double fit_range_min;
+  double fit_range_max;
   double MSE = 1E10;
+  double MSE_pre = 1E10; // TODO: this is only for test
   bool success = false;
   bool fit_flag = false;
 };

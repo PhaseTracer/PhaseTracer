@@ -202,7 +202,8 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < ki.size(); i++) {
     output_file << std::setprecision(15) << ki[i] << "\t";
   }
-  output_file << t[jj].action_curve.get_MSE() << std::endl;
+  output_file << t[jj].action_curve.get_MSE() << "\t";
+  output_file << t[jj].action_curve.get_MSE_pre() << std::endl;
 
   auto T_list = t[jj].action_curve.get_T_list();
   auto S_list = t[jj].action_curve.get_S_list();
