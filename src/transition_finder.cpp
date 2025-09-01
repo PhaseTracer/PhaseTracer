@@ -160,6 +160,12 @@ std::pair<double, PolynomialFitterEigen> TransitionFinder::get_Tnuc(const Phase 
     action_curve = get_action_curve(phase1, phase2, i_unique, T_begin, T_end);
   }
 
+  if (action_curve.get_success()) {
+    LOG(debug) << "Action curve fitting completed successfully.";
+  } else {
+    LOG(debug) << "Action curve fitting failed.";
+  }
+
   const auto nucleation_criteria = [this, phase1, phase2, i_unique, action_curve](double Ttry) {
     if (action_curve.get_success()) {
       return action_curve.get_S3T(Ttry) - 140.;

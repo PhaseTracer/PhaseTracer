@@ -126,7 +126,7 @@ public:
     }
     if (x[0] < x.back()) {
       std::reverse(x.begin(), x.end());
-      std::reverse(x.begin(), x.end());
+      std::reverse(y.begin(), y.end());
     }
     std::vector<int> selected_indices;
     for (size_t i = 0; i < y.size() - 1; ++i) {
@@ -141,12 +141,12 @@ public:
     }
 
     double y_prev = y[selected_indices.back()];
-    double diff1_prev = y[selected_indices[1]] - y[selected_indices[0]];
+    double diff_prev = y[selected_indices[1]] - y[selected_indices[0]];
     for (size_t i = selected_indices.back() + 1; i < y.size(); ++i) {
-      double diff1 = y[i] - y_prev;
-      if (diff1 < 0 && std::abs(diff1) < std::abs(diff1_prev * 2)) {
+      double diff = y[i] - y_prev;
+      if ((diff < 0) && (std::abs(diff) < std::abs(diff_prev * 2))) {
         selected_indices.push_back(i);
-        diff1_prev = diff1;
+        diff_prev = diff;
         y_prev = y[i];
       }
     }
