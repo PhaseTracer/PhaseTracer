@@ -283,7 +283,8 @@ struct Transition {
   bool subcritical = false;
 
   PolynomialFitterEigen action_curve;
-
+  double TP;
+  
   Transition(Message message) : message(message) {};
 
   Transition(Message message,
@@ -317,6 +318,10 @@ struct Transition {
     TN = T;
     true_vacuum_TN = true_vacuum;
     false_vacuum_TN = false_vacuum;
+  }
+  void set_percolation(double T ){
+    calculate_percolation = true;
+    TP=T;
   }
 
   void set_action_curve(PolynomialFitterEigen action_curve_) {
@@ -352,6 +357,8 @@ struct Transition {
         o << "TN = " << a.TN << std::endl
           << "false vacuum (TN) = " << a.true_vacuum_TN << std::endl
           << "true vacuum (TN) = " << a.false_vacuum_TN << std::endl;
+        if (a.calculate_percolation)
+          o << "TP = " << a.TP << std::endl;
       } else {
         o << "did not calculate action or check nucleation" << std::endl;
       }
@@ -367,6 +374,7 @@ struct Transition {
 
 private:
   bool calculate_action = false;
+  bool calculate_percolation = false;
 };
 
 class TransitionFinder {
@@ -413,6 +421,79 @@ public:
 
   std::pair<double, PolynomialFitterEigen> get_Tnuc(const Phase &phase1, const Phase &phase2, size_t i_unique, double T_begin, double T_end) const;
 
+  
+  double nucleation_rate(const Phase &phase1, const Phase &phase2, size_t i_unique, double T) const {
+    double S3_over_T = get_action(phase1, phase2, T, i_unique)/T;
+    return pow(T, 4) * std::exp(-S3_over_T);
+  }
+  
+  double false_vacuum_fraction_integrand(const Phase &phase1, const Phase &phase2, size_t i_unique, double T, double T_min, double vw) const {
+    double nucl_rate = nucleation_rate(phase1, phase2, i_unique, T);
+    return -4./3. * M_PI * std::pow(vw, 3) * nucl_rate * pow(1./(T_min * T_min)-1./(T * T), 3) * 1/pow(T, 3);
+  }
+  
+  double get_false_vacuum_fraction(const Phase &phase1, const Phase &phase2, size_t i_unique, double init_T, double end_T,  int num_T_list = 300) const {
+      const double G = 6.7088e-39;
+      const double C = std::sqrt(8 * pow(M_PI, 3) * G * dof / 90);
+
+      Eigen::VectorXd vec(num_T_list);
+      vec.setLinSpaced(num_T_list, end_T, init_T);
+
+      alglib::real_1d_array T_list;
+      alglib::real_1d_array integrand;
+
+      T_list.setlength(num_T_list);
+      integrand.setlength(num_T_list);
+
+      for (size_t i = 0; i < num_T_list; ++i) {
+          T_list[i] = vec[i];
+          integrand[i] = false_vacuum_fraction_integrand(phase1, phase2, i_unique, T_list[i], end_T, vw);
+      }
+
+      alglib::spline1dinterpolant spline;
+      alglib::spline1dbuildcubic(T_list, integrand, spline);
+
+      double S = alglib::spline1dintegrate(spline, T_list[num_T_list - 1]);
+      return std::exp(S / (8 * pow(C, 4)));
+      //return S;
+  }
+  
+  double get_percolation_temperature(const Phase &phase1, const Phase &phase2, size_t i_unique, double init_T, double end_T) const {
+      double target = 0.7;
+      double false_vacuum_init = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T, init_T - Tperc_tol_rel, num_T_list) - target;
+      double false_vacuum_end = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T, end_T, num_T_list) - target;
+      double Tp;
+      double init_T_fix = init_T;
+
+      if (false_vacuum_init * false_vacuum_end > 0) {
+        LOG(error) << "false_vacuum_fraction at T_init = " << false_vacuum_init;
+        LOG(error) << "false_vacuum_end at T_end = " << false_vacuum_init;
+        LOG(error) << "Error: f(a) and f(b) must have opposite signs!";
+        return 0;
+      }
+
+      while ((init_T - end_T) > Tperc_tol_rel) {
+          double mid_T = (init_T + end_T) / 2.0;
+          double fmid = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T_fix, mid_T,  num_T_list) - target;
+
+          if (fabs(fmid) < Tperc_tol_rel) {
+              return mid_T;
+          }
+
+          if (false_vacuum_end * fmid < 0) {
+              init_T = mid_T;
+              false_vacuum_init = fmid;
+          } else {
+              end_T = mid_T;
+              false_vacuum_end = fmid;
+          }
+      }
+
+      Tp = (init_T + end_T) / 2.0;
+      return Tp;
+  }
+  
+  
   /** Retrieve all transition paths */
   std::vector<TransitionGraph::Path> get_transition_paths() const { return transition_paths; }
 
@@ -475,15 +556,20 @@ private:
   PROPERTY(double, Tnuc_step, 1.)
   /** Relative precision in nucleation temperature */
   PROPERTY(double, Tnuc_tol_rel, 1.e-3)
-
   PROPERTY(bool, fit_action_curve, true)
   /** Number of nodes for getting action curve */
   PROPERTY(double, action_curve_nodes, 30)
   /** Order of polynomial fitting for action curve */
   PROPERTY(double, action_curve_order, 6)
-
+  PROPERTY(double, vw, 0.3)
+  PROPERTY(double, dof, 106.75)
+  PROPERTY(double, num_T_list, 300)
+  PROPERTY(double, Tperc_tol_rel, 1e-4)
+  
   PROPERTY(bool, calculate_action, false)
 
+  PROPERTY(bool, calculate_percolation, true)
+  
   /**
    * Whether we should check for subcritical transitions, i.e. transitions between phases when one phase is strictly of
    * lower energy than the other. This can occur when a new phase appears near a phase that is not of the highest energy
