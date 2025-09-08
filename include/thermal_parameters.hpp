@@ -202,7 +202,7 @@ struct ThermalDEBUG {
 
 /**
  * @struct EoS
-  * @brief Contains the equation of state data for a phase transition
+ * @brief Contains the equation of state data for a phase transition
 */
 struct EoS {
   std::vector<double> temp;
@@ -214,6 +214,25 @@ struct EoS {
   std::vector<double> enthalpy_false;
   std::vector<double> entropy_true;
   std::vector<double> entropy_false;
+
+  inline void
+  write_EoS(const std::string& filename) const {
+    std::ofstream file(filename);
+    if (!file.is_open()) \
+    {
+      throw std::runtime_error("Could not open file for writing EoS data");
+    }
+    file << "T,P_true,P_false,e_true,e_false,w_true,w_false,s_true,s_false\n";
+    for (size_t i = 0; i < temp.size(); ++i) 
+    {
+      file << temp[i] << ","
+          << pressure_true[i] << "," << pressure_false[i] << ","
+          << energy_true[i] << "," << energy_false[i] << ","
+          << enthalpy_true[i] << "," << enthalpy_false[i] << ","
+          << entropy_true[i] << "," << entropy_false[i] << "\n";
+    }
+  }
+
 };
 
 /**
