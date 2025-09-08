@@ -384,23 +384,35 @@ void ThermalParameters::find_thermal_parameters() {
 EoS ThermalParameters::get_eos(double Tmin, double Tmax, double Tref, Thermodynamics true_thermo, Thermodynamics false_thermo) {
 
 	EoS out;
-	int N = 50;
+	int N = 300;
 	if(N % 2 == 1) { N += 1; }
 	double dt = (Tmax-Tmin)/(N-1);
-	for (double tt = Tmin; tt < Tref; tt += dt) {
+	for (double tt = Tmin; tt < Tmax + 1e-6; tt += dt) 
+	{
 		out.temp.push_back(tt);
-		out.pressure.push_back(true_thermo.get_pressure(tt));
-		out.energy.push_back(true_thermo.get_energy(tt));
-		out.enthalpy.push_back(true_thermo.get_enthalpy(tt));
-		out.entropy.push_back(true_thermo.get_entropy(tt));
+		out.pressure_true.push_back(true_thermo.get_pressure(tt));
+		out.energy_true.push_back(true_thermo.get_energy(tt));
+		out.enthalpy_true.push_back(true_thermo.get_enthalpy(tt));
+		out.entropy_true.push_back(true_thermo.get_entropy(tt));
+		out.pressure_false.push_back(false_thermo.get_pressure(tt));
+		out.energy_false.push_back(false_thermo.get_energy(tt));
+		out.enthalpy_false.push_back(false_thermo.get_enthalpy(tt));
+		out.entropy_false.push_back(false_thermo.get_entropy(tt));
 	}
-	for (double tt = Tref; tt < Tmax; tt += dt) {
-		out.temp.push_back(tt);
-		out.pressure.push_back(false_thermo.get_pressure(tt));
-		out.energy.push_back(false_thermo.get_energy(tt));
-		out.enthalpy.push_back(false_thermo.get_enthalpy(tt));
-		out.entropy.push_back(false_thermo.get_entropy(tt));
-	}
+	// for (double tt = Tmin; tt < Tref; tt += dt) {
+	// 	out.temp.push_back(tt);
+	// 	out.pressure.push_back(true_thermo.get_pressure(tt));
+	// 	out.energy.push_back(true_thermo.get_energy(tt));
+	// 	out.enthalpy.push_back(true_thermo.get_enthalpy(tt));
+	// 	out.entropy.push_back(true_thermo.get_entropy(tt));
+	// }
+	// for (double tt = Tref; tt < Tmax; tt += dt) {
+	// 	out.temp.push_back(tt);
+	// 	out.pressure.push_back(false_thermo.get_pressure(tt));
+	// 	out.energy.push_back(false_thermo.get_energy(tt));
+	// 	out.enthalpy.push_back(false_thermo.get_enthalpy(tt));
+	// 	out.entropy.push_back(false_thermo.get_entropy(tt));
+	// }
 
 	return out;
 }

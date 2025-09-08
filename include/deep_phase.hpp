@@ -85,7 +85,7 @@ public:
 			auto params = get_pt_params(tps, vw, dof);
 			params.print();
 
-			std::vector<double> momentumVec = logspace(1e-3, 1e2, static_cast<std::size_t>(num_frequency_ssm));
+			std::vector<double> momentumVec = logspace(1e-3, 1e3, static_cast<std::size_t>(num_frequency_ssm));
 
 			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec2(momentumVec, params);
 		
@@ -166,8 +166,7 @@ private :
 			double betaH = tps.betaH_tn;
 			double Tref = tps.TN;
 			double wN = tps.we_tn;
-			double dtau = tps.dtf_tc;
-			dtau = 1/betaH;
+			double dtau = tps.dtf_tp;
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			un.print();
 			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
@@ -180,8 +179,7 @@ private :
 			double betaH = tps.betaH_tp;
 			double Tref = tps.TP;
 			double wN = tps.we_tp;
-			double dtau = tps.dtf_tc;
-			dtau = 1/betaH;
+			double dtau = tps.dtf_tp;
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			un.print();
 			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);

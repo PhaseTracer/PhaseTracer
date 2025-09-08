@@ -33,3 +33,5 @@ inputFiles/
 scan.py
 *.json
 /zData/
+/example/Inference/
+MCMClib/
