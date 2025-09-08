@@ -206,10 +206,14 @@ struct ThermalDEBUG {
 */
 struct EoS {
   std::vector<double> temp;
-  std::vector<double> pressure;
-  std::vector<double> energy;
-  std::vector<double> enthalpy;
-  std::vector<double> entropy;
+  std::vector<double> pressure_true;
+  std::vector<double> pressure_false;
+  std::vector<double> energy_true;
+  std::vector<double> energy_false;
+  std::vector<double> enthalpy_true;
+  std::vector<double> enthalpy_false;
+  std::vector<double> entropy_true;
+  std::vector<double> entropy_false;
 };
 
 /**
