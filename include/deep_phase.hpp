@@ -69,85 +69,102 @@ class GW_DeepPhase {
 
 public:
 
-	GW_DeepPhase() = default;
-	~GW_DeepPhase() = default;
+	enum class EoSModel 
+	{
+		BAG,
+		VEFF
+	};
 	double zp;
 
-	std::pair<std::vector<double>, std::vector<double>> get_ssm_amplitude(ThermalParams tps, double vw, double dof, double min_frequency, double max_frequency, int num_frequency_ssm) {
+	GW_DeepPhase() = default;
+	GW_DeepPhase(EoSModel model) : eos_model(model) {}
+	~GW_DeepPhase() = default;
 
-		// Redirect stdout to LOG(debug) instead of suppressing it
+	std::pair<std::vector<double>, std::vector<double>> 
+	get_ssm_amplitude(
+		const ThermalParams& tps, 
+		const double& vw, 
+		const double& dof, 
+		const double& dtau = 0.1,
+		const double& min_frequency = 1e-4, 
+		const double& max_frequency = 1e+1, 
+		const int& num_frequency_ssm = 200) 
+	{
 		std::streambuf* orig_buf = std::cout.rdbuf();
 		LogStreamBuffer log_buffer;
 		
-		try {
+		try 
+		{
 			std::cout.rdbuf(&log_buffer);
 			
-			auto params = get_pt_params(tps, vw, dof);
+			auto params = get_pt_params(tps, vw, dof, dtau);
 			params.print();
 
-			std::vector<double> momentumVec = logspace(1e-3, 1e3, static_cast<std::size_t>(num_frequency_ssm));
+			std::vector<double> momentumVec = logspace(1e-2, 1e3, static_cast<std::size_t>(num_frequency_ssm));
 
 			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec2(momentumVec, params);
 		
 			// optional code to evaluate zp to feed into GravWaveCalculator
-			double zp_temp = 0;
-			double p_max = 0;
-			for (size_t i = 0; i < OmegaGW.P().size(); i++) {
-				if (OmegaGW.P()[i] > p_max) {
-					p_max = OmegaGW.P()[i];
-					zp_temp = OmegaGW.K()[i];
-				}
-			}
-			zp = zp_temp;
+			auto maxes = obtain_peaks(OmegaGW.K(), OmegaGW.P());
+			zp = maxes.first;
 
 			double Rs_inv = 1/params.Rs();
 			double Rs0_inv = 1.65e-5 * Rs_inv * (params.un().Ts() / 100) * std::pow(params.un().gs() / 100, 1./6.);
 			std::vector<double> ssmfreqVec;
-			for (const auto& K : momentumVec) {
+			for (const auto& K : momentumVec) 
+			{
 				double k = K * Rs0_inv;
 				double f = k / (2.*M_PI);
 				ssmfreqVec.push_back(f);
 			}
 
-			// Restore stdout
 			std::cout.rdbuf(orig_buf);
-			// Flush any remaining content in the log buffer
 			log_buffer.pubsync();
 
 			return {ssmfreqVec, OmegaGW.P()};
 
-		} catch (...) {
-			// Ensure stdout is restored even if an exception occurs
+		} catch (...) 
+		{
 			std::cout.rdbuf(orig_buf);
 			log_buffer.pubsync();
 			throw;
 		}
 	}
 
-	std::pair<double, double> get_ssm_max(const std::vector<double> amp, const std::vector<double> freq) {
-		double max_freq = 0;
-		double max_amp = 0;
-		for (size_t i = 0; i < amp.size(); i++) {
-			if( amp[i] > max_amp ) {
-				max_amp = amp[i];
-				max_freq = freq[i];
+	std::pair<double, double>
+	obtain_peaks(const std::vector<double>& xVals, const std::vector<double>& yVals) 
+	{
+		double xMax = 0;
+		double yMax = 0;
+		for (size_t i = 0; i < yVals.size(); ++i) 
+		{
+			if (yVals[i] > yMax) 
+			{
+				yMax = yVals[i];
+				xMax = xVals[i];
 			}
 		}
-		return {max_amp, max_freq};
+		return {xMax, yMax};
 	}
 
 private :
 
-	PhaseTransition::Universe get_universe(ThermalParams tps, double dof) {
-		if ( tps.nucleates == MilestoneStatus::YES ) {
-			// Validate inputs
-			if (tps.TN <= 0 || tps.H_tn <= 0) {
+	EoSModel eos_model = EoSModel::BAG;
+
+	PhaseTransition::Universe 
+	get_universe(const ThermalParams& tps, const double& dof) 
+	{
+		if ( tps.nucleates == MilestoneStatus::YES ) 
+		{
+			if (tps.TN <= 0 || tps.H_tn <= 0) 
+			{
 				throw std::invalid_argument("Invalid thermal parameters for universe creation");
 			}
 			return PhaseTransition::Universe(tps.TN, tps.H_tn, dof);
-		} else if (tps.percolates == MilestoneStatus::YES) {
-			// Validate inputs
-			if (tps.TP <= 0 || tps.H_tp <= 0) {
+		} else if (tps.percolates == MilestoneStatus::YES) 
+		{
+			if (tps.TP <= 0 || tps.H_tp <= 0) 
+			{
 				throw std::invalid_argument("Invalid thermal parameters for universe creation");
 			}
 			return PhaseTransition::Universe(tps.TP, tps.H_tp, dof);
@@ -156,21 +173,25 @@ private :
 		return un;
 	}
 
-	PhaseTransition::PTParams get_pt_params(ThermalParams tps, double vw, double dof) {
-		if (tps.nucleates == MilestoneStatus::YES) {
+	PhaseTransition::PTParams 
+	get_pt_params(const ThermalParams& tps, const double& vw, const double& dof, const double& dtau) 
+	{
+		if (tps.nucleates == MilestoneStatus::YES) 
+		{
 			// Validate inputs
-			if (tps.alpha_tn <= 0 || tps.betaH_tn <= 0) {
+			if (tps.alpha_tn <= 0 || tps.betaH_tn <= 0) 
+			{
 				throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
 			}
 			double alpha = tps.alpha_tn;
 			double betaH = tps.betaH_tn;
 			double Tref = tps.TN;
 			double wN = tps.we_tn;
-			double dtau = tps.dtf_tp;
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			un.print();
-			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
-		} else if (tps.percolates == MilestoneStatus::YES) {
+			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, Tref, wN, "exp", un);
+		} else if (tps.percolates == MilestoneStatus::YES) 
+		{
 			// Validate inputs
 			if (tps.alpha_tp <= 0 || tps.betaH_tp <= 0) {
 				throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
@@ -179,15 +200,14 @@ private :
 			double betaH = tps.betaH_tp;
 			double Tref = tps.TP;
 			double wN = tps.we_tp;
-			double dtau = tps.dtf_tp;
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			un.print();
-			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, wN, "exp", un);
+			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, Tref, wN, "exp", un);
 		}
 		PhaseTransition::PTParams pt;
 		return pt;
 	}
-
+	
 };
 
 } // namespace PhaseTracer
