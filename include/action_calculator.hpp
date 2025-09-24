@@ -185,16 +185,16 @@ public:
         try {
           bubble_profile = st.findProfile(false_vacuum[0], true_vacuum[0]);
           action_PD = st.calAction(bubble_profile);
-        } catch (const alglib::ap_error& e) {
-          LOG(warning) << "ALGLIB error at T = " << T 
-                       << ", between " << false_vacuum << " and " << true_vacuum 
-                       << ": " << e.msg; 
+        } catch (const alglib::ap_error &e) {
+          LOG(warning) << "ALGLIB error at T = " << T
+                       << ", between " << false_vacuum << " and " << true_vacuum
+                       << ": " << e.msg;
         } catch (const std::exception &e) {
-          LOG(warning) << "Standard exception at T = " << T 
-                       << ", between " << false_vacuum << " and " << true_vacuum 
+          LOG(warning) << "Standard exception at T = " << T
+                       << ", between " << false_vacuum << " and " << true_vacuum
                        << ": " << e.what();
         } catch (...) {
-          LOG(warning) << "Unknown exception at T = " << T 
+          LOG(warning) << "Unknown exception at T = " << T
                        << ", between " << false_vacuum << " and " << true_vacuum;
         }
 
@@ -227,16 +227,16 @@ public:
           bubble_profile = full_tunneling.profile1D;
           phi_for_profile = full_tunneling.phi_for_profile1D;
           tunneling_path = full_tunneling.phi;
-        } catch (const alglib::ap_error& e) {
-          LOG(warning) << "ALGLIB error at T = " << T 
-                       << ", between " << false_vacuum << " and " << true_vacuum 
-                       << ": " << e.msg; 
+        } catch (const alglib::ap_error &e) {
+          LOG(warning) << "ALGLIB error at T = " << T
+                       << ", between " << false_vacuum << " and " << true_vacuum
+                       << ": " << e.msg;
         } catch (const std::exception &e) {
-          LOG(warning) << "Standard exception at T = " << T 
-                       << ", between " << false_vacuum << " and " << true_vacuum 
+          LOG(warning) << "Standard exception at T = " << T
+                       << ", between " << false_vacuum << " and " << true_vacuum
                        << ": " << e.what();
         } catch (...) {
-          LOG(warning) << "Unknown exception at T = " << T 
+          LOG(warning) << "Unknown exception at T = " << T
                        << ", between " << false_vacuum << " and " << true_vacuum;
         }
         action_PD = pd.get_action();
