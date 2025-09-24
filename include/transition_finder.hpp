@@ -422,17 +422,24 @@ public:
   std::pair<double, PolynomialFitterEigen> get_Tnuc(const Phase &phase1, const Phase &phase2, size_t i_unique, double T_begin, double T_end) const;
 
   
-  double nucleation_rate(const Phase &phase1, const Phase &phase2, size_t i_unique, double T) const {
-    double S3_over_T = get_action(phase1, phase2, T, i_unique)/T;
+  double nucleation_rate(const Phase &phase1, const Phase &phase2, size_t i_unique, double T, PolynomialFitterEigen action_curve) const {
+    double S3_over_T;
+    if (action_curve.get_success()){
+      S3_over_T = action_curve.get_S3T(T);
+    }
+    else{
+      S3_over_T = get_action(phase1, phase2, T, i_unique)/T;
+    }
+    
     return pow(T, 4) * std::exp(-S3_over_T);
   }
   
-  double false_vacuum_fraction_integrand(const Phase &phase1, const Phase &phase2, size_t i_unique, double T, double T_min, double vw) const {
-    double nucl_rate = nucleation_rate(phase1, phase2, i_unique, T);
+  double false_vacuum_fraction_integrand(const Phase &phase1, const Phase &phase2, size_t i_unique, double T, double T_min, double vw, PolynomialFitterEigen action_curve) const {
+    double nucl_rate = nucleation_rate(phase1, phase2, i_unique, T, action_curve);
     return -4./3. * M_PI * std::pow(vw, 3) * nucl_rate * pow(1./(T_min * T_min)-1./(T * T), 3) * 1/pow(T, 3);
   }
   
-  double get_false_vacuum_fraction(const Phase &phase1, const Phase &phase2, size_t i_unique, double init_T, double end_T,  int num_T_list = 300) const {
+  double get_false_vacuum_fraction(const Phase &phase1, const Phase &phase2, size_t i_unique, double init_T, double end_T,  int num_T_list, PolynomialFitterEigen action_curve) const {
       const double G = 6.7088e-39;
       const double C = std::sqrt(8 * pow(M_PI, 3) * G * dof / 90);
 
@@ -447,7 +454,7 @@ public:
 
       for (size_t i = 0; i < num_T_list; ++i) {
           T_list[i] = vec[i];
-          integrand[i] = false_vacuum_fraction_integrand(phase1, phase2, i_unique, T_list[i], end_T, vw);
+          integrand[i] = false_vacuum_fraction_integrand(phase1, phase2, i_unique, T_list[i], end_T, vw, action_curve);
       }
 
       alglib::spline1dinterpolant spline;
@@ -458,10 +465,10 @@ public:
       //return S;
   }
   
-  double get_percolation_temperature(const Phase &phase1, const Phase &phase2, size_t i_unique, double init_T, double end_T) const {
+  double get_percolation_temperature(const Phase &phase1, const Phase &phase2, size_t i_unique, double init_T, double end_T, PolynomialFitterEigen action_curve) const {
       double target = 0.7;
-      double false_vacuum_init = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T, init_T - Tperc_tol_rel, num_T_list) - target;
-      double false_vacuum_end = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T, end_T, num_T_list) - target;
+      double false_vacuum_init = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T, init_T - Tperc_tol_rel, num_T_list, action_curve) - target;
+      double false_vacuum_end = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T, end_T, num_T_list, action_curve) - target;
       double Tp;
       double init_T_fix = init_T;
 
@@ -474,7 +481,7 @@ public:
 
       while ((init_T - end_T) > Tperc_tol_rel) {
           double mid_T = (init_T + end_T) / 2.0;
-          double fmid = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T_fix, mid_T,  num_T_list) - target;
+          double fmid = get_false_vacuum_fraction(phase1, phase2, i_unique, init_T_fix, mid_T,  num_T_list, action_curve) - target;
 
           if (fabs(fmid) < Tperc_tol_rel) {
               return mid_T;
@@ -568,7 +575,7 @@ private:
   
   PROPERTY(bool, calculate_action, false)
 
-  PROPERTY(bool, calculate_percolation, true)
+  PROPERTY(bool, calculate_percolation, false)
   
   /**
    * Whether we should check for subcritical transitions, i.e. transitions between phases when one phase is strictly of
