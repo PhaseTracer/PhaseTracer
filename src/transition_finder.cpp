@@ -120,7 +120,7 @@ std::vector<Transition> TransitionFinder::find_transition(const Phase &phase1, c
     }
     
     if (calculate_percolation){
-      double Tp = get_percolation_temperature(phase1, phase2, i_selected, TC, T1);
+      double Tp = get_percolation_temperature(phase1, phase2, i_selected, TC, T1, action_curve);
       unique_transitions[i_selected].set_percolation(Tp);
     }
     return {unique_transitions[i_selected]};
