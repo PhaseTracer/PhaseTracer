@@ -36,48 +36,48 @@ int main(int argc, char *argv[]) {
   double ms, lambda_s, lambda_hs;
   double daisy_flag;
 
-  //  if ( argc == 1 ) {
-  //    debug_mode = true;
-  //    // Match choices in 1808.01098
-  ////    lambda_hs = 0.24;
-  ////    ms = 0.5 * SM::mh;
-  ////    double lambda_s_min = 2. / square(SM::mh * SM::v) *
-  ////                          square(square(ms) - 0.5 * lambda_hs * square(SM::v));
-  ////    lambda_s =  lambda_s_min + 0.1;
-  ////    daisy_flag = 1;
-  //
-  //    ms = 65.;
-  //    lambda_s =  0.1;
-  //    lambda_hs = 0.3;
-  //    daisy_flag = 2;
-  //  } else if ( argc >= 9 ) {
-  //    ms = atof(argv[1]);
-  //    lambda_s = atof(argv[2]);
-  //    lambda_hs = atof(argv[3]);
-  //    daisy_flag = atoi(argv[6]);
-  //  } else {
-  //    std::cout << "Use ./run_xSM_OSlike ms lambda_s lambda_hs" << std::endl;
-  //    return 0;
-  //  }
-  //
-  //  if (debug_mode){
-  //    LOGGER(debug);
-  //    std::cout << "ms = " << ms << std::endl
-  //              << "lambda_s = " << lambda_s << std::endl
-  //              << "lambda_hs = " << lambda_hs << std::endl
-  //              << "daisy_term = " << ( daisy_flag == 0  ? "None" : ( daisy_flag == 1 ? "Parwani" : "ArnoldEspinosa")) << std::endl;
-  //
-  //  } else {
-  //    LOGGER(fatal);
-  //  }
+    if ( argc == 1 ) {
+      debug_mode = true;
+      // Match choices in 1808.01098
+  //    lambda_hs = 0.24;
+  //    ms = 0.5 * SM::mh;
+  //    double lambda_s_min = 2. / square(SM::mh * SM::v) *
+  //                          square(square(ms) - 0.5 * lambda_hs * square(SM::v));
+  //    lambda_s =  lambda_s_min + 0.1;
+  //    daisy_flag = 1;
+  
+      ms = 65.;
+      lambda_s =  0.1;
+      lambda_hs = 0.3;
+      daisy_flag = 2;
+    } else if ( argc >= 9 ) {
+      ms = atof(argv[1]);
+      lambda_s = atof(argv[2]);
+      lambda_hs = atof(argv[3]);
+      daisy_flag = atoi(argv[6]);
+    } else {
+      std::cout << "Use ./run_xSM_OSlike ms lambda_s lambda_hs" << std::endl;
+      return 0;
+    }
+  
+    if (debug_mode){
+      LOGGER(debug);
+      std::cout << "ms = " << ms << std::endl
+                << "lambda_s = " << lambda_s << std::endl
+                << "lambda_hs = " << lambda_hs << std::endl
+                << "daisy_term = " << ( daisy_flag == 0  ? "None" : ( daisy_flag == 1 ? "Parwani" : "ArnoldEspinosa")) << std::endl;
+  
+    } else {
+      LOGGER(fatal);
+    }
 
-  std::ifstream file("input.txt");
-  std::string line;
-  std::getline(file, line);
-  std::istringstream iss(line);
-  iss >> ms >> lambda_s >> lambda_hs;
-  daisy_flag = 1;
-  LOGGER(debug);
+//  std::ifstream file("input.txt");
+//  std::string line;
+//  std::getline(file, line);
+//  std::istringstream iss(line);
+//  iss >> ms >> lambda_s >> lambda_hs;
+//  daisy_flag = 1;
+//  LOGGER(debug);
 
   // Construct our model
   EffectivePotential::xSM_OSlike model(lambda_hs, lambda_s, ms);
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
     Eigen::VectorXd x(2);
     x << SM::v, 0;
     std::cout << "V0=" << model.V0(x) << std::endl;
-    //      std::cout << "V1=" << model.V1(x,0) << std::endl;
+//    std::cout << "V1=" << model.V1(x,0) << std::endl;
     std::cout << "V1T=" << model.V1T(x, 0) << std::endl;
     std::cout << "V=" << model.V(x, 0) << std::endl;
     std::cout << "V1=" << model.V(x, 0) - model.V0(x) << std::endl;
@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
 
   pf.set_check_vacuum_at_high(false);
   pf.set_seed(0);
-  //  pf.set_check_hessian_singular(false);
+  pf.set_check_hessian_singular(false);
 
   try {
     pf.find_phases();
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
               << "lambda_hs = " << lambda_hs << "\t"
               << "encounters bug!" << std::endl;
     std::vector<double> out = {-1, 0, 0, 0, 0, 0};
-    //    output_file << toString(in, out, flags) << std::endl;
+    output_file << toString(in, out, flags) << std::endl;
     return 0;
   }
   if (debug_mode)
@@ -148,68 +148,79 @@ int main(int argc, char *argv[]) {
 
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf, ac);
+  tf.set_calculate_percolation(true);
   tf.find_transitions();
   if (debug_mode)
     std::cout << tf;
 
-  auto t = tf.get_transitions();
-  if (t.size() == 0) {
-    std::cout << "ms = " << ms << ",\t"
-              << "lambda_s = " << lambda_s << ",\t"
-              << "lambda_hs = " << lambda_hs << "\t"
-              << "found 0 transition!" << std::endl;
-    std::vector<double> out = {-2, 0, 0, 0, 0, 0};
-    //    output_file << toString(in, out, flags) << std::endl;
-    return 0;
-  }
-
-  // Find the transition with largest gamma from (0,vs) -> (vh,0)
-  int jj = -1;
-  double gamme_max = 0.;
-  for (int i = 0; i < t.size(); i++) {
-    double gamma = t[i].gamma;
-    if (gamme_max < gamma and abs(t[i].false_vacuum[0]) < 1. and abs(t[i].true_vacuum[1]) < 1.) {
-      jj = i;
-      gamme_max = gamma;
+  PhaseTracer::GravWaveCalculator gc(tf);
+  
+  const auto sps = gc.calc_spectrums();
+  if (debug_mode){
+    for (size_t ii = 0; ii < sps.size(); ii++) {
+      std::cout << sps[ii];
     }
   }
+  
+  
+//  auto t = tf.get_transitions();
+//  if (t.size() == 0) {
+//    std::cout << "ms = " << ms << ",\t"
+//              << "lambda_s = " << lambda_s << ",\t"
+//              << "lambda_hs = " << lambda_hs << "\t"
+//              << "found 0 transition!" << std::endl;
+//    std::vector<double> out = {-2, 0, 0, 0, 0, 0};
+//    output_file << toString(in, out, flags) << std::endl;
+//    return 0;
+//  }
 
-  if (jj < 0) {
-    std::vector<double> out = {-3, 0, 0, 0, 0, 0};
-    //    output_file << toString(in, out, flags) << std::endl;
-    return 0;
-  }
+//  // Find the transition with largest gamma from (0,vs) -> (vh,0)
+//  int jj = -1;
+//  double gamme_max = 0.;
+//  for (int i = 0; i < t.size(); i++) {
+//    double gamma = t[i].gamma;
+//    if (gamme_max < gamma and abs(t[i].false_vacuum[0]) < 1. and abs(t[i].true_vacuum[1]) < 1.) {
+//      jj = i;
+//      gamme_max = gamma;
+//    }
+//  }
+//
+//  if (jj < 0) {
+//    std::vector<double> out = {-3, 0, 0, 0, 0, 0};
+//    output_file << toString(in, out, flags) << std::endl;
+//    return 0;
+//  }
+//
+//  if (gamme_max < 0.1) {
+//    return 0;
+//  }
 
-  if (gamme_max < 0.1) {
-    return 0;
-  }
+//  LOGGER(fatal);
+//  const auto trans = tf.get_transitions();
+//  auto phase1 = trans[jj].true_phase;
+//  auto phase2 = trans[jj].false_phase;
+//  double min_T = std::max(trans[jj].true_phase.T.front(), trans[jj].false_phase.T.front());
+//  min_T += 0.5;
+//  if (trans[jj].TC - min_T < 1.5)
+//    return 0;
 
-  LOGGER(fatal);
-  const auto trans = tf.get_transitions();
-  auto phase1 = trans[jj].true_phase;
-  auto phase2 = trans[jj].false_phase;
-  double min_T = std::max(trans[jj].true_phase.T.front(), trans[jj].false_phase.T.front());
-  min_T += 0.5;
-  if (trans[jj].TC - min_T < 1.5)
-    return 0;
-
-  std::vector<double> out = {(float)t.size(), t[jj].TC, min_T, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
-
-  output_file << toString(in, out, flags) << std::endl;
-
-  output_file << min_T << "\t" << trans[jj].TC << "\t";
-  Eigen::VectorXd ki = t[jj].action_curve.getCoefficients();
-  for (int i = 0; i < ki.size(); i++) {
-    output_file << std::setprecision(15) << ki[i] << "\t";
-  }
-  output_file << t[jj].action_curve.get_MSE() << "\t";
-  output_file << t[jj].action_curve.get_MSE_pre() << std::endl;
-
-  auto T_list = t[jj].action_curve.get_T_list();
-  auto S_list = t[jj].action_curve.get_S_list();
-  for (size_t i = 0; i < T_list.size(); ++i) {
-    output_file << T_list[i] << "\t" << S_list[i] << std::endl;
-  }
+//  std::vector<double> out = {(float)t.size(), t[jj].TC, min_T, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
+//
+//  output_file << toString(in, out, flags) << std::endl;
+//
+//  output_file << min_T << "\t" << trans[jj].TC << "\t";
+//  Eigen::VectorXd ki = t[jj].action_curve.getCoefficients();
+//  for (int i = 0; i < ki.size(); i++) {
+//    output_file << std::setprecision(15) << ki[i] << "\t";
+//  }
+//  output_file << t[jj].action_curve.get_MSE() << "\t";
+//  output_file << t[jj].action_curve.get_MSE_pre() << std::endl;
+//
+//  auto T_list = t[jj].action_curve.get_T_list();
+//  auto S_list = t[jj].action_curve.get_S_list();
+//  for (size_t i = 0; i < T_list.size(); ++i) {
+//    output_file << T_list[i] << "\t" << S_list[i] << std::endl;
+//  }
 
   //  output_file << "==================" << std::endl;
   //
