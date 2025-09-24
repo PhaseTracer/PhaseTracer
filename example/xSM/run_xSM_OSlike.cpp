@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
 
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf, ac);
-  tf.set_calculate_percolation(true);
+//  tf.set_calculate_percolation(true);
   tf.find_transitions();
   if (debug_mode)
     std::cout << tf;
