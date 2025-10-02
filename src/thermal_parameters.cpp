@@ -144,6 +144,15 @@ std::vector<double> Thermodynamics::get_pressure_derivs(double T) const {
   return {pp, dp, ddp};
 }
 
+std::vector<double> Thermodynamics::get_energy_derivs(double T) const {
+  check_temperature_range(T, "get_energy_derivs");
+
+  double ee, de, dde;
+  alglib::spline1ddiff(this->e, T, ee, de, dde);
+
+  return {ee, de, dde};
+}
+
 double Thermodynamics::get_energy(double T) const {
   check_temperature_range(T, "get_energy");
   return alglib::spline1dcalc(this->e, T);
@@ -319,6 +328,10 @@ void ThermalParameters::find_thermal_parameters() {
 			tp_local.H_tp = H;
 			double we = get_we(tp, thermo_true);
 			tp_local.we_tp = we;
+			double cs_true = get_sound_speed(tp, thermo_true);
+			double cs_false = get_sound_speed(tp, thermo_false);
+			tp_local.cs_true_tp = cs_true;
+			tp_local.cs_false_tp = cs_false;
 
 			tp_local.eos = get_eos(minimum_temp, maximum_temp, tp, thermo_true, thermo_false);
 
@@ -364,6 +377,10 @@ void ThermalParameters::find_thermal_parameters() {
 			tp_local.H_tn = H;
 			double we = get_we(tn, thermo_true);
 			tp_local.we_tn = we;
+			double cs_true = get_sound_speed(tn, thermo_true);
+			double cs_false = get_sound_speed(tn, thermo_false);
+			tp_local.cs_true_tn = cs_true;
+			tp_local.cs_false_tn = cs_false;
 
 			if ( tp_local.completes == MilestoneStatus::YES && tfin > tn ) {
 				// transition does nucleate, but after the completion temp
@@ -399,22 +416,14 @@ EoS ThermalParameters::get_eos(double Tmin, double Tmax, double Tref, Thermodyna
 		out.enthalpy_false.push_back(false_thermo.get_enthalpy(tt));
 		out.entropy_false.push_back(false_thermo.get_entropy(tt));
 	}
-	// for (double tt = Tmin; tt < Tref; tt += dt) {
-	// 	out.temp.push_back(tt);
-	// 	out.pressure.push_back(true_thermo.get_pressure(tt));
-	// 	out.energy.push_back(true_thermo.get_energy(tt));
-	// 	out.enthalpy.push_back(true_thermo.get_enthalpy(tt));
-	// 	out.entropy.push_back(true_thermo.get_entropy(tt));
-	// }
-	// for (double tt = Tref; tt < Tmax; tt += dt) {
-	// 	out.temp.push_back(tt);
-	// 	out.pressure.push_back(false_thermo.get_pressure(tt));
-	// 	out.energy.push_back(false_thermo.get_energy(tt));
-	// 	out.enthalpy.push_back(false_thermo.get_enthalpy(tt));
-	// 	out.entropy.push_back(false_thermo.get_entropy(tt));
-	// }
-
 	return out;
+}
+
+double ThermalParameters::get_sound_speed(double T, Thermodynamics phase_thermo) {
+	double dedT = phase_thermo.get_energy_derivs(T)[0];
+	double dPdT = phase_thermo.get_pressure_derivs(T)[0];
+
+	return sqrt(dPdT/dedT);
 }
 
 double ThermalParameters::get_we(double Tref, Thermodynamics true_thermo) {
