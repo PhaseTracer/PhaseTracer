@@ -116,9 +116,16 @@ public:
   /**
    * @brief Computes the pressure and its derivatives at a given temperature.
    * @param T Temperature at which to evaluate.
-   * @return Vector containing pressure, dP/dT, and d²P/dT².
+   * @return Vector containing P, dP/dT, and d²P/dT².
    */
   std::vector<double> get_pressure_derivs(double T) const;
+
+  /**
+   * @brief Computes the energy and its derivatives at a given temperature.
+   * @param T Temperature at which to evaluate.
+   * @return Vector containing E, dE/dT, and d²E/dT².
+   */
+  std::vector<double> get_energy_derivs(double T) const;
 
 private:
   /**
@@ -252,6 +259,8 @@ struct ThermalParams {
   double betaH_tp, betaH_tn;
   double H_tp, H_tn;
   double we_tn, we_tp;
+  double cs_true_tp, cs_false_tp;
+  double cs_true_tn, cs_false_tn;
   EoS eos;
   MilestoneStatus percolates;
   MilestoneStatus nucleates;
@@ -369,6 +378,14 @@ public:
   std::vector<ThermalParams> get_thermal_parameters();
 
 private:
+
+  /**
+   * @brief Computes the sound speed in a given phase at temperature T.
+   * @param T Temperature at which to evaluate
+   * @param phase_thermo Thermodynamics of the phase
+   * @return Sound speed at T.
+   */
+  double get_sound_speed(double T, Thermodynamics phase_thermo);
 
   double get_we(
     double Tref,
