@@ -9,7 +9,8 @@ PhaseTracer
 <div align="center">
 <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/PhaseTracer/PhaseTracer/cmake-single-platform.yml">
 <img alt="GitHub License" src="https://img.shields.io/github/license/PhaseTracer/PhaseTracer">
-<img alt="Static Badge" src="https://img.shields.io/badge/arXiv-2003.02859-blue?link=https%3A%2F%2Farxiv.org%2Fabs%2F2003.02859">
+<a href="https://arxiv.org/abs/2003.02859"><img alt="Static Badge" src="https://img.shields.io/badge/arXiv-2003.02859-blue"></a>
+<a href="https://arxiv.org/abs/2412.04881"><img alt="Static Badge" src="https://img.shields.io/badge/arXiv-2412.04881-blue"></a>
 </div>
 <br>
 
@@ -123,15 +124,19 @@ Please note that the BSMPT examples in PhaseTacer are just for checking that Pha
 ## Citing
 
 If you use PhaseTracer, please cite the accompanying manual
-
+ 
     @article{Athron:2024xrh,
         author = "Athron, Peter and Balazs, Csaba and Fowlie, Andrew and Morris, Lachlan and Searle, William and Xiao, Yang and Zhang, Yang",
         title = "{PhaseTracer2: from the effective potential to gravitational waves}",
         eprint = "2412.04881",
         archivePrefix = "arXiv",
         primaryClass = "astro-ph.CO",
-        month = "12",
-        year = "2024"
+        doi = "10.1140/epjc/s10052-025-14258-y",
+        journal = "Eur. Phys. J. C",
+        volume = "85",
+        number = "5",
+        pages = "559",
+        year = "2025"
     }
 
     @article{Athron:2020sbe,
@@ -148,5 +153,3 @@ If you use PhaseTracer, please cite the accompanying manual
         pages = "567",
         year = "2020"
     }
-
-
