@@ -536,6 +536,35 @@ double Shooting::calAction(Profile1D profile) {
   return S;
 }
 
+void Shooting::filter_close_points(alglib::real_1d_array &x_arr,
+                                   alglib::real_1d_array &y_arr) {
+  if (x_arr.length() != y_arr.length()) {
+    throw std::runtime_error("Lengths of x and y arrays do not match");
+  }
+
+  if (x_arr.length() < 2)
+    return;
+
+  std::vector<double> filtered_x, filtered_y;
+  filtered_x.push_back(x_arr[0]);
+  filtered_y.push_back(y_arr[0]);
+
+  for (int i = 1; i < x_arr.length(); i++) {
+    double x1 = x_arr[i];
+    double x2 = filtered_x.back();
+    double abs_diff = std::abs(x2 - x1);
+    double rel_diff = abs_diff / (1.0 + std::max(std::abs(x1), std::abs(x2)));
+    if ((abs_diff < 1e-15) || (rel_diff < 1e-12)) {
+      LOG(debug) << "Removing points that are too close";
+    } else {
+      filtered_x.push_back(x_arr[i]);
+      filtered_y.push_back(y_arr[i]);
+    }
+  }
+  x_arr.setcontent(filtered_x.size(), filtered_x.data());
+  y_arr.setcontent(filtered_y.size(), filtered_y.data());
+}
+
 void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double> *p, std::vector<double> *dp,
                                size_t npoints, bool fixAbs) {
 
@@ -586,6 +615,7 @@ void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double> *p, std::vector
   }
 
   alglib::spline1dinterpolant spl;
+  filter_close_points(phi_arr, dphi_arr);
   alglib::spline1dbuildcubic(phi_arr, dphi_arr, spl);
 
   std::vector<double> evenly_phi(npoints);

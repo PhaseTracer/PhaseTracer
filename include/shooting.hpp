@@ -143,6 +143,8 @@ private:
   double rscale;
   int alpha;
 
+  void filter_close_points(alglib::real_1d_array &x_arr, alglib::real_1d_array &y_arr);
+
   /** To determine whether the field is considered nearby phi_absMin or not */
   PROPERTY(double, phi_eps_rel, 1e-3)
   /** The precision of field values after taking the logarithm */
