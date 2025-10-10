@@ -27,6 +27,7 @@ TEST_CASE("Compute transitions for a one-dimensional model", "[1DTestModel]") {
   pf.find_phases();
   PhaseTracer::TransitionFinder tf(pf);
   tf.set_TC_tol_rel(1e-16);
+  tf.set_fit_action_curve(false);
   tf.find_transitions();
 
   auto transitions = tf.get_transitions();
@@ -68,6 +69,7 @@ TEST_CASE("Compute nucleation for a one-dimensional model", "[1DTestModel]") {
   PhaseTracer::ActionCalculator ac(model);
   PhaseTracer::TransitionFinder tf(pf, ac);
   tf.set_TC_tol_rel(1e-16);
+  tf.set_fit_action_curve(false);
   tf.find_transitions();
 
   auto transitions = tf.get_transitions();
@@ -205,6 +207,7 @@ TEST_CASE("Check transitions for Z2 scalar singlet model", "[Z2ScalarSingletMode
       pf.find_phases();
       PhaseTracer::TransitionFinder tf(pf);
       tf.set_TC_tol_rel(1e-16);
+      tf.set_fit_action_curve(false);
       tf.find_transitions();
       auto transitions = tf.get_transitions();
 
