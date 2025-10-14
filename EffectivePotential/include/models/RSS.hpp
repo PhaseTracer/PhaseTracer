@@ -32,7 +32,7 @@
 #include "SM_parameters.hpp"
 
 #include <vector>
-#include <Eigen/Eigenvalues>
+#include <eigen3/Eigen/Eigenvalues>
 #include <iostream>
 #include <iomanip>
 #include <math.h>
