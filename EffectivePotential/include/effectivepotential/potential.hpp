@@ -20,11 +20,8 @@
 
 #include <vector>
 
-#include <boost/multiprecision/cpp_complex.hpp>
-#include <boost/numeric/odeint.hpp>
-#include <Eigen/Core>
-
-#include <interpolation.h>
+#include <eigen3/Eigen/Core>
+#include <libalglib/interpolation.h>
 
 #include "property.hpp"
 
