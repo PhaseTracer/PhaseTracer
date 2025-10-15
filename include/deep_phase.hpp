@@ -100,7 +100,7 @@ public:
 			auto params = get_pt_params(tps, vw, dof, dtau);
 			params.print();
 
-			std::vector<double> momentumVec = logspace(1e-2, 1e3, static_cast<std::size_t>(num_frequency_ssm));
+			std::vector<double> momentumVec = logspace(1e-3, 1e3, static_cast<std::size_t>(num_frequency_ssm));
 
 			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec2(momentumVec, params);
 		
