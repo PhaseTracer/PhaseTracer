@@ -114,6 +114,28 @@ public:
     return {phi1, phi2};
   };
 
+  std::vector<double> get_4d_params() const {
+    return {g_sq, gp_sq, v, m_s, muh_sq, lambda_h, lambda_hs, lambda_s, yt_sq};
+  }
+
+  std::map<std::string, double> get_4d_parameter_map(double T) const {
+
+    std::map<std::string, double> param_map;
+
+    param_map["g_sq"] = g_sq;
+    param_map["gp_sq"] = gp_sq;
+    param_map["v"] = v;
+    param_map["m_s"] = m_s;
+    param_map["muh_sq"] = muh_sq;
+    param_map["lambda_h"] = lambda_h;
+    param_map["lambda_hs"] = lambda_hs;
+    param_map["lambda_s"] = lambda_s;
+    param_map["yt_sq"] = yt_sq;
+    param_map["yt"] = std::sqrt(yt_sq);
+
+    return param_map;
+  }
+
 private:
   const double v = SM::v;
   const double mh = SM::mh;

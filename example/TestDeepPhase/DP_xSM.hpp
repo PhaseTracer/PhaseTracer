@@ -35,6 +35,7 @@
 #include <Eigen/Eigenvalues>
 #include <interpolation.h>
 #include <string>
+#include <map>
 #include <nlohmann/json.hpp>
 #include <filesystem>
 
@@ -73,8 +74,7 @@ class DR_xsm: public Potential {
 
       // Check points
       if( !check_points(print) ) { 
-        std::cout << "Failed!" << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("Parameter check failed in DR_xsm constructor");
       }
     
       std::vector<double> x0 = {g1sq_input, g2sq_input, g3sq_input, b1_input, mphiSq_input, msSq_input, a1_input, b3_input, lamH_input, lamHS_input, lamS_input, yt_input};
@@ -94,11 +94,9 @@ class DR_xsm: public Potential {
     };
 
     void set_Params() {
-      
       msSq_input = pow(Ms, 2) - 0.5 * lamHS_input * pow(v, 2);
       lamH_input = 0.5 * MhSq/pow(v, 2);
       mphiSq_input = - lamH_input * pow(v, 2);
-
     }
 
     bool check_points(bool print_) {
@@ -207,6 +205,42 @@ class DR_xsm: public Potential {
       }
 
       return params;
+    }
+
+    std::map<std::string, double> get_4d_parameter_map(double T) const {
+
+      double Gamma = scaleFactor*T;
+      std::map<std::string, double> param_map;
+
+      if ( running_flag ) {
+        param_map["g1sq"] = alglib::spline1dcalc(RGEs[0], Gamma);
+        param_map["g2sq"] = alglib::spline1dcalc(RGEs[1], Gamma);
+        param_map["g3sq"] = alglib::spline1dcalc(RGEs[2], Gamma);
+        param_map["b1"] = alglib::spline1dcalc(RGEs[3], Gamma);
+        param_map["mphiSq"] = alglib::spline1dcalc(RGEs[4], Gamma);
+        param_map["msSq"] = alglib::spline1dcalc(RGEs[5], Gamma);
+        param_map["a1"] = alglib::spline1dcalc(RGEs[6], Gamma);
+        param_map["b3"] = alglib::spline1dcalc(RGEs[7], Gamma);
+        param_map["lamH"] = alglib::spline1dcalc(RGEs[8], Gamma);
+        param_map["lamHS"] = alglib::spline1dcalc(RGEs[9], Gamma);
+        param_map["lamS"] = alglib::spline1dcalc(RGEs[10], Gamma);
+        param_map["yt"] = alglib::spline1dcalc(RGEs[11], Gamma);
+      } else {
+        param_map["g1sq"] = g1sq_input;
+        param_map["g2sq"] = g2sq_input;
+        param_map["g3sq"] = g3sq_input;
+        param_map["b1"] = b1_input;
+        param_map["mphiSq"] = mphiSq_input;
+        param_map["msSq"] = msSq_input;
+        param_map["a1"] = a1_input;
+        param_map["b3"] = b1_input;
+        param_map["lamH"] = lamH_input;
+        param_map["lamHS"] = lamHS_input;
+        param_map["lamS"] = lamS_input;
+        param_map["yt"] = yt_input;
+      }
+
+      return param_map;
     }
 
     std::vector<double> get_3d_parameters(double T) const {
@@ -407,45 +441,8 @@ std::string formatOutput( std::vector<double> in, std::vector<double> out ) {
   return output;
 }
 std::string formatOutput( std::vector<double> in, double out ) {
-  std::vector<double> full_out = {out, 0., 0., 0.};
+  std::vector<double> full_out = {out, 0., 0., 0., 0., 0., 0., 0.};
   return formatOutput(in, full_out);
-}
-
-std::string formatOutputNN( std::vector<double> in) {
-  std::vector<double> full_out = {0., 0., 0., 1.};
-  return formatOutput(in, full_out);
-}
-
-/*
-  Creates wallGoJSON
-*/
-json wallGoJSON(PhaseTracer::Transition trans, std::vector<double> params, double tn) {
-
-  // use minima at TC for guess, or could solve for minim at tn?
-  double h_min = abs(trans.true_vacuum[0]); std::cout << "h_min = " << h_min << std::endl;
-  double s_min = abs(trans.false_vacuum[1]); std::cout << "s_min = " << s_min << std::endl;
-
-  json input = {
-    {"parameters", {
-      {"g1sq", params[0]},
-      {"g2sq", params[1]},
-      {"g3sq", params[2]},
-      {"b1", params[3]},
-      {"mphiSq", params[4]},
-      {"msSq", params[5]},
-      {"a1", params[6]},
-      {"b3", params[7]},
-      {"lamH", params[8]},
-      {"lamHS", params[9]},
-      {"lamS", params[10]},
-      {"yt", params[11]}
-    }},
-    {"temperature", tn},
-    {"phase1", {0.0, s_min}},
-    {"phase2", {h_min, 0.0}}
-  };
-
-  return input;
 }
 
 /*
