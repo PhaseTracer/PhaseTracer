@@ -65,6 +65,19 @@ protected:
 	}
 };
 
+PhaseTransition::EquationOfState
+pt_EoS_to_dp_EoS(PhaseTracer::EoS eos)
+{
+	std::vector<double> t_vals = eos.temp;
+	std::vector<double> ps_vals = eos.pressure_false;
+	std::vector<double> pb_vals = eos.pressure_true;
+	std::vector<double> es_vals = eos.energy_false;
+	std::vector<double> eb_vals = eos.energy_true;
+
+	PhaseTransition::EquationOfState output(t_vals, ps_vals, pb_vals, es_vals, eb_vals);
+	return output;
+}
+
 class GW_DeepPhase {
 
 public:
@@ -98,9 +111,8 @@ public:
 			std::cout.rdbuf(&log_buffer);
 			
 			auto params = get_pt_params(tps, vw, dof, dtau);
-			params.print();
 
-			std::vector<double> momentumVec = logspace(1e-2, 1e3, static_cast<std::size_t>(num_frequency_ssm));
+			std::vector<double> momentumVec = logspace(1e-3, 1e3, static_cast<std::size_t>(num_frequency_ssm));
 
 			Spectrum::PowerSpec OmegaGW = Spectrum::GWSpec2(momentumVec, params);
 		
@@ -160,20 +172,20 @@ private :
 			{
 				throw std::invalid_argument("Invalid thermal parameters for universe creation");
 			}
-			return PhaseTransition::Universe(tps.TN, tps.H_tn, dof);
+			return PhaseTransition::Universe(tps.TN, dof, tps.H_tn);
 		} else if (tps.percolates == MilestoneStatus::YES) 
 		{
 			if (tps.TP <= 0 || tps.H_tp <= 0) 
 			{
 				throw std::invalid_argument("Invalid thermal parameters for universe creation");
 			}
-			return PhaseTransition::Universe(tps.TP, tps.H_tp, dof);
+			return PhaseTransition::Universe(tps.TP, dof, tps.H_tp);
 		}
 		PhaseTransition::Universe un;
 		return un;
 	}
 
-	PhaseTransition::PTParams 
+	PhaseTransition::PTParams_Bag 
 	get_pt_params(const ThermalParams& tps, const double& vw, const double& dof, const double& dtau) 
 	{
 		if (tps.nucleates == MilestoneStatus::YES) 
@@ -184,12 +196,14 @@ private :
 				throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
 			}
 			double alpha = tps.alpha_tn;
-			double betaH = tps.betaH_tn;
+			double betaH = tps.betaH_tn * tps.H_tn;
 			double Tref = tps.TN;
 			double wN = tps.we_tn;
+			double cs_true = tps.cs_true_tn;
+			double cs_false = tps.cs_false_tn;
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			un.print();
-			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, Tref, wN, "exp", un);
+			return PhaseTransition::PTParams_Bag(vw, alpha, Tref, betaH, dtau / tps.H_tn, "exp", un, cs_true, cs_false);
 		} else if (tps.percolates == MilestoneStatus::YES) 
 		{
 			// Validate inputs
@@ -197,14 +211,16 @@ private :
 				throw std::invalid_argument("Invalid thermal parameters for PTParams creation");
 			}
 			double alpha = tps.alpha_tp;
-			double betaH = tps.betaH_tp;
+			double beta = tps.betaH_tp * tps.H_tp;
 			double Tref = tps.TP;
 			double wN = tps.we_tp;
+			double cs_true = tps.cs_true_tp;
+			double cs_false = tps.cs_false_tp;
 			PhaseTransition::Universe un = get_universe(tps, dof);
 			un.print();
-			return PhaseTransition::PTParams(vw, alpha, betaH, dtau, Tref, wN, "exp", un);
+			return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, dtau / tps.H_tp, "exp", un, cs_true, cs_false);
 		}
-		PhaseTransition::PTParams pt;
+		PhaseTransition::PTParams_Bag pt(0.5, 0.1);
 		return pt;
 	}
 	

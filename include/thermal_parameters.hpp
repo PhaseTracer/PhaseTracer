@@ -188,6 +188,7 @@ private:
  */
 enum class MilestoneStatus {
   YES,
+  FAST,
   NO,
   INVALID
 };
@@ -239,7 +240,6 @@ struct EoS {
           << entropy_true[i] << "," << entropy_false[i] << "\n";
     }
   }
-
 };
 
 /**
@@ -248,6 +248,7 @@ struct EoS {
  */
 struct ThermalParams {
   size_t key;
+  bool success;
   alglib::spline1dinterpolant hubble_spline;
   alglib::spline1dinterpolant dtdT_spline;
   double TC;
@@ -377,7 +378,97 @@ public:
 
   std::vector<ThermalParams> get_thermal_parameters();
 
+  ThermalParams process_transition(Transition t);
+
 private:
+
+  std::pair<double, double>
+  setup_temperature_range(
+    const Transition& t,
+    ThermalParams& output
+  );
+
+  std::pair<Thermodynamics, Thermodynamics>
+  setup_thermodynamics_classes(
+    const Transition& t
+  );
+
+  Bounce
+  setup_bounce_class(
+    const Transition&t, 
+    TransitionFinder tf, 
+    const double& minimum_temp, 
+    const double& maximum_temp, 
+    const int& spline_evaluations
+  );
+
+  void
+  add_debug_information(
+    ThermalParams& output,
+    const double& minimum_temp,
+    const double& maximum_temp,
+    alglib::spline1dinterpolant hubble_spline,
+    Bounce bounce_class,
+    Thermodynamics& thermo_true,
+    Thermodynamics& thermo_false,
+    alglib::spline1dinterpolant dtdT_spline
+  );
+
+  struct ThermalParamSet {
+    double alpha;
+    double betaH;
+    double H;
+    double we;
+    double cs_true;
+    double cs_false;
+
+    ThermalParamSet(double alpha_, double betaH_, double H_, double we_, double cs_true_, double cs_false_) :
+      alpha(alpha_), betaH(betaH_), H(H_), we(we_), cs_true(cs_true_), cs_false(cs_false_) {}
+  };
+
+  ThermalParamSet
+  calculate_thermal_parameters(
+    const double& tref,
+    Thermodynamics& thermo_true, 
+    Thermodynamics& thermo_false,
+    Bounce& bounce_class
+  );
+
+  void 
+  calculate_completion_milestone(
+    ThermalParams& output,
+    Transition& t,
+    alglib::spline1dinterpolant& hubble_spline, 
+    alglib::spline1dinterpolant& dtdT_spline,
+    Bounce& bounce_class,
+    Thermodynamics& thermo_true,
+    Thermodynamics& thermo_false
+  );
+
+  void 
+  calculate_percolation_milestone(
+    ThermalParams& output,
+    Transition& t,
+    alglib::spline1dinterpolant& hubble_spline, 
+    alglib::spline1dinterpolant& dtdT_spline,
+    Bounce& bounce_class,
+    Thermodynamics& thermo_true,
+    Thermodynamics& thermo_false
+  );
+
+  void 
+  calculate_nucleation_milestone(
+    ThermalParams& output,
+    Transition& t,
+    alglib::spline1dinterpolant& hubble_spline, 
+    alglib::spline1dinterpolant& dtdT_spline, 
+    Bounce& bounce_class,
+    Thermodynamics& thermo_true,
+    Thermodynamics& thermo_false
+  );
+
+  void
+  calculate_durations(ThermalParams& output);
 
   /**
    * @brief Computes the sound speed in a given phase at temperature T.
@@ -405,7 +496,6 @@ private:
   EoS get_eos(
     double Tmin,
     double Tmax,
-    double Tref, 
     Thermodynamics true_thermo, 
     Thermodynamics false_thermo);
 
