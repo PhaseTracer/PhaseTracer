@@ -32,6 +32,7 @@ public:
   Potential() {
     set_h_4(h_4);
   }
+  virtual ~Potential() = default;
   /** Potential, possibly at finite-temperature */
   virtual double V(Eigen::VectorXd phi, double T) const = 0;
   /** Number of scalar fields */
