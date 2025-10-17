@@ -238,167 +238,151 @@ void ThermalParameters::find_thermal_parameters() {
 	std::vector<Transition> trans = tf.get_transitions();
 
 	for (auto t : trans) {
-		ThermalParams tp_local;
+		try 
+		{
+			ThermalParams tp_local;
+			try 
+			{
+				tp_local = process_transition(t);
+			} catch(...) 
+			{
+				tp_local.success = false;
+			}
 
-		double minimum_temp = t.false_phase.T.front();
-		double maximum_temp = t.TC;
-		tp_local.TC = maximum_temp;
-
-		if(minimum_temp > maximum_temp) { 
-			throw std::runtime_error("Minimum temp exceeds maximum temp.");
-		}
-
-		if(std::abs(maximum_temp - minimum_temp) < dt_tol) {
-			// throw std::runtime_error("Temperature range is below set tolerance. Phase may not nucleate.");
+			if (tp_local.success);
+			{
+				thermalparameterContainer.push_back(tp_local);
+			}
+		} catch (...) {
 			continue;
 		}
-
-		LOG(debug) << "Creating true phase Thermodynamics class";
-		Thermodynamics thermo_true(t.true_phase, n_temp, dof);
-		LOG(debug) << "Creating false phase Thermodynamics class";
-		Thermodynamics thermo_false(t.false_phase, n_temp, dof);
-
-		LOG(debug) << "Creating bounce class";
-		Bounce bounce_class(t, tf, minimum_temp, maximum_temp, spline_evaluations);
-		LOG(debug) << "Creating bounce spline";
-		bounce_class.get_splines();
-		LOG(debug) << "Bounce.get_splines() successful.";
-
-		alglib::spline1dinterpolant hubble_spline;
-		this->make_hubble_spline(hubble_spline, thermo_true, thermo_false, minimum_temp, maximum_temp);
-		tp_local.hubble_spline = hubble_spline;
-		LOG(debug) << "Created Hubble spline.";
-
-		alglib::spline1dinterpolant dtdT_spline;
-		this->make_dtdT_spline(dtdT_spline, thermo_true, thermo_false, minimum_temp, maximum_temp);
-		tp_local.dtdT_spline = dtdT_spline;
-		LOG(debug) << "Created dtdT spline.";
-
-		// some debug information
-		// this could be renamed down the line
-		if(compute_debug) {
-			LOG(debug) << "Creating debug info for thermal parameters";
-			ThermalDEBUG debug_local;
-			int n = 75;
-			double dt = (maximum_temp - minimum_temp)/(n-1.);
-			for (double tt = minimum_temp; tt < maximum_temp; tt += dt) {
-				debug_local.temp.push_back(tt);
-				double pf;
-				try {pf = false_vacuum_fraction(hubble_spline, bounce_class, tt, vw);} catch (...) {pf = 1.0;}
-				debug_local.pf.push_back(pf);
-				double nt;
-				try {nt = nucleation_rate(hubble_spline, bounce_class, tt);} catch (...) {nt = 0.0;}
-				debug_local.nt.push_back(nt);
-			   double gamma;
-			   try {gamma = std::exp(alglib::spline1dcalc(bounce_class.log_gamma_spline, tt));} catch (...) {gamma = 0.0;}
-			   debug_local.gamma.push_back(gamma);
-				double hubble_rate = get_hubble_rate(tt, thermo_true, thermo_false);
-				debug_local.hubble.push_back(hubble_rate);
-				double t;
-				try {t = get_duration(dtdT_spline, maximum_temp, tt);} catch (...) {t = 0.0;}
-				debug_local.t.push_back(t);
-				LOG(debug) << "Debug info for T = " << tt << ": pf = " << pf
-					<< ", nt = " << nt << ", gamma = " << gamma
-					<< ", hubble_rate = " << hubble_rate
-					<< ", t = " << t;
-			}
-			debug_local.tmin = minimum_temp;
-			debug_local.tmax = maximum_temp;
-			tp_local.debug_info = debug_local;
-			LOG(debug) << "Debug info created.";
-		}
-		
-
-		double tp = 0.0;
-		try { 
-
-			tp = get_percolation_temperature(hubble_spline, bounce_class, vw);
-			LOG(debug) << "Found percolation temp " << tp;
-			if(abs(tp-t.TC) <= 1e-3) {
-				LOG(debug) << "Percolation temperature is close to critical temperature.";
-				continue;
-			}
-			tp_local.TP = tp;
-
-			double alpha = get_alpha(tp, thermo_true, thermo_false);
-			tp_local.alpha_tp = alpha;
-			double betaH = get_betaH(tp, bounce_class);
-			tp_local.betaH_tp = betaH;
-			double H = get_hubble_rate(tp, thermo_true, thermo_false);
-			tp_local.H_tp = H;
-			double we = get_we(tp, thermo_true);
-			tp_local.we_tp = we;
-			double cs_true = get_sound_speed(tp, thermo_true);
-			double cs_false = get_sound_speed(tp, thermo_false);
-			tp_local.cs_true_tp = cs_true;
-			tp_local.cs_false_tp = cs_false;
-
-			tp_local.eos = get_eos(minimum_temp, maximum_temp, tp, thermo_true, thermo_false);
-
-			tp_local.percolates = MilestoneStatus::YES;
-		} catch (const std::runtime_error &e) {
-			tp_local.percolates = MilestoneStatus::NO;
-			LOG(debug) << "Failed to find percolation temperature: " << e.what() << std::endl;
-		}
-		
-
-		double tfin = 0.0;
-		try { 
-			tfin = get_completion_temperature(hubble_spline, bounce_class, 0.35);
-			LOG(debug) << "Found completion temp " << tfin; 
-			if(abs(tfin-t.TC) <= 1e-3) {
-				LOG(debug) << "Completion temperature is close to critical temperature.";
-				continue;
-			}
-			tp_local.TF = tfin;
-			tp_local.dtf_tc = get_duration(dtdT_spline, maximum_temp, tfin) * tp_local.H_tp;
-			tp_local.dtf_tp = get_duration(dtdT_spline, tp, tfin) * tp_local.H_tp;
-			tp_local.completes = MilestoneStatus::YES;
-		} catch (const std::runtime_error &e) {
-			tp_local.completes = MilestoneStatus::NO;
-			LOG(debug) << "Failed to find completion temperature: " << e.what() << std::endl;
-		}
-
-		double tn = 0.0;
-		try { 
-			tn = get_nucleation_temperature(hubble_spline, bounce_class); 
-			LOG(debug) << "Found nucleation temp " << tn;
-			if(abs(tn-t.TC) <= 1e-3) {
-				LOG(debug) << "Nucleation temperature is close to critical temperature.";
-				continue;
-			}
-			tp_local.TN = tn;
-
-			double alpha = get_alpha(tn, thermo_true, thermo_false);
-			tp_local.alpha_tn = alpha;
-			double betaH = get_betaH(tn, bounce_class);
-			tp_local.betaH_tn = betaH;
-			double H = get_hubble_rate(tn, thermo_true, thermo_false);
-			tp_local.H_tn = H;
-			double we = get_we(tn, thermo_true);
-			tp_local.we_tn = we;
-			double cs_true = get_sound_speed(tn, thermo_true);
-			double cs_false = get_sound_speed(tn, thermo_false);
-			tp_local.cs_true_tn = cs_true;
-			tp_local.cs_false_tn = cs_false;
-
-			if ( tp_local.completes == MilestoneStatus::YES && tfin > tn ) {
-				// transition does nucleate, but after the completion temp
-				tp_local.nucleates = MilestoneStatus::INVALID;
-			} else {
-				tp_local.nucleates = MilestoneStatus::YES;
-				tp_local.dtf_tn = get_duration(dtdT_spline, tn, tfin) * tp_local.H_tn;
-			}
-		} catch (const std::runtime_error &e) {
-			tp_local.nucleates = MilestoneStatus::NO;
-			LOG(debug) << "Failed to find nucleation temperature: " << e.what() << std::endl;
-		}
-
-		thermalparameterContainer.push_back(tp_local);
 	}
 }
 
-EoS ThermalParameters::get_eos(double Tmin, double Tmax, double Tref, Thermodynamics true_thermo, Thermodynamics false_thermo) {
+ThermalParams ThermalParameters::process_transition(Transition t) {
+
+	ThermalParams output;
+
+	auto [minimum_temp, maximum_temp] = setup_temperature_range(t, output);
+	if(output.success = false) {return output;}
+
+	auto [thermo_true, thermo_false] = setup_thermodynamics_classes(t);
+
+	auto bounce_class = setup_bounce_class(t, tf, minimum_temp, maximum_temp, spline_evaluations);
+
+	alglib::spline1dinterpolant hubble_spline;
+	this->make_hubble_spline(hubble_spline, thermo_true, thermo_false, minimum_temp, maximum_temp);
+	output.hubble_spline = hubble_spline;
+	LOG(debug) << "Created Hubble spline.";
+
+	alglib::spline1dinterpolant dtdT_spline;
+	this->make_dtdT_spline(dtdT_spline, thermo_true, thermo_false, minimum_temp, maximum_temp);
+	output.dtdT_spline = dtdT_spline;
+	LOG(debug) << "Created dtdT spline.";
+
+	if(compute_debug) {
+		add_debug_information(output, minimum_temp, maximum_temp, hubble_spline, bounce_class, thermo_true, thermo_false, dtdT_spline);
+	}
+
+	output.eos = get_eos(minimum_temp, maximum_temp, thermo_true, thermo_false);
+	
+	calculate_completion_milestone(output, t, hubble_spline, dtdT_spline, bounce_class, thermo_true, thermo_false);
+	calculate_percolation_milestone(output, t, hubble_spline, dtdT_spline, bounce_class, thermo_true, thermo_false);
+	calculate_nucleation_milestone(output, t, hubble_spline, dtdT_spline, bounce_class, thermo_true, thermo_false);
+
+	calculate_durations(output);
+
+	return output;
+}
+
+std::pair<double, double>
+ThermalParameters::setup_temperature_range(const Transition& t, ThermalParams& output)
+{
+	LOG(debug) << "Setting up temperature ranges for transition " << t.key;
+	double minimum_temp = t.false_phase.T.front();
+	double maximum_temp = t.TC;
+	output.TC = maximum_temp;
+
+	if(minimum_temp > maximum_temp) { 
+		std::swap(minimum_temp, maximum_temp);
+	}
+
+	if(std::abs(maximum_temp - minimum_temp) < dt_tol) {
+		output.success = false;
+	}
+
+	return {minimum_temp, maximum_temp};
+}
+
+std::pair<Thermodynamics, Thermodynamics>
+ThermalParameters::setup_thermodynamics_classes(const Transition& t)
+{
+	LOG(debug) << "Creating true phase Thermodynamics class for transition " << t.key;
+	Thermodynamics thermo_true(t.true_phase, n_temp, dof);
+	LOG(debug) << "Creating false phase Thermodynamics class for transition " << t.key;
+	Thermodynamics thermo_false(t.false_phase, n_temp, dof);
+
+	return {thermo_true, thermo_false};
+}
+
+Bounce
+ThermalParameters::setup_bounce_class(
+    const Transition&t, 
+    TransitionFinder tf, 
+    const double& minimum_temp, 
+    const double& maximum_temp, 
+    const int& spline_evaluations
+)
+{
+	LOG(debug) << "Creating bounce class for transition " << t.key;
+	Bounce bounce_class(t, tf, minimum_temp, maximum_temp, spline_evaluations);
+	LOG(debug) << "Creating bounce spline for transition " << t.key;
+	bounce_class.get_splines();
+	LOG(debug) << "Bounce.get_splines() successful for transition " << t.key;
+	return bounce_class;
+}
+
+void 
+ThermalParameters::add_debug_information(
+	ThermalParams& output,
+	const double& minimum_temp,
+	const double& maximum_temp,
+	alglib::spline1dinterpolant hubble_spline,
+	Bounce bounce_class,
+	Thermodynamics& thermo_true,
+	Thermodynamics& thermo_false,
+	alglib::spline1dinterpolant dtdT_spline
+)
+{
+	LOG(debug) << "Creating debug info for thermal parameters";
+	ThermalDEBUG debug;
+	int n = 75;
+	double dt = (maximum_temp - minimum_temp)/(n-1.);
+	for (double tt = minimum_temp; tt < maximum_temp; tt += dt) {
+		debug.temp.push_back(tt);
+		double pf;
+		try {pf = false_vacuum_fraction(hubble_spline, bounce_class, tt, vw);} catch (...) {pf = 1.0;}
+		debug.pf.push_back(pf);
+		double nt;
+		try {nt = nucleation_rate(hubble_spline, bounce_class, tt);} catch (...) {nt = 0.0;}
+		debug.nt.push_back(nt);
+		double gamma;
+		try {gamma = std::exp(alglib::spline1dcalc(bounce_class.log_gamma_spline, tt));} catch (...) {gamma = 0.0;}
+		debug.gamma.push_back(gamma);
+		double hubble_rate = get_hubble_rate(tt, thermo_true, thermo_false);
+		debug.hubble.push_back(hubble_rate);
+		double t;
+		try {t = get_duration(dtdT_spline, maximum_temp, tt);} catch (...) {t = 0.0;}
+		debug.t.push_back(t);
+		LOG(debug) << "Debug info for T = " << tt << ": pf = " << pf << ", nt = " << nt << ", gamma = " << gamma << ", hubble_rate = " << hubble_rate << ", t = " << t;
+	}
+	debug.tmin = minimum_temp;
+	debug.tmax = maximum_temp;
+	output.debug_info = debug;
+	LOG(debug) << "Debug info created.";
+}
+
+EoS ThermalParameters::get_eos(double Tmin, double Tmax, Thermodynamics true_thermo, Thermodynamics false_thermo) {
 
 	EoS out;
 	int N = 300;
@@ -419,9 +403,155 @@ EoS ThermalParameters::get_eos(double Tmin, double Tmax, double Tref, Thermodyna
 	return out;
 }
 
+ThermalParameters::ThermalParamSet
+ThermalParameters::calculate_thermal_parameters(
+	const double& tref,
+	Thermodynamics& thermo_true, 
+	Thermodynamics& thermo_false,
+	Bounce& bounce_class
+)
+{	
+	const auto alpha = get_alpha(tref, thermo_true, thermo_false);
+	const auto betaH = get_betaH(tref, bounce_class);
+	const auto H = get_hubble_rate(tref, thermo_true, thermo_false);
+	const auto we = get_we(tref, thermo_true);
+	const auto cs_true = get_sound_speed(tref, thermo_true);
+	const auto cs_false =get_sound_speed(tref, thermo_false);
+	ThermalParamSet output(alpha, betaH, H, we, cs_true, cs_false);
+	return output;
+}
+
+void 
+ThermalParameters::calculate_completion_milestone(
+	ThermalParams& output,
+	Transition& t,
+    alglib::spline1dinterpolant& hubble_spline, 
+    alglib::spline1dinterpolant& dtdT_spline,
+    Bounce& bounce_class,
+    Thermodynamics& thermo_true,
+    Thermodynamics& thermo_false
+)
+{
+	try { 
+		double tfin = get_completion_temperature(hubble_spline, bounce_class, vw);
+		LOG(debug) << "Found completion temp " << tfin;
+		output.TF = tfin;
+
+		if(abs(tfin-t.TC) <= 1e-3) {
+			LOG(debug) << "Completion temperature is close to critical temperature.";
+			output.completes = MilestoneStatus::FAST;
+			return;
+		}
+		
+		output.completes = MilestoneStatus::YES;
+	} catch (const std::runtime_error &e) {
+		output.completes = MilestoneStatus::NO;
+		LOG(debug) << "Failed to find completion temperature: " << e.what() << std::endl;
+	}
+}
+
+void 
+ThermalParameters::calculate_percolation_milestone(
+	ThermalParams& output,
+	Transition& t,
+    alglib::spline1dinterpolant& hubble_spline, 
+    alglib::spline1dinterpolant& dtdT_spline, 
+    Bounce& bounce_class,
+    Thermodynamics& thermo_true,
+    Thermodynamics& thermo_false
+)
+{
+	try { 
+		double tp = get_percolation_temperature(hubble_spline, bounce_class, vw);
+		LOG(debug) << "Found percolation temp " << tp;
+		output.TP = tp;
+
+		if(abs(tp-t.TC) <= 1e-3) {
+			LOG(debug) << "Percolation temperature is close to critical temperature.";
+			output.percolates = MilestoneStatus::FAST;
+			return;
+		}
+		
+		const auto parameter_set = calculate_thermal_parameters(tp, thermo_true, thermo_false, bounce_class);
+		output.alpha_tp = parameter_set.alpha;
+		output.betaH_tp = parameter_set.betaH;
+		output.H_tp = parameter_set.H;
+		output.we_tp = parameter_set.we;
+		output.cs_true_tp = parameter_set.cs_true;
+		output.cs_false_tp = parameter_set.cs_false;
+
+		output.percolates = MilestoneStatus::YES;
+	} catch (const std::runtime_error &e) {
+		output.percolates = MilestoneStatus::NO;
+		LOG(debug) << "Failed to find percolation temperature: " << e.what() << std::endl;
+	}
+}
+
+void 
+ThermalParameters::calculate_nucleation_milestone(
+	ThermalParams& output,
+	Transition& t,
+    alglib::spline1dinterpolant& hubble_spline, 
+    alglib::spline1dinterpolant& dtdT_spline, 
+    Bounce& bounce_class,
+    Thermodynamics& thermo_true,
+    Thermodynamics& thermo_false
+)
+{
+	try { 
+		double tn = get_nucleation_temperature(hubble_spline, bounce_class); 
+		LOG(debug) << "Found nucleation temp " << tn;
+		output.TN = tn;
+
+		if(abs(tn-t.TC) <= 1e-3) {
+			output.nucleates = MilestoneStatus::FAST;
+			LOG(debug) << "Nucleation temperature is close to critical temperature.";
+			return;
+		}
+	
+		const auto parameter_set = calculate_thermal_parameters(tn, thermo_true, thermo_false, bounce_class);
+		output.alpha_tn = parameter_set.alpha;
+		output.betaH_tn = parameter_set.betaH;
+		output.H_tn = parameter_set.H;
+		output.we_tn = parameter_set.we;
+		output.cs_true_tn = parameter_set.cs_true;
+		output.cs_false_tn = parameter_set.cs_false;
+
+		if ( output.completes == MilestoneStatus::YES && output.TF > tn ) 
+		{
+			output.nucleates = MilestoneStatus::INVALID;
+		} else 
+		{
+			output.nucleates = MilestoneStatus::YES;
+		}
+	} catch (const std::runtime_error &e) {
+		output.nucleates = MilestoneStatus::NO;
+		LOG(debug) << "Failed to find nucleation temperature: " << e.what() << std::endl;
+	}
+}
+
+void
+ThermalParameters::calculate_durations(ThermalParams& output)
+{
+	if (output.completes == MilestoneStatus::YES)
+	{
+		output.dtf_tc = get_duration(output.dtdT_spline, output.TC, output.TF) * output.H_tp;
+		if (output.percolates == MilestoneStatus::YES)
+		{
+			output.dtf_tp = get_duration(output.dtdT_spline, output.TP, output.TF) * output.H_tp;
+		}
+		if (output.nucleates == MilestoneStatus::YES)
+		{
+			output.dtf_tn = get_duration(output.dtdT_spline, output.TN, output.TF) * output.H_tn;
+		}
+	}
+	
+	
+}
+
 double ThermalParameters::get_sound_speed(double T, Thermodynamics phase_thermo) {
-	double dedT = phase_thermo.get_energy_derivs(T)[0];
-	double dPdT = phase_thermo.get_pressure_derivs(T)[0];
+	double dedT = phase_thermo.get_energy_derivs(T)[1];
+	double dPdT = phase_thermo.get_pressure_derivs(T)[1];
 
 	return sqrt(dPdT/dedT);
 }
