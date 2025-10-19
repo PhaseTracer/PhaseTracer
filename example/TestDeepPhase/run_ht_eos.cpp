@@ -301,7 +301,7 @@ int main(int argc, char* argv[]) {
   output_file << format_thermal_params(in, 1, vw, vwLTE, tps);
   output_file.close();
 
-    // try deep phase fluid profiles
+  // try deep phase fluid profiles
 
   auto eos_dp = PhaseTracer::pt_EoS_to_dp_EoS(tps.eos);
   auto universe = PhaseTransition::Universe(tps.TP, 107.75, tps.H_tp);

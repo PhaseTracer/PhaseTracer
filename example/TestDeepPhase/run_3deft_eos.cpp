@@ -290,36 +290,11 @@ int main(int argc, char* argv[]) {
   std::cout << "cs_true (tp) = " << tps.cs_true_tp << "\n";
   std::cout << "cs_false (tp) = " << tps.cs_false_tp << "\n";
 
-  // const auto eos_path = "3deft_l_hs_" + std::to_string(lambda_hs) + "_l_s_" + std::to_string(lambda_s) + "_m_s_" + std::to_string(Ms) + ".csv";
-  const auto eos_path = "3deft_bp2.csv";
-  tps.eos.write_EoS(eos_path);
+  // const auto eos_path = "z_eos_scan/eos/3deft_l_hs_" + std::to_string(lambda_hs) + "_l_s_" + std::to_string(lambda_s) + "_m_s_" + std::to_string(Ms) + ".csv";
+  // const auto eos_path = "z_eos_scan/3deft_bp1.csv";
+  // tps.eos.write_EoS(eos_path);
 
   output_file << format_thermal_params(in, 1, vw, vwLTE, tps);
   output_file.close();
-
-  // try deep phase fluid profiles
-
-  auto eos_dp = PhaseTracer::pt_EoS_to_dp_EoS(tps.eos);
-  auto universe = PhaseTransition::Universe(tps.TP, 107.75, tps.H_tp);
-
-  double RsH = pow(8.*M_PI, 1./3.) * vw / tps.betaH_tp;
-  double dtau = RsH * dtauRs / tps.H_tp;
-
-  auto pt_params_bag = PhaseTransition::PTParams_Bag(vw, tps.alpha_tp, tps.TP, tps.betaH_tp * tps.H_tp, dtau, "exp", universe, tps.cs_true_tp, tps.cs_false_tp);
-
-  const Hydrodynamics::FluidProfile profile_bag(pt_params_bag);
-  profile_bag.write("3deft_fp_bag.csv");
-
-  auto pt_params_veff = PhaseTransition::PTParams_Veff(vw, tps.alpha_tp, tps.TP, tps.betaH_tp * tps.H_tp, dtau, "exp", universe, eos_dp);
-
-  const Hydrodynamics::FluidProfile profile_veff(pt_params_veff);
-  profile_veff.write("3deft_fp_veff.csv");
-
-  const auto kRs_vals = logspace(1e-3, 1e+3, 100);
-  Spectrum::PowerSpec OmegaGW_bag = Spectrum::GWSpec2(kRs_vals, pt_params_bag);
-  OmegaGW_bag.write("3deft_spec_bag.csv");
-  Spectrum::PowerSpec OmegaGW_veff = Spectrum::GWSpec2(kRs_vals, pt_params_veff);
-  OmegaGW_veff.write("3deft_spec_veff.csv");
-
   return 0;
 }
