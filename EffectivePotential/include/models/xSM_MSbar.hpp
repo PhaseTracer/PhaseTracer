@@ -361,6 +361,28 @@ public:
     }
   }
 
+  // std::vector<double> get_4d_params() const {
+  //   return {g_sq, gp_sq, v, m_s, muh_sq, lambda_h, lambda_hs, lambda_s, yt_sq};
+  // }
+
+  std::map<std::string, double> get_4d_parameter_map(double T) const {
+
+    std::map<std::string, double> param_map;
+
+    param_map["v0"] = 247.4544243292407;
+    param_map["Mt"] = 173.0;
+    param_map["MW"] = 80.379;
+    param_map["MZ"] = 91.1876;
+    param_map["mh1"] = 125.25;
+    param_map["mh2"] = ms;
+    param_map["lHS"] = lambda_hs;
+    param_map["lSS"] = lambda_s;
+    param_map["RGScale"] = 10.;
+    param_map["g3"] = 1.2279920495357861;
+
+    return param_map;
+  }
+
   bool iteration_converged = false;
   double get_muh_sq() const { return muh_sq; }
   double get_mus_sq() const { return mus_sq; }
