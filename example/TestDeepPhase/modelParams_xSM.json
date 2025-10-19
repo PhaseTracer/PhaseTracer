@@ -1,6 +1,11 @@
 {
     "mS": 100.000000,
-    "lambda_s": 0.238189,
-    "lambda_hs": 0.547308,
-    "vw" : 0.5
+    "lambda_s": 0.4,
+    "lambda_hs": 0.6,
+    "vw" : 0.7,
+    "dtauRs" : 10,
+    "Q" : 100,
+    "xi" : 10,
+    "daisy" : 1,
+    "tree_level_tadpoles" : false
 }
