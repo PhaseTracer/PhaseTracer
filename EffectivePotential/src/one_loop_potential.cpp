@@ -310,9 +310,8 @@ double OneLoopPotential::daisy(std::vector<double> scalar_masses_sq,
     correction += scalar_dofs[i] * (std::pow(std::max(0., scalar_debye_sq[i]), 1.5) - std::pow(std::max(0., scalar_masses_sq[i]), 1.5));
   }
 
-  // hack - i know only first 3 are longitudinal in xSM model
   for (size_t i = 0; i < vector_masses_sq.size(); ++i) {
-    correction += vector_dofs[i] * (std::pow(std::max(0., vector_debye_sq[i]), 1.5) - std::pow(std::max(0., vector_masses_sq[i]), 1.5));
+    correction += (vector_dofs[i] / 3.0) * (std::pow(std::max(0., vector_debye_sq[i]), 1.5) - std::pow(std::max(0., vector_masses_sq[i]), 1.5));
   }
 
   return correction * -T / (12. * M_PI);
