@@ -33,7 +33,7 @@ Thermodynamics::Thermodynamics(Phase phase_in, int n_temp_in, double dof_in)
 	t_min(phase.T.front()),
 	t_max(phase.T.back()),
 	n_temp(n_temp_in),
-	dof(dof_in) {
+	dof_radiation(dof_in) {
 
 	alglib::real_1d_array t, v;
 	v.setcontent(potential_values.size(), potential_values.data());
@@ -76,12 +76,12 @@ void Thermodynamics::get_thermodynamic_splines() {
 
 		double temp2 = temp * temp;
 		double temp4 = temp2 * temp2;
-		double pres_bag = dof * M_PI * M_PI / 90.0 * temp4;
+		double background_pressure = dof_radiation * M_PI * M_PI / 90.0 * temp4;
 
-		pressure[i] = pres_bag - v;
-		energy[i] = 3.0 * pres_bag + v - temp * dvdT;
-		enthalpy[i] = 4.0 * pres_bag - temp * dvdT;
-		entropy[i] = 4.0 * pres_bag / temp - dvdT;
+		pressure[i] = background_pressure - v;
+		energy[i] = 3.0 * background_pressure + v - temp * dvdT;
+		enthalpy[i] = 4.0 * background_pressure - temp * dvdT;
+		entropy[i] = 4.0 * background_pressure / temp - dvdT;
 	}
 
   alglib::real_1d_array t_array, p_array, e_array, w_array, s_array;
@@ -318,9 +318,9 @@ std::pair<Thermodynamics, Thermodynamics>
 ThermalParameters::setup_thermodynamics_classes(const Transition& t)
 {
 	LOG(debug) << "Creating true phase Thermodynamics class for transition " << t.key;
-	Thermodynamics thermo_true(t.true_phase, n_temp, dof);
+	Thermodynamics thermo_true(t.true_phase, n_temp, dof_radiation);
 	LOG(debug) << "Creating false phase Thermodynamics class for transition " << t.key;
-	Thermodynamics thermo_false(t.false_phase, n_temp, dof);
+	Thermodynamics thermo_false(t.false_phase, n_temp, dof_radiation);
 
 	return {thermo_true, thermo_false};
 }
@@ -356,7 +356,7 @@ ThermalParameters::add_debug_information(
 {
 	LOG(debug) << "Creating debug info for thermal parameters";
 	ThermalDEBUG debug;
-	int n = 75;
+	int n = 100;
 	double dt = (maximum_temp - minimum_temp)/(n-1.);
 	for (double tt = minimum_temp; tt < maximum_temp; tt += dt) {
 		debug.temp.push_back(tt);
@@ -369,6 +369,9 @@ ThermalParameters::add_debug_information(
 		double gamma;
 		try {gamma = std::exp(alglib::spline1dcalc(bounce_class.log_gamma_spline, tt));} catch (...) {gamma = 0.0;}
 		debug.gamma.push_back(gamma);
+		double action;
+		try{action = alglib::spline1dcalc(bounce_class.action_spline, tt);} catch (...) {action = 0.0;}
+		debug.action.push_back(action);
 		double hubble_rate = get_hubble_rate(tt, thermo_true, thermo_false);
 		debug.hubble.push_back(hubble_rate);
 		double t;
@@ -444,8 +447,11 @@ ThermalParameters::calculate_completion_milestone(
 		}
 		
 		output.completes = MilestoneStatus::YES;
-	} catch (const std::runtime_error &e) {
+	} catch (const TransitionDoesNotCompleteException& e) {
 		output.completes = MilestoneStatus::NO;
+		LOG(debug) << e.what() << std::endl;
+	} catch (const std::runtime_error &e) {
+		output.completes = MilestoneStatus::ERROR;
 		LOG(debug) << "Failed to find completion temperature: " << e.what() << std::endl;
 	}
 }
@@ -481,8 +487,13 @@ ThermalParameters::calculate_percolation_milestone(
 		output.cs_false_tp = parameter_set.cs_false;
 
 		output.percolates = MilestoneStatus::YES;
-	} catch (const std::runtime_error &e) {
+		
+	} catch (const TransitionDoesNotPercolateException& e) {
 		output.percolates = MilestoneStatus::NO;
+		LOG(debug) << e.what() << std::endl;
+		
+	} catch (const std::exception& e) {
+		output.percolates = MilestoneStatus::ERROR;
 		LOG(debug) << "Failed to find percolation temperature: " << e.what() << std::endl;
 	}
 }
@@ -545,8 +556,6 @@ ThermalParameters::calculate_durations(ThermalParams& output)
 			output.dtf_tn = get_duration(output.dtdT_spline, output.TN, output.TF) * output.H_tn;
 		}
 	}
-	
-	
 }
 
 double ThermalParameters::get_sound_speed(double T, Thermodynamics phase_thermo) {
@@ -742,12 +751,10 @@ double ThermalParameters::get_percolation_temperature(alglib::spline1dinterpolan
 	}
 
 	try {
-		// Check if percolation is possible
 		if (false_vacuum_fraction(hubble_spline, bounce, end_T, vw) > target + tol_abs) {
-			throw std::runtime_error("Transition does not percolate");
+			throw TransitionDoesNotPercolateException();
 		}
 
-		// Create lambda for the binary search
 		auto calc_value = [&](double T) {
 			return false_vacuum_fraction(hubble_spline, bounce, T, vw);
 		};
@@ -776,12 +783,11 @@ double ThermalParameters::get_completion_temperature(alglib::spline1dinterpolant
 	}
 
 	try {
-		// Check if completion is possible
+
 		if (false_vacuum_fraction(hubble_spline, bounce, end_T, vw) > target + tol_abs) {
-			throw std::runtime_error("Transition does not complete");
+			throw TransitionDoesNotCompleteException();
 		}
 
-		// Create lambda for the binary search
 		auto calc_value = [&](double T) {
 			return false_vacuum_fraction(hubble_spline, bounce, T, vw);
 		};

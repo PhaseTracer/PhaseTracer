@@ -272,32 +272,32 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
     }
   } else if (mode == GWCalcMode::FromThermalParameters) {
     if(!tp) {throw std::runtime_error("ThermalParams is not set for GravWaveCalculator");}
-    #ifdef BUILD_WITH_DP
-    GW_DeepPhase dp;
-    #endif
+    // #ifdef BUILD_WITH_DP
+    // DeepPhaseInterface dp;
+    // #endif
     for (const auto &tps : thermal_params) {
       double Tref, alpha, beta_H;
-      if (tps.nucleates == MilestoneStatus::YES) {
-        Tref = tps.TN;
-        alpha = tps.alpha_tn;
-        beta_H = tps.betaH_tn;
-      } else if (tps.percolates == MilestoneStatus::YES) {
-        Tref = tps.TP;
-        alpha = tps.alpha_tp;
-        beta_H = tps.betaH_tp;
-      } // no handling of failure in both
+      // if (tps.nucleates == MilestoneStatus::YES) {
+      //   Tref = tps.TN;
+      //   alpha = tps.alpha_tn;
+      //   beta_H = tps.betaH_tn;
+      // } else if (tps.percolates == MilestoneStatus::YES) {
+      //   Tref = tps.TP;
+      //   alpha = tps.alpha_tp;
+      //   beta_H = tps.betaH_tp;
+      // }
       GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
-      #ifdef BUILD_WITH_DP
-      std::pair<std::vector<double>, std::vector<double>> ssm_spectrum = dp.get_ssm_amplitude(tps, vw, dof, 0.1, min_frequency, max_frequency, num_frequency_ssm);
-      spi.freq_ssm = ssm_spectrum.first;
-      spi.amplitude_ssm = ssm_spectrum.second;
-      auto maxes = dp.obtain_peaks(spi.freq_ssm, spi.amplitude_ssm);
-      LOG(debug) << "SSM peak amplitude = " << maxes.second << ", frequency = " << maxes.first;
-      if (maxes.second > spi.peak_amplitude) {
-        spi.peak_amplitude = maxes.second;
-        spi.peak_frequency = maxes.first;
-      }
-      #endif
+      // #ifdef BUILD_WITH_DP
+      // std::pair<std::vector<double>, std::vector<double>> ssm_spectrum = dp.get_ssm_amplitude(tps, vw, dof, 0.1, min_frequency, max_frequency, num_frequency_ssm);
+      // spi.freq_ssm = ssm_spectrum.first;
+      // spi.amplitude_ssm = ssm_spectrum.second;
+      // auto maxes = dp.obtain_peaks(spi.freq_ssm, spi.amplitude_ssm);
+      // LOG(debug) << "SSM peak amplitude = " << maxes.second << ", frequency = " << maxes.first;
+      // if (maxes.second > spi.peak_amplitude) {
+      //   spi.peak_amplitude = maxes.second;
+      //   spi.peak_frequency = maxes.first;
+      // }
+      // #endif
       spectrums.push_back(spi);
     }
   }
@@ -309,9 +309,9 @@ void GravWaveCalculator::write_spectrum_to_text(const GravWaveSpectrum &sp, cons
   std::ofstream file(filename);
   for (int ii = 0; ii < sp.frequency.size(); ii++) {
     file << sp.frequency[ii] << ", " << sp.total_amplitude[ii] << ", " << sp.sound_wave[ii] << ", " << sp.turbulence[ii] << ", " << sp.bubble_collision[ii];
-    #ifdef BUILD_WITH_DP
-    file << ", " <<  sp.freq_ssm[ii] << ", " << sp.amplitude_ssm[ii];
-    #endif
+    // #ifdef BUILD_WITH_DP
+    // file << ", " <<  sp.freq_ssm[ii] << ", " << sp.amplitude_ssm[ii];
+    // #endif
     file << std::endl;
   }
 

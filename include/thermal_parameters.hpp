@@ -31,6 +31,30 @@
 namespace PhaseTracer {
 
 /**
+ * @brief Custom exception for when a transition does not percolate
+ */
+class TransitionDoesNotPercolateException : public std::runtime_error {
+public:
+  TransitionDoesNotPercolateException() : std::runtime_error("Transition does not percolate") {}
+};
+
+/**
+ * @brief Custom exception for when a transition does not complete
+ */
+class TransitionDoesNotCompleteException : public std::runtime_error {
+public:
+  TransitionDoesNotCompleteException() : std::runtime_error("Transition does not complete") {}
+};
+
+/**
+ * @brief Custom exception for when a transition does not complete
+ */
+class TransitionDoesNotNucleateException : public std::runtime_error {
+public:
+  TransitionDoesNotNucleateException() : std::runtime_error("Transition does not nucleate") {}
+};
+
+/**
  * @class Thermodynamics
  * @brief Computes the thermodynamic quantities p, e, w, s for a given phase
  */
@@ -57,7 +81,7 @@ private:
   std::vector<double> enthalpy;
 
   int n_temp;
-  double dof;
+  double dof_radiation;
 
 public:
   Thermodynamics(Phase phase_in, int n_temp_in, double dof_in);
@@ -190,7 +214,8 @@ enum class MilestoneStatus {
   YES,
   FAST,
   NO,
-  INVALID
+  INVALID,
+  ERROR
 };
 
 /**
@@ -204,8 +229,23 @@ struct ThermalDEBUG {
   std::vector<double> pf;
   std::vector<double> nt;
   std::vector<double> gamma;
+  std::vector<double> action;
   std::vector<double> hubble;
   std::vector<double> t;
+
+  inline void
+  write_thermalDEBUG(const std::string& filename) const {
+    std::ofstream file(filename);
+    if (!file.is_open())
+    {
+      throw std::runtime_error("Could not open file for writing EoS data");
+    }
+    file << "T,t,Pf,N,gamma,action,H\n";
+    for (size_t i = 0; i < temp.size(); ++i) 
+    {
+      file << temp[i] << "," << t[i] << "," << pf[i] << "," << nt[i] << "," << gamma[i] << "," << action[i] << "," << hubble[i] << "\n";
+    }
+  }
 };
 
 /**
@@ -226,7 +266,7 @@ struct EoS {
   inline void
   write_EoS(const std::string& filename) const {
     std::ofstream file(filename);
-    if (!file.is_open()) \
+    if (!file.is_open()) 
     {
       throw std::runtime_error("Could not open file for writing EoS data");
     }
@@ -277,8 +317,12 @@ struct ThermalParams {
       << "  beta/H = " << tp.betaH_tp << "\n"
       << "  H (GeV⁻¹) = " << tp.H_tp << "\n"
       << "  enthalpy/energy ratio = " << tp.we_tp << "\n";
-    } else {
+    } else if (tp.percolates == MilestoneStatus::NO) {
       o << "transition does not percolate." << "\n";
+    } else if (tp.percolates == MilestoneStatus::FAST) {
+      o << "transition is too fast." << "\n";
+    } else {
+      o << "error calculation percolation milestone." << "\n";
     }
     if(tp.nucleates == MilestoneStatus::YES) {
       o << "nucleation temperature = " << tp.TN << "\n"
@@ -303,8 +347,10 @@ struct ThermalParams {
       if (tp.nucleates == MilestoneStatus::YES) {
         o << "  tf - tn = " << tp.dtf_tn << "\n";
       }
-    } else {
+    } else if (tp.percolates == MilestoneStatus::NO) {
       o << "transition does not complete." << "\n";
+    } else {
+      o << "error computing completion temperature." << "\n";
     }
     return o;
   }
@@ -331,6 +377,9 @@ private:
 
   /** relativistic degrees of freedom  **/
   PROPERTY(double, dof, 106.75);
+
+  /** background radiation degrees of freedom  **/
+  PROPERTY(double, dof_radiation, 106.75);
 
   /** bubble wall velocity  **/
   PROPERTY(double, vw, 0.35);
