@@ -22,6 +22,8 @@
 #include <vector>
 #include <optional>
 #include <stdexcept>
+#include <sstream>
+#include <iomanip>
 #include <interpolation.h>
 #include <boost/math/quadrature/trapezoidal.hpp>
 #include <boost/math/quadrature/gauss_kronrod.hpp>
@@ -40,7 +42,6 @@ enum SomethingStatus
     YES,
     FAST,
     NO,
-    INVALID,
     ERR
 };
 
@@ -48,7 +49,15 @@ enum MilestoneType
 {
     PERCOLATION,
     NUCLEATION,
-    COMPLETION
+    COMPLETION,
+    ONSET
+};
+
+enum PrintSettings
+{
+    MINIMAL,
+    STANDARD,
+    VERBOSE
 };
 
 struct TransitionMilestone
@@ -57,8 +66,85 @@ struct TransitionMilestone
     SomethingStatus status;
     double temperature;
 
+    double alpha;
+    double betaH;
+    double H;
+    double we;
+    double cs_plus;
+    double cs_minus;
+    double n;
+    double Rs;
+    double Rbar;
+    double dt;
+
+private:
+    PrintSettings print_setting = PrintSettings::STANDARD;
+
+public:
+    TransitionMilestone() = default;
     TransitionMilestone(const MilestoneType& type_in)
     : type(type_in), status(SomethingStatus::ERR), temperature(0.0) {}
+
+    void set_print_setting(PrintSettings setting) {
+        print_setting = setting;
+    }
+
+    PrintSettings get_print_setting() const {
+        return print_setting;
+    }
+
+    const std::string format_double(double value, int precision = 6) const {
+        std::ostringstream oss;
+        oss << std::scientific << std::setprecision(precision) << value;
+        return oss.str();
+    }
+
+    const std::string format_status_string() const {
+        switch (status)
+        {
+            case SomethingStatus::YES:
+                return "YES";
+            case SomethingStatus::FAST:
+                return "FAST";
+            case SomethingStatus::NO:
+                return "NO";
+            default:
+                return "ERR";
+        }
+    }
+
+    const std::string format_milestone_string() const
+    {
+        std::string output = "  status = " + format_status_string() + "\n";
+        output += "  temperature = " + std::to_string(temperature) + " GeV\n";
+        
+        if (print_setting == PrintSettings::MINIMAL) {
+            return output;
+        }
+
+        if (print_setting == PrintSettings::STANDARD || print_setting == PrintSettings::VERBOSE) {
+            output += "  alpha = " + std::to_string(alpha) + "\n";
+            output += "  betaH = " + std::to_string(betaH) + "\n";
+            output += "  H = " + format_double(H) + "\n";
+        }
+
+        if (print_setting == PrintSettings::VERBOSE) {
+            output += "  we = " + std::to_string(we) + "\n";
+            output += "  cs_plus = " + std::to_string(cs_plus) + "\n";
+            output += "  cs_minus = " + std::to_string(cs_minus) + "\n";
+            output += "  Rs = " + std::to_string(Rs) + "\n";
+            output += "  Rbar = " + std::to_string(Rbar) + "\n";
+            output += "  dt = " + std::to_string(dt) + "\n";
+        }
+        
+        return output;
+    }
+
+    friend std::ostream &operator<<(std::ostream& o, const TransitionMilestone &milestone) 
+    {
+        o << milestone.format_milestone_string();
+        return o;
+    }
 };
 
 class TransitionMetrics {
@@ -71,24 +157,49 @@ class TransitionMetrics {
 
     alglib::spline1dinterpolant a2a1_integrand_spline;
 
-    alglib::spline1dinterpolant Pf_spline;
+    alglib::spline1dinterpolant Vext_spline;
 
     PROPERTY(double, total_number_temp_steps, 200);
+
+    PROPERTY(bool, use_pf_in_nt_integrand, true);
+
+    PROPERTY(bool, use_bag_dtdT, false);
 
     PROPERTY(double, vw, 0.577);
 
     PROPERTY(double, dof, 106.75);
 
-    PROPERTY(double, newtonG,  1/((1.22 * 1e19)*(1.22 * 1e19)));
+    PROPERTY(double, newtonG, 1/((1.22 * 1e19)*(1.22 * 1e19)));
+
+    PROPERTY(double, percolation_target, 0.71);
+
+    PROPERTY(double, completion_target, 1e-8);
+
+    PROPERTY(double, onset_target, 1 - 1e-8);
+
+    PROPERTY(double, nucleation_target, 1.00);
+
+    PROPERTY(double, temperature_abs_tol, 1e-8);
 
 public :
+
+    TransitionMilestone onset_milestone;
+    TransitionMilestone percolation_milestone;
+    TransitionMilestone completion_milestone;
+    TransitionMilestone nucleation_milestone;
 
     TransitionMetrics(const FalseVacuumDecayRate& decay_rate_in, const EquationOfState& eos_in) :
     decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
     {
-        make_a2a1_integrand_spline();
+        make_scale_factor_ratio_integrand_spline();
+        compute_extended_volume_spline();
+    }
 
-        compute_Pf_spline();
+    void compute_milestones() {
+        onset_milestone = get_transition_milestone(MilestoneType::ONSET);
+        percolation_milestone = get_transition_milestone(MilestoneType::PERCOLATION);
+        completion_milestone = get_transition_milestone(MilestoneType::COMPLETION);
+        nucleation_milestone = get_transition_milestone(MilestoneType::NUCLEATION);
     }
 
     const double get_hubble_rate(const double& T);
@@ -99,21 +210,38 @@ public :
 
     const double get_extended_volume(const double& T);
 
+    const double get_false_vacuum_fraction(const double& T);
+
     const double get_nucleation_rate(const double& T);
 
-    const double find_pf_temperature(const double& target);
+    const double get_bubble_density(const double& T);
 
-    const double find_nucleation_temperature();
+    const double get_bubble_radius_integral(const double& T);
+
+    const double get_duration(const double& T);
+
+    const double find_temperature(std::function<double(double)> target_function, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+
+    const bool valid_lower_bound(std::function<double(double)> target_function, double tol = 1e-8)
+    {
+        return target_function(t_min) < tol;
+    }
+
+    std::function<double(double)> get_target_function(const MilestoneType type);
+
+    const TransitionMilestone get_transition_milestone(const MilestoneType type);
 
 private:
 
-    void make_a2a1_integrand_spline();
+    void make_scale_factor_ratio_integrand_spline();
 
     const double get_volume_term(const double& T1, const double& T2);
 
     const double extended_volume_integrand(const double& T1, const double& T2);
 
-    void compute_Pf_spline();
+    const double bubble_radius_integrand(const double& T1, const double& T2);
+
+    void compute_extended_volume_spline();
 };
 
 

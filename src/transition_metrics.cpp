@@ -38,20 +38,21 @@ namespace PhaseTracer {
         const double prefac = -1./3. * 1/get_hubble_rate(T);
 
         const auto pressure_derivs = eos.get_pressure_derivs_plus(T);
-        const double pressure_ratio = pressure_derivs[2]/pressure_derivs[1];
+        const double pressure_ratio = use_bag_dtdT ? 3. / T : pressure_derivs[2]/pressure_derivs[1];
 
         return prefac * pressure_ratio;
     }
 
     void
-    TransitionMetrics::make_a2a1_integrand_spline()
+    TransitionMetrics::make_scale_factor_ratio_integrand_spline()
     {
         alglib::real_1d_array temp_array, integrand_array;
         temp_array.setlength(total_number_temp_steps);
         integrand_array.setlength(total_number_temp_steps);
 
         double dt = (t_max - t_min) / (total_number_temp_steps - 1);
-        for (int i = 0; i < total_number_temp_steps; i++) {
+        for (int i = 0; i < total_number_temp_steps; i++) 
+        {
             double tt = t_min + i * dt;
             double integrand = get_dtdT(tt) * get_hubble_rate(tt);
             temp_array[i] = tt;
@@ -65,18 +66,18 @@ namespace PhaseTracer {
     TransitionMetrics::get_atop_abottom(const double& Ttop, const double& Tbottom)
     {
         double integral = alglib::spline1dintegrate(a2a1_integrand_spline, Tbottom) - alglib::spline1dintegrate(a2a1_integrand_spline, Ttop);
-        return exp(integral);
+        return use_bag_dtdT ? Tbottom/Ttop : exp(integral);
     }
 
     const double
     TransitionMetrics::get_volume_term(const double& T1, const double& T2)
     {
-        auto integrand = [this, T2](double Tdash) {
+        auto integrand = [this, T2](double Tdash) 
+        {
             double dtdT = get_dtdT(Tdash);
             double aT2_on_aTdash = get_atop_abottom(T2, Tdash);
             return dtdT * aT2_on_aTdash;
         };
-        // double result = boost::math::quadrature::trapezoidal(integrand, T1, T2);
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, T1, T2, 5, 1e-5);
         return result;
     }
@@ -95,38 +96,53 @@ namespace PhaseTracer {
     const double 
     TransitionMetrics::get_extended_volume(const double& T) 
     {
-        auto integrand = [this, T](double Tdash) {
+        auto integrand = [this, T](double Tdash) 
+        {
             return extended_volume_integrand(Tdash, T);
         };
-        // double result = boost::math::quadrature::trapezoidal(integrand, t_max, T);
+        LOG(debug) << "Computing extended volume at T = " << T << ", t_max = " << t_max;
+        if(T >= t_max) 
+        {
+            LOG(debug) << "Computing extended volume at T = " << T << " = t_max = " << t_max << ", return 0.0";
+            return 0.0; 
+        }
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
         return 4 * M_PI * vw*vw*vw / 3 * result;
     }
 
     void
-    TransitionMetrics::compute_Pf_spline()
+    TransitionMetrics::compute_extended_volume_spline()
     {
-        alglib::real_1d_array temp_array, Pf_array, Nt_integrand_array;
+        alglib::real_1d_array temp_array, Vext_array;
         temp_array.setlength(total_number_temp_steps);
-        Pf_array.setlength(total_number_temp_steps);
-        Nt_integrand_array.setlength(total_number_temp_steps);
+        Vext_array.setlength(total_number_temp_steps);
 
         double dt = (t_max - t_min) / (total_number_temp_steps - 1);
-        for (int i = 0; i < total_number_temp_steps; i++) {
+        for (int i = 0; i < total_number_temp_steps; i++) 
+        {
             double tt = t_min + i * dt;
-            double Pf = exp(-get_extended_volume(tt));
+            double Vext = get_extended_volume(tt);
             temp_array[i] = tt;
-            Pf_array[i] = Pf;
+            Vext_array[i] = Vext;
         }
 
-        alglib::spline1dbuildcubic(temp_array, Pf_array, Pf_spline);
+        alglib::spline1dbuildcubic(temp_array, Vext_array, Vext_spline);
     }
+
+    const double
+    TransitionMetrics::get_false_vacuum_fraction(const double& T)
+    {
+        double Vext = alglib::spline1dcalc(Vext_spline, T);
+        return exp(-Vext);
+    }
+
 
     const double 
     TransitionMetrics::get_nucleation_rate(const double& T)
     {
-        auto integrand = [this](double Tdash) {
-            double Pf = alglib::spline1dcalc(Pf_spline, Tdash);
+        auto integrand = [this](double Tdash) 
+        {
+            double Pf = use_pf_in_nt_integrand ? get_false_vacuum_fraction(Tdash) : 1.0;
             double gamma = exp(alglib::spline1dcalc(decay_rate.log_gamma_spline, Tdash));
             double hubble = get_hubble_rate(Tdash);
             double dtdT = get_dtdT(Tdash);
@@ -137,54 +153,120 @@ namespace PhaseTracer {
         return 4 * M_PI * vw / 3 * result;
     }
 
-    const double 
-    TransitionMetrics::find_pf_temperature(const double& target) {
-
-        auto func = [this, target] (double T) {
-            return alglib::spline1dcalc(Pf_spline, T) - target;
+    const double
+    TransitionMetrics::get_bubble_density(const double& T)
+    {
+        auto integrand = [this, T](double Tdash)
+        {
+            double dtdT = get_dtdT(Tdash);
+            double gamma = exp(alglib::spline1dcalc(decay_rate.log_gamma_spline, Tdash));
+            double pf = get_false_vacuum_fraction(Tdash);
+            double a_ratio = get_atop_abottom(Tdash, T);
+            return dtdT * gamma * pf * a_ratio*a_ratio*a_ratio;
         };
 
-        std::pair<double, double> bracket = {t_min, t_max};
-
-        boost::uintmax_t max_iter = 100;
-        double tol = 1e-8;
-
-        auto root_pair = boost::math::tools::toms748_solve(
-            func,
-            bracket.first,   // Lower bound
-            bracket.second,
-            [=](double l, double u){ return std::abs(u - l) < tol; },  // Termination condition
-            max_iter         // Max iterations
-        );
-
-        double root = (root_pair.first + root_pair.second) / 2.0;  // Take midpoint of bracket
-
-        return root;
+        double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
+        return result;
     }
 
     const double 
-    TransitionMetrics::find_nucleation_temperature() {
+    TransitionMetrics::bubble_radius_integrand(const double& T1, const double& T2)
+    {
+        double dtdT = get_dtdT(T1);
+        double gamma = exp(alglib::spline1dcalc(decay_rate.log_gamma_spline, T1));
+        double pf = get_false_vacuum_fraction(T1);
+        double aT1_on_aT2 = get_atop_abottom(T1, T2);
+        double volume_term = get_volume_term(T1, T2);
 
-        auto func = [this] (double T) {
-            return get_nucleation_rate(T) - 1.0;
+        return dtdT * gamma *pf *  aT1_on_aT2*aT1_on_aT2*aT1_on_aT2 * volume_term;
+    }
+
+    const double 
+    TransitionMetrics::get_bubble_radius_integral(const double& T)
+    {
+        auto integrand = [this, T](double Tdash) 
+        {
+            return bubble_radius_integrand(Tdash, T);
         };
+        double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
+        return vw * result;
+    }
 
+    const double
+    TransitionMetrics::get_duration(const double& T)
+    {
+        auto integrand = [this](double Tdash) 
+        {
+            double H = get_hubble_rate(Tdash);
+            double dtdT = get_dtdT(Tdash);
+            return dtdT*H;
+        };
+        double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
+        return vw * result;
+    }
+
+    const double 
+    TransitionMetrics::find_temperature(std::function<double(double)> target_function, double tol, boost::uintmax_t max_iter)
+    {
         std::pair<double, double> bracket = {t_min, t_max};
 
-        boost::uintmax_t max_iter = 100;
-        double tol = 1e-8;
-
         auto root_pair = boost::math::tools::toms748_solve(
-            func,
-            bracket.first,   // Lower bound
+            target_function,
+            bracket.first,
             bracket.second,
-            [=](double l, double u){ return std::abs(u - l) < tol; },  // Termination condition
-            max_iter         // Max iterations
+            [=](double l, double u){ return std::abs(u - l) < tol; },
+            max_iter
         );
 
-        double root = (root_pair.first + root_pair.second) / 2.0;  // Take midpoint of bracket
-
+        double root = (root_pair.first + root_pair.second) / 2.0;
         return root;
+    }
+
+    std::function<double(double)> 
+    TransitionMetrics::get_target_function(const MilestoneType type)
+    {
+        switch (type) 
+        {
+            case MilestoneType::ONSET:
+                return [this](double T) {return get_false_vacuum_fraction(T) - onset_target;};
+            case MilestoneType::PERCOLATION:
+                return [this](double T) {return get_false_vacuum_fraction(T) - percolation_target;};
+            case MilestoneType::COMPLETION:
+                return [this](double T) {return get_false_vacuum_fraction(T) - completion_target;};
+            case MilestoneType::NUCLEATION:
+                // code assumes the target function is monotonically decreasing, so multiply by -1
+                return [this](double T) {return -(get_nucleation_rate(T) - nucleation_target);};
+            default:
+                throw std::invalid_argument("Invalid MilestoneType provided.");
+        }
+    }
+
+    const TransitionMilestone 
+    TransitionMetrics::get_transition_milestone(const MilestoneType type)
+    {
+        auto target_function = get_target_function(type);
+
+        TransitionMilestone output(type);
+
+        const auto valid = valid_lower_bound(target_function);
+        if(valid)
+        {
+            double t = find_temperature(target_function);
+            if (t_max - t < 1e-8)
+            {
+                output.status = SomethingStatus::FAST;
+                output.temperature = t;
+            } else
+            {
+                output.status = SomethingStatus::YES;
+                output.temperature = t;
+            }
+        } else 
+        {
+            output.status = SomethingStatus::NO;
+        }
+
+        return output;
     }
 
 } // namespace PhaseTracer

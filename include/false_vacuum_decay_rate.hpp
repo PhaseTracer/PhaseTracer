@@ -41,13 +41,17 @@ public:
     double minimum_temp, maximum_temp;
     alglib::spline1dinterpolant action_spline, log_gamma_spline;
 
-    FalseVacuumDecayRate();
-
     FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in)
-    : t(t_in), tf(tf_in), minimum_temp(t_in.false_phase.T.front()), maximum_temp(t_in.TC), spline_evaluations(50) {}
+    : t(t_in), tf(tf_in), minimum_temp(t_in.false_phase.T.front()), maximum_temp(t_in.TC), spline_evaluations(50) 
+    {
+        get_splines();
+    }
 
     FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in, double minimum_temp_in, double maximum_temp_in, int spline_evaluations_in)
-    : t(t_in), tf(tf_in), minimum_temp(minimum_temp_in), maximum_temp(maximum_temp_in), spline_evaluations(spline_evaluations_in) {}
+    : t(t_in), tf(tf_in), minimum_temp(minimum_temp_in), maximum_temp(maximum_temp_in), spline_evaluations(spline_evaluations_in)
+    {
+        get_splines();
+    }
 
     /**
      * @brief Computes the bounce and log(gamma) splines for given transition.
