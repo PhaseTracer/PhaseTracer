@@ -151,6 +151,7 @@ namespace PhaseTracer {
     std::pair<double, double>
     EquationOfState::get_theta(double T)  const
     {
+        // TODO add theta_bag and theta_munu
         check_temperature_range(T, "get_theta");
         double e_plus = alglib::spline1dcalc(this->e_plus_spline, T);
         double p_plus = alglib::spline1dcalc(this->p_plus_spline, T);

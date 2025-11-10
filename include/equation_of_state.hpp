@@ -76,7 +76,7 @@ private:
                 temperature[i] = t_min + i * dT;
             }
 
-            if (temperature.front() != t_min || temperature.back() != t_max) {
+            if (abs(temperature.front() - t_min) > 1e-6 || abs(temperature.back() - t_max) > 1e-6) {
                 throw std::runtime_error("Temperature vector does not match phase temperature bounds.");
             }
 
