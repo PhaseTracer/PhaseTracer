@@ -17,7 +17,7 @@
 
 #include <cmath>
 #include "logger.hpp"
-#include "thermal_parameters.hpp"
+#include "thermal_legacy.hpp"
 
 namespace PhaseTracer {
 
@@ -228,7 +228,7 @@ void Bounce::get_splines() {
 	the ThermalParameters class
 	======================================*/
 
-void ThermalParameters::find_thermal_parameters() {
+void ThermalLegacy::find_thermal_parameters() {
 
 	if (calculated_thermal_params) {
 		return;
@@ -240,7 +240,7 @@ void ThermalParameters::find_thermal_parameters() {
 	for (auto t : trans) {
 		try 
 		{
-			ThermalParams tp_local;
+			ThermalParamsLegacy tp_local;
 			try 
 			{
 				tp_local = process_transition(t);
@@ -259,9 +259,9 @@ void ThermalParameters::find_thermal_parameters() {
 	}
 }
 
-ThermalParams ThermalParameters::process_transition(Transition t) {
+ThermalParamsLegacy ThermalLegacy::process_transition(Transition t) {
 
-	ThermalParams output;
+	ThermalParamsLegacy output;
 
 	auto [minimum_temp, maximum_temp] = setup_temperature_range(t, output);
 	if(output.success = false) {return output;}
@@ -296,7 +296,7 @@ ThermalParams ThermalParameters::process_transition(Transition t) {
 }
 
 std::pair<double, double>
-ThermalParameters::setup_temperature_range(const Transition& t, ThermalParams& output)
+ThermalLegacy::setup_temperature_range(const Transition& t, ThermalParamsLegacy& output)
 {
 	LOG(debug) << "Setting up temperature ranges for transition " << t.key;
 	double minimum_temp = t.false_phase.T.front();
@@ -315,7 +315,7 @@ ThermalParameters::setup_temperature_range(const Transition& t, ThermalParams& o
 }
 
 std::pair<Thermodynamics, Thermodynamics>
-ThermalParameters::setup_thermodynamics_classes(const Transition& t)
+ThermalLegacy::setup_thermodynamics_classes(const Transition& t)
 {
 	LOG(debug) << "Creating true phase Thermodynamics class for transition " << t.key;
 	Thermodynamics thermo_true(t.true_phase, n_temp, dof_radiation);
@@ -326,7 +326,7 @@ ThermalParameters::setup_thermodynamics_classes(const Transition& t)
 }
 
 Bounce
-ThermalParameters::setup_bounce_class(
+ThermalLegacy::setup_bounce_class(
     const Transition&t, 
     TransitionFinder tf, 
     const double& minimum_temp, 
@@ -343,8 +343,8 @@ ThermalParameters::setup_bounce_class(
 }
 
 void 
-ThermalParameters::add_debug_information(
-	ThermalParams& output,
+ThermalLegacy::add_debug_information(
+	ThermalParamsLegacy& output,
 	const double& minimum_temp,
 	const double& maximum_temp,
 	alglib::spline1dinterpolant hubble_spline,
@@ -385,7 +385,7 @@ ThermalParameters::add_debug_information(
 	LOG(debug) << "Debug info created.";
 }
 
-EoS ThermalParameters::get_eos(double Tmin, double Tmax, Thermodynamics true_thermo, Thermodynamics false_thermo) {
+EoS ThermalLegacy::get_eos(double Tmin, double Tmax, Thermodynamics true_thermo, Thermodynamics false_thermo) {
 
 	EoS out;
 	int N = 300;
@@ -406,8 +406,8 @@ EoS ThermalParameters::get_eos(double Tmin, double Tmax, Thermodynamics true_the
 	return out;
 }
 
-ThermalParameters::ThermalParamSet
-ThermalParameters::calculate_thermal_parameters(
+ThermalLegacy::ThermalParamSet
+ThermalLegacy::calculate_thermal_parameters(
 	const double& tref,
 	Thermodynamics& thermo_true, 
 	Thermodynamics& thermo_false,
@@ -425,8 +425,8 @@ ThermalParameters::calculate_thermal_parameters(
 }
 
 void 
-ThermalParameters::calculate_completion_milestone(
-	ThermalParams& output,
+ThermalLegacy::calculate_completion_milestone(
+	ThermalParamsLegacy& output,
 	Transition& t,
     alglib::spline1dinterpolant& hubble_spline, 
     alglib::spline1dinterpolant& dtdT_spline,
@@ -442,23 +442,23 @@ ThermalParameters::calculate_completion_milestone(
 
 		if(abs(tfin-t.TC) <= 1e-3) {
 			LOG(debug) << "Completion temperature is close to critical temperature.";
-			output.completes = MilestoneStatus::FAST;
+			output.completes = LegacyStatus::FAST;
 			return;
 		}
 		
-		output.completes = MilestoneStatus::YES;
+		output.completes = LegacyStatus::YES;
 	} catch (const TransitionDoesNotCompleteException& e) {
-		output.completes = MilestoneStatus::NO;
+		output.completes = LegacyStatus::NO;
 		LOG(debug) << e.what() << std::endl;
 	} catch (const std::runtime_error &e) {
-		output.completes = MilestoneStatus::ERROR;
+		output.completes = LegacyStatus::ERROR;
 		LOG(debug) << "Failed to find completion temperature: " << e.what() << std::endl;
 	}
 }
 
 void 
-ThermalParameters::calculate_percolation_milestone(
-	ThermalParams& output,
+ThermalLegacy::calculate_percolation_milestone(
+	ThermalParamsLegacy& output,
 	Transition& t,
     alglib::spline1dinterpolant& hubble_spline, 
     alglib::spline1dinterpolant& dtdT_spline, 
@@ -474,7 +474,7 @@ ThermalParameters::calculate_percolation_milestone(
 
 		if(abs(tp-t.TC) <= 1e-3) {
 			LOG(debug) << "Percolation temperature is close to critical temperature.";
-			output.percolates = MilestoneStatus::FAST;
+			output.percolates = LegacyStatus::FAST;
 			return;
 		}
 		
@@ -486,21 +486,21 @@ ThermalParameters::calculate_percolation_milestone(
 		output.cs_true_tp = parameter_set.cs_true;
 		output.cs_false_tp = parameter_set.cs_false;
 
-		output.percolates = MilestoneStatus::YES;
+		output.percolates = LegacyStatus::YES;
 		
 	} catch (const TransitionDoesNotPercolateException& e) {
-		output.percolates = MilestoneStatus::NO;
+		output.percolates = LegacyStatus::NO;
 		LOG(debug) << e.what() << std::endl;
 		
 	} catch (const std::exception& e) {
-		output.percolates = MilestoneStatus::ERROR;
+		output.percolates = LegacyStatus::ERROR;
 		LOG(debug) << "Failed to find percolation temperature: " << e.what() << std::endl;
 	}
 }
 
 void 
-ThermalParameters::calculate_nucleation_milestone(
-	ThermalParams& output,
+ThermalLegacy::calculate_nucleation_milestone(
+	ThermalParamsLegacy& output,
 	Transition& t,
     alglib::spline1dinterpolant& hubble_spline, 
     alglib::spline1dinterpolant& dtdT_spline, 
@@ -515,7 +515,7 @@ ThermalParameters::calculate_nucleation_milestone(
 		output.TN = tn;
 
 		if(abs(tn-t.TC) <= 1e-3) {
-			output.nucleates = MilestoneStatus::FAST;
+			output.nucleates = LegacyStatus::FAST;
 			LOG(debug) << "Nucleation temperature is close to critical temperature.";
 			return;
 		}
@@ -528,72 +528,71 @@ ThermalParameters::calculate_nucleation_milestone(
 		output.cs_true_tn = parameter_set.cs_true;
 		output.cs_false_tn = parameter_set.cs_false;
 
-		if ( output.completes == MilestoneStatus::YES && output.TF > tn ) 
+		if ( output.completes == LegacyStatus::YES && output.TF > tn ) 
 		{
-			output.nucleates = MilestoneStatus::INVALID;
+			output.nucleates = LegacyStatus::INVALID;
 		} else 
 		{
-			output.nucleates = MilestoneStatus::YES;
+			output.nucleates = LegacyStatus::YES;
 		}
 	} catch (const std::runtime_error &e) {
-		output.nucleates = MilestoneStatus::NO;
+		output.nucleates = LegacyStatus::NO;
 		LOG(debug) << "Failed to find nucleation temperature: " << e.what() << std::endl;
 	}
 }
 
 void
-ThermalParameters::calculate_durations(ThermalParams& output)
+ThermalLegacy::calculate_durations(ThermalParamsLegacy& output)
 {
-	if (output.completes == MilestoneStatus::YES)
+	if (output.completes == LegacyStatus::YES)
 	{
 		output.dtf_tc = get_duration(output.dtdT_spline, output.TC, output.TF) * output.H_tp;
-		if (output.percolates == MilestoneStatus::YES)
+		if (output.percolates == LegacyStatus::YES)
 		{
 			output.dtf_tp = get_duration(output.dtdT_spline, output.TP, output.TF) * output.H_tp;
 		}
-		if (output.nucleates == MilestoneStatus::YES)
+		if (output.nucleates == LegacyStatus::YES)
 		{
 			output.dtf_tn = get_duration(output.dtdT_spline, output.TN, output.TF) * output.H_tn;
 		}
 	}
 }
 
-double ThermalParameters::get_sound_speed(double T, Thermodynamics phase_thermo) {
+double ThermalLegacy::get_sound_speed(double T, Thermodynamics phase_thermo) {
 	double dedT = phase_thermo.get_energy_derivs(T)[1];
 	double dPdT = phase_thermo.get_pressure_derivs(T)[1];
 
 	return sqrt(dPdT/dedT);
 }
 
-double ThermalParameters::get_we(double Tref, Thermodynamics true_thermo) {
+double ThermalLegacy::get_we(double Tref, Thermodynamics true_thermo) {
 	return true_thermo.get_enthalpy(Tref)/true_thermo.get_energy(Tref);
 }
 
-double ThermalParameters::get_duration(alglib::spline1dinterpolant& dtdT_spline, double tStart, double tEnd) {
-
+double ThermalLegacy::get_duration(alglib::spline1dinterpolant& dtdT_spline, double tStart, double tEnd) {
 	double duration = alglib::spline1dintegrate(dtdT_spline, tStart) - alglib::spline1dintegrate(dtdT_spline, tEnd);
 	return duration;
 }
 
-double ThermalParameters::get_alpha(double T, Thermodynamics true_thermo, Thermodynamics false_thermo) {
+double ThermalLegacy::get_alpha(double T, Thermodynamics true_thermo, Thermodynamics false_thermo) {
 	return abs(true_thermo.get_theta(T) - false_thermo.get_theta(T))/false_thermo.get_enthalpy(T) * 4./3.;
 }
 
-double ThermalParameters::get_hubble_rate(double T, Thermodynamics true_thermo, Thermodynamics false_thermo) {
+double ThermalLegacy::get_hubble_rate(double T, Thermodynamics true_thermo, Thermodynamics false_thermo) {
 	double rho = dof/30. * M_PI*M_PI * T*T*T*T + abs(true_thermo.get_energy(T) - false_thermo.get_energy(T));
 	if(isnan(rho) || rho < 0.0) { rho = dof/30. * M_PI*M_PI * T*T*T*T; } // fall back to RD result
 	double h = sqrt( 8. * M_PI * G/3. * rho);
 	return h;
 }
 
-double ThermalParameters::get_betaH(double T, Bounce bounce) {
+double ThermalLegacy::get_betaH(double T, Bounce bounce) {
 	double y, dy, ddy;
 	alglib::spline1ddiff(bounce.action_spline, T, y, dy, ddy);
 	LOG(debug) << "For betaH calc: T = " << T << ", y = " << y << ", dy = " << dy << std::endl;
 	return T * dy;
 }
 
-void ThermalParameters::make_hubble_spline(alglib::spline1dinterpolant& hubble_spline, Thermodynamics true_thermo, Thermodynamics false_thermo, double t_min, double t_max, double n_temp) {
+void ThermalLegacy::make_hubble_spline(alglib::spline1dinterpolant& hubble_spline, Thermodynamics true_thermo, Thermodynamics false_thermo, double t_min, double t_max, double n_temp) {
 
 	alglib::real_1d_array temp_array, integrand_array;
 	temp_array.setlength(n_temp);
@@ -610,7 +609,7 @@ void ThermalParameters::make_hubble_spline(alglib::spline1dinterpolant& hubble_s
 	alglib::spline1dbuildcubic(temp_array, integrand_array, hubble_spline);
 }
 
-void ThermalParameters::make_dtdT_spline(alglib::spline1dinterpolant& dtdT_spline, Thermodynamics true_thermo, Thermodynamics false_thermo, double t_min, double t_max, double n_temp) {
+void ThermalLegacy::make_dtdT_spline(alglib::spline1dinterpolant& dtdT_spline, Thermodynamics true_thermo, Thermodynamics false_thermo, double t_min, double t_max, double n_temp) {
 
 	alglib::real_1d_array temp_array, dtdT_array;
 	temp_array.setlength(n_temp);
@@ -630,12 +629,12 @@ void ThermalParameters::make_dtdT_spline(alglib::spline1dinterpolant& dtdT_splin
 	alglib::spline1dbuildcubic(temp_array, dtdT_array, dtdT_spline);
 }
 
-double ThermalParameters::hubble_integral(alglib::spline1dinterpolant& hubble_spline, double T, double Tdash) {
+double ThermalLegacy::hubble_integral(alglib::spline1dinterpolant& hubble_spline, double T, double Tdash) {
 	double result = spline1dintegrate(hubble_spline, Tdash) - spline1dintegrate(hubble_spline, T);
 	return result;
 }
 
-double ThermalParameters::false_vacuum_fraction_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double Tdash) {
+double ThermalLegacy::false_vacuum_fraction_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double Tdash) {
   double h = alglib::spline1dcalc(hubble_spline, Tdash); // 1/h !!!
   double h_int = hubble_integral(hubble_spline, T, Tdash);
   double log_gamma = alglib::spline1dcalc(bounce.log_gamma_spline, Tdash); // log(gamma)
@@ -645,7 +644,7 @@ double ThermalParameters::false_vacuum_fraction_integrand(alglib::spline1dinterp
   return Tfac * gamma * h * h_int*h_int*h_int;
 }
 
-double ThermalParameters::false_vacuum_fraction(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double vw) {
+double ThermalLegacy::false_vacuum_fraction(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T, double vw) {
 	double tc = bounce.maximum_temp;
 	double tmin = T; // lower bound on integral
 	int n_temp = 250;
@@ -670,14 +669,14 @@ double ThermalParameters::false_vacuum_fraction(alglib::spline1dinterpolant& hub
 	return exp(result);
 }
 
-double ThermalParameters::nucleation_rate_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T) {
+double ThermalLegacy::nucleation_rate_integrand(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T) {
   double log_gamma = alglib::spline1dcalc(bounce.log_gamma_spline, T); // log(gamma)
   double gamma = std::exp(log_gamma);
   double h = alglib::spline1dcalc(hubble_spline, T); // 1/h !!!
   return gamma * h * h * h;
 }
 
-double ThermalParameters::nucleation_rate(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T) {
+double ThermalLegacy::nucleation_rate(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double T) {
 
 	double tc = bounce.maximum_temp;
 	double tmin = T;
@@ -703,7 +702,7 @@ double ThermalParameters::nucleation_rate(alglib::spline1dinterpolant& hubble_sp
 }
 
 
-double ThermalParameters::find_temperature_binary_search(double init_T, double end_T, double tol_rel, const std::function<double(double)>& calc_value, double target, int max_iterations) {
+double ThermalLegacy::find_temperature_binary_search(double init_T, double end_T, double tol_rel, const std::function<double(double)>& calc_value, double target, int max_iterations) {
 	int iterations = 0;
 	double value_init = calc_value(init_T) - target;
 	double value_end = calc_value(end_T) - target;
@@ -733,7 +732,7 @@ double ThermalParameters::find_temperature_binary_search(double init_T, double e
 	return (init_T + end_T) / 2.0;
 }
 
-double ThermalParameters::get_percolation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double vw) {
+double ThermalLegacy::get_percolation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double vw) {
 	LOG(debug) << "Beginning percolation temperature search with vw = " << vw;
 
 	if (vw <= 0.0 || vw >= 1.0) {
@@ -765,7 +764,7 @@ double ThermalParameters::get_percolation_temperature(alglib::spline1dinterpolan
 	}
 }
 
-double ThermalParameters::get_completion_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double vw) {
+double ThermalLegacy::get_completion_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce, double vw) {
 	LOG(debug) << "Beginning completion temperature search with vw = " << vw;
 
 	if (vw <= 0.0 || vw >= 1.0) {
@@ -798,7 +797,7 @@ double ThermalParameters::get_completion_temperature(alglib::spline1dinterpolant
 	}
 }
 
-double ThermalParameters::get_nucleation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce) {
+double ThermalLegacy::get_nucleation_temperature(alglib::spline1dinterpolant& hubble_spline, const Bounce& bounce) {
 	LOG(debug) << "Beginning nucleation temperature search";
 
 	const double target = 1.0;

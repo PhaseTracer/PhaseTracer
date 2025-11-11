@@ -97,7 +97,7 @@ struct ThermalParameterSet
     }
 };
 
-class Temporary {
+class ThermoFinder {
 
     TransitionFinder tf;
 
@@ -129,17 +129,17 @@ class Temporary {
 
     PROPERTY(double, percolation_target, 0.71);
 
-    PROPERTY(double, completion_target, 1e-8);
+    PROPERTY(double, completion_target, 1e-6);
 
-    PROPERTY(double, onset_target, 1 - 1e-8);
+    PROPERTY(double, onset_target, 1 - 1e-6);
 
     PROPERTY(double, nucleation_target, 1.00);
 
-    PROPERTY(double, temperature_abs_tol, 1e-8);
+    PROPERTY(double, temperature_abs_tol, 1e-6);
 
 public : 
 
-    Temporary(TransitionFinder tf_in, ActionCalculator ac_in) : 
+    ThermoFinder(TransitionFinder tf_in, ActionCalculator ac_in) : 
     tf(tf_in), ac(ac_in) {};
 
     // std::vector<ThermalParameterSet> find_thermal_parameters;

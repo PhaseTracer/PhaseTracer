@@ -37,7 +37,7 @@
 
 namespace PhaseTracer {
 
-enum SomethingStatus
+enum MilestoneStatus
 {
     YES,
     FAST,
@@ -63,7 +63,7 @@ enum PrintSettings
 struct TransitionMilestone
 {
     MilestoneType type;
-    SomethingStatus status;
+    MilestoneStatus status;
     double temperature;
 
     double alpha;
@@ -83,7 +83,7 @@ private:
 public:
     TransitionMilestone() = default;
     TransitionMilestone(const MilestoneType& type_in)
-    : type(type_in), status(SomethingStatus::ERR), temperature(0.0) {}
+    : type(type_in), status(MilestoneStatus::ERR), temperature(0.0) {}
 
     void set_print_setting(PrintSettings setting) {
         print_setting = setting;
@@ -102,11 +102,11 @@ public:
     const std::string format_status_string() const {
         switch (status)
         {
-            case SomethingStatus::YES:
+            case MilestoneStatus::YES:
                 return "YES";
-            case SomethingStatus::FAST:
+            case MilestoneStatus::FAST:
                 return "FAST";
-            case SomethingStatus::NO:
+            case MilestoneStatus::NO:
                 return "NO";
             default:
                 return "ERR";
@@ -157,7 +157,7 @@ class TransitionMetrics {
 
     alglib::spline1dinterpolant a2a1_integrand_spline;
 
-    alglib::spline1dinterpolant Vext_spline;
+    alglib::spline1dinterpolant log_Vext_spline;
 
     PROPERTY(double, total_number_temp_steps, 200);
 
@@ -173,9 +173,9 @@ class TransitionMetrics {
 
     PROPERTY(double, percolation_target, 0.71);
 
-    PROPERTY(double, completion_target, 1e-8);
+    PROPERTY(double, completion_target, 1e-6);
 
-    PROPERTY(double, onset_target, 1 - 1e-8);
+    PROPERTY(double, onset_target, 1 - 1e-6);
 
     PROPERTY(double, nucleation_target, 1.00);
 
@@ -192,7 +192,7 @@ public :
     decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
     {
         make_scale_factor_ratio_integrand_spline();
-        compute_extended_volume_spline();
+        compute_log_extended_volume_spline();
     }
 
     void compute_milestones() {
@@ -209,6 +209,8 @@ public :
     const double get_atop_abottom(const double& Ttop, const double& Tbottom);
 
     const double get_extended_volume(const double& T);
+
+    const double get_extended_volume_from_spline(const double& T);
 
     const double get_false_vacuum_fraction(const double& T);
 
@@ -241,7 +243,7 @@ private:
 
     const double bubble_radius_integrand(const double& T1, const double& T2);
 
-    void compute_extended_volume_spline();
+    void compute_log_extended_volume_spline();
 };
 
 

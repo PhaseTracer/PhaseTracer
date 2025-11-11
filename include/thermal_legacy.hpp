@@ -207,10 +207,10 @@ private:
 };
 
 /**
- * @enum MilestoneStatus
+ * @enum LegacyStatus
  * @brief Represents the status of a milestone in the phase transition process
  */
-enum class MilestoneStatus {
+enum class LegacyStatus {
   YES,
   FAST,
   NO,
@@ -283,10 +283,10 @@ struct EoS {
 };
 
 /**
- * @struct ThermalParams
+ * @struct ThermalParamsLegacy
   * @brief Contains thermal parameters for a phase transition
  */
-struct ThermalParams {
+struct ThermalParamsLegacy {
   size_t key;
   bool success;
   alglib::spline1dinterpolant hubble_spline;
@@ -303,34 +303,34 @@ struct ThermalParams {
   double cs_true_tp, cs_false_tp;
   double cs_true_tn, cs_false_tn;
   EoS eos;
-  MilestoneStatus percolates;
-  MilestoneStatus nucleates;
-  MilestoneStatus completes;
+  LegacyStatus percolates;
+  LegacyStatus nucleates;
+  LegacyStatus completes;
   ThermalDEBUG debug_info;
 
   /** Pretty-printer for single phase */
-  friend std::ostream &operator<<(std::ostream &o, const ThermalParams &tp) {
+  friend std::ostream &operator<<(std::ostream &o, const ThermalParamsLegacy &tp) {
     o << "=== transition @ TC = " << tp.TC << " ===" << "\n";
-    if(tp.percolates == MilestoneStatus::YES) {
+    if(tp.percolates == LegacyStatus::YES) {
       o << "percolation temperature = " << tp.TP << "\n"
       << "  alpha = " << tp.alpha_tp << "\n"
       << "  beta/H = " << tp.betaH_tp << "\n"
       << "  H (GeV⁻¹) = " << tp.H_tp << "\n"
       << "  enthalpy/energy ratio = " << tp.we_tp << "\n";
-    } else if (tp.percolates == MilestoneStatus::NO) {
+    } else if (tp.percolates == LegacyStatus::NO) {
       o << "transition does not percolate." << "\n";
-    } else if (tp.percolates == MilestoneStatus::FAST) {
+    } else if (tp.percolates == LegacyStatus::FAST) {
       o << "transition is too fast." << "\n";
     } else {
       o << "error calculation percolation milestone." << "\n";
     }
-    if(tp.nucleates == MilestoneStatus::YES) {
+    if(tp.nucleates == LegacyStatus::YES) {
       o << "nucleation temperature = " << tp.TN << "\n"
       << "  alpha = " << tp.alpha_tn << "\n"
       << "  beta/H = " << tp.betaH_tn << "\n"
       << "  H (GeV⁻¹) = " << tp.H_tn << "\n"
       << "  enthalpy/energy ratio = " << tp.we_tn << "\n";
-    } else if (tp.nucleates == MilestoneStatus::INVALID) {
+    } else if (tp.nucleates == LegacyStatus::INVALID) {
       o << "nucleation temperature = " << tp.TN << "\n"
       << "  transition nucleates after completion!" << "\n"
       << "  alpha = " << tp.alpha_tn << "\n"
@@ -340,14 +340,14 @@ struct ThermalParams {
     } else {
       o << "transition does not nucleate." << "\n";
     }
-    if(tp.completes == MilestoneStatus::YES) {
+    if(tp.completes == LegacyStatus::YES) {
       o << "completion temperature = " << tp.TF << "\n"
       << "  tf - tc = " << tp.dtf_tc << "\n"
       << "  tf - tp = " << tp.dtf_tp << "\n";
-      if (tp.nucleates == MilestoneStatus::YES) {
+      if (tp.nucleates == LegacyStatus::YES) {
         o << "  tf - tn = " << tp.dtf_tn << "\n";
       }
-    } else if (tp.percolates == MilestoneStatus::NO) {
+    } else if (tp.percolates == LegacyStatus::NO) {
       o << "transition does not complete." << "\n";
     } else {
       o << "error computing completion temperature." << "\n";
@@ -358,14 +358,14 @@ struct ThermalParams {
 };
 
 /**
- * @class ThermalParameters
+ * @class ThermalLegacy
  * @brief Performs detailed calculations of thermal parameters and EOS
  */
-class ThermalParameters {
+class ThermalLegacy {
 
 private:
   TransitionFinder tf;
-  std::vector<ThermalParams> thermalparameterContainer;
+  std::vector<ThermalParamsLegacy> thermalparameterContainer;
 
   bool calculated_thermal_params = false;
 
@@ -402,9 +402,9 @@ private:
 public:
 
   /** Retrieve all transitions between all phases */
-  std::vector<ThermalParams> get_thermal_params() const { return thermalparameterContainer; }
+  std::vector<ThermalParamsLegacy> get_thermal_params() const { return thermalparameterContainer; }
 
-  friend std::ostream &operator<<(std::ostream &o, const ThermalParameters &tp) {
+  friend std::ostream &operator<<(std::ostream &o, const ThermalLegacy &tp) {
     auto thermal_params = tp.thermalparameterContainer;
 
     o << "found " << thermal_params.size() << " thermal param set";
@@ -421,20 +421,20 @@ public:
     return o;
   }
 
-  ThermalParameters(TransitionFinder tf_in) : tf(tf_in) {}
+  ThermalLegacy(TransitionFinder tf_in) : tf(tf_in) {}
 
   void find_thermal_parameters();
 
-  std::vector<ThermalParams> get_thermal_parameters();
+  std::vector<ThermalParamsLegacy> get_thermal_parameters();
 
-  ThermalParams process_transition(Transition t);
+  ThermalParamsLegacy process_transition(Transition t);
 
 private:
 
   std::pair<double, double>
   setup_temperature_range(
     const Transition& t,
-    ThermalParams& output
+    ThermalParamsLegacy& output
   );
 
   std::pair<Thermodynamics, Thermodynamics>
@@ -453,7 +453,7 @@ private:
 
   void
   add_debug_information(
-    ThermalParams& output,
+    ThermalParamsLegacy& output,
     const double& minimum_temp,
     const double& maximum_temp,
     alglib::spline1dinterpolant hubble_spline,
@@ -485,7 +485,7 @@ private:
 
   void 
   calculate_completion_milestone(
-    ThermalParams& output,
+    ThermalParamsLegacy& output,
     Transition& t,
     alglib::spline1dinterpolant& hubble_spline, 
     alglib::spline1dinterpolant& dtdT_spline,
@@ -496,7 +496,7 @@ private:
 
   void 
   calculate_percolation_milestone(
-    ThermalParams& output,
+    ThermalParamsLegacy& output,
     Transition& t,
     alglib::spline1dinterpolant& hubble_spline, 
     alglib::spline1dinterpolant& dtdT_spline,
@@ -507,7 +507,7 @@ private:
 
   void 
   calculate_nucleation_milestone(
-    ThermalParams& output,
+    ThermalParamsLegacy& output,
     Transition& t,
     alglib::spline1dinterpolant& hubble_spline, 
     alglib::spline1dinterpolant& dtdT_spline, 
@@ -517,7 +517,7 @@ private:
   );
 
   void
-  calculate_durations(ThermalParams& output);
+  calculate_durations(ThermalParamsLegacy& output);
 
   /**
    * @brief Computes the sound speed in a given phase at temperature T.

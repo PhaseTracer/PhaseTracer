@@ -17,12 +17,12 @@
 
 #include <cmath>
 #include "logger.hpp"
-#include "temporary.hpp"
+#include "thermo_finder.hpp"
 
 namespace PhaseTracer {
 
     ThermalParameterSet 
-    Temporary::get_thermal_parameter_set(Transition t) 
+    ThermoFinder::get_thermal_parameter_set(Transition t) 
     {
         ThermalParameterSet output(
             t, 
@@ -61,9 +61,9 @@ namespace PhaseTracer {
     }
 
     const void
-    Temporary::add_thermal_parameter_values(TransitionMilestone& milestone, const FalseVacuumDecayRate& decay_rate, const EquationOfState& eos, TransitionMetrics& tm)
+    ThermoFinder::add_thermal_parameter_values(TransitionMilestone& milestone, const FalseVacuumDecayRate& decay_rate, const EquationOfState& eos, TransitionMetrics& tm)
     {
-        if(milestone.status == SomethingStatus::YES) 
+        if(milestone.status == MilestoneStatus::YES) 
         {
             // TODO try catch with default values
             const auto temp = milestone.temperature;
@@ -92,7 +92,7 @@ namespace PhaseTracer {
     }
 
     const double 
-    Temporary::get_alpha(const double& temperature, const EquationOfState& eos)
+    ThermoFinder::get_alpha(const double& temperature, const EquationOfState& eos)
     {
         const auto theta = eos.get_theta(temperature);
         const auto w = eos.get_enthalpy_plus(temperature);
@@ -100,7 +100,7 @@ namespace PhaseTracer {
     }
 
     const double
-    Temporary::get_betaH(const double& temperature, const FalseVacuumDecayRate& decay_rate)
+    ThermoFinder::get_betaH(const double& temperature, const FalseVacuumDecayRate& decay_rate)
     {
         double y, dy, ddy;
         alglib::spline1ddiff(decay_rate.action_spline, temperature, y, dy, ddy);
@@ -108,13 +108,13 @@ namespace PhaseTracer {
     }
 
     const double
-    Temporary::get_H(const double& temperature, TransitionMetrics& tm)
+    ThermoFinder::get_H(const double& temperature, TransitionMetrics& tm)
     {
         return tm.get_hubble_rate(temperature);
     }
 
     const double 
-    Temporary::get_we(const double& temperature, const EquationOfState& eos)
+    ThermoFinder::get_we(const double& temperature, const EquationOfState& eos)
     {
         const double w_p = eos.get_enthalpy_plus(temperature);
         const double e_p = eos.get_energy_plus(temperature);
@@ -122,25 +122,25 @@ namespace PhaseTracer {
     }
 
     const std::pair<double, double> 
-    Temporary::get_cs(const double& temperature, const EquationOfState& eos)
+    ThermoFinder::get_cs(const double& temperature, const EquationOfState& eos)
     {
         return eos.get_sound_speed(temperature);
     }
 
     const double 
-    Temporary::get_n(const double& temperature, TransitionMetrics& tm)
+    ThermoFinder::get_n(const double& temperature, TransitionMetrics& tm)
     {
         return tm.get_bubble_density(temperature);
     }
 
     const double 
-    Temporary::get_Rbar_integral(const double& temperature, TransitionMetrics& tm)
+    ThermoFinder::get_Rbar_integral(const double& temperature, TransitionMetrics& tm)
     {
         return tm.get_bubble_radius_integral(temperature);
     }
 
     const double
-    Temporary::get_dt(const double& temperature, TransitionMetrics& tm)
+    ThermoFinder::get_dt(const double& temperature, TransitionMetrics& tm)
     {
         return tm.get_duration(temperature);
     }

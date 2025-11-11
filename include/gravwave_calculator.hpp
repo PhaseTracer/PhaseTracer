@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "transition_finder.hpp"
-#include "thermal_parameters.hpp"
+#include "thermal_legacy.hpp"
 #ifdef BUILD_WITH_DP
 #include "deep_phase.hpp"
 #endif
@@ -76,14 +76,14 @@ public:
     }
   }
 
-  explicit GravWaveCalculator(const ThermalParameters &tp_) : tf(nullptr), tp(std::make_unique<ThermalParameters>(tp_)), mode(GWCalcMode::FromThermalParameters) {
-    for (const auto &tps : tp->get_thermal_params()) {
-      if (std::isnan(tps.TP))
-        LOG(debug) << "Percolation temperature dose not exist. GW will not be calculated!";
-      else
-        thermal_params.push_back(tps);
-    }
-  }
+  // explicit GravWaveCalculator(const ThermalParameters &tp_) : tf(nullptr), tp(std::make_unique<ThermalParameters>(tp_)), mode(GWCalcMode::FromThermalParameters) {
+  //   for (const auto &tps : tp->get_thermal_params()) {
+  //     if (std::isnan(tps.TP))
+  //       LOG(debug) << "Percolation temperature dose not exist. GW will not be calculated!";
+  //     else
+  //       thermal_params.push_back(tps);
+  //   }
+  // }
 
   /** Pretty-printer for set of transitions in this object */
   friend std::ostream &operator<<(std::ostream &o, const GravWaveCalculator &a);
@@ -127,7 +127,7 @@ public:
 
 private:
   std::unique_ptr<TransitionFinder> tf;
-  std::unique_ptr<ThermalParameters> tp;
+  std::unique_ptr<ThermalLegacy> tp;
   GWCalcMode mode;
 
   /** Degree of freedom */
@@ -152,12 +152,15 @@ private:
 
   /** GW spectrums for all the transitions */
   std::vector<GravWaveSpectrum> spectrums;
+
   /** Summed GW spectrum*/
   GravWaveSpectrum total_spectrum;
+
   /** All transitions with valid TN*/
   std::vector<Transition> trans;
+
   /** All thermal params with valid temp*/
-  std::vector<ThermalParams> thermal_params;
+  // std::vector<ThermalLegacy> thermal_params;
 
   /** Lower bound on the frequency of the GW spectrum */
   PROPERTY(double, min_frequency, 1e-4);
