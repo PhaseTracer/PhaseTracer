@@ -11,6 +11,7 @@
 #include <array>
 #include <memory>
 #include <unistd.h>
+#include <nlopt.hpp>
 
 #include "dataanalysis.h"
 #include <interpolation.h>
@@ -148,7 +149,7 @@ int main(int argc, char* argv[]) {
   bool use_covariant_gauge = false;
   std::vector<double> SM_parameters ={};
 
-  LOGGER(fatal);
+  LOGGER(debug);
 
   std::string json_filename;
   if ( argc == 1 ) {
@@ -207,9 +208,9 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  PhaseTracer::ActionCalculator ac(model);
-  PhaseTracer::TransitionFinder tf(pf, ac);
-  tf.set_calculate_action(false); // This initialises with ac but stops it from calculating TN.
+  PhaseTracer::ActionCalculator ac(pf);
+
+  PhaseTracer::TransitionFinder tf(pf);
   try {
     tf.find_transitions();
   } catch (const std::exception& e) {
@@ -240,9 +241,258 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::cout << valid_t[0];
+  // std::cout << valid_t[0];
 
-  PhaseTracer::ThermoFinder tm(tf, ac);
+  // const auto true_phase = valid_t[0].true_phase;
+  // const auto false_phase = valid_t[0].false_phase;
+
+  // // ========== CONSISTENT TEMPERATURE GRID MINIMIZATION ==========
+  // std::cout << "\n========== Finding Minima on Consistent Temperature Grid ==========\n";
+  
+  // // Define temperature range
+  // double t_min = valid_t[0].false_phase.T.front();
+  // double t_max = valid_t[0].TC;
+  // int num_temps = 50;  // Number of temperature points
+  
+  // std::cout << "Temperature range: " << t_min << " to " << t_max << "\n";
+  // std::cout << "Number of temperature points: " << num_temps << "\n\n";
+  
+  // // Wrapper structure to pass model and temperature to NLopt
+  // struct PotentialData {
+  //   const EffectivePotential::xSM_HT* model;
+  //   double T;
+  // };
+  
+  // // Objective function for NLopt (must match nlopt signature)
+  // auto objective_func = [](const std::vector<double>& x, std::vector<double>& grad, void* data) -> double {
+  //   PotentialData* pd = static_cast<PotentialData*>(data);
+  //   Eigen::VectorXd phi(2);
+  //   phi << x[0], x[1];
+    
+  //   // Optionally compute gradient numerically if needed
+  //   if (!grad.empty()) {
+  //     double eps = 1e-6;
+  //     for (size_t i = 0; i < 2; ++i) {
+  //       Eigen::VectorXd phi_plus = phi;
+  //       Eigen::VectorXd phi_minus = phi;
+  //       phi_plus[i] += eps;
+  //       phi_minus[i] -= eps;
+  //       grad[i] = (pd->model->V(phi_plus, pd->T) - pd->model->V(phi_minus, pd->T)) / (2.0 * eps);
+  //     }
+  //   }
+    
+  //   return pd->model->V(phi, pd->T);
+  // };
+  
+  // // Helper function to find initial guess by interpolation
+  // auto get_interpolated_guess = [](double T_target, const PhaseTracer::Phase& phase) -> Eigen::VectorXd {
+  //   const auto& T_list = phase.T;
+  //   const auto& X_list = phase.X;
+    
+  //   // Find the two nearest temperatures that bracket T_target
+  //   size_t n = T_list.size();
+    
+  //   // Handle edge cases
+  //   if (T_target <= T_list[0]) return X_list[0];
+  //   if (T_target >= T_list[n-1]) return X_list[n-1];
+    
+  //   // Find bracketing indices
+  //   size_t i_upper = 0;
+  //   for (size_t i = 0; i < n; ++i) {
+  //     if (T_list[i] >= T_target) {
+  //       i_upper = i;
+  //       break;
+  //     }
+  //   }
+  //   size_t i_lower = (i_upper > 0) ? i_upper - 1 : 0;
+    
+  //   // Linear interpolation
+  //   double T_lower = T_list[i_lower];
+  //   double T_upper = T_list[i_upper];
+  //   double alpha = (T_target - T_lower) / (T_upper - T_lower + 1e-15);  // avoid division by zero
+    
+  //   Eigen::VectorXd guess = (1.0 - alpha) * X_list[i_lower] + alpha * X_list[i_upper];
+  //   return guess;
+  // };
+  
+  // // Helper function to find minimum using NLopt
+  // auto find_minimum = [&](double T, const Eigen::VectorXd& initial_guess) -> std::optional<Eigen::VectorXd> {
+  //   nlopt::opt opt(nlopt::LN_COBYLA, 2);
+    
+  //   PotentialData pd{&model, T};
+  //   opt.set_min_objective(objective_func, &pd);
+  //   opt.set_xtol_rel(1e-8);
+  //   opt.set_maxeval(1000);
+    
+  //   std::vector<double> x = {initial_guess[0], initial_guess[1]};
+    
+  //   try {
+  //     double minf;
+  //     nlopt::result result = opt.optimize(x, minf);
+      
+  //     if (result > 0) {  // Positive results indicate success
+  //       Eigen::VectorXd minimum(2);
+  //       minimum << x[0], x[1];
+  //       return minimum;
+  //     }
+  //   } catch (...) {
+  //     return std::nullopt;
+  //   }
+    
+  //   return std::nullopt;
+  // };
+  
+  // // Create consistent temperature grid
+  // std::vector<double> T_grid;
+  // for (int i = 0; i < num_temps; ++i) {
+  //   double T = t_max - (t_max - t_min) * i / (num_temps - 1.0);
+  //   T_grid.push_back(T);
+  // }
+  
+  // // Storage for results
+  // std::vector<double> T_consistent;
+  // std::vector<Eigen::VectorXd> true_minima;
+  // std::vector<Eigen::VectorXd> false_minima;
+  
+  // // Find minima for both phases at each temperature
+  // std::cout << "Finding minima for both phases...\n";
+  // int success_count = 0;
+  // int failed_count = 0;
+  
+  // for (size_t i = 0; i < T_grid.size(); ++i) {
+  //   double T = T_grid[i];
+    
+  //   // Get initial guesses via interpolation
+  //   Eigen::VectorXd true_guess = get_interpolated_guess(T, true_phase);
+  //   Eigen::VectorXd false_guess = get_interpolated_guess(T, false_phase);
+    
+  //   // Find minima
+  //   auto true_min_opt = find_minimum(T, true_guess);
+  //   auto false_min_opt = find_minimum(T, false_guess);
+    
+  //   if (true_min_opt && false_min_opt) {
+  //     T_consistent.push_back(T);
+  //     true_minima.push_back(*true_min_opt);
+  //     false_minima.push_back(*false_min_opt);
+  //     success_count++;
+      
+  //     if (i % 10 == 0 || i < 3 || i >= T_grid.size() - 3) {
+  //       std::cout << "T = " << T << ": ✓\n";
+  //       std::cout << "  True:  [" << (*true_min_opt)[0] << ", " << (*true_min_opt)[1] << "]\n";
+  //       std::cout << "  False: [" << (*false_min_opt)[0] << ", " << (*false_min_opt)[1] << "]\n";
+  //     }
+  //   } else {
+  //     failed_count++;
+  //     std::cout << "T = " << T << ": ✗ Failed to find minimum\n";
+  //   }
+  // }
+  
+  // std::cout << "\n========== Consistent Grid Results ==========\n";
+  // std::cout << "Requested points: " << num_temps << "\n";
+  // std::cout << "Successful: " << success_count << "\n";
+  // std::cout << "Failed: " << failed_count << "\n";
+  // std::cout << "============================================\n\n";
+  
+  // // Optional: Print all results to a file
+  // if (success_count > 0) {
+  //   std::ofstream minima_file("consistent_minima.csv");
+  //   minima_file << "T,true_phi0,true_phi1,false_phi0,false_phi1,V_true,V_false,delta_V\n";
+  //   for (size_t i = 0; i < T_consistent.size(); ++i) {
+  //     double T = T_consistent[i];
+  //     double V_true = model.V(true_minima[i], T);
+  //     double V_false = model.V(false_minima[i], T);
+  //     minima_file << T << ","
+  //                 << true_minima[i][0] << "," << true_minima[i][1] << ","
+  //                 << false_minima[i][0] << "," << false_minima[i][1] << ","
+  //                 << V_true << "," << V_false << "," << (V_false - V_true) << "\n";
+  //   }
+  //   minima_file.close();
+  //   std::cout << "Results written to: consistent_minima.csv\n\n";
+  // }
+
+  // return 0;
+
+  // // ========== OLD TEST CODE (keeping for reference) ==========
+  // std::cout << "\n========== Testing NLopt Minimization ==========\n";
+  // // Test ALL temperature points from the true_phase
+  // size_t num_tests = true_phase.T.size();
+  // size_t num_success = 0;
+  // size_t num_failed = 0;
+  // double max_diff_0 = 0.0;
+  // double max_diff_1 = 0.0;
+  // double max_diff_V = 0.0;
+  
+  // std::cout << "Testing " << num_tests << " temperature points...\n\n";
+  
+  // for (size_t idx = 0; idx < num_tests; ++idx) {
+  //   double T = true_phase.T[idx];
+  //   Eigen::VectorXd phi_known = true_phase.X[idx];
+    
+  //   // Print progress every 10 points
+  //   if (idx % 10 == 0 || idx < 3 || idx >= num_tests - 3) {
+  //     std::cout << "Test " << idx + 1 << "/" << num_tests 
+  //               << " (T = " << T << "): ";
+  //   }
+    
+  //   // Setup NLopt
+  //   nlopt::opt opt(nlopt::LN_COBYLA, 2);  // 2D optimization, gradient-free COBYLA
+    
+  //   PotentialData pd{&model, T};
+  //   opt.set_min_objective(objective_func, &pd);
+  //   opt.set_xtol_rel(1e-8);
+  //   opt.set_maxeval(1000);
+    
+  //   // Use known minimum as initial guess
+  //   std::vector<double> x = {phi_known[0], phi_known[1]};
+    
+  //   try {
+  //     double minf;
+  //     nlopt::result result = opt.optimize(x, minf);
+      
+  //     // Compare with known minimum
+  //     double diff_0 = std::abs(x[0] - phi_known[0]);
+  //     double diff_1 = std::abs(x[1] - phi_known[1]);
+  //     double diff_V = std::abs(minf - model.V(phi_known, T));
+      
+  //     // Track maximum differences
+  //     max_diff_0 = std::max(max_diff_0, diff_0);
+  //     max_diff_1 = std::max(max_diff_1, diff_1);
+  //     max_diff_V = std::max(max_diff_V, diff_V);
+      
+  //     if (diff_0 < 1e-4 && diff_1 < 1e-4) {
+  //       num_success++;
+  //       if (idx % 10 == 0 || idx < 3 || idx >= num_tests - 3) {
+  //         std::cout << "✓ (diffs: " << diff_0 << ", " << diff_1 << ")\n";
+  //       }
+  //     } else {
+  //       num_failed++;
+  //       std::cout << "\n✗ FAILED at T = " << T << "\n";
+  //       std::cout << "  Known minimum: [" << phi_known[0] << ", " << phi_known[1] << "]\n";
+  //       std::cout << "  Found minimum: [" << x[0] << ", " << x[1] << "]\n";
+  //       std::cout << "  Difference in phi[0]: " << diff_0 << "\n";
+  //       std::cout << "  Difference in phi[1]: " << diff_1 << "\n";
+  //       std::cout << "  Difference in V: " << diff_V << "\n";
+  //     }
+      
+  //   } catch (std::exception& e) {
+  //     num_failed++;
+  //     std::cerr << "\n✗ NLopt exception at T = " << T << ": " << e.what() << "\n";
+  //   }
+  // }
+  
+  // std::cout << "\n========== NLopt Test Summary ==========\n";
+  // std::cout << "Total tests: " << num_tests << "\n";
+  // std::cout << "Successful: " << num_success << " (" 
+  //           << (100.0 * num_success / num_tests) << "%)\n";
+  // std::cout << "Failed: " << num_failed << "\n";
+  // std::cout << "Max difference in phi[0]: " << max_diff_0 << "\n";
+  // std::cout << "Max difference in phi[1]: " << max_diff_1 << "\n";
+  // std::cout << "Max difference in V: " << max_diff_V << "\n";
+  // std::cout << "========================================\n\n";
+
+  // return 0;
+
+  PhaseTracer::ThermoFinder tm(ac);
   tm.set_vw(vw);
   tm.set_dof(107.75);
   tm.set_background_dof(107.75);

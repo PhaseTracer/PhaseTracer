@@ -50,7 +50,7 @@ struct ThermalParameterSet
 
     ThermalParameterSet(
         Transition t_in, 
-        TransitionFinder tf_in,
+        ActionCalculator ac_in,
         double n_temp_action = 50,
         double n_temp_eos = 100,
         double vw = 1/sqrt(3.0),
@@ -64,7 +64,7 @@ struct ThermalParameterSet
         double nucleation_target = 1.00,
         double temperature_abs_tol = 1e-8
     ) :
-    decay_rate(t_in, tf_in, t_in.false_phase.T.front(), t_in.TC, n_temp_action),
+    decay_rate(t_in, ac_in, t_in.false_phase.T.front(), t_in.TC, n_temp_action),
     eos(t_in, n_temp_eos, background_dof), 
     transition_metrics(decay_rate, eos), 
     TC(decay_rate.get_t_max()) 
@@ -98,8 +98,6 @@ struct ThermalParameterSet
 };
 
 class ThermoFinder {
-
-    TransitionFinder tf;
 
     ActionCalculator ac;
 
@@ -139,8 +137,7 @@ class ThermoFinder {
 
 public : 
 
-    ThermoFinder(TransitionFinder tf_in, ActionCalculator ac_in) : 
-    tf(tf_in), ac(ac_in) {};
+    ThermoFinder(ActionCalculator ac_in) : ac(ac_in) {};
 
     // std::vector<ThermalParameterSet> find_thermal_parameters;
 

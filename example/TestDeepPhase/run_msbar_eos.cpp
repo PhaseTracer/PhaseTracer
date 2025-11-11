@@ -234,9 +234,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  PhaseTracer::ActionCalculator ac(model);
-  PhaseTracer::TransitionFinder tf(pf, ac);
-  tf.set_calculate_action(false); // This initialises with ac but stops it from calculating TN.
+  PhaseTracer::ActionCalculator ac(pf);
+  PhaseTracer::TransitionFinder tf(pf);
   try {
     tf.find_transitions();
   } catch (const std::exception& e) {
@@ -269,7 +268,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << valid_t[0];
 
-  PhaseTracer::ThermoFinder tm(tf, ac);
+  PhaseTracer::ThermoFinder tm(ac);
   tm.set_vw(vw);
   tm.set_dof(107.75);
   tm.set_background_dof(107.75 - 38.5);

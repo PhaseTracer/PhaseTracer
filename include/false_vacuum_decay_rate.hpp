@@ -37,31 +37,31 @@ private:
 
 public:
     
-    FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in)
-    : t(t_in), tf(tf_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC), spline_evaluations(50),
+    FalseVacuumDecayRate(Transition t_in, ActionCalculator ac_in)
+    : t(t_in), ac(ac_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC), spline_evaluations(50),
       prefactor_function(default_decay_rate_prefactor())
     {
         get_splines();
     }
 
-    FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in, double t_min_in, double t_max_in, int spline_evaluations_in)
-    : t(t_in), tf(tf_in), t_min(t_min_in), t_max(t_max_in), spline_evaluations(spline_evaluations_in),
+    FalseVacuumDecayRate(Transition t_in, ActionCalculator ac_in, double t_min_in, double t_max_in, int spline_evaluations_in)
+    : t(t_in), ac(ac_in), t_min(t_min_in), t_max(t_max_in), spline_evaluations(spline_evaluations_in),
       prefactor_function(default_decay_rate_prefactor())
     {
         get_splines();
     }
 
-    FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in, 
+    FalseVacuumDecayRate(Transition t_in, ActionCalculator ac_in, 
                          std::function<double(double, double)> custom_prefactor)
-    : t(t_in), tf(tf_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC), spline_evaluations(50),
+    : t(t_in), ac(ac_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC), spline_evaluations(50),
       prefactor_function(custom_prefactor)
     {
         get_splines();
     }
 
-    FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in, double t_min_in, double t_max_in, 
+    FalseVacuumDecayRate(Transition t_in, ActionCalculator ac_in, double t_min_in, double t_max_in, 
                          int spline_evaluations_in, std::function<double(double, double)> custom_prefactor)
-    : t(t_in), tf(tf_in), t_min(t_min_in), t_max(t_max_in), spline_evaluations(spline_evaluations_in),
+    : t(t_in), ac(ac_in), t_min(t_min_in), t_max(t_max_in), spline_evaluations(spline_evaluations_in),
       prefactor_function(custom_prefactor)
     {
         get_splines();
@@ -135,8 +135,8 @@ private:
     /** Compute splines for action and log(gamma) */
     void get_splines();
 
-    /** Local instance of tf class */
-    TransitionFinder tf;
+    /** Local instance of ActionCalculator class */
+    ActionCalculator ac;
 
     /** Transition for which the decay rate is computed */
     Transition t;
