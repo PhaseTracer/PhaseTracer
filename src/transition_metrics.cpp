@@ -86,7 +86,7 @@ namespace PhaseTracer {
     TransitionMetrics::extended_volume_integrand(const double& T1, const double& T2)
     {
         double dtdT = get_dtdT(T1);
-        double gamma = exp(alglib::spline1dcalc(decay_rate.log_gamma_spline, T1));
+        double gamma = decay_rate.get_gamma(T1);
         double aT1_on_aT2 = get_atop_abottom(T1, T2);
         double volume_term = get_volume_term(T1, T2);
 
@@ -146,7 +146,7 @@ namespace PhaseTracer {
         auto integrand = [this](double Tdash) 
         {
             double Pf = use_pf_in_nt_integrand ? get_false_vacuum_fraction(Tdash) : 1.0;
-            double gamma = exp(alglib::spline1dcalc(decay_rate.log_gamma_spline, Tdash));
+            double gamma = decay_rate.get_gamma(Tdash);
             double hubble = get_hubble_rate(Tdash);
             double dtdT = get_dtdT(Tdash);
             return Pf * gamma * dtdT / (hubble*hubble*hubble);
@@ -164,7 +164,7 @@ namespace PhaseTracer {
         auto integrand = [this, T](double Tdash)
         {
             double dtdT = get_dtdT(Tdash);
-            double gamma = exp(alglib::spline1dcalc(decay_rate.log_gamma_spline, Tdash));
+            double gamma = decay_rate.get_gamma(Tdash);
             double pf = get_false_vacuum_fraction(Tdash);
             double a_ratio = get_atop_abottom(Tdash, T);
             return dtdT * gamma * pf * a_ratio*a_ratio*a_ratio;
@@ -180,7 +180,7 @@ namespace PhaseTracer {
     TransitionMetrics::bubble_radius_integrand(const double& T1, const double& T2)
     {
         double dtdT = get_dtdT(T1);
-        double gamma = exp(alglib::spline1dcalc(decay_rate.log_gamma_spline, T1));
+        double gamma = decay_rate.get_gamma(T1);
         double pf = get_false_vacuum_fraction(T1);
         double aT1_on_aT2 = get_atop_abottom(T1, T2);
         double volume_term = get_volume_term(T1, T2);

@@ -102,8 +102,7 @@ namespace PhaseTracer {
     const double
     ThermoFinder::get_betaH(const double& temperature, const FalseVacuumDecayRate& decay_rate)
     {
-        double y, dy, ddy;
-        alglib::spline1ddiff(decay_rate.action_spline, temperature, y, dy, ddy);
+        double dy = decay_rate.get_action_deriv(temperature);
         return temperature * dy;
     }
 

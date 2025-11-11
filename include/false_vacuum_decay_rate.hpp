@@ -22,6 +22,7 @@
 #include <vector>
 #include <optional>
 #include <stdexcept>
+#include <functional>
 #include <interpolation.h>
 
 #include "property.hpp"
@@ -33,22 +34,35 @@ namespace PhaseTracer {
 class FalseVacuumDecayRate {
 
 private:
-    TransitionFinder tf;
-    Transition t;
-    int spline_evaluations;
 
 public:
-    double minimum_temp, maximum_temp;
-    alglib::spline1dinterpolant action_spline, log_gamma_spline;
-
+    
     FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in)
-    : t(t_in), tf(tf_in), minimum_temp(t_in.false_phase.T.front()), maximum_temp(t_in.TC), spline_evaluations(50) 
+    : t(t_in), tf(tf_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC), spline_evaluations(50),
+      prefactor_function(default_decay_rate_prefactor())
     {
         get_splines();
     }
 
-    FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in, double minimum_temp_in, double maximum_temp_in, int spline_evaluations_in)
-    : t(t_in), tf(tf_in), minimum_temp(minimum_temp_in), maximum_temp(maximum_temp_in), spline_evaluations(spline_evaluations_in)
+    FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in, double t_min_in, double t_max_in, int spline_evaluations_in)
+    : t(t_in), tf(tf_in), t_min(t_min_in), t_max(t_max_in), spline_evaluations(spline_evaluations_in),
+      prefactor_function(default_decay_rate_prefactor())
+    {
+        get_splines();
+    }
+
+    FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in, 
+                         std::function<double(double, double)> custom_prefactor)
+    : t(t_in), tf(tf_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC), spline_evaluations(50),
+      prefactor_function(custom_prefactor)
+    {
+        get_splines();
+    }
+
+    FalseVacuumDecayRate(Transition t_in, TransitionFinder tf_in, double t_min_in, double t_max_in, 
+                         int spline_evaluations_in, std::function<double(double, double)> custom_prefactor)
+    : t(t_in), tf(tf_in), t_min(t_min_in), t_max(t_max_in), spline_evaluations(spline_evaluations_in),
+      prefactor_function(custom_prefactor)
     {
         get_splines();
     }
@@ -59,30 +73,96 @@ public:
      */
     void get_splines();
 
-    const double get_t_min() const {return minimum_temp;}
+    /**
+     * @brief Retrieves the minimum temperature for which the decay rate is computed.
+     * @return The minimum temperature.
+     */
+    const double get_t_min() const {return t_min;}
 
-    const double get_t_max() const {return maximum_temp;}
+    /**
+     * @brief Retrieves the maximum temperature for which the decay rate is computed.
+     * @return The maximum temperature.
+     */
+    const double get_t_max() const {return t_max;}
+
+    /** 
+     * @brief Computes the action at a given temperature using the precomputed spline.
+     * @param temperature The temperature at which to evaluate the action.
+     * @return The action at the specified temperature.
+    */
+    double get_action(const double& temperature) const;
+
+    /** 
+     * @brief Computes d(S/T)/dT at a given temperature using the precomputed spline.
+     * @param temperature The temperature at which to evaluate the action.
+     * @return The derivative of the action at the specified temperature.
+    */
+    double get_action_deriv(const double& temperature) const;
+
+    /** 
+     * @brief Computes the false vacuum decay rate at a given temperature using the precomputed spline.
+     * @param temperature The temperature at which to evaluate the action.
+     * @return The false vacuum decay rate at the specified temperature.
+    */
+    double get_gamma(const double& temperature) const;
+
+    /** 
+     * @brief Set a custom decay rate prefactor function.
+     * @param custom_prefactor A function taking (temperature, action_on_T) and returning the prefactor.
+    */
+    void set_prefactor_function(std::function<double(double, double)> custom_prefactor) {
+        prefactor_function = custom_prefactor;
+    }
+
+    /** 
+     * @brief Get the current decay rate prefactor function.
+     * @return The prefactor function.
+    */
+    const std::function<double(double, double)>& get_prefactor_function() const {
+        return prefactor_function;
+    }
+
+    /** 
+     * @brief Compute the decay rate prefactor using the current prefactor function.
+     * @param temperature The temperature at which to evaluate.
+     * @param action_on_T The action divided by temperature (S/T).
+     * @return The decay rate prefactor.
+    */
+    double decay_rate_prefactor(double temperature, double action_on_T) const;
+
+    /** 
+     * @brief Default decay rate prefactor function following standard bounce action formula.
+     * @return A function object that computes the standard prefactor.
+    */
+    static std::function<double(double, double)> default_decay_rate_prefactor();
 
 private:
+
+    /** Local instance of tf class */
+    TransitionFinder tf;
+
+    /** Transition for which the decay rate is computed */
+    Transition t;
+
+    /** Number of spline evaluations for building the splines */
+    int spline_evaluations;
+
+    /** Minimum and maximum temperatures for which the decay rate is computed */
+    double t_min, t_max;
+
+    /** Splines for action and log(gamma) */
+    alglib::spline1dinterpolant action_spline, log_gamma_spline;
+    
+    /** Function for computing the decay rate prefactor */
+    std::function<double(double, double)> prefactor_function;
+
     /** Calculate action at given temperature */
-    std::optional<double> 
-    calculate_action(double temperature) const 
-    {
-        double action = tf.get_action(t.true_phase, t.false_phase, temperature) / temperature;
-        if (std::isnan(action) || std::isinf(action) || action > 1e150) {
-        return std::nullopt;
-        }
-        return action;
-    }
+    std::optional<double> calculate_action(double temperature) const;
 
     /** Calculate log(gamma) at given temperature and action */
-    std::optional<double> 
-    calculate_log_gamma(double temperature, double action) const 
-    {
-        double log_gamma = 4*log(temperature) + 1.5*log(action/(2.*M_PI)) - action;
-        return log_gamma < -700 ? std::nullopt : std::optional<double>(log_gamma);
-    }
-};
+    std::optional<double> calculate_log_gamma(double temperature, double action) const;
+
+}; // class FalseVacuumDecayRate
 
 } // namespace PhaseTracer
 

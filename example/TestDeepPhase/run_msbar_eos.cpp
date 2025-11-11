@@ -92,6 +92,7 @@ format_thermal_params(std::vector<double> in, int flag, double TC, PhaseTracer::
     + std::to_string(milestone.alpha) + ","
     + std::to_string(milestone.betaH) + ","
     + std::to_string(milestone.Rs) + ","
+    + std::to_string(milestone.dt) + ","
     + std::to_string(milestone.we) + ","
     + std::to_string(milestone.cs_plus) + ","
     + std::to_string(milestone.cs_minus) + ",";
@@ -114,7 +115,7 @@ format_fail_case(std::vector<double> in, int flag)
 
   output += std::to_string(flag) + ",";
 
-  output += "0,0,0,0,0,0,0,0,0,0,0,0,0,0\n";
+  output += "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n";
 
   return output;
 }
@@ -128,7 +129,7 @@ format_debug_fail_case(std::vector<double> in, int flag)
 
   output += std::to_string(flag) + ",";
 
-  output += "0,0,0,0,0,0,0,0,0,0\n";
+  output += "0,0,0,0,0,0,0,0,0,0,0\n";
 
   return output;
 }
@@ -147,7 +148,7 @@ int main(int argc, char* argv[]) {
     output_file << "mS,lambda_s,lambda_hs,";
     output_file << "success,Tc,";
     output_file << "vwLTE,vJ,vw,vwFlag,vwDet,vwDetFlag,";
-    output_file << "T,alpha,betaH,RsH,we,cs_plus,cs_minus\n";
+    output_file << "T,alpha,betaH,RsH,dtH,we,cs_plus,cs_minus\n";
   }
 
   double vw, vwLTE, vwDet, vJ, dtauRs;
