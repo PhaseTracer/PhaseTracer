@@ -68,12 +68,6 @@ public:
     }
 
     /**
-     * @brief Computes the bounce and log(gamma) splines for given transition.
-     * @return void.
-     */
-    void get_splines();
-
-    /**
      * @brief Retrieves the minimum temperature for which the decay rate is computed.
      * @return The minimum temperature.
      */
@@ -138,6 +132,9 @@ public:
 
 private:
 
+    /** Compute splines for action and log(gamma) */
+    void get_splines();
+
     /** Local instance of tf class */
     TransitionFinder tf;
 
@@ -155,12 +152,6 @@ private:
     
     /** Function for computing the decay rate prefactor */
     std::function<double(double, double)> prefactor_function;
-
-    /** Calculate action at given temperature */
-    std::optional<double> calculate_action(double temperature) const;
-
-    /** Calculate log(gamma) at given temperature and action */
-    std::optional<double> calculate_log_gamma(double temperature, double action) const;
 
 }; // class FalseVacuumDecayRate
 

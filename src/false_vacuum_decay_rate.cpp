@@ -16,6 +16,10 @@
 // ====================================================================
 
 #include <cmath>
+#include <chrono>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include "logger.hpp"
 #include "false_vacuum_decay_rate.hpp"
 
@@ -27,30 +31,63 @@ namespace PhaseTracer {
             throw std::runtime_error("Spline evaluations must be at least 2.");
         }
 
-        std::vector<double> valid_temps, valid_actions, valid_log_gammas;
-        double dt = (t_max - t_min) / (spline_evaluations - 1);
         const double log_gamma_min = -700;
+        double dt = (t_max - t_min) / (spline_evaluations - 1);
+
+        std::vector<double> temp_results(spline_evaluations);
+        std::vector<double> action_results(spline_evaluations);
+        std::vector<double> log_gamma_results(spline_evaluations);
+        std::vector<bool> valid_flags(spline_evaluations, false);
+        
+        auto start_time = std::chrono::high_resolution_clock::now();
+        
+        #ifdef _OPENMP
+        #pragma omp parallel for schedule(dynamic)
+        #endif
 
         for (int i = 0; i < spline_evaluations; i++) 
         {
             double tt = t_min + i * dt;
-            auto action_opt = calculate_action(tt);
-            if (action_opt.has_value()) 
+            
+            double action = tf.get_action(t.true_phase, t.false_phase, tt) / tt;
+            
+            if (std::isnan(action) || std::isinf(action) || action > 1e150) 
             {
-                double action = action_opt.value();
-                auto log_gamma_opt = calculate_log_gamma(tt, action);
-                double log_gamma = log_gamma_min;
-                if (log_gamma_opt.has_value()) {
-                    log_gamma = std::max(log_gamma_opt.value(), log_gamma_min);
-                }
-                valid_temps.push_back(tt);
-                valid_actions.push_back(action);
-                valid_log_gammas.push_back(log_gamma);
+                valid_flags[i] = false;
+                continue;
+            }
+            
+            double prefactor = decay_rate_prefactor(tt, action);
+            double log_gamma = log(prefactor) - action;
+            
+            if (log_gamma < -700) 
+            {
+                log_gamma = log_gamma_min;
             } else {
-                LOG(debug) << "t = " << tt << ", action = INVALID" << std::endl;
+                log_gamma = std::max(log_gamma, log_gamma_min);
+            }
+            
+            temp_results[i] = tt;
+            action_results[i] = action;
+            log_gamma_results[i] = log_gamma;
+            valid_flags[i] = true;
+        }
+        
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        LOG(debug) << "Action calculation loop completed in " << duration.count() << " ms" << std::endl;
+        
+        std::vector<double> valid_temps, valid_actions, valid_log_gammas;
+        for (int i = 0; i < spline_evaluations; i++) 
+        {
+            if (valid_flags[i]) 
+            {
+                valid_temps.push_back(temp_results[i]);
+                valid_actions.push_back(action_results[i]);
+                valid_log_gammas.push_back(log_gamma_results[i]);
             }
         }
-
+        
         if (valid_temps.size() < 2) 
         {
             throw std::runtime_error("Not enough valid action points to build spline.");
@@ -61,28 +98,10 @@ namespace PhaseTracer {
         action_array.setcontent(valid_actions.size(), valid_actions.data());
         log_gamma_array.setcontent(valid_log_gammas.size(), valid_log_gammas.data());
 
-        LOG(debug) << "Building action and gamma arrays";
         alglib::spline1dbuildcubic(temp_array, action_array, this->action_spline);
         alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->log_gamma_spline);
-        LOG(debug) << "Action and log(gamma) arrays built.";
-    }
-
-    std::optional<double> 
-    FalseVacuumDecayRate::calculate_action(double temperature) const
-    {
-        double action = tf.get_action(t.true_phase, t.false_phase, temperature) / temperature;
-        if (std::isnan(action) || std::isinf(action) || action > 1e150) {
-        return std::nullopt;
-        }
-        return action;
-    }
-
-    std::optional<double>
-    FalseVacuumDecayRate::calculate_log_gamma(double temperature, double action) const
-    {
-        double prefactor = decay_rate_prefactor(temperature, action);
-        double log_gamma = log(prefactor) - action;
-        return log_gamma < -700 ? std::nullopt : std::optional<double>(log_gamma);
+        
+        LOG(debug) << "Built splines with " << valid_temps.size() << " valid points" << std::endl;
     }
 
     double
