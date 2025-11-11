@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <string>
 #include <map>
+#include <fstream>
+#include <cctype>
 #include <nlohmann/json.hpp>
 #include <filesystem>
 #include <random>
@@ -55,31 +57,31 @@ writeWallGoInputToJSON(const std::string& filename, const json& input)
     Delete WallGoTempFile
 */
 inline void
-removeWallGoJSONFile(const std::string& filename)
+removeJSONFile(const std::string& filename)
 {
-    if(std::filesystem::exists(filename))
-    {
-        std::filesystem::remove(filename);
-    }
+  if(std::filesystem::exists(filename))
+  {
+    std::filesystem::remove(filename);
+  }
 }
 
 inline std::string
 getRandomFileName(const size_t length)
 {
-    const std::string hex_chars = "0123456789ABCDEF";
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distrib(0, hex_chars.length() - 1);
+  const std::string hex_chars = "0123456789ABCDEF";
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> distrib(0, hex_chars.length() - 1);
 
-    std::string random_hex_string;
-    random_hex_string.reserve(length + 5);
+  std::string random_hex_string;
+  random_hex_string.reserve(length + 5);
 
-    for (size_t i = 0; i < length; ++i) {
-        random_hex_string += hex_chars[distrib(gen)];
-    }
-    random_hex_string += ".json";
+  for (size_t i = 0; i < length; ++i) {
+    random_hex_string += hex_chars[distrib(gen)];
+  }
+  random_hex_string += ".json";
 
-    return random_hex_string;
+  return random_hex_string;
 }
 
 inline std::string 
@@ -98,7 +100,65 @@ execPythonScript(const std::string& cmd)
   return result;
 }
 
-inline std::vector<double>
+struct wallGoResults
+{
+  // LTE limit
+  double vwLTE;
+
+  // from solveWall
+  double vw_flag;
+  double vw;
+  double vJ;
+  double vw_err;
+
+  // from solveWallDetonation
+  double vw_det_flag;
+  double vw_det;
+  double vJ_det;
+  double vw_det_err;
+};
+
+inline wallGoResults
+parseWallGoOutput(const std::string& wallGoFilename)
+{
+  std::string filename = wallGoFilename;
+  filename.erase(std::remove_if(filename.begin(), filename.end(), [](unsigned char c) { return std::isspace(c); }), filename.end());
+
+
+  std::ifstream file(filename);
+  if (!file.is_open()) 
+  {
+    throw std::runtime_error("Could not open WallGo output file: " + filename);
+  }
+
+  json data;
+  try 
+  {
+    file >> data;
+  } catch (const json::parse_error& e) 
+  {
+    throw std::runtime_error("Failed to parse WallGo JSON output: " + std::string(e.what()));
+  }
+  file.close();
+
+  wallGoResults results;
+  
+  results.vwLTE = data.value("vwLTE", -1.0);
+  
+  results.vw_flag = data.value("vw_flag", -1.0);
+  results.vw = data.value("vw", -1.0);
+  results.vJ = data.value("vJ", -1.0);
+  results.vw_err = data.value("vw_err", -1.0);
+  
+  results.vw_det_flag = data.value("vwDet_flag", -1.0);
+  results.vw_det = data.value("vwDet", -1.0);
+  results.vJ_det = data.value("vJDet", -1.0);
+  results.vw_det_err = data.value("vwDet_err", -1.0);
+
+  return results;
+}
+
+inline wallGoResults
 getWallVelocity(PhaseTracer::Transition& trans, const std::map<std::string, double>& param_map, const double& Tnuc, const std::string& model_name = "xSM")
 {
   const auto filename = getRandomFileName(10);
@@ -109,22 +169,12 @@ getWallVelocity(PhaseTracer::Transition& trans, const std::map<std::string, doub
 
   const auto output = execPythonScript(cmd);
 
-  std::vector<double> wallVelocities;
-  std::istringstream iss(output);
-  std::string token;
-  
-  // Parse comma-separated values
-  while (std::getline(iss, token, ',')) {
-    // Trim whitespace and newlines
-    token.erase(std::remove_if(token.begin(), token.end(), ::isspace), token.end());
-    if (!token.empty()) {
-      wallVelocities.push_back(std::stod(token));
-    }
-  }
+  const auto wallGoOutput = parseWallGoOutput(output);
 
-  removeWallGoJSONFile(filename);
+  removeJSONFile(filename);
+  removeJSONFile(output);
 
-  return wallVelocities;
+  return wallGoOutput;
 }
 
 } // namespace wallGoWrapper

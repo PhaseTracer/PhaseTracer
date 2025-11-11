@@ -20,7 +20,7 @@
 
 #include "DeepPhase/include/deepphase.hpp"
 #include "DeepPhase/include/maths_ops.hpp"
-#include "thermal_parameters.hpp"
+#include "thermo_finder.hpp"
 #include "logger.hpp"
 #include <iostream>
 #include <fstream>
@@ -35,7 +35,7 @@ namespace PhaseTracer::DeepPhaseInterface {
 
 enum class EoSModel {
     BAG,
-	BAGext,
+	MUNU,
     VEFF,
 	ALL
 };
@@ -60,111 +60,126 @@ obtain_peaks(const std::vector<double>& xVals, const std::vector<double>& yVals)
 
 inline
 PhaseTransition::EquationOfState
-phasetracer_EoS_to_deepphase_EoS(PhaseTracer::EoS eos)
+phasetracer_EoS_to_deepphase_EoS(PhaseTracer::EquationOfState eos)
 {
-	std::vector<double> t_vals = eos.temp;
-	std::vector<double> ps_vals = eos.pressure_false;
-	std::vector<double> pb_vals = eos.pressure_true;
-	std::vector<double> es_vals = eos.energy_false;
-	std::vector<double> eb_vals = eos.energy_true;
+	double t_min = eos.get_t_min();
+	double t_max = eos.get_t_max();
+	int n_temp = eos.get_n_temp();
+	double dt = (t_max - t_min) / (n_temp - 1);
 
-	PhaseTransition::EquationOfState output(t_vals, ps_vals, pb_vals, es_vals, eb_vals);
+	std::vector<double> t_vals, p_plus_vals, p_minus_vals, e_plus_vals, e_minus_vals;
+
+	for (int i = 0; i < n_temp; ++i) 
+	{
+		double T = t_min + i * dt;
+		t_vals.push_back(T);
+		auto [p_plus, p_minus] = eos.get_pressure(T);
+		auto [e_plus, e_minus] = eos.get_energy(T);
+		p_plus_vals.push_back(p_plus);
+		p_minus_vals.push_back(p_minus);
+		e_plus_vals.push_back(e_plus);
+		e_minus_vals.push_back(e_minus);
+	}
+
+	PhaseTransition::EquationOfState output(t_vals, p_plus_vals, p_minus_vals, e_plus_vals, e_minus_vals);
 	return output;
 }
 
 inline PhaseTransition::Universe
-get_universe_from_thermal_params(const ThermalParams& tps, const double& dof = 107.75) 
+get_universe_from_transition_milestone(const TransitionMilestone& milestone, const double& dof = 107.75) 
 {
-	if ( tps.nucleates == MilestoneStatus::YES ) 
+	if (milestone.status == MilestoneStatus::YES) 
 	{
-		if (tps.TN <= 0 || tps.H_tn <= 0) 
+		if (milestone.temperature <= 0 || milestone.H <= 0) 
 		{
 			throw std::invalid_argument("Invalid thermal parameters for universe creation");
 		}
-		return PhaseTransition::Universe(tps.TN, dof, tps.H_tn);
-	} else if (tps.percolates == MilestoneStatus::YES) 
-	{
-		if (tps.TP <= 0 || tps.H_tp <= 0) 
-		{
-			throw std::invalid_argument("Invalid thermal parameters for universe creation");
-		}
-		return PhaseTransition::Universe(tps.TP, dof, tps.H_tp);
+		return PhaseTransition::Universe(milestone.temperature, dof, milestone.H);
 	}
+
 	PhaseTransition::Universe un;
 	return un;
 }
 
+// general constructor
 inline PTParamsVariant
-get_pt_params_from_thermal_params(
-	const ThermalParams& tps,
+get_pt_params_from_transition_milestone(
+	const TransitionMilestone& milestone,
 	const PhaseTransition::Universe& un,
 	const double& vw,
 	const double& dtauRs,
 	EoSModel model,
-	const PhaseTransition::EquationOfState* eos = nullptr)
+	const PhaseTransition::EquationOfState* eos_ptr = nullptr)
 {
 
-	if (tps.nucleates != MilestoneStatus::YES && tps.percolates != MilestoneStatus::YES) {
+	if (milestone.status != MilestoneStatus::YES) {
 		throw std::invalid_argument("No valid thermal parameters: neither nucleates nor percolates");
 	}
 
-	const bool use_nucleation = (tps.nucleates == MilestoneStatus::YES);
-
-	const double alpha = use_nucleation ? tps.alpha_tn : tps.alpha_tp;
-	const double betaH = use_nucleation ? tps.betaH_tn : tps.betaH_tp;
-	const double H = use_nucleation ? tps.H_tn : tps.H_tp;
-	const double Tref = use_nucleation ? tps.TN : tps.TP;
-	const double cs_true = use_nucleation ? tps.cs_true_tn : tps.cs_true_tp;
-	const double cs_false = use_nucleation ? tps.cs_false_tn : tps.cs_false_tp;
+	const double alpha = milestone.alpha;
+	const double betaH = milestone.betaH;
+	const double RsH = milestone.Rs;
+	const double H = milestone.H;
+	const double Tref = milestone.temperature;
+	const double cs_plus = milestone.cs_plus;
+	const double cs_minus = milestone.cs_minus;
 
 	if (alpha <= 0 || betaH <= 0) {
 		throw std::invalid_argument("Invalid thermal parameters: alpha or betaH <= 0");
 	}
 
 	const double beta = betaH * H;
-	const double Rs = std::pow(8. * M_PI, 1./3.) * vw / beta;
+	const double Rs = RsH / H;
 	const double dtau = Rs * dtauRs;
 
+	std::cout << "Computed PT parameters: " << "\n";
+	std::cout << "  beta = " << beta << "\n";
+	std::cout << "  Rs = " << Rs << "\n";
+
 	if (model == EoSModel::BAG) {
-		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, dtau, "exp", un, 1./3., 1./3.);
-		// return PhaseTransition::PTParams_Bag(vw, alpha);
-	} else if (model == EoSModel::BAGext) {
-		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, dtau, "exp", un, cs_true*cs_true, cs_false*cs_false);
+		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, "exp", un, 1./3., 1./3.); // TODO
+	} else if (model == EoSModel::MUNU) {
+		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, "exp", un, cs_plus*cs_plus, cs_minus*cs_minus);  // TODO
 	} else {
-		if (!eos) {
+		if (!eos_ptr) {
 			throw std::invalid_argument("EquationOfState required for VEFF model but not provided");
 		}
-		return PhaseTransition::PTParams_Veff(vw, alpha, Tref, beta, dtau, "exp", un, *eos);
+		return PhaseTransition::PTParams_Veff(vw, alpha, Tref, beta, Rs, dtau, "exp", un, *eos_ptr);
 	}
 }
 
+// takes universe as input
 inline PTParamsVariant
-get_pt_params_from_thermal_params(
-	const ThermalParams& tps,
+get_pt_params_from_transition_milestone(
+	const TransitionMilestone& milestone,
+	const EquationOfState& eos,
 	const PhaseTransition::Universe& un,
 	const double& vw,
 	const double& dtauRs,
 	EoSModel model = EoSModel::BAG)
 {
-	return get_pt_params_from_thermal_params(tps, un, vw, dtauRs, model, nullptr);
+	return get_pt_params_from_transition_milestone(milestone, un, vw, dtauRs, model, nullptr);
 }
 
+// takes dof and constructs the universe object
 inline PTParamsVariant
-get_pt_params_from_thermal_params(
-	const ThermalParams& tps,
+get_pt_params_from_transition_milestone(
+	const TransitionMilestone& milestone,
+	const EquationOfState& eos,
+	const double& dof,
 	const double& vw,
 	const double& dtauRs,
-	EoSModel model = EoSModel::BAG,
-	const double& dof = 107.75)
+	EoSModel model = EoSModel::BAG
+	)
 {
-	const PhaseTransition::Universe un = get_universe_from_thermal_params(tps, dof);
+	const PhaseTransition::Universe un = get_universe_from_transition_milestone(milestone, dof);
 	
 	if (model == EoSModel::VEFF) {
-		const PhaseTransition::EquationOfState eos = phasetracer_EoS_to_deepphase_EoS(tps.eos);
-		return get_pt_params_from_thermal_params(tps, un, vw, dtauRs, model, &eos);
+		const PhaseTransition::EquationOfState eos_dp = phasetracer_EoS_to_deepphase_EoS(eos);
+		return get_pt_params_from_transition_milestone(milestone, un, vw, dtauRs, model, &eos_dp);
 	}
 	
-	return get_pt_params_from_thermal_params(tps, un, vw, dtauRs, model, nullptr);
+	return get_pt_params_from_transition_milestone(milestone, un, vw, dtauRs, model, nullptr);
 }
 
 // helper methods for extracting and checking variant object
@@ -207,43 +222,48 @@ get_veff(const PTParamsVariant& params)
 struct DeepPhaseResults
 {
 	EoSModel eos_model;
+	TransitionMilestone milestone;
+	EquationOfState eos;
+	double dof;
+	double vw;
+	double dtauRs;
 
 	std::unique_ptr<PhaseTransition::PTParams_Bag> ptparams_bag;
 	std::unique_ptr<Hydrodynamics::FluidProfile> profile_bag;
 	std::unique_ptr<Spectrum::PowerSpec> spectrum_bag;
 
-	std::unique_ptr<PhaseTransition::PTParams_Bag> ptparams_bag_ext;
-	std::unique_ptr<Hydrodynamics::FluidProfile> profile_bag_ext;
-	std::unique_ptr<Spectrum::PowerSpec> spectrum_bag_ext;
+	std::unique_ptr<PhaseTransition::PTParams_Bag> ptparams_munu;
+	std::unique_ptr<Hydrodynamics::FluidProfile> profile_munu;
+	std::unique_ptr<Spectrum::PowerSpec> spectrum_munu;
 
 	std::unique_ptr<PhaseTransition::PTParams_Veff> ptparams_veff;
 	std::unique_ptr<Hydrodynamics::FluidProfile> profile_veff;
 	std::unique_ptr<Spectrum::PowerSpec> spectrum_veff;
 
-	DeepPhaseResults(const ThermalParams& tps_, const double& vw_, const double& dtauRs_, EoSModel eos_model_)
-	: eos_model(eos_model_)
+	DeepPhaseResults(const TransitionMilestone& milestone_, const EquationOfState& eos_, const double& dof_, const double& vw_, const double& dtauRs_, EoSModel eos_model_)
+	: eos_model(eos_model_), milestone(milestone_), eos(eos_), dof(dof_), vw(vw_), dtauRs(dtauRs_)
 	{
 		auto kRs_vals = logspace(1e-3, 1e+3, 100);
 		
 		if (eos_model == EoSModel::BAG || eos_model == EoSModel::ALL) 
 		{
-			auto ptparams_variant = get_pt_params_from_thermal_params(tps_, vw_, dtauRs_, EoSModel::BAG);
+			auto ptparams_variant = get_pt_params_from_transition_milestone(milestone, eos, dof, vw, dtauRs, EoSModel::BAG);
 			ptparams_bag = std::make_unique<PhaseTransition::PTParams_Bag>(get_bag(ptparams_variant));
 			profile_bag = std::make_unique<Hydrodynamics::FluidProfile>(*ptparams_bag);
 			spectrum_bag = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec2(kRs_vals, *ptparams_bag));
 		}
 
-		if (eos_model == EoSModel::BAGext || eos_model == EoSModel::ALL) 
+		if (eos_model == EoSModel::MUNU || eos_model == EoSModel::ALL) 
 		{
-			auto ptparams_variant = get_pt_params_from_thermal_params(tps_, vw_, dtauRs_, EoSModel::BAGext);
-			ptparams_bag_ext = std::make_unique<PhaseTransition::PTParams_Bag>(get_bag(ptparams_variant));
-			profile_bag_ext = std::make_unique<Hydrodynamics::FluidProfile>(*ptparams_bag_ext);
-			spectrum_bag_ext = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec2(kRs_vals, *ptparams_bag_ext));
+			auto ptparams_variant = get_pt_params_from_transition_milestone(milestone, eos, dof, vw, dtauRs, EoSModel::MUNU);
+			ptparams_munu = std::make_unique<PhaseTransition::PTParams_Bag>(get_bag(ptparams_variant));
+			profile_munu = std::make_unique<Hydrodynamics::FluidProfile>(*ptparams_munu);
+			spectrum_munu = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec2(kRs_vals, *ptparams_munu));
 		}
 		
 		if (eos_model == EoSModel::VEFF || eos_model == EoSModel::ALL)
 		{
-			auto ptparams_variant = get_pt_params_from_thermal_params(tps_, vw_, dtauRs_, EoSModel::VEFF);
+			auto ptparams_variant = get_pt_params_from_transition_milestone(milestone, eos, dof, vw, dtauRs, EoSModel::VEFF);
 			ptparams_veff = std::make_unique<PhaseTransition::PTParams_Veff>(get_veff(ptparams_variant));
 			profile_veff = std::make_unique<Hydrodynamics::FluidProfile>(*ptparams_veff);
 			spectrum_veff = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec2(kRs_vals, *ptparams_veff));
@@ -254,7 +274,7 @@ struct DeepPhaseResults
 	bool has_bag() const { return ptparams_bag != nullptr; }
 
 	// Check if BAGext model results are available
-	bool has_bag_ext() const { return ptparams_bag_ext != nullptr; }
+	bool has_munu() const { return ptparams_munu != nullptr; }
 
 	// Check if VEFF model results are available
 	bool has_veff() const { return ptparams_veff != nullptr; }
@@ -291,34 +311,34 @@ struct DeepPhaseResults
 	}
 
 	// Accessor methods for BAGext model (throws if not available)
-	PhaseTransition::PTParams_Bag& get_ptparams_bag_ext() { 
-		if (!ptparams_bag_ext) throw std::runtime_error("BAG model results not available");
-		return *ptparams_bag_ext; 
+	PhaseTransition::PTParams_Bag& get_ptparams_munu() { 
+		if (!ptparams_munu) throw std::runtime_error("BAG model results not available");
+		return *ptparams_munu; 
 	}
 	
-	const PhaseTransition::PTParams_Bag& get_ptparams_bag_ext() const { 
-		if (!ptparams_bag_ext) throw std::runtime_error("BAGext model results not available");
-		return *ptparams_bag_ext; 
+	const PhaseTransition::PTParams_Bag& get_ptparams_munu() const { 
+		if (!ptparams_munu) throw std::runtime_error("MUNU model results not available");
+		return *ptparams_munu; 
 	}
 	
-	Hydrodynamics::FluidProfile& get_profile_bag_ext() { 
-		if (!profile_bag_ext) throw std::runtime_error("BAGext model results not available");
-		return *profile_bag_ext; 
+	Hydrodynamics::FluidProfile& get_profile_munu() { 
+		if (!profile_munu) throw std::runtime_error("MUNU model results not available");
+		return *profile_munu; 
 	}
 	
-	const Hydrodynamics::FluidProfile& get_profile_bag_ext() const { 
-		if (!profile_bag_ext) throw std::runtime_error("BAGext model results not available");
-		return *profile_bag_ext; 
+	const Hydrodynamics::FluidProfile& get_profile_munu() const { 
+		if (!profile_munu) throw std::runtime_error("MUNU model results not available");
+		return *profile_munu; 
 	}
 	
-	Spectrum::PowerSpec& get_spectrum_bag_ext() { 
-		if (!spectrum_bag_ext) throw std::runtime_error("BAGext model results not available");
-		return *spectrum_bag_ext; 
+	Spectrum::PowerSpec& get_spectrum_munu() { 
+		if (!spectrum_munu) throw std::runtime_error("MUNU model results not available");
+		return *spectrum_munu; 
 	}
 	
-	const Spectrum::PowerSpec& get_spectrum_bag_ext() const { 
-		if (!spectrum_bag_ext) throw std::runtime_error("BAGext model results not available");
-		return *spectrum_bag_ext; 
+	const Spectrum::PowerSpec& get_spectrum_munu() const { 
+		if (!spectrum_munu) throw std::runtime_error("MUNU model results not available");
+		return *spectrum_munu; 
 	}
 	
 	// Accessor methods for VEFF model (throws if not available)

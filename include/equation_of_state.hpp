@@ -106,6 +106,9 @@ private:
     double background_dof;
 
 public:
+
+    EquationOfState() = default;
+
     EquationOfState(Transition transition_in, int n_temp_in, double background_dof_in) : 
     transition(transition_in),
     t_min(transition_in.false_phase.T.front()),
@@ -157,6 +160,10 @@ public:
     double get_theta_minus(double T) const;
 
     void write(const std::string path) const;
+
+    double get_t_min() const { return t_min; }
+    double get_t_max() const { return t_max; }
+    int get_n_temp() const { return n_temp; }
 
 private : 
     void 

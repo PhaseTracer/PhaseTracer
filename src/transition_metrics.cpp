@@ -100,18 +100,15 @@ namespace PhaseTracer {
         {
             return extended_volume_integrand(Tdash, T);
         };
-        LOG(debug) << "Computing extended volume at T = " << T << ", t_max = " << t_max;
-        if(T >= t_max) 
-        {
-            LOG(debug) << "Computing extended volume at T = " << T << " = t_max = " << t_max << ", return 0.0";
-            return 0.0; 
-        }
+
+        if(T >= t_max) { return 0.0; }
+
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
         return 4 * M_PI * vw*vw*vw / 3 * result;
     }
 
     void
-    TransitionMetrics::compute_extended_volume_spline()
+    TransitionMetrics::compute_log_extended_volume_spline()
     {
         alglib::real_1d_array temp_array, Vext_array;
         temp_array.setlength(total_number_temp_steps);
@@ -121,21 +118,27 @@ namespace PhaseTracer {
         for (int i = 0; i < total_number_temp_steps; i++) 
         {
             double tt = t_min + i * dt;
-            double Vext = get_extended_volume(tt);
+            double log_Vext = log(get_extended_volume(tt));
+            if(std::isnan(log_Vext) || std::isinf(log_Vext)) { log_Vext = -700; }
             temp_array[i] = tt;
-            Vext_array[i] = Vext;
+            Vext_array[i] = log_Vext;
         }
 
-        alglib::spline1dbuildcubic(temp_array, Vext_array, Vext_spline);
+        alglib::spline1dbuildcubic(temp_array, Vext_array, log_Vext_spline);
+    }
+
+    const double
+    TransitionMetrics::get_extended_volume_from_spline(const double& T)
+    {
+        return exp(alglib::spline1dcalc(log_Vext_spline, T));
     }
 
     const double
     TransitionMetrics::get_false_vacuum_fraction(const double& T)
     {
-        double Vext = alglib::spline1dcalc(Vext_spline, T);
+        double Vext = get_extended_volume_from_spline(T);
         return exp(-Vext);
     }
-
 
     const double 
     TransitionMetrics::get_nucleation_rate(const double& T)
@@ -148,6 +151,8 @@ namespace PhaseTracer {
             double dtdT = get_dtdT(Tdash);
             return Pf * gamma * dtdT / (hubble*hubble*hubble);
         };
+
+        if(T >= t_max) { return 0.0; }
 
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
         return 4 * M_PI * vw / 3 * result;
@@ -164,6 +169,8 @@ namespace PhaseTracer {
             double a_ratio = get_atop_abottom(Tdash, T);
             return dtdT * gamma * pf * a_ratio*a_ratio*a_ratio;
         };
+
+        if(T >= t_max) { return 0.0; }
 
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
         return result;
@@ -188,6 +195,9 @@ namespace PhaseTracer {
         {
             return bubble_radius_integrand(Tdash, T);
         };
+
+        if(T >= t_max) { return 0.0; }
+
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
         return vw * result;
     }
@@ -201,6 +211,9 @@ namespace PhaseTracer {
             double dtdT = get_dtdT(Tdash);
             return dtdT*H;
         };
+
+        if(T >= t_max) { return 0.0; }
+        
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
         return vw * result;
     }
@@ -254,16 +267,16 @@ namespace PhaseTracer {
             double t = find_temperature(target_function);
             if (t_max - t < 1e-8)
             {
-                output.status = SomethingStatus::FAST;
+                output.status = MilestoneStatus::FAST;
                 output.temperature = t;
             } else
             {
-                output.status = SomethingStatus::YES;
+                output.status = MilestoneStatus::YES;
                 output.temperature = t;
             }
         } else 
         {
-            output.status = SomethingStatus::NO;
+            output.status = MilestoneStatus::NO;
         }
 
         return output;
