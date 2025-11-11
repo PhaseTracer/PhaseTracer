@@ -28,12 +28,12 @@ namespace PhaseTracer {
         }
 
         std::vector<double> valid_temps, valid_actions, valid_log_gammas;
-        double dt = (maximum_temp - minimum_temp) / (spline_evaluations - 1);
+        double dt = (t_max - t_min) / (spline_evaluations - 1);
         const double log_gamma_min = -700;
 
         for (int i = 0; i < spline_evaluations; i++) 
         {
-            double tt = minimum_temp + i * dt;
+            double tt = t_min + i * dt;
             auto action_opt = calculate_action(tt);
             if (action_opt.has_value()) 
             {
@@ -65,6 +65,62 @@ namespace PhaseTracer {
         alglib::spline1dbuildcubic(temp_array, action_array, this->action_spline);
         alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->log_gamma_spline);
         LOG(debug) << "Action and log(gamma) arrays built.";
+    }
+
+    std::optional<double> 
+    FalseVacuumDecayRate::calculate_action(double temperature) const
+    {
+        double action = tf.get_action(t.true_phase, t.false_phase, temperature) / temperature;
+        if (std::isnan(action) || std::isinf(action) || action > 1e150) {
+        return std::nullopt;
+        }
+        return action;
+    }
+
+    std::optional<double>
+    FalseVacuumDecayRate::calculate_log_gamma(double temperature, double action) const
+    {
+        double prefactor = decay_rate_prefactor(temperature, action);
+        double log_gamma = log(prefactor) - action;
+        return log_gamma < -700 ? std::nullopt : std::optional<double>(log_gamma);
+    }
+
+    double
+    FalseVacuumDecayRate::decay_rate_prefactor(double temperature, double action_on_T) const
+    {
+        return prefactor_function(temperature, action_on_T);
+    }
+
+    std::function<double(double, double)>
+    FalseVacuumDecayRate::default_decay_rate_prefactor()
+    {
+        return [](double temperature, double action_on_T) -> double {
+            double t4 = temperature * temperature * temperature * temperature;
+            double ratio = std::pow(action_on_T / (2. * M_PI), 1.5);
+            return t4 * ratio;
+        };
+    }
+
+    double
+    FalseVacuumDecayRate::get_action(const double& temperature) const
+    {
+        double action_on_T = alglib::spline1dcalc(action_spline, temperature);
+        return action_on_T * temperature;
+    }
+
+    double 
+    FalseVacuumDecayRate::get_action_deriv(const double& temperature) const
+    {
+        double y, dy, ddy;
+        alglib::spline1ddiff(action_spline, temperature, y, dy, ddy);
+        return dy;
+    }
+
+    double
+    FalseVacuumDecayRate::get_gamma(const double& temperature) const
+    {
+        double log_gamma = alglib::spline1dcalc(log_gamma_spline, temperature);
+        return exp(log_gamma);
     }
 
 } // namespace PhaseTracer
