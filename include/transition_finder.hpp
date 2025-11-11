@@ -138,7 +138,7 @@ private:
 
 class TransitionFinder {
 public:
-  explicit TransitionFinder(PhaseFinder &pf_) : pf(pf_), ac(pf_.P) {
+  explicit TransitionFinder(PhaseFinder &pf_) : pf(pf_), ac(pf_) {
     calculate_action = false;
   }
   explicit TransitionFinder(PhaseFinder &pf_, ActionCalculator ac_) : pf(pf_), ac(ac_) {

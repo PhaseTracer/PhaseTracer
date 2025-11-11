@@ -40,6 +40,9 @@ enum class ActionMethod { None,
 class ActionCalculator {
 
 private:
+
+  PhaseFinder pf;
+
   EffectivePotential::Potential &potential;
 
   /** Number of dimensions */
@@ -94,7 +97,10 @@ private:
   PROPERTY(bool, PD_extend_to_minima, true);
 
 public:
-  explicit ActionCalculator(EffectivePotential::Potential &potential_) : potential(potential_) {
+  // explicit ActionCalculator(EffectivePotential::Potential &potential_) : potential(potential_) {
+  // }
+
+  explicit ActionCalculator(PhaseFinder &pf_) : pf(pf_), potential(const_cast<EffectivePotential::Potential&>(pf_.get_potential())) {
   }
 
   void set_action_calculator(ActionMethod am) {
