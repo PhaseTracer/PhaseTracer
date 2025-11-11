@@ -75,7 +75,7 @@ namespace PhaseTracer {
         
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-        LOG(debug) << "Action calculation loop completed in " << duration.count() << " ms" << std::endl;
+        LOG(info) << "Action calculation loop completed in " << duration.count() << " ms" << std::endl;
         
         std::vector<double> valid_temps, valid_actions, valid_log_gammas;
         for (int i = 0; i < spline_evaluations; i++) 
