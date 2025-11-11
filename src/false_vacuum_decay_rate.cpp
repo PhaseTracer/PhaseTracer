@@ -49,7 +49,15 @@ namespace PhaseTracer {
         {
             double tt = t_min + i * dt;
             
-            double action = tf.get_action(t.true_phase, t.false_phase, tt) / tt;
+            double action;
+            try {
+                action = ac.get_action(t.true_phase, t.false_phase, tt) / tt;
+            } catch ( ... )
+            {
+                action = 1.;
+                valid_flags[i] = false;
+                continue;
+            }
             
             if (std::isnan(action) || std::isinf(action) || action > 1e150) 
             {

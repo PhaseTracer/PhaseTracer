@@ -116,6 +116,18 @@ public:
 
   ActionMethod get_action_calculator() const { return action_method; }
 
+  std::vector<Eigen::VectorXd> get_vacua_at_T(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const {
+    const auto phase1_at_T = pf.phase_at_T(phase1, T);
+    const auto phase2_at_T = pf.phase_at_T(phase2, T);
+    const auto true_vacua_at_T = pf.symmetric_partners(phase1_at_T.x);
+    return {phase2_at_T.x, true_vacua_at_T[i_unique]};
+  }
+
+  double get_action(const Phase &phase1, const Phase &phase2, double T, size_t i_unique = 0) const {
+    const auto vacua = get_vacua_at_T(phase1, phase2, T, i_unique);
+    return get_action(vacua[0], vacua[1], T);
+  }
+
   double get_action(Eigen::VectorXd true_vacuum, Eigen::VectorXd false_vacuum, double T) const {
 
     if (potential.V(true_vacuum, T) > potential.V(false_vacuum, T))

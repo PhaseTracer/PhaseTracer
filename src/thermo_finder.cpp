@@ -26,7 +26,7 @@ namespace PhaseTracer {
     {
         ThermalParameterSet output(
             t, 
-            tf,
+            ac,
             n_temp_action,
             n_temp_eos,
             vw,
