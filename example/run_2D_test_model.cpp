@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
   std::cout << pf;
 
   // Make ActionCalculator object
-  PhaseTracer::ActionCalculator ac(model);
+  PhaseTracer::ActionCalculator ac(pf);
   ac.set_action_calculator(PhaseTracer::ActionMethod::PathDeformation);
 
   // Make TransitionFinder object and find the transitions

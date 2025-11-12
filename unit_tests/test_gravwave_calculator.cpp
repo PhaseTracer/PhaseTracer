@@ -25,7 +25,7 @@ TEST_CASE("Compute gravitational wave spectrum for a one-dimensional model", "[1
   pf.set_find_min_x_tol_abs(1.e-8);
   pf.find_phases();
 
-  PhaseTracer::ActionCalculator ac(model);
+  PhaseTracer::ActionCalculator ac(pf);
   PhaseTracer::TransitionFinder tf(pf, ac);
   tf.set_TC_tol_rel(1e-16);
   tf.find_transitions();
@@ -61,7 +61,7 @@ TEST_CASE("Compute gravitational wave spectrum for a two-dimensional model", "[2
   pf.set_seed(1);
   pf.find_phases();
 
-  PhaseTracer::ActionCalculator ac(model);
+  PhaseTracer::ActionCalculator ac(pf);
   PhaseTracer::TransitionFinder tf(pf, ac);
   tf.find_transitions();
   auto transitions = tf.get_transitions();

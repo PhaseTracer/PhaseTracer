@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
   auto vacuums = pf.get_minima_at_t_low();
   
   // Make ActionCalculator object and calcualte the action
-  PhaseTracer::ActionCalculator ac(model);
+  PhaseTracer::ActionCalculator ac(pf);
   ac.set_action_calculator(PhaseTracer::ActionMethod::BubbleProfiler);
   
   double action = ac.get_action(vacuums[0].x,Eigen::VectorXd::Zero(2),0); // 0 is the temperature, which is not used in this potential
