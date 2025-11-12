@@ -65,7 +65,7 @@ TEST_CASE("Compute nucleation for a one-dimensional model", "[1DTestModel]") {
   pf.set_find_min_x_tol_abs(1.e-8);
   pf.find_phases();
 
-  PhaseTracer::ActionCalculator ac(model);
+  PhaseTracer::ActionCalculator ac(pf);
   PhaseTracer::TransitionFinder tf(pf, ac);
   tf.set_TC_tol_rel(1e-16);
   tf.find_transitions();
@@ -101,7 +101,7 @@ TEST_CASE("Compute nucleation for a two-dimensional model", "[2DTestModel]") {
   pf.set_seed(1);
   pf.find_phases();
 
-  PhaseTracer::ActionCalculator ac(model);
+  PhaseTracer::ActionCalculator ac(pf);
   PhaseTracer::TransitionFinder tf(pf, ac);
   tf.find_transitions();
   auto transitions = tf.get_transitions();

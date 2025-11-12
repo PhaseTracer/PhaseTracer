@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
   std::cout << pf;
 
   // Make ActionCalculator object
-  PhaseTracer::ActionCalculator ac(model);
+  PhaseTracer::ActionCalculator ac(pf);
 
   // Make TransitionFinder object and find the transitions
   PhaseTracer::TransitionFinder tf(pf, ac);
