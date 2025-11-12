@@ -41,9 +41,11 @@ namespace PhaseTracer {
         
         auto start_time = std::chrono::high_resolution_clock::now();
         
-        #ifdef _OPENMP
-        #pragma omp parallel for schedule(dynamic)
-        #endif
+        // Note: OpenMP parallelization disabled because ActionCalculator has mutable state
+        // and is not thread-safe (contains mutable bubble_profile, phi_for_profile, tunneling_path)
+        // #ifdef _OPENMP
+        // #pragma omp parallel for schedule(dynamic)
+        // #endif
 
         for (int i = 0; i < spline_evaluations; i++) 
         {
