@@ -16,7 +16,6 @@
 // ====================================================================
 
 #include "path_deformation.hpp"
-#include <memory>
 
 namespace PhaseTracer {
 
@@ -116,64 +115,6 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
   alglib::spline1dbuildcubic(p_arr, v_arr, _V_tck);
 }
 
-void SplinePath::update_path(std::vector<Eigen::VectorXd> pts_new, bool full_rebuild) {
-  if (full_rebuild || extend_to_minima) {
-    // Do full reconstruction for significant changes
-    pts = pts_new;
-    num_nodes = pts.size();
-    
-    std::vector<Eigen::VectorXd> dpts = _pathDeriv(pts);
-    
-    std::vector<double> squared_sums;
-    for (const auto &vec : dpts) {
-      squared_sums.push_back(vec.norm());
-    }
-    
-    std::vector<double> pdist = cumulative_trapezoidal_integration(squared_sums);
-    pdist.insert(pdist.begin(), 0.0);
-    length = pdist[pdist.size() - 1];
-    set_path_tck(pdist);
-    
-    // Update potential spline
-    alglib::real_1d_array p_arr;
-    alglib::real_1d_array v_arr;
-    p_arr.setlength(V_spline_samples);
-    v_arr.setlength(V_spline_samples);
-    for (size_t i = 0; i < V_spline_samples; ++i) {
-      p_arr[i] = -0.2 * length + i * (1.4 * length) / (V_spline_samples - 1);
-      v_arr[i] = P.V(vecp(p_arr[i]), T);
-    }
-    alglib::spline1dbuildcubic(p_arr, v_arr, _V_tck);
-  } else {
-    // Fast update: just refit splines without extension/re-evaluation
-    pts = pts_new;
-    num_nodes = pts.size();
-    
-    std::vector<Eigen::VectorXd> dpts = _pathDeriv(pts);
-    std::vector<double> squared_sums;
-    for (const auto &vec : dpts) {
-      squared_sums.push_back(vec.norm());
-    }
-    
-    std::vector<double> pdist = cumulative_trapezoidal_integration(squared_sums);
-    pdist.insert(pdist.begin(), 0.0);
-    length = pdist[pdist.size() - 1];
-    set_path_tck(pdist);
-    
-    // Update potential spline with fewer samples for speed
-    size_t fast_samples = std::min(V_spline_samples / 2, static_cast<int>(50));
-    alglib::real_1d_array p_arr;
-    alglib::real_1d_array v_arr;
-    p_arr.setlength(fast_samples);
-    v_arr.setlength(fast_samples);
-    for (size_t i = 0; i < fast_samples; ++i) {
-      p_arr[i] = -0.2 * length + i * (1.4 * length) / (fast_samples - 1);
-      v_arr[i] = P.V(vecp(p_arr[i]), T);
-    }
-    alglib::spline1dbuildcubic(p_arr, v_arr, _V_tck);
-  }
-}
-
 std::vector<Eigen::VectorXd> SplinePath::_pathDeriv(const std::vector<Eigen::VectorXd> phi) { // rename phi
   int num_phi = phi.size();
   std::vector<Eigen::VectorXd> dphi(num_phi);
@@ -270,10 +211,6 @@ bool PathDeformation::deformPath(std::vector<double> dphidr) {
   num_steps = 0;
   phi_list.clear();
   F_list.clear();
-  // Clear gradient cache when starting new deformation
-  cached_gradients.clear();
-  cached_phi_for_gradients.clear();
-  
   // convert phi to a set of path lengths
   std::vector<double> dL;
   for (int i = 0; i < num_nodes - 1; i++) {
@@ -306,10 +243,6 @@ bool PathDeformation::deformPath(std::vector<double> dphidr) {
   X_node = std::get<0>(result);
   dX_node = std::get<1>(result);
   d2X_node = std::get<2>(result);
-  
-  // Cache SVD decomposition since X_node won't change during iterations
-  X_node_svd.compute(X_node, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  svd_cached = true;
 
   Eigen::VectorXd phi0 = phi_node[0];
   Eigen::VectorXd phi1 = phi_node.back();
@@ -321,12 +254,7 @@ bool PathDeformation::deformPath(std::vector<double> dphidr) {
       double phi_lin = phi0[j] + (phi1[j] - phi0[j]) * t_node[i];
       phi_delta[i] = phii[j] - phi_lin;
     }
-    // Use cached SVD if available
-    if (svd_cached) {
-      beta_node.push_back(X_node_svd.solve(phi_delta));
-    } else {
-      beta_node.push_back(X_node.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(phi_delta));
-    }
+    beta_node.push_back(X_node.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(phi_delta));
   }
 
   double max_v2 = 0;
@@ -445,12 +373,7 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
     for (size_t jj = 0; jj < num_nodes; ++jj) {
       ii_phi(jj) = _phi[jj](ii);
     }
-    // Use cached SVD if available
-    if (svd_cached) {
-      beta_node[ii] = X_node_svd.solve(ii_phi);
-    } else {
-      beta_node[ii] = X_node.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(ii_phi);
-    }
+    beta_node[ii] = X_node.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(ii_phi);
   }
 
   double fRatio2 = 0.;
@@ -481,28 +404,6 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
 void PathDeformation::forces(std::vector<Eigen::VectorXd> &F_norm, std::vector<Eigen::VectorXd> &dV) {
   F_norm.resize(dX_node.rows());
   dV.resize(dX_node.rows());
-  
-  // Check if we can reuse cached gradients
-  bool use_cache = (cached_gradients.size() == num_nodes && 
-                    cached_phi_for_gradients.size() == num_nodes);
-  if (use_cache) {
-    for (int ii = 0; ii < num_nodes; ++ii) {
-      if (!phi_node[ii].isApprox(cached_phi_for_gradients[ii], 1e-10)) {
-        use_cache = false;
-        break;
-      }
-    }
-  }
-  
-  // Compute or reuse gradients
-  if (!use_cache) {
-    cached_gradients.resize(num_nodes);
-    cached_phi_for_gradients.resize(num_nodes);
-    for (int ii = 0; ii < num_nodes; ++ii) {
-      cached_gradients[ii] = P.dV_dx(phi_node[ii], T);
-      cached_phi_for_gradients[ii] = phi_node[ii];
-    }
-  }
 
   for (int ii = 0; ii < num_nodes; ++ii) {
     Eigen::VectorXd dphi(nphi);
@@ -522,7 +423,7 @@ void PathDeformation::forces(std::vector<Eigen::VectorXd> &F_norm, std::vector<E
     Eigen::VectorXd dphids = dphi / dphi_;
     Eigen::VectorXd d2phids2 = (d2phi - dphi * (dphi.dot(d2phi)) / dphi_sq) / dphi_sq;
 
-    dV[ii] = cached_gradients[ii];
+    dV[ii] = P.dV_dx(phi_node[ii], T);
     Eigen::VectorXd dV_perp = dV[ii] - dV[ii].dot(dphids) * dphids;
     F_norm[ii] = d2phids2 * v2_node[ii] - dV_perp;
   }
@@ -582,24 +483,10 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> PathDeformation::N
 FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_pts) {
   FullTunneling ft;
   std::vector<double> phi_1d, dphi_1d;
-  
-  // Create SplinePath once and reuse
-  std::unique_ptr<SplinePath> path_ptr;
-  bool first_iteration = true;
-  
   for (int num_iter = 1; num_iter <= path_maxiter; num_iter++) {
     LOG(debug) << "Starting tunneling step " << num_iter;
-    
-    if (first_iteration) {
-      // First iteration: full construction
-      path_ptr = std::make_unique<SplinePath>(P, T, path_pts, extend_to_minima, true);
-      first_iteration = false;
-    } else {
-      // Subsequent iterations: fast update (no extension, no re-evaluation)
-      path_ptr->update_path(path_pts, false);
-    }
-    
-    PhaseTracer::Shooting tobj(*path_ptr, num_dims - 1);
+    SplinePath path(P, T, path_pts);
+    PhaseTracer::Shooting tobj(path, num_dims - 1);
     tobj.set_xtol(xtol);
     tobj.set_phitol(phitol);
     tobj.set_thin_cutoff(thin_cutoff);
@@ -607,7 +494,7 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
     tobj.set_rmax(rmax);
     tobj.set_max_iter(max_iter);
 
-    auto profile = tobj.findProfile(path_ptr->get_path_length(), 0.);
+    auto profile = tobj.findProfile(path.get_path_length(), 0.);
     if (profile.R.size() == 2) {
       if (profile.R.isApprox(tobj.profile_inf.R, tobj.get_xtol())) {
         ft.action = std::numeric_limits<double>::max();
@@ -630,7 +517,7 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
 
     phi_node.resize(num_nodes);
     for (size_t ii = 0; ii < num_nodes; ii++) {
-      phi_node[ii] = path_ptr->vecp(phi_1d[ii]);
+      phi_node[ii] = path.vecp(phi_1d[ii]);
     }
 
     bool converged;
@@ -665,9 +552,8 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
   double dV_max = max_norm(dV);
   double fRatio = F_max / dV_max;
 
-  // Final profile calculation - do full rebuild for accuracy
-  path_ptr->update_path(path_pts, true);
-  PhaseTracer::Shooting tobj(*path_ptr, num_dims - 1);
+  SplinePath path(P, T, path_pts);
+  PhaseTracer::Shooting tobj(path, num_dims - 1);
   tobj.set_xtol(xtol);
   tobj.set_phitol(phitol);
   tobj.set_thin_cutoff(thin_cutoff);
@@ -675,13 +561,13 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
   tobj.set_rmax(rmax);
   tobj.set_max_iter(max_iter);
 
-  auto profile = tobj.findProfile(path_ptr->get_path_length(), 0.);
+  auto profile = tobj.findProfile(path.get_path_length(), 0.);
   auto action = tobj.calAction(profile);
   bounce_action = action;
 
   std::vector<Eigen::VectorXd> phi_for_profile1D;
   for (size_t ii = 0; ii < profile.Phi.size(); ii++) {
-    phi_for_profile1D.push_back(path_ptr->vecp(profile.Phi[ii]));
+    phi_for_profile1D.push_back(path.vecp(profile.Phi[ii]));
   }
   ft.phi_for_profile1D = phi_for_profile1D;
 
