@@ -58,11 +58,51 @@ obtain_peaks(const std::vector<double>& xVals, const std::vector<double>& yVals)
 	return {xMax, yMax};
 }
 
-inline
-PhaseTransition::EquationOfState
+inline double 
+refine_lower_bound(const PhaseTracer::EquationOfState& eos, double step_size = 0.001, size_t max_iterations = 100)
+{
+    double t = eos.get_t_min();
+    const double t_max = eos.get_t_max();
+    
+    if (t >= t_max) {
+        throw std::invalid_argument("refine_lower_bound: t_min >= t_max");
+    }
+
+    auto [p_plus, p_minus] = eos.get_pressure(t);
+    auto [e_plus, e_minus] = eos.get_energy(t);
+
+    size_t iterations = 0;
+    
+    while ((p_plus < 0 || p_minus < 0 || e_plus < 0 || e_minus < 0) && t < t_max && iterations < max_iterations)
+    {
+        t += step_size;
+        
+        auto [p_plus_new, p_minus_new] = eos.get_pressure(t);
+        auto [e_plus_new, e_minus_new] = eos.get_energy(t);
+        
+        p_plus = p_plus_new;
+        p_minus = p_minus_new;
+        e_plus = e_plus_new;
+        e_minus = e_minus_new;
+        
+        ++iterations;
+    }
+    
+    if (iterations >= max_iterations) {
+        throw std::runtime_error("refine_lower_bound: Maximum iterations reached without finding valid thermodynamic region");
+    }
+    
+    if (t >= t_max) {
+        throw std::runtime_error("refine_lower_bound: No valid thermodynamic region found in [t_min, t_max]");
+    }
+
+    return t;
+}
+
+inline PhaseTransition::EquationOfState
 phasetracer_EoS_to_deepphase_EoS(const PhaseTracer::EquationOfState& eos)
 {
-	double t_min = eos.get_t_min();
+	double t_min = refine_lower_bound(eos);
 	double t_max = eos.get_t_max();
 	int n_temp = eos.get_n_temp();
 	double dt = (t_max - t_min) / (n_temp - 1);
