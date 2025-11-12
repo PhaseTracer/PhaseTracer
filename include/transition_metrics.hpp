@@ -155,17 +155,28 @@ struct RadiiDistribution
     std::vector<double> temperature_values;
     std::vector<double> radii_values;
     std::vector<double> dndR_values;
+    std::vector<double> log_dndR_values;
 
     double peak_radius;
     double peak_nuc_temperature;
 
-    RadiiDistribution(const double& ref_temperature_in, const std::vector<double>& temperature_values_in, const std::vector<double>& radii_values_in) :
-    ref_temperature(ref_temperature_in), temperature_values(temperature_values_in), radii_values(radii_values_in) 
+    RadiiDistribution(
+        const double& ref_temperature_in, 
+        const std::vector<double>& temperature_values_in, 
+        const std::vector<double>& radii_values_in, 
+        const std::vector<double>& dndR_values_in,
+        const std::vector<double>& log_dndR_values_in) :
+    ref_temperature(ref_temperature_in), temperature_values(temperature_values_in), radii_values(radii_values_in), dndR_values(dndR_values_in), log_dndR_values(log_dndR_values_in)
     {
-        alglib::real_1d_array t, r;
-        t.setcontent(temperature_values.size(), temperature_values.data());
-        r.setcontent(radii_values.size(), radii_values.data());
-        alglib::spline1dbuildcubic(r, t, temperature_spline);
+        alglib::real_1d_array t_array, r_array, log_dndR_array;
+
+        t_array.setcontent(temperature_values.size(), temperature_values.data());
+        r_array.setcontent(radii_values.size(), radii_values.data());
+        log_dndR_array.setcontent(log_dndR_values.size(), log_dndR_values.data());
+
+        alglib::spline1dbuildcubic(r_array, t_array, temperature_spline);
+        alglib::spline1dbuildcubic(r_array, log_dndR_array, log_dndR_spline);
+
     }
 
     const double 
@@ -175,10 +186,20 @@ struct RadiiDistribution
         return temperature;
     }
 
+    const double 
+    get_dndR(const double& radius)
+    {
+        double log_dndR = alglib::spline1dcalc(log_dndR_spline, radius);
+        return exp(log_dndR);
+    }
+
 private:
 
     /** Spline to extract nucleation temp from given radius */
     alglib::spline1dinterpolant temperature_spline;
+
+    /** Spline to dndR from given radius */
+    alglib::spline1dinterpolant log_dndR_spline;
 
     /** Extracts peak radius and temperature of dndR curve */
     // double find_peak_radius();
