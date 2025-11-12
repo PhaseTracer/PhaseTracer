@@ -43,7 +43,7 @@ enum MilestoneStatus
     FAST,
     NO,
     ERR
-};
+}; // enum MilestoneStatus
 
 enum MilestoneType
 {
@@ -51,14 +51,14 @@ enum MilestoneType
     NUCLEATION,
     COMPLETION,
     ONSET
-};
+}; // enum MilestoneType
 
 enum PrintSettings
 {
     MINIMAL,
     STANDARD,
     VERBOSE
-};
+}; // enum PrintSettings
 
 struct TransitionMilestone
 {
@@ -145,13 +145,52 @@ public:
         o << milestone.format_milestone_string();
         return o;
     }
-};
 
-class TransitionMetrics {
+}; // struct TransitionMilestone
 
-    FalseVacuumDecayRate decay_rate;
+struct RadiiDistribution 
+{
+    double ref_temperature;
 
-    EquationOfState eos;
+    std::vector<double> temperature_values;
+    std::vector<double> radii_values;
+    std::vector<double> dndR_values;
+
+    double peak_radius;
+    double peak_nuc_temperature;
+
+    RadiiDistribution(const double& ref_temperature_in, const std::vector<double>& temperature_values_in, const std::vector<double>& radii_values_in) :
+    ref_temperature(ref_temperature_in), temperature_values(temperature_values_in), radii_values(radii_values_in) 
+    {
+        alglib::real_1d_array t, r;
+        t.setcontent(temperature_values.size(), temperature_values.data());
+        r.setcontent(radii_values.size(), radii_values.data());
+        alglib::spline1dbuildcubic(r, t, temperature_spline);
+    }
+
+    const double 
+    get_nucleation_temperature(const double& radius)
+    {
+        double temperature = alglib::spline1dcalc(temperature_spline, radius);
+        return temperature;
+    }
+
+private:
+
+    /** Spline to extract nucleation temp from given radius */
+    alglib::spline1dinterpolant temperature_spline;
+
+    /** Extracts peak radius and temperature of dndR curve */
+    // double find_peak_radius();
+
+}; // struct RadiiDistribution
+
+class TransitionMetrics 
+{
+
+    const FalseVacuumDecayRate& decay_rate;
+
+    const EquationOfState& eos;
 
     double t_min, t_max;
 
@@ -222,6 +261,12 @@ public :
 
     const double get_duration(const double& T);
 
+    const TransitionMilestone get_transition_milestone(const MilestoneType type);
+
+    const RadiiDistribution get_radii_distribution(const double& temperature);
+
+private:
+
     const double find_temperature(std::function<double(double)> target_function, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
     const bool valid_lower_bound(std::function<double(double)> target_function, double tol = 1e-8)
@@ -230,10 +275,6 @@ public :
     }
 
     std::function<double(double)> get_target_function(const MilestoneType type);
-
-    const TransitionMilestone get_transition_milestone(const MilestoneType type);
-
-private:
 
     void make_scale_factor_ratio_integrand_spline();
 

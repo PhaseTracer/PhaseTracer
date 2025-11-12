@@ -218,6 +218,30 @@ namespace PhaseTracer {
         return vw * result;
     }
 
+    const RadiiDistribution 
+    TransitionMetrics::get_radii_distribution(const double& temperature)
+    {
+        int n = 50; // TODO
+        double dt = (t_max - temperature)/(n-1);
+        std::vector<double> temp, radii;
+
+        double H = get_hubble_rate(temperature);
+
+        LOG(debug) << "Calculating radii distribution at T = " << temperature << " GeV";
+
+        for(double tt = temperature; tt < t_max; tt += dt)
+        {
+            double rad = get_volume_term(tt, temperature)*H;
+            temp.push_back(tt);
+            radii.push_back(rad);
+            LOG(debug) << "Temp: " << tt << ", Radius: " << rad;
+        }
+
+        RadiiDistribution output(temperature, temp, radii);
+
+        return output;
+    };
+
     const double 
     TransitionMetrics::find_temperature(std::function<double(double)> target_function, double tol, boost::uintmax_t max_iter)
     {
