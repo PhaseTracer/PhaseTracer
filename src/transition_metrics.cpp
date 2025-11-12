@@ -221,23 +221,40 @@ namespace PhaseTracer {
     const RadiiDistribution 
     TransitionMetrics::get_radii_distribution(const double& temperature)
     {
-        int n = 50; // TODO
-        double dt = (t_max - temperature)/(n-1);
-        std::vector<double> temp, radii;
+        int n = 200; // TODO
+        std::vector<double> temp, radii, dndR, log_dndR;
 
         double H = get_hubble_rate(temperature);
 
         LOG(debug) << "Calculating radii distribution at T = " << temperature << " GeV";
 
-        for(double tt = temperature; tt < t_max; tt += dt)
+        double delta_T = t_max - temperature;
+        double log_min = std::log(1.0);
+        double log_max = std::log(1.0 + delta_T);
+        double dlog = (log_max - log_min) / (n - 1);
+        
+        for(int i = 0; i < n; ++i)
         {
+            double log_val = log_min + i * dlog;
+            double tt = temperature + (std::exp(log_val) - 1.0);
+            
             double rad = get_volume_term(tt, temperature)*H;
+
+            double gamma = decay_rate.get_gamma(tt);
+            double pf = get_false_vacuum_fraction(tt);
+            double a_ratio = get_atop_abottom(tt, temperature);
+
+            double dndR_at_tt = (gamma * pf / vw * a_ratio*a_ratio*a_ratio*a_ratio)/(H*H*H*H);
+
             temp.push_back(tt);
             radii.push_back(rad);
-            LOG(debug) << "Temp: " << tt << ", Radius: " << rad;
+            dndR.push_back(dndR_at_tt);
+            log_dndR.push_back(std::log(dndR_at_tt));
+
+            LOG(debug) << "Temp: " << tt << ", Radius: " << rad << ", dn/dR: " << dndR_at_tt;
         }
 
-        RadiiDistribution output(temperature, temp, radii);
+        RadiiDistribution output(temperature, temp, radii, dndR, log_dndR);
 
         return output;
     };

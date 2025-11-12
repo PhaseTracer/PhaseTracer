@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
   bool use_covariant_gauge = false;
   std::vector<double> SM_parameters ={};
 
-  LOGGER(debug);
+  LOGGER(fatal);
 
   std::string json_filename;
   if ( argc == 1 ) {
@@ -273,12 +273,21 @@ int main(int argc, char* argv[]) {
   std::cout << "============================" << "\n";
   std::cout << milestone;
 
-  PhaseTracer::FalseVacuumDecayRate decay_rate(valid_t[0], ac);
-  PhaseTracer::EquationOfState eos(valid_t[0], 200, 107.75);
-  PhaseTracer::TransitionMetrics tm_test(decay_rate, eos);
+  // PhaseTracer::FalseVacuumDecayRate decay_rate(valid_t[0], ac);
+  // PhaseTracer::EquationOfState eos(valid_t[0], 200, 107.75);
+  // PhaseTracer::TransitionMetrics tm_test(decay_rate, eos);
 
-  auto dndR = tm_test.get_radii_distribution(milestone.temperature);
-  return 0;
+  // LOGGER(debug);
+
+  // auto dndR = tm_test.get_radii_distribution(milestone.temperature);
+
+  // double test_rad = 0.167609;
+  // double test_tnuc = dndR.get_nucleation_temperature(test_rad);
+  // double test_dndR = dndR.get_dndR(test_rad);
+
+  // std::cout << "For R = " << test_rad << " GeV^-1, dndR = " << test_dndR << " GeV" << std::endl;
+
+  // return 0;
 
   // optional, use wallgo to calculate vw and replace
   double tnuc = milestone.temperature;
