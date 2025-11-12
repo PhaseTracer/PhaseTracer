@@ -37,6 +37,14 @@ private:
 
 public:
     
+    // Delete copy constructor and copy assignment to prevent shallow copies of ALGLIB splines
+    FalseVacuumDecayRate(const FalseVacuumDecayRate&) = delete;
+    FalseVacuumDecayRate& operator=(const FalseVacuumDecayRate&) = delete;
+    
+    // Allow move semantics
+    FalseVacuumDecayRate(FalseVacuumDecayRate&&) = default;
+    FalseVacuumDecayRate& operator=(FalseVacuumDecayRate&&) = default;
+    
     FalseVacuumDecayRate(Transition t_in, ActionCalculator ac_in)
     : t(t_in), ac(ac_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC), spline_evaluations(50),
       prefactor_function(default_decay_rate_prefactor())

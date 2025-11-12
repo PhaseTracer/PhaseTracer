@@ -108,6 +108,14 @@ private:
 public:
 
     EquationOfState() = default;
+    
+    // Delete copy constructor and copy assignment to prevent shallow copies of ALGLIB splines
+    EquationOfState(const EquationOfState&) = delete;
+    EquationOfState& operator=(const EquationOfState&) = delete;
+    
+    // Allow move semantics
+    EquationOfState(EquationOfState&&) = default;
+    EquationOfState& operator=(EquationOfState&&) = default;
 
     EquationOfState(Transition transition_in, int n_temp_in, double background_dof_in) : 
     transition(transition_in),

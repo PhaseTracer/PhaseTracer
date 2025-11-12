@@ -60,7 +60,7 @@ obtain_peaks(const std::vector<double>& xVals, const std::vector<double>& yVals)
 
 inline
 PhaseTransition::EquationOfState
-phasetracer_EoS_to_deepphase_EoS(PhaseTracer::EquationOfState eos)
+phasetracer_EoS_to_deepphase_EoS(const PhaseTracer::EquationOfState& eos)
 {
 	double t_min = eos.get_t_min();
 	double t_max = eos.get_t_max();
@@ -223,7 +223,7 @@ struct DeepPhaseResults
 {
 	EoSModel eos_model;
 	TransitionMilestone milestone;
-	EquationOfState eos;
+	const EquationOfState& eos;
 	double dof;
 	double vw;
 	double dtauRs;
