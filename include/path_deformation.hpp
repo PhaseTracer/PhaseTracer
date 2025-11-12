@@ -57,9 +57,6 @@ public:
                       bool reeval_distances_ = true);
 
   virtual ~SplinePath() = default;
-  
-  // Update path with new points without full reconstruction
-  void update_path(std::vector<Eigen::VectorXd> pts_new, bool full_rebuild = false);
 
   /* Calculates to 4th order if len(phi) >= 5, otherwise 1st/2nd order. */
   std::vector<Eigen::VectorXd> _pathDeriv(const std::vector<Eigen::VectorXd> phi);
@@ -212,14 +209,6 @@ private:
   std::vector<Eigen::VectorXd> phi_node;
   std::vector<double> v2_node;
   double totalLength_node;
-  
-  // Cache for optimization
-  Eigen::JacobiSVD<Eigen::MatrixXd> X_node_svd;
-  bool svd_cached = false;
-  
-  // Cache for gradient evaluations
-  mutable std::vector<Eigen::VectorXd> cached_gradients;
-  mutable std::vector<Eigen::VectorXd> cached_phi_for_gradients;
 
   bool breakLoop = false;
   bool fix_start = false;
