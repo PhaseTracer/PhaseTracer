@@ -36,6 +36,45 @@
 
 namespace PhaseTracer {
 
+struct ThermalProfiles
+{
+    std::vector<double> temperature;
+    std::vector<double> dtdT;
+    std::vector<double> time;
+    std::vector<double> hubble_rate;
+    std::vector<double> bounce_action;
+    std::vector<double> extended_volume;
+    std::vector<double> false_vacuum_decay_rate;
+    std::vector<double> false_vacuum_fraction;
+    std::vector<double> nucleation_rate;
+    std::vector<double> mean_bubble_separation;
+    std::vector<double> mean_bubble_radius;
+
+    ThermalProfiles() = default;
+
+    void 
+    write(const std::string& filename) const
+    {
+        std::ofstream file(filename);
+        file << "# T,dtdT,t,H,S3/T,Gamma,Vext,Pf,Nt,RsH,RbarH\n";
+        for (size_t i = 0; i < temperature.size(); ++i) {
+            file << std::scientific << std::setprecision(10)
+                 << temperature[i] << ","
+                 << dtdT[i] << ","
+                 << time[i] << ","
+                 << hubble_rate[i] << ","
+                 << bounce_action[i] << ","
+                 << false_vacuum_decay_rate[i] << ","
+                 << extended_volume[i] << ","
+                 << false_vacuum_fraction[i] << ","
+                 << nucleation_rate[i] << ","
+                 << mean_bubble_separation[i] << ","
+                 << mean_bubble_radius[i] << "\n";
+        }
+        file.close();
+    }
+};
+
 struct ThermalParameterSet 
 {
     FalseVacuumDecayRate decay_rate;
@@ -47,6 +86,8 @@ struct ThermalParameterSet
     TransitionMilestone percolation;
     TransitionMilestone completion;
     TransitionMilestone nucleation;
+
+    ThermalProfiles profiles;
 
     ThermalParameterSet(
         Transition t_in, 
@@ -108,6 +149,10 @@ class ThermoFinder {
     PROPERTY(PrintSettings, nucleation_print_setting, PrintSettings::STANDARD);
 
     PROPERTY(PrintSettings, completion_print_setting, PrintSettings::MINIMAL);
+
+    PROPERTY(bool, compute_profiles, false);
+
+    PROPERTY(double, n_temp_profiles, 250);
 
     PROPERTY(double, vw, 1/sqrt(3.0));
 

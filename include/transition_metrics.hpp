@@ -19,6 +19,7 @@
 #define PHASETRACER_TRANSITION_METRICS_HPP_
 
 #include <cmath>
+#include <chrono>
 #include <vector>
 #include <optional>
 #include <stdexcept>
@@ -251,8 +252,17 @@ public :
     TransitionMetrics(const FalseVacuumDecayRate& decay_rate_in, const EquationOfState& eos_in) :
     decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
     {
+        auto start_scale_factor_calculation = std::chrono::high_resolution_clock::now();
         make_scale_factor_ratio_integrand_spline();
+        auto end_scale_factor_calculation = std::chrono::high_resolution_clock::now();
+        auto duration_scale_factor_calculation = std::chrono::duration_cast<std::chrono::milliseconds>(end_scale_factor_calculation - start_scale_factor_calculation);
+        LOG(info) << "scale_factor_ratio_integrand spline created in " << duration_scale_factor_calculation.count() << " ms" << std::endl;
+
+        auto start_log_extended_volume_calculation = std::chrono::high_resolution_clock::now();
         compute_log_extended_volume_spline();
+        auto end_log_extended_volume_calculation = std::chrono::high_resolution_clock::now();
+        auto duration_log_extended_volume_calculation = std::chrono::duration_cast<std::chrono::milliseconds>(end_log_extended_volume_calculation - start_log_extended_volume_calculation);
+        LOG(info) << "log_extended_volume spline created in " << duration_log_extended_volume_calculation.count() << " ms" << std::endl;
     }
 
     void compute_milestones() {

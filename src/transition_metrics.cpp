@@ -40,6 +40,8 @@ namespace PhaseTracer {
         const auto pressure_derivs = eos.get_pressure_derivs_plus(T);
         const double pressure_ratio = use_bag_dtdT ? 3. / T : pressure_derivs[2]/pressure_derivs[1];
 
+        if (pressure_ratio < 0) { return 3./T;} // TODO
+
         return prefac * pressure_ratio;
     }
 

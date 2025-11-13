@@ -57,6 +57,52 @@ namespace PhaseTracer {
         output.nucleation.set_print_setting(nucleation_print_setting);
         add_thermal_parameter_values(output.nucleation, output.decay_rate, output.eos, output.transition_metrics);
 
+        if(compute_profiles)
+        {
+            ThermalProfiles profile_out;
+            double t_min = output.decay_rate.get_t_min();
+            double t_max = output.decay_rate.get_t_max();
+            double dt = (t_max - t_min)/(n_temp_profiles-1);
+
+            for(double tt = t_min; tt < t_max; tt += dt)
+            {
+                double dtdT, dt, H, action, gamma, vext, pf, nt, n, Rs, Rbar;
+
+                try {
+                    dtdT = output.transition_metrics.get_dtdT(tt);
+                    dt = get_dt(tt, output.transition_metrics);
+                    H = get_H(tt, output.transition_metrics);
+                    action = output.decay_rate.get_action(tt)/tt;
+                    gamma = output.decay_rate.get_gamma(tt);
+                    vext = output.transition_metrics.get_extended_volume_from_spline(tt);
+                    pf = output.transition_metrics.get_false_vacuum_fraction(tt);
+                    nt =  output.transition_metrics.get_nucleation_rate(tt);
+                    n = get_n(tt, output.transition_metrics);
+                    Rs = std::pow(n, -1./3.) * H;
+                    Rbar = get_Rbar_integral(tt, output.transition_metrics)/n * H; 
+                } catch (const std::exception& e) {
+                    LOG(debug) << "Error computing thermal profile values at T = " << tt << ": " << e.what();
+                    continue;
+                } catch (...) {
+                    LOG(debug) << "Unknown error computing thermal profile values at T = " << tt;
+                    continue;
+                }
+
+                profile_out.temperature.push_back(tt);
+                profile_out.dtdT.push_back(dtdT);
+                profile_out.time.push_back(dt);
+                profile_out.hubble_rate.push_back(H);
+                profile_out.bounce_action.push_back(action);
+                profile_out.false_vacuum_decay_rate.push_back(gamma);
+                profile_out.extended_volume.push_back(vext);
+                profile_out.false_vacuum_fraction.push_back(pf);
+                profile_out.nucleation_rate.push_back(nt);
+                profile_out.mean_bubble_separation.push_back(Rs);
+                profile_out.mean_bubble_radius.push_back(Rbar);
+            }
+            output.profiles = profile_out;
+        }
+
         return output;
     }
 
