@@ -115,6 +115,8 @@ namespace PhaseTracer {
             const auto temp = milestone.temperature;
             double alpha = get_alpha(temp, eos);
             milestone.alpha = alpha;
+            double alpha_munu = get_alpha(temp, eos, true);
+            milestone.alpha_munu = alpha_munu;
             double betaH = get_betaH(temp, decay_rate);
             milestone.betaH = betaH;
             double H = get_H(temp, tm);
@@ -138,9 +140,9 @@ namespace PhaseTracer {
     }
 
     const double 
-    ThermoFinder::get_alpha(const double& temperature, const EquationOfState& eos)
+    ThermoFinder::get_alpha(const double& temperature, const EquationOfState& eos, bool use_munu)
     {
-        const auto theta = eos.get_theta(temperature);
+        const auto theta = eos.get_theta(temperature, use_munu);
         const auto w = eos.get_enthalpy_plus(temperature);
         return abs(theta.first - theta.second)/w * 4./3.;
     }

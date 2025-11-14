@@ -149,7 +149,7 @@ namespace PhaseTracer {
     }
 
     std::pair<double, double>
-    EquationOfState::get_theta(double T)  const
+    EquationOfState::get_theta(double T, bool use_munu)  const
     {
         // TODO add theta_bag and theta_munu
         check_temperature_range(T, "get_theta");
@@ -158,6 +158,17 @@ namespace PhaseTracer {
         double e_minus = alglib::spline1dcalc(this->e_minus_spline, T);
         double p_minus = alglib::spline1dcalc(this->p_minus_spline, T);
 
+        if(use_munu)
+        {
+            double cs_minus = get_sound_speed_minus(T);
+
+            double nu = 1 + 1/(cs_minus*cs_minus);
+            double theta_plus = (e_plus - (nu - 1) * p_plus) / 4.0;
+            double theta_minus = (e_minus - (nu - 1) * p_minus) / 4.0;
+
+            return {theta_plus, theta_minus};
+        }
+        
         double theta_plus = (e_plus - 3.0 * p_plus) / 4.0;
         double theta_minus = (e_minus - 3.0 * p_minus) / 4.0;
         return {theta_plus, theta_minus};

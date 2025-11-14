@@ -146,7 +146,7 @@ public:
     std::pair<std::vector<double>, std::vector<double>> get_pressure_derivs(double T) const;
 
     std::pair<double, double> get_sound_speed(double T) const;
-    std::pair<double, double> get_theta(double T) const;
+    std::pair<double, double> get_theta(double T, bool use_munu = false) const;
 
     double get_energy_plus(double T) const;
     double get_energy_minus(double T) const;

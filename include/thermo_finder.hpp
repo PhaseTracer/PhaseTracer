@@ -190,7 +190,7 @@ public :
 
     const void add_thermal_parameter_values(TransitionMilestone& milestone, const FalseVacuumDecayRate& decay_rate, const EquationOfState& eos, TransitionMetrics& tm);
 
-    const double get_alpha(const double& temperature, const EquationOfState& eos);
+    const double get_alpha(const double& temperature, const EquationOfState& eos, bool use_munu = false);
 
     const double get_betaH(const double& temperature, const FalseVacuumDecayRate& decay_rate);
 
