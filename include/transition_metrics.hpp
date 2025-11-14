@@ -68,6 +68,7 @@ struct TransitionMilestone
     double temperature;
 
     double alpha;
+    double alpha_munu;
     double betaH;
     double H;
     double we;
@@ -125,6 +126,7 @@ public:
 
         if (print_setting == PrintSettings::STANDARD || print_setting == PrintSettings::VERBOSE) {
             output += "  alpha = " + std::to_string(alpha) + "\n";
+            output += "  alpha_munu = " + std::to_string(alpha_munu) + "\n";
             output += "  betaH = " + std::to_string(betaH) + "\n";
             output += "  H = " + format_double(H) + "\n";
         }
