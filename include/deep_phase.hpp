@@ -181,13 +181,13 @@ get_pt_params_from_transition_milestone(
 		nuc_type = "exp";
 	}
 
-	if (alpha <= 0 || betaH <= 0) {
-		throw std::invalid_argument("Invalid thermal parameters: alpha or betaH <= 0");
-	}
-
 	const double beta = betaH * H;
 	const double Rs = RsH / H;
 	const double dtau = Rs * dtauRs;
+
+	if (alpha <= 0 || Rs <= 0) {
+		throw std::invalid_argument("Invalid thermal parameters: alpha or betaH <= 0");
+	}
 
 	if (model == EoSModel::BAG) {
 		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, nuc_type, un, 1./3., 1./3.);
