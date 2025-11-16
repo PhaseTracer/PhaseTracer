@@ -61,10 +61,17 @@ enum PrintSettings
     VERBOSE
 }; // enum PrintSettings
 
+enum NucleationType
+{
+    EXPONENTIAL,
+    SIMULTANEOUS
+}; // enum NucleationType
+
 struct TransitionMilestone
 {
     MilestoneType type;
     MilestoneStatus status;
+    NucleationType nucleation_type = NucleationType::EXPONENTIAL;
     double temperature;
 
     double alpha;
@@ -119,7 +126,11 @@ public:
     {
         std::string output = "  status = " + format_status_string() + "\n";
         output += "  temperature = " + std::to_string(temperature) + " GeV\n";
-        
+        if(type == MilestoneType::PERCOLATION && status == MilestoneStatus::YES)
+        {
+            output += "  nucleation_type = " + std::string(nucleation_type == NucleationType::EXPONENTIAL ? "exponential" : "simultaneous") + "\n";
+        }
+
         if (print_setting == PrintSettings::MINIMAL) {
             return output;
         }

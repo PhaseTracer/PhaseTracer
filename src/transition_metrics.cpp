@@ -322,6 +322,18 @@ namespace PhaseTracer {
             output.status = MilestoneStatus::NO;
         }
 
+        if(type == MilestoneType::PERCOLATION && output.status == MilestoneStatus::YES)
+        {
+            bool action_gradient_negative_at_t_min = decay_rate.get_action_deriv(t_min) > 0.0;
+            if (action_gradient_negative_at_t_min)
+            {
+                output.nucleation_type = NucleationType::EXPONENTIAL;
+            } else 
+            {
+                output.nucleation_type = NucleationType::SIMULTANEOUS;
+            }
+        }
+
         return output;
     }
 

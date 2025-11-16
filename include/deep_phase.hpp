@@ -102,7 +102,7 @@ refine_lower_bound(const PhaseTracer::EquationOfState& eos, double step_size = 0
 inline PhaseTransition::EquationOfState
 phasetracer_EoS_to_deepphase_EoS(const PhaseTracer::EquationOfState& eos)
 {
-	double t_min = refine_lower_bound(eos);
+	double t_min = eos.get_t_min();
 	double t_max = eos.get_t_max();
 	int n_temp = eos.get_n_temp();
 	double dt = (t_max - t_min) / (n_temp - 1);
@@ -112,9 +112,12 @@ phasetracer_EoS_to_deepphase_EoS(const PhaseTracer::EquationOfState& eos)
 	for (int i = 0; i < n_temp; ++i) 
 	{
 		double T = t_min + i * dt;
-		t_vals.push_back(T);
 		auto [p_plus, p_minus] = eos.get_pressure(T);
 		auto [e_plus, e_minus] = eos.get_energy(T);
+
+		if(p_plus < 0 || p_minus < 0 || e_plus < 0 || e_minus < 0) { continue; }
+
+		t_vals.push_back(T);
 		p_plus_vals.push_back(p_plus);
 		p_minus_vals.push_back(p_minus);
 		e_plus_vals.push_back(e_plus);
@@ -164,6 +167,20 @@ get_pt_params_from_transition_milestone(
 	const double cs_plus = milestone.cs_plus;
 	const double cs_minus = milestone.cs_minus;
 
+	char* nuc_type; // why isn't this a string in deepphase?
+	if (milestone.type == MilestoneType::PERCOLATION)
+	{
+		if (milestone.nucleation_type == PhaseTracer::NucleationType::EXPONENTIAL)
+		{
+			nuc_type = "exp";
+		} else 
+		{
+			nuc_type = "sim";
+		}
+	} else {
+		nuc_type = "exp";
+	}
+
 	if (alpha <= 0 || betaH <= 0) {
 		throw std::invalid_argument("Invalid thermal parameters: alpha or betaH <= 0");
 	}
@@ -172,19 +189,15 @@ get_pt_params_from_transition_milestone(
 	const double Rs = RsH / H;
 	const double dtau = Rs * dtauRs;
 
-	std::cout << "Computed PT parameters: " << "\n";
-	std::cout << "  beta = " << beta << "\n";
-	std::cout << "  Rs = " << Rs << "\n";
-
 	if (model == EoSModel::BAG) {
-		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, "exp", un, 1./3., 1./3.); // TODO
+		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, nuc_type, un, 1./3., 1./3.);
 	} else if (model == EoSModel::MUNU) {
-		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, "exp", un, cs_plus*cs_plus, cs_minus*cs_minus);  // TODO
+		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, nuc_type, un, cs_plus*cs_plus, cs_minus*cs_minus);  // TODO
 	} else {
 		if (!eos_ptr) {
 			throw std::invalid_argument("EquationOfState required for VEFF model but not provided");
 		}
-		return PhaseTransition::PTParams_Veff(vw, alpha, Tref, beta, Rs, dtau, "exp", un, *eos_ptr);
+		return PhaseTransition::PTParams_Veff(vw, alpha, Tref, beta, Rs, dtau, nuc_type, un, *eos_ptr);
 	}
 }
 
