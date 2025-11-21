@@ -20,7 +20,7 @@ endif(BUILD_WITH_BP)
 if(BUILD_WITH_DP)
   find_package(OpenMP REQUIRED) # this line might not be needed
   link_libraries(
-    ${DeepPhase_LIB}
+    ${DeepPhase_LIBRARIES}
     OpenMP::OpenMP_CXX
   )
 endif(BUILD_WITH_DP)
