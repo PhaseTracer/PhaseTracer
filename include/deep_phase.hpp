@@ -192,7 +192,7 @@ get_pt_params_from_transition_milestone(
 	if (model == EoSModel::BAG) {
 		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, nuc_type, un, 1./3., 1./3.);
 	} else if (model == EoSModel::MUNU) {
-		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, nuc_type, un, cs_plus*cs_plus, cs_minus*cs_minus);  // TODO
+		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, nuc_type, un, cs_plus*cs_plus, cs_minus*cs_minus);
 	} else {
 		if (!eos_ptr) {
 			throw std::invalid_argument("EquationOfState required for VEFF model but not provided");
@@ -303,7 +303,10 @@ struct DeepPhaseResults
 			auto ptparams_variant = get_pt_params_from_transition_milestone(milestone, eos, dof, vw, dtauRs, EoSModel::BAG);
 			ptparams_bag = std::make_unique<PhaseTransition::PTParams_Bag>(get_bag(ptparams_variant));
 			profile_bag = std::make_unique<Hydrodynamics::FluidProfile>(*ptparams_bag);
-			spectrum_bag = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec2(kRs_vals, *ptparams_bag));
+			std::cout << profile_bag->xi_min() << "\n";
+			std::cout << profile_bag->xi_max() << "\n";
+			std::cout << profile_bag->mode_str() << "\n";
+			spectrum_bag = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec(kRs_vals, *ptparams_bag));
 		}
 
 		if (eos_model == EoSModel::MUNU || eos_model == EoSModel::ALL) 
@@ -311,7 +314,7 @@ struct DeepPhaseResults
 			auto ptparams_variant = get_pt_params_from_transition_milestone(milestone, eos, dof, vw, dtauRs, EoSModel::MUNU);
 			ptparams_munu = std::make_unique<PhaseTransition::PTParams_Bag>(get_bag(ptparams_variant));
 			profile_munu = std::make_unique<Hydrodynamics::FluidProfile>(*ptparams_munu);
-			spectrum_munu = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec2(kRs_vals, *ptparams_munu));
+			spectrum_munu = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec(kRs_vals, *ptparams_munu));
 		}
 		
 		if (eos_model == EoSModel::VEFF || eos_model == EoSModel::ALL)
@@ -319,7 +322,9 @@ struct DeepPhaseResults
 			auto ptparams_variant = get_pt_params_from_transition_milestone(milestone, eos, dof, vw, dtauRs, EoSModel::VEFF);
 			ptparams_veff = std::make_unique<PhaseTransition::PTParams_Veff>(get_veff(ptparams_variant));
 			profile_veff = std::make_unique<Hydrodynamics::FluidProfile>(*ptparams_veff);
-			spectrum_veff = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec2(kRs_vals, *ptparams_veff));
+			std::cout << profile_veff->xi_min() << "\n";
+			std::cout << profile_veff->xi_max() << "\n";
+			spectrum_veff = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec(kRs_vals, *ptparams_veff));
 		}
 	}
 	
