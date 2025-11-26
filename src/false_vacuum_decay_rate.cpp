@@ -47,7 +47,7 @@ namespace PhaseTracer {
         // #pragma omp parallel for schedule(dynamic)
         // #endif
 
-        for (int i = 0; i < spline_evaluations; i++) 
+        for (int i = 1; i < spline_evaluations; i++) 
         {
             double tt = t_min + i * dt;
             
