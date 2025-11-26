@@ -296,7 +296,7 @@ struct DeepPhaseResults
 	DeepPhaseResults(const TransitionMilestone& milestone_, const EquationOfState& eos_, const double& dof_, const double& vw_, const double& dtauRs_, EoSModel eos_model_)
 	: eos_model(eos_model_), milestone(milestone_), eos(eos_), dof(dof_), vw(vw_), dtauRs(dtauRs_)
 	{
-		auto kRs_vals = logspace(1e-3, 1e+3, 100);
+		auto kRs_vals = logspace(1e-2, 5e+3, 100);
 		
 		if (eos_model == EoSModel::BAG || eos_model == EoSModel::ALL) 
 		{
