@@ -119,6 +119,7 @@ format_fail_case(std::vector<double> in, int flag)
   return output;
 }
 
+
 /*
   Main
 */
@@ -130,7 +131,7 @@ int main(int argc, char* argv[]) {
   bool running = true;
 
   // default output
-  std::string output_filename = "comparisonData/parameter_scans/data/3deft.csv";
+  std::string output_filename = "comparisonData/nucleationType/scan/3deft.csv";
   bool file_has_data = file_exists_and_not_empty(output_filename);
 
   std::ofstream output_file(output_filename, std::ios::app);
@@ -246,15 +247,29 @@ int main(int argc, char* argv[]) {
   tm.set_background_dof(107.75);
   tm.set_percolation_print_setting(PhaseTracer::PrintSettings::VERBOSE);
   tm.set_nucleation_print_setting(PhaseTracer::PrintSettings::VERBOSE);
+  tm.set_compute_profiles(true);
 
   PhaseTracer::TransitionMilestone milestone;
   std::optional<PhaseTracer::EquationOfState> eos_opt;
 
+  int percolates, nuc_type;
   try {
     auto tps = tm.get_thermal_parameter_set(valid_t[0]);
 
     milestone = tps.percolation;
     eos_opt = std::move(tps.eos);
+
+    if (milestone.status == PhaseTracer::MilestoneStatus::YES)
+    {
+      percolates = 1;
+      nuc_type = (milestone.nucleation_type == PhaseTracer::NucleationType::EXPONENTIAL) ? 1 : 0;
+    } else {
+      percolates = 0;
+      nuc_type = 2;
+    }
+    std::string output_file_path = "comparisonData/nucleationType/3deft/thermal_profiles/" + std::to_string(lambda_hs) + "_" + std::to_string(percolates) + "_" + std::to_string(nuc_type) + ".csv";
+    tps.profiles.write(output_file_path);
+    // return 1;
   } catch(...) {
     std::cout << "Error during calculation of thermal parameters." << std::endl;
     output_file << format_fail_case(in, -6);
@@ -263,7 +278,7 @@ int main(int argc, char* argv[]) {
   }
   
   if(milestone.status != PhaseTracer::MilestoneStatus::YES) {
-    std::cout << "Nucleation milestone not achieved." << std::endl;
+    std::cout << "Milestone not achieved." << std::endl;
     output_file << format_fail_case(in, -7);
     output_file.close();
     return 1;
@@ -273,13 +288,16 @@ int main(int argc, char* argv[]) {
   std::cout << milestone;
 
   // optional, use wallgo to calculate vw and replace
-  double tnuc = milestone.temperature;
-  const auto params4d = model.get_4d_parameter_map(tnuc);
-  const auto wallGoOut = wallGoWrapper::getWallVelocity(valid_t[0], params4d, tnuc, "3deft_xSM");
+  // double tnuc = milestone.temperature;
+  // const auto params4d = model.get_4d_parameter_map(tnuc);
+  // const auto wallGoOut = wallGoWrapper::getWallVelocity(valid_t[0], params4d, tnuc, "3deft_xSM");
+
+  const std::string path_fit = "example/TestDeepPhase/helperIncludes/3deft_vw_fit_params.json";
+  const auto wallGoOut = wallGoWrapper::fitWallGo(path_fit, lambda_hs);
   vwLTE = wallGoOut.vwLTE;
-  vw = (wallGoOut.vw_flag == 1) ? wallGoOut.vw : vw;
-  vJ = (wallGoOut.vw_flag == 1) ? wallGoOut.vJ : vw;
-  vwDet = wallGoOut.vw_det;
+  vw = (wallGoOut.vw_flag == 1) ? wallGoOut.vw : -1;
+  vJ = (wallGoOut.vw_flag == 1) ? wallGoOut.vJ : -1;
+  vwDet = (wallGoOut.vw_det_flag == 2) ? wallGoOut.vw_det : -1;
 
   std::cout << "============================" << "\n";
   std::cout << "  vJ = " << vJ << "\n";
@@ -290,61 +308,63 @@ int main(int argc, char* argv[]) {
 
   output_file << format_thermal_params(in, 1, valid_t[0].TC, milestone, wallGoOut);
   output_file.close();
-  return 0;
 
-  PhaseTracer::GravWaveCalculator gc(tf);
-  gc.set_min_frequency(1e-5);
-  gc.set_max_frequency(1e0);
-  gc.set_num_frequency(500);
-  gc.set_vw(vw);
+  // return 0;
 
-  auto gw = gc.calc_spectrum(milestone.alpha, milestone.betaH, milestone.temperature);
-  gc.write_spectrum_to_text(gw, "comparisonData/spectra/3deft/naive.csv");
+  std::string eos_path = "comparisonData/nucleationType/3deft/eos/" + std::to_string(lambda_hs) + "_" + std::to_string(percolates) + "_" + std::to_string(nuc_type) + ".csv";
+  eos_opt->write(eos_path);
 
   namespace DPInt = PhaseTracer::DeepPhaseInterface;
 
-  eos_opt->write("comparisonData/eos/3deft_eos.csv");
-
   if(vw > 0)
   {
-    auto deflagaration_bag = DPInt::DeepPhaseResults(milestone, *eos_opt, 107.75, vw, dtauRs, DPInt::EoSModel::BAG);
-    auto def_bag_profile = deflagaration_bag.get_profile_bag();
-    def_bag_profile.write("comparisonData/profiles/3deft/def_bag.csv");
-    auto def_bag_spectrum = deflagaration_bag.get_spectrum_bag();
-    def_bag_spectrum.write("comparisonData/spectra/3deft/def_bag.csv");
+    try {
+      auto deflagaration_bag = DPInt::DeepPhaseResults(milestone, *eos_opt, 107.75, vw, dtauRs, DPInt::EoSModel::BAG);
+      auto def_bag_profile = deflagaration_bag.get_profile_bag();
+      // def_bag_spectrum.write("comparisonData/profiles/3deft/def_bag.csv");
+      std::string def_bag_path = "comparisonData/nucleationType/3deft/fluid_profiles/" + std::to_string(lambda_hs) + "_" + std::to_string(percolates) + "_" + std::to_string(nuc_type) + "_bag.csv";
+      def_bag_profile.write(def_bag_path);
+      auto def_bag_spectrum = deflagaration_bag.get_spectrum_bag();
+      // def_bag_spectrum.write("comparisonData/spectra/3deft/def_bag.csv");
+      std::string def_bag_spectrum_path = "comparisonData/nucleationType/3deft/spectra/" + std::to_string(lambda_hs) + "_" + std::to_string(percolates) + "_" + std::to_string(nuc_type) + "_bag.csv";
+      def_bag_spectrum.write(def_bag_spectrum_path);
+    } catch (const std::exception& e) {
+      std::cerr << "BAG model failed for lambda_hs=" << lambda_hs << ": " << e.what() << std::endl;
+    } catch (...) {
+      std::cerr << "BAG model failed for lambda_hs=" << lambda_hs << ": unknown error" << std::endl;
+    }
 
-    auto deflagaration_munu = DPInt::DeepPhaseResults(milestone, *eos_opt, 107.75, vw, dtauRs, DPInt::EoSModel::MUNU);
-    auto def_munu_profile = deflagaration_munu.get_profile_munu();
-    def_munu_profile.write("comparisonData/profiles/3deft/def_munu.csv");
-    auto def_munu_spectrum = deflagaration_munu.get_spectrum_munu();
-    def_munu_spectrum.write("comparisonData/spectra/3deft/def_munu.csv");
+    try {
+      auto deflagaration_munu = DPInt::DeepPhaseResults(milestone, *eos_opt, 107.75, vw, dtauRs, DPInt::EoSModel::MUNU);
+      auto def_munu_profile = deflagaration_munu.get_profile_munu();
+      // def_munu_profile.write("comparisonData/profiles/3deft/def_munu.csv");
+      std::string def_munu_path = "comparisonData/nucleationType/3deft/fluid_profiles/" + std::to_string(lambda_hs) + "_" + std::to_string(percolates) + "_" + std::to_string(nuc_type) + "_munu.csv";
+      def_munu_profile.write(def_munu_path);
+      auto def_munu_spectrum = deflagaration_munu.get_spectrum_munu();
+      // def_munu_spectrum.write("comparisonData/spectra/3deft/def_munu.csv");
+      std::string def_munu_spectrum_path = "comparisonData/nucleationType/3deft/spectra/" + std::to_string(lambda_hs) + "_" + std::to_string(percolates) + "_" + std::to_string(nuc_type) + "_munu.csv";
+      def_munu_spectrum.write(def_munu_spectrum_path);
+    } catch (const std::exception& e) {
+      std::cerr << "MUNU model failed for lambda_hs=" << lambda_hs << ": " << e.what() << std::endl;
+    } catch (...) {
+      std::cerr << "MUNU model failed for lambda_hs=" << lambda_hs << ": unknown error" << std::endl;
+    }
 
-    auto deflagaration_veff = DPInt::DeepPhaseResults(milestone, *eos_opt, 107.75, vw, dtauRs, DPInt::EoSModel::VEFF);
-    auto def_veff_profile = deflagaration_veff.get_profile_veff();
-    def_veff_profile.write("comparisonData/profiles/3deft/def_veff.csv");
-    auto def_veff_spectrum = deflagaration_veff.get_spectrum_veff();
-    def_veff_spectrum.write("comparisonData/spectra/3deft/def_veff.csv");
-  }
-  
-  if(vwDet > 0)
-  {
-    auto detonation_bag = DPInt::DeepPhaseResults(milestone, *eos_opt, 107.75, vwDet, dtauRs, DPInt::EoSModel::BAG);
-    auto det_bag_profile = detonation_bag.get_profile_bag();
-    det_bag_profile.write("comparisonData/profiles/3deft/det_bag.csv");
-    auto det_bag_spectrum = detonation_bag.get_spectrum_bag();
-    det_bag_spectrum.write("comparisonData/spectra/3deft/det_bag.csv");
-
-    auto detonation_munu = DPInt::DeepPhaseResults(milestone, *eos_opt, 107.75, vwDet, dtauRs, DPInt::EoSModel::MUNU);
-    auto det_munu_profile = detonation_munu.get_profile_munu();
-    det_munu_profile.write("comparisonData/profiles/3deft/det_munu.csv");
-    auto det_munu_spectrum = detonation_munu.get_spectrum_munu();
-    det_munu_spectrum.write("comparisonData/spectra/3deft/det_munu.csv");
-
-    auto detonation_veff = DPInt::DeepPhaseResults(milestone, *eos_opt, 107.75, vwDet, dtauRs, DPInt::EoSModel::VEFF);
-    auto det_veff_profile = detonation_veff.get_profile_veff();
-    det_veff_profile.write("comparisonData/profiles/3deft/det_veff.csv");
-    auto det_veff_spectrum = detonation_veff.get_spectrum_veff();
-    det_veff_spectrum.write("comparisonData/spectra/3deft/det_veff.csv");
+    try {
+      auto deflagaration_veff = DPInt::DeepPhaseResults(milestone, *eos_opt, 107.75, vw, dtauRs, DPInt::EoSModel::VEFF);
+      auto def_veff_profile = deflagaration_veff.get_profile_veff();
+      // def_veff_profile.write("comparisonData/profiles/3deft/def_veff.csv");
+      std::string def_veff_path = "comparisonData/nucleationType/3deft/fluid_profiles/" + std::to_string(lambda_hs) + "_" + std::to_string(percolates) + "_" + std::to_string(nuc_type) + "_veff.csv";
+      def_veff_profile.write(def_veff_path);
+      auto def_veff_spectrum = deflagaration_veff.get_spectrum_veff();
+      // def_veff_spectrum.write("comparisonData/spectra/3deft/def_veff.csv");
+      std::string def_veff_spectrum_path = "comparisonData/nucleationType/3deft/spectra/" + std::to_string(lambda_hs) + "_" + std::to_string(percolates) + "_" + std::to_string(nuc_type) + "_veff.csv";
+      def_veff_spectrum.write(def_veff_spectrum_path);
+    } catch (const std::exception& e) {
+      std::cerr << "VEFF model failed for lambda_hs=" << lambda_hs << ": " << e.what() << std::endl;
+    } catch (...) {
+      std::cerr << "VEFF model failed for lambda_hs=" << lambda_hs << ": unknown error" << std::endl;
+    }
   }
 
   return 0;
