@@ -13,7 +13,7 @@
 
 #include "pow.hpp"
 #include "potential.hpp"
-#include "helper_includes/complex_operators.hpp"
+#include "helperIncludes/complex_operators.hpp"
 
 namespace EffectivePotential {
 
@@ -50,53 +50,60 @@ class DR_idm: public Potential {
       double gY = tan(thetaEW)*gW; double gYsq = gY*gY;
 
       // extract inputs
-      double m12 = inputParams[0]; double m12sq = m12*m12;
-      double mh = inputParams[1]; double mhsq = mh*mh;
-      double mH = inputParams[2]; double mHsq = mH*mH;
-      double mA = inputParams[3]; double mAsq = mA*mA;
-      double mHpm = inputParams[4]; double mHpmsq = mHpm*mHpm;
-      double beta = inputParams[5];
-      double alpha = inputParams[6];
+      double m12 = 0.0; double m12sq = m12*m12;
+      double mh = inputParams[0]; double mhsq = mh*mh;
+      double mH = inputParams[1]; double mHsq = mH*mH;
+      double mA = inputParams[2]; double mAsq = mA*mA;
+      double mHpm = inputParams[3]; double mHpmsq = mHpm*mHpm;
+      double lambda2 = inputParams[4];
+      double lambdaL = inputParams[5];
 
-      double ca = cos(alpha); double ca2 = ca*ca;
-      double sa = sin(alpha); double sa2 = sa*sa;
-      double cb = cos(beta); double cb2 = cb*cb;
-      double sb = sin(beta); double sb2 = sb*sb;
-      // std::cout << "sanity check tan(beta) = " << sb/cb << std::endl;
+      double yt = sqrt(2) * mt/v;
 
-      double v1 = v*cb; double v1sq = v1*v1;
-      double v2 = v*sb; double v2sq = v2*v2;
+      double l1 = 2 * (0.5 * mhsq / vsq);
+      double l2 = 2 * (lambda2);
+      double l5 = (mHsq - mAsq) / vsq;
+      double l4 = -2.0 * (mHpmsq - mAsq)/vsq + l5;
+      double l3 = 2 * lambdaL - l4 - l5;
+      
+      double m11 = - l1 * vsq;
+      double m22 = mHpmsq - lambdaL * vsq / 2.0;
 
-      double yt = sqrt(2) * mt/v2; // depends on type-I or type-II
+      if( !check_quartics(l1, l2, l3, l4, l5) ) {
+        throw std::runtime_error("IDM quartic couplings do not satisfy bounded-from-below conditions.");
+      }
 
-      double l1 = ( mhsq * ca2 + mHsq * sa2 - m12sq * sb/cb ) / ( vsq * cb2 ); // doubled because of 1/8 quartic prefactor
-      double l2 =  ( mhsq * sa2 + mHsq * ca2 - m12sq * cb/sb ) / ( vsq * sb2 ); // doubled because of 1/8 quartic prefactor
-      double l3 = 2.*mHpmsq/vsq + (sa*ca)/(sb*cb) * (mhsq - mHsq)/vsq - m12sq/(vsq*sb*cb);
-      double l4 = mAsq/vsq - 2.*mHpmsq/vsq + m12sq/(vsq*sb*cb);
-      double l5 = m12sq/(vsq*sb*cb) - mAsq/(vsq);
-
-      // checks 
-      // bool check1 = l1 > 0.; std::cout << "l1 > 0 : " << check1 << std::endl;
-      // bool check2 = l2 > 0.; std::cout << "l2 > 0 : " << check2 << std::endl;
-      // bool check3 = l3 > -sqrt(l1*l2); std::cout << "l3 > -sqrt(l1*l2) : " << check3 << std::endl;
-      // bool check4 = l3 + l4 - abs(l5) > -sqrt(l1*l2); std::cout << "l3 + l4 - |l5| > -sqrt(l1*l2) : " << check4 << std::endl;
-
-
-      double l345 = l3+l4+l5;
-      double m11 = (2*m12sq*v2 - v1*v1sq*l1 - v1*v2sq*l345)/(2.*v1);
-      double m22 = (2*m12sq*v1 - v2*v2sq*l2 - v1sq*v2*l345)/(2.*v2);
+      // if( !check_masses(mH, mHpm, mA, mW, mZ) ) {
+      //   throw std::runtime_error("IDM mass parameters do not satisfy tree-level unitarity conditions.");
+      // }
 
       return {gYsq, gWsq, gSsq, m11, m22, m12, l1, l2, l3, l4, l5, yt};
     }
 
-    size_t get_n_scalars() const override { return 2;}
+    bool check_quartics(const double& l1, const double& l2, const double& l3, const double& l4, const double& l5) const {
+      if ( l1 < 0 ) { return false; }
+      if ( l2 < 0 ) { return false; }
+      if ( l3 + sqrt(l1*l2) < 0 ) { return false; }
+      if ( l3 + l4 - abs(l5) + sqrt(l1*l2) < 0 ) { return false; }
+      return true;
+    }
+
+    bool check_masses(const double& mH, const double& mHpm, const double& mA, const double& mW, const double& mZ) const {
+      if ( mH + mHpm < mW ) { return false; }
+      if ( mA + mHpm < mW ) { return false; }
+      if ( mH + mA < mZ ) { return false; }
+      if ( 2 * mHpm < mZ ) { return false; }
+      return true;
+    }
+
+    size_t get_n_scalars() const override { return 1;}
 
     std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const override {
       auto phi1 = phi;
       phi1[0] = - phi[0];
-      auto phi2 = phi;
-      phi2[1] = - phi[1];
-      return {phi1,phi2};
+      // auto phi2 = phi;
+      // phi2[0] = - phi[0];
+      return {phi1};
     };
 
     double V(Eigen::VectorXd phi, double T) const override {
@@ -114,29 +121,16 @@ class DR_idm: public Potential {
       std::complex<double> l3(par[8],0);
       std::complex<double> l4(par[9],0);
       std::complex<double> l5(par[10],0);
-
-      // const std::vector<std::complex<double>> par_alt = get_3d_parameters_alt(T);
-
-      // std::complex<double> gYsq = par_alt[0];
-      // std::complex<double> gWsq = par_alt[1];
-      // std::complex<double> gSsq = par_alt[2];
-      // std::complex<double> m11 = par_alt[3];
-      // std::complex<double> m22 = par_alt[4];
-      // std::complex<double> m12 = par_alt[5];
-      // std::complex<double> l1 = par_alt[6];
-      // std::complex<double> l2 = par_alt[7];
-      // std::complex<double> l3 = par_alt[8];
-      // std::complex<double> l4 = par_alt[9];
-      // std::complex<double> l5 = par_alt[10];
     
-      std::complex<double> h1(phi[0]/sqrt(T + 1e-15),0);
-      std::complex<double> h2(phi[1]/sqrt(T + 1e-15),0);
+      std::complex<double> h1(phi[0]/sqrt(T + 1e-15),0.0);
+      // std::complex<double> h2(phi[1]/sqrt(T + 1e-15),0.0);
+      std::complex<double> h2(0.0,0.0);
 
       std::complex<double> h1sq = h1*h1;
       std::complex<double> h2sq = h2*h2;
     
       std::complex<double> veffLO = (
-          0.5 * m11 * h1sq 
+        0.5 * m11 * h1sq 
         + 0.5 * m22 * h2sq 
         - m12 * h1 * h2 
         + 0.125 * l1 * h1sq * h1sq
@@ -164,8 +158,6 @@ class DR_idm: public Potential {
       std::complex<double> gaugeNLO = - 1/(6.*M_PI) * ( 2.*pow(wMassTerm,1.5) + pow(zMassTerm,1.5) );
 
       std::complex<double> veffNLO = scalarNLO + gaugeNLO + counterTerm;
-
-      // std::cout << "veffLO = " << veffLO.real() << ", veffNLO = " << veffNLO.real() << std::endl;
       
       return T * veffLO.real() + T * veffNLO.real();
     
