@@ -120,7 +120,7 @@ public:
     EquationOfState(Transition transition_in, int n_temp_in, double background_dof_in) : 
     transition(transition_in),
     t_min(transition_in.false_phase.T.front()),
-    t_max(transition_in.true_phase.T.back()),
+    t_max(transition_in.TC),
     n_temp(n_temp_in), 
     background_dof(background_dof_in) 
     {
