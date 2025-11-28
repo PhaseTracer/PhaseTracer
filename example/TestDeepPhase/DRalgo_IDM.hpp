@@ -115,7 +115,7 @@ class DR_idm: public Potential {
       std::complex<double> gSsq(par[2],0);
       std::complex<double> m11(par[3],0);
       std::complex<double> m22(par[4],0);
-      std::complex<double> m12(par[5],0);
+      std::complex<double> m12(0,0); // hard coded
       std::complex<double> l1(par[6],0);
       std::complex<double> l2(par[7],0);
       std::complex<double> l3(par[8],0);
