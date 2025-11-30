@@ -155,8 +155,8 @@ private:
     /** Minimum and maximum temperatures for which the decay rate is computed */
     double t_min, t_max;
 
-    /** Splines for action and log(gamma) */
-    alglib::spline1dinterpolant action_spline, log_gamma_spline;
+    /** Splines for log(action) and log(gamma) */
+    alglib::spline1dinterpolant log_action_spline, log_gamma_spline;
     
     /** Function for computing the decay rate prefactor */
     std::function<double(double, double)> prefactor_function;
