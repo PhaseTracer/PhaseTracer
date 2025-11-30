@@ -124,6 +124,8 @@ phasetracer_EoS_to_deepphase_EoS(const PhaseTracer::EquationOfState& eos)
 		e_minus_vals.push_back(e_minus);
 	}
 
+	/* T, ps = p_minus, pb = p_plus, es = e_minus, eb = e_plus, but the order
+	   below is switched from the DeepPhase ctor... */
 	PhaseTransition::EquationOfState output(t_vals, p_plus_vals, p_minus_vals, e_plus_vals, e_minus_vals);
 	return output;
 }
@@ -296,7 +298,7 @@ struct DeepPhaseResults
 	DeepPhaseResults(const TransitionMilestone& milestone_, const EquationOfState& eos_, const double& dof_, const double& vw_, const double& dtauRs_, EoSModel eos_model_)
 	: eos_model(eos_model_), milestone(milestone_), eos(eos_), dof(dof_), vw(vw_), dtauRs(dtauRs_)
 	{
-		auto kRs_vals = logspace(1e-2, 5e+3, 100);
+		auto kRs_vals = logspace(1e-3, 1e+3, 100);
 		
 		if (eos_model == EoSModel::BAG || eos_model == EoSModel::ALL) 
 		{
