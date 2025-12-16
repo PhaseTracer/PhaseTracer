@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <iomanip>
-#include <Eigen/Eigenvalues>
+#include <eigen3/Eigen/Eigenvalues>
 #include <sstream>
 #include <vector>
 #include <iterator>

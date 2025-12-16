@@ -12,7 +12,7 @@
 #include "phase_plotter.hpp"
 #include "transition_graph_util.hpp"
 
-#include <Eigen/Eigenvalues>
+#include <eigen3/Eigen/Eigenvalues>
 
 void printPaths(std::vector<TransitionGraph::Path> paths) {
   if (paths.size() == 0) {

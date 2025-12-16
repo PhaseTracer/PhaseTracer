@@ -23,7 +23,7 @@
 #include <vector>
 
 #include <boost/cstdint.hpp>
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include "nlopt.hpp"
 
 #include "logger.hpp"

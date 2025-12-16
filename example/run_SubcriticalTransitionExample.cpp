@@ -11,7 +11,7 @@
 #include "phase_plotter.hpp"
 #include "transition_graph_util.hpp"
 
-#include <Eigen/Eigenvalues>
+#include <eigen3/Eigen/Eigenvalues>
 
 // Copied from transition_finder.cpp (called changed()), because it's a private method in TransitionFinder.
 /*std::vector<bool> hasVEVChanged(const Eigen::VectorXd& true_vacuum, const Eigen::VectorXd&

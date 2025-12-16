@@ -20,7 +20,7 @@
 #include "pow.hpp"
 
 #include <boost/math/special_functions/sign.hpp>
-#include <Eigen/Eigenvalues>
+#include <eigen3/Eigen/Eigenvalues>
 
 namespace PhaseTracer {
 
