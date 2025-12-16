@@ -172,7 +172,7 @@ public:
     std::cout.precision(precisionPrev);
   }
 
-  std::vector<Eigen::VectorXd> get_low_t_phases() const {
+  std::vector<Eigen::VectorXd> get_low_t_phases() const override {
     return {get_EW_VEV(), apply_symmetry(get_EW_VEV())[0]};
   }
 
