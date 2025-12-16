@@ -22,7 +22,7 @@
 #include <ostream>
 #include <vector>
 
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include "nlopt.hpp"
 
 #include "potential.hpp"
@@ -129,6 +129,7 @@ public:
   virtual void find_phases();
 
   double delta_potential_at_T(const Phase &phase1, const Phase &phase2, double T) const {
+    LOG(debug) << "Delta potential";
     return phase_at_T(phase1, T).potential - phase_at_T(phase2, T).potential;
   }
 
