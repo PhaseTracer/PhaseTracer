@@ -27,5 +27,6 @@
 #include "potential_plotter.hpp"
 #include "potential_line_plotter.hpp"
 #include "spectrum_plotter.hpp"
+#include "serialize.hpp"
 
 #endif //  PHASETRACER_PHASETRACER_HPP_
