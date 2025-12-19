@@ -56,6 +56,11 @@ public:
     init();
   }
 
+  RSS(const std::vector<double>& params) {
+    init();
+    setParameters(params);
+  }
+
   /**
    * Default constructor. Use at your own risk. There are no checks when using the potential that it has been
    * properly initialised with parameter values. If using this default constructor, it is assumed you will use
