@@ -56,7 +56,7 @@ public:
     init();
   }
 
-  RSS(const std::vector<double>& params) {
+  RSS(const std::vector<double> &params) {
     init();
     setParameters(params);
   }
