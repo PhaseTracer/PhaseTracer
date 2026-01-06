@@ -23,7 +23,6 @@
 
 #include "transition_finder.hpp"
 
-
 namespace PhaseTracer {
 
 std::string serialize(const PhaseTracer::TransitionFinder &tf) {
@@ -54,11 +53,11 @@ std::string serialize(const PhaseTracer::TransitionFinder &tf) {
     for (int j = 0; j < t.true_vacuum.size(); j++) {
       ss << " " << t.true_vacuum[j];
     }
-    
+
     for (int j = 0; j < t.false_vacuum.size(); j++) {
       ss << " " << t.false_vacuum[j];
     }
-    
+
     ss << " " << t.key
        << " " << t.id
        << " " << int(t.subcritical)
@@ -76,11 +75,11 @@ std::string serialize(const PhaseTracer::TransitionFinder &tf) {
 
     ss << "# transition-path\n"
        << tp.transitions[0].transitionIndex;
-       
+
     for (int i = 1; i < tp.transitions.size(); ++i) {
       ss << " " << tp.transitions[i].transitionIndex;
     }
-    
+
     ss << "\n\n";
   }
 
