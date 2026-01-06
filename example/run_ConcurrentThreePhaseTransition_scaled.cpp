@@ -149,12 +149,12 @@ int main(int argc, char *argv[]) {
   tf.set_check_subcritical_transitions(check_subcrit);
   tf.set_assume_only_one_transition(!allow_phase_oscillation);
   tf.find_transitions();
-  tf.find_transition_paths(model, false);
+  tf.find_transition_paths(false);
 
   if (!bNoTransitionPathFinding) {
     LOG(debug) << pf;
     LOG(debug) << "Finding transition paths...";
-    tf.find_transition_paths(model, true);
+    tf.find_transition_paths(true);
   }
 
   if (bDebug) {

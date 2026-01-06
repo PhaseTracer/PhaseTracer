@@ -374,7 +374,7 @@ std::vector<Path> getTransitionPaths(const std::vector<PhaseTracer::Phase> &phas
  * knownHighTPhase=false means we don't know which of the phases at T=Tmax the Universe is in at T=Tmax.
  * This boolean variable is equivalent to whether we have sampled the potential at high enough temperatures.
  */
-std::vector<Path> getPhaseHistory(const PhaseTracer::PhaseFinder &pf, const PhaseTracer::TransitionFinder &tf, const EffectivePotential::Potential &model, bool knownHighTPhase);
+std::vector<Path> getPhaseHistory(const PhaseTracer::TransitionFinder &tf, bool knownHighTPhase);
 
 } // namespace TransitionGraph
 

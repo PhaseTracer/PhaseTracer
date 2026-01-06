@@ -552,8 +552,8 @@ bool TransitionFinder::checkSubcriticalTransition(const std::vector<PhaseTracer:
   return checkFromNewPhase;
 }
 
-void TransitionFinder::find_transition_paths(const EffectivePotential::Potential &model, bool knownHighTPhase) {
-  transition_paths = TransitionGraph::getPhaseHistory(pf, *this, model, knownHighTPhase);
+void TransitionFinder::find_transition_paths(bool known_high_t_phase) {
+  transition_paths = TransitionGraph::getPhaseHistory(*this, known_high_t_phase);
 }
 
 std::ostream &operator<<(std::ostream &o, const TransitionFinder &a) {
