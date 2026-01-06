@@ -26,7 +26,7 @@
 
 namespace PhaseTracer {
 
-std::stringstream serialize(const PhaseTracer::TransitionFinder &tf) {
+std::string serialize(const PhaseTracer::TransitionFinder &tf) {
 
   std::stringstream ss;
   ss << std::setprecision(10);
@@ -84,7 +84,7 @@ std::stringstream serialize(const PhaseTracer::TransitionFinder &tf) {
     ss << "\n\n";
   }
 
-  return ss;
+  return ss.str();
 }
 
 } // namespace PhaseTracer

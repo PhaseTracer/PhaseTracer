@@ -52,7 +52,7 @@ void phase_plotter(const PhaseTracer::TransitionFinder &tf, std::string folder_n
     throw std::runtime_error("Could not open file for writing");
   }
 
-  output_file << serialize(tf).str();
+  output_file << serialize(tf);
   output_file.close();
 
   if (make_plot) {
