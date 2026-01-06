@@ -179,8 +179,8 @@ public:
   bool checkSubcriticalTransition(const std::vector<PhaseTracer::Phase> &phases, int i, int j, double Tmax,
                                   double energyAtTmax, bool checkFromNewPhase, std::vector<bool> &isTransitionedTo);
 
-  /** Find all transition paths  */
-  void find_transition_paths(const EffectivePotential::Potential &model, bool knownHighTPhase);
+  /** Find all transition paths */
+  void find_transition_paths(bool known_high_t_phase = false);
 
   /** Retrieve all transitions between all phases */
   std::vector<Transition> get_transitions() const { return transitions; }

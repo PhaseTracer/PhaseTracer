@@ -179,7 +179,7 @@ void getCriticalTemperatureDataForPoint(std::string inputFileName, std::string o
   if (!bNoTransitionPathFinding) {
     LOG(debug) << pf;
     LOG(debug) << "Finding transition paths...";
-    tf.find_transition_paths(model, true);
+    tf.find_transition_paths(true);
   }
 
   if (bDebug) {

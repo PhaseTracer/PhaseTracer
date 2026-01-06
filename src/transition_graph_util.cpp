@@ -711,15 +711,15 @@ std::vector<Path> getTransitionPaths(const std::vector<PhaseTracer::Phase> &phas
  * knownHighTPhase=false means we don't know which of the phases at T=Tmax the Universe is in at T=Tmax.
  * This boolean variable is equivalent to whether we have sampled the potential at high enough temperatures.
  */
-std::vector<Path> getPhaseHistory(const PhaseTracer::PhaseFinder &pf, const PhaseTracer::TransitionFinder &tf, const EffectivePotential::Potential &model, bool knownHighTPhase) {
+std::vector<Path> getPhaseHistory(const PhaseTracer::TransitionFinder &tf, bool knownHighTPhase) {
   std::vector<PhaseTracer::Phase> symmetrisedPhases;
   std::vector<PhaseTracer::Transition> symmetrisedTransitions;
-
-  extractExplicitSymmetricPhasesAndTransitions(model, pf.get_phases(), tf.get_transitions(),
+  const EffectivePotential::Potential &model = tf.pf.get_potential(); 
+  extractExplicitSymmetricPhasesAndTransitions(model, tf.pf.get_phases(), tf.get_transitions(),
                                                model.get_symmetry_axes(), symmetrisedPhases, symmetrisedTransitions);
 
   PhaseStructureData phaseStructureData = extractPhaseStructureData(model, symmetrisedPhases, symmetrisedTransitions,
-                                                                    model.get_low_t_phases(), pf.get_t_high(), knownHighTPhase);
+                                                                    model.get_low_t_phases(),  tf.pf.get_t_high(), knownHighTPhase);
 
   if (!phaseStructureData.validAtZeroT) {
     LOG(debug) << "Phase structure is invalid at T=0. It does not describe our Universe.";
