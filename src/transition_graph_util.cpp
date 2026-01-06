@@ -714,12 +714,12 @@ std::vector<Path> getTransitionPaths(const std::vector<PhaseTracer::Phase> &phas
 std::vector<Path> getPhaseHistory(const PhaseTracer::TransitionFinder &tf, bool knownHighTPhase) {
   std::vector<PhaseTracer::Phase> symmetrisedPhases;
   std::vector<PhaseTracer::Transition> symmetrisedTransitions;
-  const EffectivePotential::Potential &model = tf.pf.get_potential(); 
+  const EffectivePotential::Potential &model = tf.pf.get_potential();
   extractExplicitSymmetricPhasesAndTransitions(model, tf.pf.get_phases(), tf.get_transitions(),
                                                model.get_symmetry_axes(), symmetrisedPhases, symmetrisedTransitions);
 
   PhaseStructureData phaseStructureData = extractPhaseStructureData(model, symmetrisedPhases, symmetrisedTransitions,
-                                                                    model.get_low_t_phases(),  tf.pf.get_t_high(), knownHighTPhase);
+                                                                    model.get_low_t_phases(), tf.pf.get_t_high(), knownHighTPhase);
 
   if (!phaseStructureData.validAtZeroT) {
     LOG(debug) << "Phase structure is invalid at T=0. It does not describe our Universe.";
