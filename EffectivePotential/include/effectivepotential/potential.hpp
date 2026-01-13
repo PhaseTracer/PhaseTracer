@@ -21,7 +21,11 @@
 #include <vector>
 
 #include <eigen3/Eigen/Core>
-#include <libalglib/interpolation.h>
+#ifdef __APPLE__
+  #include <interpolation.h>
+#else
+  #include <libalglib/interpolation.h>
+#endif
 
 #include "property.hpp"
 
