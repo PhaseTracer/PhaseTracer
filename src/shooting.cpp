@@ -575,7 +575,9 @@ void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double> *p, std::vector
   Eigen::VectorXd filtered_phi;
   Eigen::VectorXd filtered_dphi;
   filtered_phi.resize(phi.size());
+  filtered_phi.setZero();
   filtered_dphi.resize(dphi.size());
+  filtered_dphi.setZero();
   int filtered_index = 0;
   for (int i = 1; i < phi.size(); i++) {
     if (std::abs(phi(i) - phi(i - 1)) > 1E-12) {
