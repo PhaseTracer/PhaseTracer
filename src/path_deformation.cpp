@@ -83,7 +83,7 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
 
   // 4. Re-evaluate the distance to each point.
   if (reeval_distances) {
-    std::vector<double> pdist_(pdist.size());
+    std::vector<double> pdist_(pdist.size(),0.0);
     typedef double state_type;
     state_type x = 0.0;
     double t_start = 0.0;
