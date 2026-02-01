@@ -24,6 +24,9 @@
 #include <iostream>
 #include <fstream>
 #include "boost/filesystem.hpp"
+#include <vector>
+#include <stdexcept>
+
 
 namespace EffectivePotential {
 class ToyModel : public Potential {
@@ -49,6 +52,19 @@ public:
     init(AonV_, v_, D_, E_);
   }
 
+  ToyModel(const std::vector<double>& p) {
+  if (p.size() == 2) {
+    // D and E set to the values from arxiv:1611.05853.
+    init(p[0], p[1], 0.4424835167, 0.0625);
+  } else if (p.size() >= 4) {
+    init(p[0], p[1], p[2], p[3]);
+  } else {
+    throw std::invalid_argument("ToyModel expects 2 or 4 parameters");
+  }
+}
+
+  // same possibilities as above two constructors, but with std::vector passed
+  // needed for new interface in TransitionSolver
   ToyModel(std::string inputFileName) {
     std::ifstream inputFile(inputFileName);
 
