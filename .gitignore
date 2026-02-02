@@ -37,3 +37,5 @@ scan.py
 MCMClib/
 *.pdf
 /msbar_debug/
+
+/example/TestDeepPhase/*.json
