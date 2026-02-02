@@ -121,6 +121,8 @@ struct ThermalParameterSet
         transition_metrics.set_temperature_abs_tol(temperature_abs_tol);
         
         transition_metrics.compute_milestones();
+
+        transition_metrics.compute_nucleation_type(transition_metrics.percolation_milestone.temperature, t_in.false_phase.T.front(), t_in.TC);
     }
 
     friend std::ostream &operator<<(std::ostream& o, const ThermalParameterSet &tps) 

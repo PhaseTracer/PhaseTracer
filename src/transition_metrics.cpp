@@ -322,19 +322,62 @@ namespace PhaseTracer {
             output.status = MilestoneStatus::NO;
         }
 
-        if(type == MilestoneType::PERCOLATION && output.status == MilestoneStatus::YES)
+        // if(type == MilestoneType::PERCOLATION && output.status == MilestoneStatus::YES)
+        // {
+        //     bool action_gradient_negative_at_t_min = decay_rate.get_action_deriv(t_min) > 0.0;
+        //     if (action_gradient_negative_at_t_min)
+        //     {
+        //         output.nucleation_type = NucleationType::EXPONENTIAL;
+        //     } else 
+        //     {
+        //         output.nucleation_type = NucleationType::SIMULTANEOUS;
+        //     }
+        // }
+
+        return output;
+    }
+
+    void
+    TransitionMetrics::compute_nucleation_type(const double& t_guess, const double& t_min, const double& t_max)
+    {
+        double lower_bound = t_min + 0.05 * (t_guess - t_min);
+        double upper_bound = t_max - 0.05 * (t_max - t_guess);
+
+        auto action_func = [this](double T){
+            return this->decay_rate.get_action(T) / T;
+        };
+
+        int bits = std::numeric_limits<double>::digits;
+        boost::uintmax_t max_iter = 100;
+        
+        try 
         {
+            auto result = boost::math::tools::brent_find_minima(action_func, lower_bound, upper_bound, bits, max_iter);
+            
+            double T_m = result.first;
+            double gamma_m = decay_rate.get_gamma(T_m);
+
+            if ( abs(t_min - T_m) < 1e-6 )
+            {
+                nucleation_type = NucleationType::EXPONENTIAL;
+            } else 
+            {
+                nucleation_type = NucleationType::SIMULTANEOUS;
+            }
+        } catch (const std::exception& e) 
+        {
+            std::cerr << "Error during minima finding: " << e.what() << std::endl;
+            nucleation_type = NucleationType::EXPONENTIAL;
+
             bool action_gradient_negative_at_t_min = decay_rate.get_action_deriv(t_min) > 0.0;
             if (action_gradient_negative_at_t_min)
             {
-                output.nucleation_type = NucleationType::EXPONENTIAL;
+                nucleation_type = NucleationType::EXPONENTIAL;
             } else 
             {
-                output.nucleation_type = NucleationType::SIMULTANEOUS;
+                nucleation_type = NucleationType::SIMULTANEOUS;
             }
         }
-
-        return output;
     }
 
 } // namespace PhaseTracer

@@ -46,6 +46,7 @@ namespace PhaseTracer {
         add_thermal_parameter_values(output.onset, output.decay_rate, output.eos, output.transition_metrics);
 
         output.percolation = output.transition_metrics.percolation_milestone;
+        output.percolation.nucleation_type = output.transition_metrics.nucleation_type;
         output.percolation.set_print_setting(percolation_print_setting);
         add_thermal_parameter_values(output.percolation, output.decay_rate, output.eos, output.transition_metrics);
 

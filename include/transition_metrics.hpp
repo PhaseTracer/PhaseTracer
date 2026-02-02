@@ -29,6 +29,7 @@
 #include <boost/math/quadrature/trapezoidal.hpp>
 #include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <boost/math/tools/roots.hpp>
+#include <boost/math/tools/minima.hpp>
 
 #include "property.hpp"
 #include "phase_finder.hpp"
@@ -262,6 +263,8 @@ public :
     TransitionMilestone completion_milestone;
     TransitionMilestone nucleation_milestone;
 
+    NucleationType nucleation_type;
+
     TransitionMetrics(const FalseVacuumDecayRate& decay_rate_in, const EquationOfState& eos_in) :
     decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
     {
@@ -278,12 +281,15 @@ public :
         LOG(info) << "log_extended_volume spline created in " << duration_log_extended_volume_calculation.count() << " ms" << std::endl;
     }
 
-    void compute_milestones() {
+    void compute_milestones() 
+    {
         onset_milestone = get_transition_milestone(MilestoneType::ONSET);
         percolation_milestone = get_transition_milestone(MilestoneType::PERCOLATION);
         completion_milestone = get_transition_milestone(MilestoneType::COMPLETION);
         nucleation_milestone = get_transition_milestone(MilestoneType::NUCLEATION);
     }
+
+    void compute_nucleation_type(const double& t_guess, const double& t_min, const double& t_max);
 
     const double get_hubble_rate(const double& T);
 
