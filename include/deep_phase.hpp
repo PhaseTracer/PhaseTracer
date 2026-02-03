@@ -192,14 +192,14 @@ get_pt_params_from_transition_milestone(
 	}
 
 	if (model == EoSModel::BAG) {
-		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, nuc_type, un, 1./3., 1./3.);
+		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, nuc_type, un, 1./3., 1./3.);
 	} else if (model == EoSModel::MUNU) {
-		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, dtau, nuc_type, un, cs_plus*cs_plus, cs_minus*cs_minus);
+		return PhaseTransition::PTParams_Bag(vw, alpha, Tref, beta, Rs, nuc_type, un, cs_plus*cs_plus, cs_minus*cs_minus);
 	} else {
 		if (!eos_ptr) {
 			throw std::invalid_argument("EquationOfState required for VEFF model but not provided");
 		}
-		return PhaseTransition::PTParams_Veff(vw, alpha, Tref, beta, Rs, dtau, nuc_type, un, *eos_ptr);
+		return PhaseTransition::PTParams_Veff(vw, alpha, Tref, beta, Rs, nuc_type, un, *eos_ptr);
 	}
 }
 
