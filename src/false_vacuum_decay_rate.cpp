@@ -145,6 +145,14 @@ namespace PhaseTracer {
         return dy*exp(y);
     }
 
+    double 
+    FalseVacuumDecayRate::get_action_double_deriv(const double& temperature) const
+    {
+        double y, dy, ddy;
+        alglib::spline1ddiff(log_action_spline, temperature, y, dy, ddy);
+        return (dy*dy + ddy) * exp(y);
+    }
+
     double
     FalseVacuumDecayRate::get_gamma(const double& temperature) const
     {

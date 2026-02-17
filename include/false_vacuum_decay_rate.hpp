@@ -102,6 +102,13 @@ public:
     double get_action_deriv(const double& temperature) const;
 
     /** 
+     * @brief Computes d^2(S/T)/dT^2 at a given temperature using the precomputed spline.
+     * @param temperature The temperature at which to evaluate the action.
+     * @return The second derivative of the action at the specified temperature.
+    */
+    double get_action_double_deriv(const double& temperature) const;
+
+    /** 
      * @brief Computes the false vacuum decay rate at a given temperature using the precomputed spline.
      * @param temperature The temperature at which to evaluate the action.
      * @return The false vacuum decay rate at the specified temperature.
