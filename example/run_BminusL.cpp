@@ -16,7 +16,7 @@
 #include "phasetracer.hpp"
 #include "gravwave_calculator.hpp"
 
-void printPaths(std::vector<TransitionGraph::Path> paths) {
+void printPaths(const std::vector<TransitionGraph::Path>& paths) {
   if (paths.size() == 0) {
     std::cout << "Found no paths!" << std::endl
               << std::endl;
@@ -33,14 +33,18 @@ void printPaths(std::vector<TransitionGraph::Path> paths) {
 }
 
 int main(int argc, char *argv[]) {
+
+  if (argc < 3) {
+    std::cerr << "Usage: " << argv[0] << " <input-file> <output-folder> [options]" << std::endl;
+    return 1;
+  }
+
   bool check_subcrit = false;
   bool allow_phase_oscillation = false;
   bool bDebug = false;
   bool bTrace = false;
   bool bPlot = false;
   bool bNoTransitionPathFinding = false;
-  double dx = -1;
-  double dt = -1;
 
   std::vector<std::string> args;
 
@@ -87,16 +91,6 @@ int main(int argc, char *argv[]) {
       bNoTransitionPathFinding = true;
       continue;
     }
-
-    if (dx < 0 && args[i].compare(0, 3, "dx=") == 0) {
-      dx = std::stod(args[i].substr(3, args[i].size() - 3));
-      continue;
-    }
-
-    if (dt < 0 && args[i].compare(0, 3, "dt=") == 0) {
-      dt = std::stod(args[i].substr(3, args[i].size() - 3));
-      continue;
-    }
   }
 
   // Set level of screen output
@@ -106,38 +100,13 @@ int main(int argc, char *argv[]) {
 
   // Construct model
   EffectivePotential::BminusL model(inputFileName);
-  ///Very likely connected to the problem!
-  std::ifstream inputFile(inputFileName);
-
-  if (!inputFile)
-    {
-      std::cerr << "Cannot open the file: " << inputFileName << std::endl;
-      return -1;
-    }
- 
-  std::string line;
-  std::vector<double> data;
-  int dataValues = 4;
- 
-  std::getline(inputFile, line);
-  if (line.size() == 0)
-    {
-      std::cerr << "Parameter point line is empty!" << std::endl;
-      return -1;
-    }
+  ///get mass scale to rescale settings
+  const double mass_scale = model.get_vphi();
+  const double small_scale = mass_scale * pow(10, -3);
   
-  // Keep only the first 4 values, in case there is other data stored in the file.
-  data = model.split(line, ' ', dataValues);
-  std::cout << "passed vev = " << data[1] << std::endl; 
-  double mass_scale = data[1];
-  double small_scale = mass_scale*pow(10, -3);
-  inputFile.close();
-
-
-  ///Very likely connected to the problem!
+  ///Rescale step size used in derivatives of the potential
   model.set_h(0.001 * small_scale);
-  //model.set_h(0.001*pow(10,7));
-  //model.set_h(0.001);
+ 
   double Ttest = 1.5*pow(10,10);
   Eigen::VectorXd phitest(1);
   phitest(0) = pow(10,10);
@@ -183,7 +152,7 @@ int main(int argc, char *argv[]) {
   PhaseTracer::PhaseFinder pf(model);
   pf.set_t_high(1.5 * mass_scale); //Essential
  
-  pf.set_v(mass_scale);
+  pf.set_v(mass_scale); // PA: maybe can delete this one
 
  
   pf.set_upper_bounds({10 * mass_scale}); //Essential
@@ -207,14 +176,14 @@ int main(int argc, char *argv[]) {
  
   /// initial minimum step step size for locating,
   pf.set_find_min_locate_abs_step(1. * small_scale); // Essential
- 
+
   /// set to the smaller of time_scale*dt_max_rel and dt_max_abs 
   //  so if this stays fixed as scale increases can be a problem,
   // dt steps get smaller and smaller relative to T
-  pf.set_dt_max_abs(50 * small_scale); //Essential
+  pf.set_dt_max_abs(50 * small_scale); //Essential // PA: need to recheck this
  
   // set to maximum of dt_min_rel * time_scale and dt_min_abs so as scale increases dt_min_rel * time_scale dominates and abs is irrelevant
-  pf.set_dt_min_abs(1.e-10 * small_scale);//
+  pf.set_dt_min_abs(1.e-10 * small_scale);// PA: need to recheck this
  
   /** Tolerance for checking whether Hessian was singular */
   //pf.hessian_singular_rel_tol(1.e-2);
