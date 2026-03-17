@@ -103,6 +103,9 @@ public:
     init(data[0], data[1], data[2], data[3],  data[4], data[5]);
   }
 
+  // Add a getter for the VEV so we can use this to re-scale settings 
+  double get_vphi() const { return vphi; }
+
   double V(Eigen::VectorXd phi, double T) const override
   {  
     const double T2 =T*T;
