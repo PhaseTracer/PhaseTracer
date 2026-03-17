@@ -22,27 +22,38 @@
 #include "pow.hpp"
 #include <iostream>
 #include <fstream>
-#include "boost/filesystem.hpp"
 #include <vector>
 #include <cmath>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 #include "thermal_function.hpp"
+#include "boost/filesystem.hpp"
 
 
-double logx(double x) {
-  const double abs_x = std::abs(x);
-  if (abs_x <= std::numeric_limits<double>::min()) {
-    return 0.;
-  } else {
-    return std::log(abs_x);
+
+
+namespace EffectivePotential {
+
+  inline double logx(double x) {
+    const double abs_x = std::abs(x);
+    if (abs_x <= std::numeric_limits<double>::min()) {
+      return 0.;
+    } else {
+      return std::log(abs_x);
+    }
   }
-}
 
-namespace EffectivePotential
-{
 class BminusL : public Potential
 {
 private:
-  double lp, ls, lps, gbl, lr1, lr2, lr3, MR1, MR2, MR3, B, vphi;
+  double lps = 0.;
+  double gbl = 0.;
+  double lr1 = 0.;
+  double lr2 = 0.;
+  double lr3 = 0.;
+  double vphi = 1.;
   
   void init(double lps_,  double vphi_, double gbl_, double lr1_, double lr2_, double lr3_)
   {
@@ -51,7 +62,9 @@ private:
     gbl = gbl_;
     lr1 = lr1_;
     lr2 = lr2_;
-    lr3 = lr3_; 
+    lr3 = lr3_;
+    field_scale = vphi;
+    temperature_scale = vphi;
   }
 
 public:
@@ -94,20 +107,20 @@ public:
   {  
     const double T2 =T*T;
     const double vphi2 =vphi*vphi;
-    const double pSq =phi[0]*phi[0];
+    const double phi_sq =phi[0]*phi[0];
     const double T4 =T2*T2;
-    const double B =0.607927*(lps*lps*0.0104167+gbl*gbl*gbl*gbl-(lr1*lr1*lr1*lr1+lr2*lr2*lr2*lr2+lr3*lr3*lr3*lr3)*0.0104167);
+    const double B_CW =0.607927*(lps*lps*0.0104167+gbl*gbl*gbl*gbl-(lr1*lr1*lr1*lr1+lr2*lr2*lr2*lr2+lr3*lr3*lr3*lr3)*0.0104167);
     const double IPi2 = 0.10132118364233777144;
-    const double VzeroT = 0.25*B*pSq*pSq*(0.5*logx(pSq)-0.5*logx(vphi2)-0.25);
+    const double VzeroT = 0.25*B_CW*phi_sq*phi_sq*(0.5*logx(phi_sq)-0.5*logx(vphi2)-0.25);
     if(T==0.0) return VzeroT;
     else return 
 	   VzeroT
-	   +    IPi2*T4*J_B((0.5*lps*pSq)/(T2))
-	   +1.5*IPi2*T4*J_B((4*gbl*gbl*pSq)/(T2))
-	   +    IPi2*T4*J_F((lr1*lr1*pSq)/(2*T2))+IPi2*T4*J_F((lr2*lr2*pSq)/(2*T2))
-	   + IPi2*T4*J_F((lr3*lr3*pSq)/(2*T2))
-	   -0.0187566*std::pow(T2, 0.5)*std::pow(lps, 1.5)*(std::pow(pSq+0.0833333*T2, 1.5)-abs(pSq*std::pow((pSq),0.5)))
-	   -0.212207*std::pow(T2, 0.5)*std::pow(gbl, 3)*(std::pow(pSq+T2, 1.5) - std::pow(abs(pSq),1.5));
+	   +    IPi2*T4*J_B((0.5*lps*phi_sq)/(T2))
+	   +1.5*IPi2*T4*J_B((4*gbl*gbl*phi_sq)/(T2))
+	   +    IPi2*T4*J_F((lr1*lr1*phi_sq)/(2*T2))+IPi2*T4*J_F((lr2*lr2*phi_sq)/(2*T2))
+	   + IPi2*T4*J_F((lr3*lr3*phi_sq)/(2*T2))
+	   -0.0187566*std::pow(T2, 0.5)*std::pow(lps, 1.5)*(std::pow(phi_sq+0.0833333*T2, 1.5)-abs(phi_sq*std::pow((phi_sq),0.5)))
+	   -0.212207*std::pow(T2, 0.5)*std::pow(gbl, 3)*(std::pow(phi_sq+T2, 1.5) - std::pow(abs(phi_sq),1.5));
 	}
   size_t get_n_scalars() const override { return 1; }
   std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const override {
