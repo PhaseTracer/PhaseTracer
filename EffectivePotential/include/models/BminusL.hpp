@@ -15,6 +15,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
+// This is the effective potential for a minimal confromal B-L model (lps =0)
+// and its singlet extension (lps != 0)  implemented for https://arxiv.org/abs/2511.10288
+// Model written and provided by Zhao-Yang Zhang, Satyabrata Datta and Peter Athron
+// Uses simple treatment of resumming logs locally around v
+// Added to illustrate a model that is relevant over many different input mass scales
+
 #ifndef POTENTIAL_BminusL_HPP_INCLUDED
 #define POTENTIAL_BminusL_HPP_INCLUDED
 #include "potential.hpp"
