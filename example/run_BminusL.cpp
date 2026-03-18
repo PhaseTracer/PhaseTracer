@@ -106,63 +106,13 @@ int main(int argc, char *argv[]) {
   
   ///Rescale step size used in derivatives of the potential
   model.set_h(0.001 * small_scale);
- 
-  double Ttest = 1.5*pow(10,10);
-  Eigen::VectorXd phitest(1);
-  phitest(0) = pow(10,10);
-  Eigen::VectorXd phizero(1);
-  phizero(0) = 0.0;
-  std::cout << "model.V(phitest, Ttest) = " << model.V(phitest, Ttest) << std::endl;
-  std::cout << "model.V(phitest, 0) = " << model.V(phitest, 0) << std::endl;
-  std::cout << "model.V(0, Ttest) = " << model.V(phizero, Ttest) << std::endl;
- 
-  std::cout << "model.V(0, 0) = " << model.V(phizero, 0) << std::endl;
- 
-  std::cout << " model.V(phitest, Ttest) -  model.V(0, 0) = "  <<  model.V(phitest, Ttest) -  model.V(phizero, 0) << std::endl; 
-  std::cout << " should equal zero = " << std::pow(0,0.5) << std::endl;
-  std::cout << " should equal zero = " << std::pow(0.0,0.5) << std::endl;
- 
-  std::cout << " should also equal zero = " << std::pow(phizero(0),0.5) << std::endl;
-  std::cout <<  " JB(0) = "  << EffectivePotential::J_B(0) << std::endl;
 
-
- 
-  double stepsize = 0.001*small_scale;
-  // double stepsize = 0.001*pow(10,7);
-  std::cout << "test stepsize = " <<  stepsize << std::endl;
-  //Ttest = 15000000000;
-  Ttest=0;
-  //phitest(0) =  1354.0946118877914;
-  //phitest(0) = -919.21635596052397;
-  phitest(0) = 0.6782 * mass_scale;
-  Eigen::VectorXd phitestplus = phitest;
-  Eigen::VectorXd phitestminus = phitest;
-  phitestplus(0) += stepsize;
-  phitestminus(0) -= stepsize;
-  std::cout << "  model.V(phitest=-919.1...., 0) = "  << model.V(phitest, 0)<< std::endl;
-  std::cout << "  model.V(phitestplus=" <<phitestplus << ",  0) = "  << model.V(phitestplus, 0)<< std::endl;
-  std::cout << "  model.V(phitestminus=" <<phitestminus << ",  0) = "  << model.V(phitestminus, 0)<< std::endl;
-  double deriv_2nd_order = (model.V(phitestplus, Ttest) - model.V(phitestminus, Ttest)) / (2*stepsize);
-  double double_deriv =   (model.V(phitestplus, Ttest) + model.V(phitestminus, Ttest) - 2 * model.V(phitest, Ttest)) / (stepsize*stepsize);
-  std::cout << "deriv_2nd_order = "  << deriv_2nd_order << std::endl;
-  std::cout << "double_deriv = "     << double_deriv    << std::endl;
- 
- 
- 
   PhaseTracer::PhaseFinder pf(model);
   pf.set_t_high(1.5 * mass_scale); //Essential
- 
-  pf.set_v(mass_scale); // PA: maybe can delete this one
 
- 
   pf.set_upper_bounds({10 * mass_scale}); //Essential
   pf.set_lower_bounds({-10 * mass_scale}); //Essential
- 
-  std::cout << "pf.get_upper_bounds() = " << *(pf.get_upper_bounds().begin()) << std::endl;
-  std::cout << "pf.get_lower_bounds() = " << *(pf.get_lower_bounds().begin()) << std::endl;
- 
-  /// seems like it should be ok as we have relative tolerance overwealming it when small
-  // unless we compare to phases which are very close maybe...
+
   pf.set_x_abs_identical(1 * small_scale); // Essential to scale
   pf.set_seed(10.23);
   pf.set_x_abs_jump(0.5*small_scale);
@@ -173,17 +123,16 @@ int main(int argc, char *argv[]) {
 
   /// initial mimum step step size for tracing
   pf.set_find_min_trace_abs_step(1. * small_scale);
- 
   /// initial minimum step step size for locating,
   pf.set_find_min_locate_abs_step(1. * small_scale); // Essential
 
   /// set to the smaller of time_scale*dt_max_rel and dt_max_abs 
   //  so if this stays fixed as scale increases can be a problem,
   // dt steps get smaller and smaller relative to T
-  pf.set_dt_max_abs(50 * small_scale); //Essential // PA: need to recheck this
- 
-  // set to maximum of dt_min_rel * time_scale and dt_min_abs so as scale increases dt_min_rel * time_scale dominates and abs is irrelevant
-  pf.set_dt_min_abs(1.e-10 * small_scale);// PA: need to recheck this
+  // dt_max is set to minimum of dt_max_rel * time_scale and dt_max_abs
+  pf.set_dt_max_abs(50 * small_scale); //Essential when mass scale is much higher than EW
+  // dt_min is set to maximum of dt_min_rel * time_scale and dt_min_abs
+  pf.set_dt_min_abs(1.e-10 * small_scale);//Essential when mass scale is much lower than EW
  
   /** Tolerance for checking whether Hessian was singular */
   //pf.hessian_singular_rel_tol(1.e-2);
