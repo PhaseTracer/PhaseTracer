@@ -1,5 +1,6 @@
 /**
-        Generates and outputs the phase structure for a toy model.
+        Generates and outputs the phase structure for minimal B-L (lps =) and its singlet extension (lps !=0).
+	This illustrates how to change settings for models with varying scales.
 */
 
 #include "models/BminusL.hpp"
