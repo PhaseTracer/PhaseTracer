@@ -67,7 +67,7 @@ struct Transition {
   PolynomialFitterEigen action_curve;
   double TP;
 
-  Transition(Message message) : message(message){};
+  Transition(Message message) : message(message) {};
 
   Transition(Message message,
              double TC,
