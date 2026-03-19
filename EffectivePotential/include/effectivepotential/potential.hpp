@@ -22,9 +22,9 @@
 
 #include <eigen3/Eigen/Core>
 #ifdef __APPLE__
-  #include <interpolation.h>
+#include <interpolation.h>
 #else
-  #include <libalglib/interpolation.h>
+#include <libalglib/interpolation.h>
 #endif
 
 #include "property.hpp"
