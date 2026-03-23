@@ -34,19 +34,11 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include "one_loop_potential.hpp"
 #include "thermal_function.hpp"
 #include "boost/filesystem.hpp"
 
 namespace EffectivePotential {
-
-inline double logx(double x) {
-  const double abs_x = std::abs(x);
-  if (abs_x <= std::numeric_limits<double>::min()) {
-    return 0.;
-  } else {
-    return std::log(abs_x);
-  }
-}
 
 class BminusL : public Potential {
 private:
@@ -108,13 +100,22 @@ public:
     const double vphi2 = vphi * vphi;
     const double phi_sq = phi[0] * phi[0];
     const double T4 = T2 * T2;
-    const double B_CW = 0.607927 * (lps * lps * 0.0104167 + gbl * gbl * gbl * gbl - (lr1 * lr1 * lr1 * lr1 + lr2 * lr2 * lr2 * lr2 + lr3 * lr3 * lr3 * lr3) * 0.0104167);
-    const double IPi2 = 0.10132118364233777144;
-    const double VzeroT = 0.25 * B_CW * phi_sq * phi_sq * (0.5 * logx(phi_sq) - 0.5 * logx(vphi2) - 0.25);
+
+    const double IPi2 = 0.10132118364233777144;//= 1. / (M_PI * M_PI);
+    const double I12PiSqrt2 = 0.01875658991993971; // = 1. / (12. * M_PI * std::sqrt(2.));
+    const double twoI3Pi = 0.2122065907891938;  //2. / (3. * M_PI);
+    const double I96 = 0.01041666666666667; //1. / 96.;
+    const double I12 = 0.08333333333333333; //1. / 12.;
+    const double sixIPi2=0.6079271018540266;
+
+    const double B_CW = sixIPi2 * (lps * lps * I96 + gbl * gbl * gbl * gbl - (lr1 * lr1 * lr1 * lr1 + lr2 * lr2 * lr2 * lr2 + lr3 * lr3 * lr3 * lr3) * I96);
+
+    const double VzeroT = 0.25 * B_CW * (0.5* vphi2 * phi_sq * xlogx(phi_sq / vphi2) - 0.25 * phi_sq * phi_sq);
+
     if (T == 0.0)
       return VzeroT;
     else
-      return VzeroT + IPi2 * T4 * J_B((0.5 * lps * phi_sq) / (T2)) + 1.5 * IPi2 * T4 * J_B((4 * gbl * gbl * phi_sq) / (T2)) + IPi2 * T4 * J_F((lr1 * lr1 * phi_sq) / (2 * T2)) + IPi2 * T4 * J_F((lr2 * lr2 * phi_sq) / (2 * T2)) + IPi2 * T4 * J_F((lr3 * lr3 * phi_sq) / (2 * T2)) - 0.0187566 * std::pow(T2, 0.5) * std::pow(lps, 1.5) * (std::pow(phi_sq + 0.0833333 * T2, 1.5) - abs(phi_sq * std::pow((phi_sq), 0.5))) - 0.212207 * std::pow(T2, 0.5) * std::pow(gbl, 3) * (std::pow(phi_sq + T2, 1.5) - std::pow(abs(phi_sq), 1.5));
+      return VzeroT + IPi2 * T4 * J_B((0.5 * lps * phi_sq) / (T2)) + 1.5 * IPi2 * T4 * J_B((4 * gbl * gbl * phi_sq) / (T2)) + IPi2 * T4 * J_F((lr1 * lr1 * phi_sq) / (2 * T2)) + IPi2 * T4 * J_F((lr2 * lr2 * phi_sq) / (2 * T2)) + IPi2 * T4 * J_F((lr3 * lr3 * phi_sq) / (2 * T2)) - I12PiSqrt2 * std::pow(T2, 0.5) * std::pow(lps, 1.5) * (std::pow(phi_sq + I12 * T2, 1.5) - abs(phi_sq * std::pow((phi_sq), 0.5))) - twoI3Pi * std::pow(T2, 0.5) * std::pow(gbl, 3) * (std::pow(phi_sq + T2, 1.5) - std::pow(abs(phi_sq), 1.5));
   }
   size_t get_n_scalars() const override { return 1; }
   std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const override {
