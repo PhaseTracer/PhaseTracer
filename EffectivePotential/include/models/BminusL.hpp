@@ -101,16 +101,16 @@ public:
     const double phi_sq = phi[0] * phi[0];
     const double T4 = T2 * T2;
 
-    const double IPi2 = 0.10132118364233777144;//= 1. / (M_PI * M_PI);
+    const double IPi2 = 0.10132118364233777144;    //= 1. / (M_PI * M_PI);
     const double I12PiSqrt2 = 0.01875658991993971; // = 1. / (12. * M_PI * std::sqrt(2.));
-    const double twoI3Pi = 0.2122065907891938;  //2. / (3. * M_PI);
-    const double I96 = 0.01041666666666667; //1. / 96.;
-    const double I12 = 0.08333333333333333; //1. / 12.;
-    const double sixIPi2=0.6079271018540266;
+    const double twoI3Pi = 0.2122065907891938;     // 2. / (3. * M_PI);
+    const double I96 = 0.01041666666666667;        // 1. / 96.;
+    const double I12 = 0.08333333333333333;        // 1. / 12.;
+    const double sixIPi2 = 0.6079271018540266;
 
     const double B_CW = sixIPi2 * (lps * lps * I96 + gbl * gbl * gbl * gbl - (lr1 * lr1 * lr1 * lr1 + lr2 * lr2 * lr2 * lr2 + lr3 * lr3 * lr3 * lr3) * I96);
 
-    const double VzeroT = 0.25 * B_CW * (0.5* vphi2 * phi_sq * xlogx(phi_sq / vphi2) - 0.25 * phi_sq * phi_sq);
+    const double VzeroT = 0.25 * B_CW * (0.5 * vphi2 * phi_sq * xlogx(phi_sq / vphi2) - 0.25 * phi_sq * phi_sq);
 
     if (T == 0.0)
       return VzeroT;
