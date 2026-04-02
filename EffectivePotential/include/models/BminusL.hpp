@@ -97,13 +97,13 @@ public:
     init(data[0], data[1], data[2], data[3], data[4], data[5]);
   }
 
-  BminusL(const std::vector<double>& point) {
+  BminusL(const std::vector<double> &point) {
     if (point.size() < 6) {
       throw std::runtime_error("BminusL expects at least 6 input parameters.");
     }
     init(point[0], point[1], point[2], point[3], point[4], point[5]);
   }
-  
+
   // Add a getter for the VEV so we can use this to re-scale settings
   double get_vphi() const { return vphi; }
 
