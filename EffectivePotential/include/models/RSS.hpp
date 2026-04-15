@@ -195,6 +195,9 @@ public:
     bUseGoldstoneResummation = flag;
   }
 
+  double get_raddof() const override { return 22.25; }
+  double get_minimum_temperature() const override { return 0.1; }
+
   double V0(Eigen::VectorXd phi) const override {
     double h = phi[0];
     double s = phi[1];
