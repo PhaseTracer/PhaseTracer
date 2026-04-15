@@ -19,6 +19,7 @@
 #define EFFECTIVEPOTENTIAL_POTENTIAL_HPP_
 
 #include <vector>
+#include <stdexcept>
 
 #include <eigen3/Eigen/Core>
 #ifdef __APPLE__
@@ -69,6 +70,26 @@ public:
 
   /** Functor that returns potential */
   double operator()(Eigen::VectorXd phi, double T) const { return V(phi, T); }
+
+  /** Number of relativistic radiation degrees of freedom not explicitly included in V(phi,T).
+   *  Used by TransitionSolver, not by PhaseTracer itself.
+   */
+  virtual double get_raddof() const {
+    throw std::runtime_error(
+        "EffectivePotential::Potential::get_raddof() was called, but this "
+        "model does not define raddof. "
+        "Add get_raddof() to the derived PT model if it is to be used by TransitionSolver.");
+  }
+
+  /** Minimum temperature to which TransitionSolver should continue the analysis.
+   *  Used by TransitionSolver, not by PhaseTracer itself.
+   */
+  virtual double get_minimum_temperature() const {
+    throw std::runtime_error(
+        "EffectivePotential::Potential::get_minimum_temperature() was called, "
+        "but this model does not define minimum_temperature. "
+        "Add get_minimum_temperature() to the derived PT model if it is to be used by TransitionSolver.");
+  }
 
   /** Set approximation order of derivatives */
   void set_h_4(bool h_4_) {

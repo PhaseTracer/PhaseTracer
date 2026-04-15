@@ -107,6 +107,9 @@ public:
   // Add a getter for the VEV so we can use this to re-scale settings
   double get_vphi() const { return vphi; }
 
+  double get_raddof() const override { return 106.0; }
+  double get_minimum_temperature() const override { return 0.01; }
+
   double V(Eigen::VectorXd phi, double T) const override {
     const double T2 = T * T;
     const double vphi2 = vphi * vphi;
