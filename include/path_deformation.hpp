@@ -166,9 +166,6 @@ private:
   /* Number of samples to take along the path to create the spline
    interpolation functions */
   PROPERTY(size_t, V_spline_samples, 100);
-  /* Flag to extend the path to minimums*/
-  PROPERTY(bool, extend_to_minima, true);
-
   /** Pass through the shooting settings **/
   /* The precision of field values after taking the logarithm */
   PROPERTY(double, xtol, 1e-4)
