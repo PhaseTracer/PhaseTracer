@@ -90,6 +90,7 @@ private:
   /** Number of samples to take along the path to create the spline
    interpolation functions */
   PROPERTY(size_t, PD_V_spline_samples, 100);
+
 public:
   explicit ActionCalculator(EffectivePotential::Potential &potential_) : potential(potential_) {
   }
