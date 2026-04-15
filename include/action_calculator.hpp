@@ -90,9 +90,6 @@ private:
   /** Number of samples to take along the path to create the spline
    interpolation functions */
   PROPERTY(size_t, PD_V_spline_samples, 100);
-  /** Flag to extend the path to minimums*/
-  PROPERTY(bool, PD_extend_to_minima, true);
-
 public:
   explicit ActionCalculator(EffectivePotential::Potential &potential_) : potential(potential_) {
   }
@@ -208,7 +205,6 @@ public:
         pd.set_step_maxiter(PD_step_maxiter);
         pd.set_path_maxiter(PD_path_maxiter);
         pd.set_V_spline_samples(PD_V_spline_samples);
-        pd.set_extend_to_minima(PD_extend_to_minima);
 
         /** Pass through the shooting settings */
         pd.set_xtol(PD_xtol);
