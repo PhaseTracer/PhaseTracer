@@ -114,6 +114,9 @@ public:
 
   bool forbidden(Eigen::VectorXd x) const override { return false; }
 
+  double get_raddof() const override { return 100.0; }
+  double get_minimum_temperature() const override { return 0.1; }
+
   // Based on https://stackoverflow.com/questions/236129/how-do-i-iterate-over-the-words-of-a-string
   template <typename DataType>
   void split(const std::string &inputString, char delimiter, DataType result, int keepCount) {
