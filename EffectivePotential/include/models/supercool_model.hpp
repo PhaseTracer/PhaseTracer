@@ -99,11 +99,8 @@ public:
     return elements;
   }
 
-  /*double V(Eigen::VectorXd phi, double T) const override
-  {
-          // Subtract off the radiation energy density from the light particles that are not included explicitly in the one-loop corrections.
-          return OneLoopPotential::V(phi, T) - M_PI*M_PI/90.*raddof*pow(T, 4);
-  }*/
+  double get_raddof() const override { return 25.75; }
+  double get_minimum_temperature() const override { return 0.0001; }
 
   double V0(Eigen::VectorXd phi) const override {
     return -0.5 * mu_sq * pow(phi[0], 2) + kappa * pow(phi[0], 3) / 3 + 0.25 * lambda * pow(phi[0], 4);
@@ -212,7 +209,6 @@ private:
   PROPERTY(double, yt, 0.9946)
   PROPERTY(double, g, 0.6535)
   PROPERTY(double, g1, 0.35)
-  PROPERTY(double, raddof, 25.75)
   PROPERTY(bool, bUseBoltzmannSuppression, false)
   PROPERTY(double, MAX_BOLTZ_EXP, 12.);
 };
