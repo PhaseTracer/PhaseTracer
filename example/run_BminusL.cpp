@@ -119,8 +119,8 @@ int main(int argc, char *argv[]) {
   pf.set_x_abs_jump(0.5 * small_scale);
   // passed to nlopt:opt
   pf.set_find_min_x_tol_abs(0.0001 * small_scale);
-
-  pf.set_find_min_min_step(1e-4); // scaling doesn't affect the time either way
+  // This doesn't affect highscale conformal BminusL as longs a its small enough  // For low scales well below EW scale you may need to rescale this also
+  pf.set_find_min_min_step(1e-4);
 
   /// initial mimum step step size for tracing
   pf.set_find_min_trace_abs_step(1. * small_scale);
