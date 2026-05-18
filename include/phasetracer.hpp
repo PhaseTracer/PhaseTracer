@@ -27,7 +27,6 @@
 #include "potential_plotter.hpp"
 #include "potential_line_plotter.hpp"
 #include "spectrum_plotter.hpp"
-#include "thermal_legacy.hpp"
 #include "false_vacuum_decay_rate.hpp"
 #include "equation_of_state.hpp"
 #include "transition_metrics.hpp"

@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "transition_finder.hpp"
-#include "thermal_legacy.hpp"
 #ifdef BUILD_WITH_DP
 #include "deep_phase.hpp"
 #endif
@@ -61,13 +60,10 @@ struct GravWaveSpectrum {
   }
 };
 
-/** Whether gc is initialused with TransitionFinder or ThermalParameters */
-enum class GWCalcMode { FromTransition, FromThermalParameters };
-
 class GravWaveCalculator {
 
 public:
-  explicit GravWaveCalculator(const TransitionFinder &tf_) : tf(std::make_unique<TransitionFinder>(tf_)), tp(nullptr), mode(GWCalcMode::FromTransition) {
+  explicit GravWaveCalculator(const TransitionFinder &tf_) : tf(std::make_unique<TransitionFinder>(tf_)) {
     for (const auto &t : tf->get_transitions()) {
       if (std::isnan(t.TN))
         LOG(debug) << "Nucleation temperature dose not exist. GW will not be calculated !";
@@ -75,15 +71,6 @@ public:
         trans.push_back(t);
     }
   }
-
-  // explicit GravWaveCalculator(const ThermalParameters &tp_) : tf(nullptr), tp(std::make_unique<ThermalParameters>(tp_)), mode(GWCalcMode::FromThermalParameters) {
-  //   for (const auto &tps : tp->get_thermal_params()) {
-  //     if (std::isnan(tps.TP))
-  //       LOG(debug) << "Percolation temperature dose not exist. GW will not be calculated!";
-  //     else
-  //       thermal_params.push_back(tps);
-  //   }
-  // }
 
   /** Pretty-printer for set of transitions in this object */
   friend std::ostream &operator<<(std::ostream &o, const GravWaveCalculator &a);
@@ -127,8 +114,6 @@ public:
 
 private:
   std::unique_ptr<TransitionFinder> tf;
-  std::unique_ptr<ThermalLegacy> tp;
-  GWCalcMode mode;
 
   /** Degree of freedom */
   PROPERTY(double, dof, 106.75);
