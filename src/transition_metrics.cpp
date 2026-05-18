@@ -108,7 +108,7 @@ namespace PhaseTracer {
         if(T >= t_max) { return 0.0; }
 
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
-        return 4 * M_PI * vw*vw*vw / 3 * result;
+        return  result;
     }
 
     void
@@ -134,7 +134,7 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_extended_volume_from_spline(const double& T)
     {
-        return exp(alglib::spline1dcalc(log_Vext_spline, T));
+        return 4 * M_PI * vw*vw*vw / 3 * exp(alglib::spline1dcalc(log_Vext_spline, T));
     }
 
     const double
