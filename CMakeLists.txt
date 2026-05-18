@@ -50,6 +50,7 @@ endif(BUILD_WITH_BP)
 
 if(BUILD_WITH_DP)
   add_definitions(-DBUILD_WITH_DP)
+  find_package(GSL REQUIRED)
   find_package(DeepPhase REQUIRED)
 endif(BUILD_WITH_DP)
 

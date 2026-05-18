@@ -22,6 +22,8 @@ if(BUILD_WITH_DP)
   link_libraries(
     ${DeepPhase_LIBRARIES}
     OpenMP::OpenMP_CXX
+    GSL::gsl 
+    GSL::gslcblas
   )
 endif(BUILD_WITH_DP)
 

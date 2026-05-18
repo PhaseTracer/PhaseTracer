@@ -34,8 +34,6 @@ scan.py
 *.json
 /zData/
 /example/Inference/
-MCMClib/
+/example/HydroGravScripts/
+/comparisonData/
 *.pdf
-/msbar_debug/
-
-/example/TestDeepPhase/*.json

@@ -145,6 +145,21 @@ public:
     */
     static std::function<double(double, double)> default_decay_rate_prefactor();
 
+    /** 
+     * @brief Computes the bubble profile at a given temperature.
+     *        Triggers an action evaluation at the specified temperature,
+     *        which populates the bubble profile cache in ActionCalculator.
+     * @param temperature The temperature at which to compute the bubble profile.
+     * @return The bubble profile at the specified temperature.
+    */
+    Profile1D get_bubble_profile(const double& temperature) {
+        if (temperature < t_min || temperature > t_max) {
+            throw std::out_of_range("Temperature is outside the valid range [t_min, t_max].");
+        }
+        ac.get_action(t.true_phase, t.false_phase, temperature);
+        return ac.get_bubble_profile();
+    }
+
 private:
 
     /** Compute splines for action and log(gamma) */

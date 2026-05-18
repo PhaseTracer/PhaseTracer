@@ -82,6 +82,8 @@ struct ThermalParameterSet
     TransitionMetrics transition_metrics;
     double TC;
 
+    NucleationHistory nucleation_history;
+
     TransitionMilestone onset;
     TransitionMilestone percolation;
     TransitionMilestone completion;
@@ -122,7 +124,7 @@ struct ThermalParameterSet
         
         transition_metrics.compute_milestones();
 
-        transition_metrics.compute_nucleation_type(transition_metrics.percolation_milestone.temperature, t_in.false_phase.T.front(), t_in.TC);
+        transition_metrics.compute_nucleation_history(t_in.false_phase.T.front(), t_in.TC);
     }
 
     friend std::ostream &operator<<(std::ostream& o, const ThermalParameterSet &tps) 
@@ -192,9 +194,27 @@ public :
 
     const void add_thermal_parameter_values(TransitionMilestone& milestone, const FalseVacuumDecayRate& decay_rate, const EquationOfState& eos, TransitionMetrics& tm);
 
+    void fill_nucleation_history(NucleationHistory& history, TransitionMilestone& percolation, TransitionMilestone& nucleation, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+
+    void add_history_lists(NucleationHistory& history, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+    
+    const double get_gamma_on_H4(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+
+    const double get_RsH_sim(const double& gammaH4, const double& betaH);
+
+    const double get_RsH_exp(const double& betaH);
+
     const double get_alpha(const double& temperature, const EquationOfState& eos, bool use_munu = false);
 
     const double get_betaH(const double& temperature, const FalseVacuumDecayRate& decay_rate);
+
+    const double get_betaH_eff(const double& vw, const double& RsH);
+
+    const double get_betaH_1(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+
+    const double get_betaH_2(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+
+    const double get_decay_rate_FWHM(const double& target_maximum, const double& target_temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
 
     const double get_H(const double& temperature, TransitionMetrics& tm);
 

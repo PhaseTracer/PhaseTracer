@@ -314,7 +314,7 @@ namespace PhaseTracer {
         double dtt = (t_max - t_min)/(n_temp-1);
         for (double tt = t_min; tt < t_max; tt += dtt) 
         {
-        file << tt << ","
+        file << std::setprecision(15) << tt << ","
             << get_pressure_plus(tt) << "," << get_pressure_minus(tt) << ","
             << get_energy_plus(tt) << "," << get_energy_minus(tt) << ","
             << get_enthalpy_plus(tt) << "," << get_enthalpy_minus(tt) << ","

@@ -22,7 +22,7 @@
 namespace PhaseTracer {
 
     const double
-    TransitionMetrics::get_hubble_rate(const double& T)
+    TransitionMetrics::get_hubble_rate(const double& T) const
     {
         const double e_radiation = dof * M_PI * M_PI * T*T*T*T / 30.;
         const double e_vacuum = abs(eos.get_energy_plus(T) - eos.get_energy_minus(T)); // TODO
@@ -33,14 +33,16 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_dtdT(const double& T)
+    TransitionMetrics::get_dtdT(const double& T) const
     {
         const double prefac = -1./3. * 1/get_hubble_rate(T);
 
         const auto pressure_derivs = eos.get_pressure_derivs_plus(T);
         const double pressure_ratio = use_bag_dtdT ? 3. / T : pressure_derivs[2]/pressure_derivs[1];
 
-        if (pressure_ratio < 0) { return 3./T;} // TODO
+        if (pressure_ratio < 0) {
+            return prefac * 3./T;
+        } // TODO
 
         return prefac * pressure_ratio;
     }
@@ -151,7 +153,7 @@ namespace PhaseTracer {
             double gamma = decay_rate.get_gamma(Tdash);
             double hubble = get_hubble_rate(Tdash);
             double dtdT = get_dtdT(Tdash);
-            return Pf * gamma * dtdT / (hubble*hubble*hubble);
+            return Pf * gamma * dtdT / (hubble*hubble*hubble); // This is missing a factor of hubble?
         };
 
         if(T >= t_max) { return 0.0; }
@@ -209,7 +211,8 @@ namespace PhaseTracer {
     {
         auto integrand = [this](double Tdash) 
         {
-            double H = get_hubble_rate(Tdash);
+            // double H = get_hubble_rate(Tdash);
+            double H = 1.0;
             double dtdT = get_dtdT(Tdash);
             return dtdT*H;
         };
@@ -217,7 +220,7 @@ namespace PhaseTracer {
         if(T >= t_max) { return 0.0; }
         
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
-        return vw * result;
+        return result; // why was vw here?
     }
 
     const RadiiDistribution 
@@ -322,61 +325,84 @@ namespace PhaseTracer {
             output.status = MilestoneStatus::NO;
         }
 
-        // if(type == MilestoneType::PERCOLATION && output.status == MilestoneStatus::YES)
-        // {
-        //     bool action_gradient_negative_at_t_min = decay_rate.get_action_deriv(t_min) > 0.0;
-        //     if (action_gradient_negative_at_t_min)
-        //     {
-        //         output.nucleation_type = NucleationType::EXPONENTIAL;
-        //     } else 
-        //     {
-        //         output.nucleation_type = NucleationType::SIMULTANEOUS;
-        //     }
-        // }
-
         return output;
     }
 
     void
-    TransitionMetrics::compute_nucleation_type(const double& t_guess, const double& t_min, const double& t_max)
+    TransitionMetrics::compute_nucleation_history(const double& t_min, const double& t_max)
     {
-        double lower_bound = t_min + 0.05 * (t_guess - t_min);
-        double upper_bound = t_max - 0.05 * (t_max - t_guess);
-
-        auto action_func = [this](double T){
-            return this->decay_rate.get_action(T) / T;
-        };
-
-        int bits = std::numeric_limits<double>::digits;
-        boost::uintmax_t max_iter = 100;
-        
-        try 
+        if(percolation_milestone.status == PhaseTracer::MilestoneStatus::YES) // && nucleation_milestone.status == PhaseTracer::MilestoneStatus::YES
         {
-            auto result = boost::math::tools::brent_find_minima(action_func, lower_bound, upper_bound, bits, max_iter);
+            const double t_guess = percolation_milestone.temperature;
+
+            // TODO this chops off edge effects, can be removed once a better action calc is ready.
+            double lower_bound = t_min + 0.05 * (t_guess - t_min);
+            double upper_bound = t_max - 0.05 * (t_max - t_guess);
+
+            auto action_func = [this](double T){
+                return this->decay_rate.get_action(T) / T;
+            };
+
+            int bits = std::numeric_limits<double>::digits;
+            boost::uintmax_t max_iter = 100;
+
+            NucleationType type_out;
+
+            /*
+                The algorithm below searches for a minimum in the action curve, between the 'safe' temperature
+                bounds defined above (these just try to limit edge effects, but should be refined in future).
+
+                If a minimum is found, but it is at the lower bound (indicating monotonic decrease), it 
+                is assumed to be exponential. Otherwise, we assume it is simultaneous. This is a 
+                simplification.
+            */
             
-            double T_m = result.first;
-            double gamma_m = decay_rate.get_gamma(T_m);
+            try 
+            {
+                LOG(debug) << "Finding minimum T_m between lower bound " << lower_bound << " and upper bound " << upper_bound;
 
-            if ( abs(t_min - T_m) < 1e-6 )
-            {
-                nucleation_type = NucleationType::EXPONENTIAL;
-            } else 
-            {
-                nucleation_type = NucleationType::SIMULTANEOUS;
-            }
-        } catch (const std::exception& e) 
-        {
-            std::cerr << "Error during minima finding: " << e.what() << std::endl;
-            nucleation_type = NucleationType::EXPONENTIAL;
+                auto result = boost::math::tools::brent_find_minima(action_func, lower_bound, upper_bound, bits, max_iter);
+                
+                double T_m = result.first;
+                LOG(info) << "Found minimum T_mm = " << T_m;
 
-            bool action_gradient_negative_at_t_min = decay_rate.get_action_deriv(t_min) > 0.0;
-            if (action_gradient_negative_at_t_min)
+                if (abs(lower_bound - T_m) < 1e-4)
+                {
+                    LOG(debug) << "TM is at lower bound, indicating exponential nucleation. Computing beta.";
+                    type_out = NucleationType::EXPONENTIAL;
+                } else 
+                {
+                    LOG(debug) << "TM is not at lower bound, indicating simultaneous nucleation. Computing beta2.";
+                    type_out = NucleationType::SIMULTANEOUS;
+                    nucleation_history.T_m = T_m; // only store if successful.
+                }
+            } catch (const std::exception& e) 
             {
-                nucleation_type = NucleationType::EXPONENTIAL;
-            } else 
-            {
-                nucleation_type = NucleationType::SIMULTANEOUS;
+                LOG(error) << "Error during minima finding: " << e.what();
+
+                /*
+                    If the above fails, we simply check the gradient at t_min.
+                    This is succeptible to outliers.
+                */
+
+                bool action_gradient_negative_at_t_min = decay_rate.get_action_deriv(t_min) > 0.0;
+                if (action_gradient_negative_at_t_min)
+                {
+                    type_out = NucleationType::EXPONENTIAL;
+                } else 
+                {
+                    type_out = NucleationType::SIMULTANEOUS;
+                    nucleation_history.T_m = 0.0;
+                }
             }
+
+            nucleation_history.nucleation_type = type_out;
+            percolation_milestone.nucleation_type = type_out;
+            nucleation_milestone.nucleation_type = type_out;
+        } else {
+            nucleation_history.nucleation_type = NucleationType::EXPONENTIAL;
+            percolation_milestone.nucleation_type = NucleationType::EXPONENTIAL;
+            nucleation_milestone.nucleation_type = NucleationType::EXPONENTIAL;
         }
     }
 

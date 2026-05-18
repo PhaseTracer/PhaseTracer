@@ -417,8 +417,7 @@ Profile1D Shooting::findProfile(double metaMin, double absMin, double xguess, in
 
     if (not std::isfinite(r0_) or not std::isfinite(x)) {
       if (std::isnan(rf)) {
-        LOG(fatal) << "Failed to retrieve initial conditions on the first try.";
-        std::terminate();
+        throw std::runtime_error("Failed to retrieve initial conditions on the first try.");
       }
       break;
     }

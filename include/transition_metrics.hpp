@@ -68,6 +68,44 @@ enum NucleationType
     SIMULTANEOUS
 }; // enum NucleationType
 
+struct NucleationHistory
+{
+    NucleationType nucleation_type;
+
+    std::vector<double> temperature;
+    std::vector<double> time;
+    std::vector<double> scale_factor;
+    std::vector<double> conformal_time;
+
+    double betaH; // generic betaH, found from T * d(S/T)dT, unused?
+    double betaH_1; // evaluated from d(S(t))dt
+    double betaH_2; // evaluated from d^2(S(t))/dt^2
+
+    double T_m; // temperature for peak Gamma_m
+    double Gamma_m; // Peak Gamma_m, is normalised by H^4
+
+    double T_0; // temperature for beta_1
+    double Gamma_0;
+
+    double Rs_exp; // computed from vw and beta
+    double Rs_sim; // computed from Gamma_m and beta
+
+    double betaH_2_perc;
+    double betaH_2_nuc;
+    double betaH_2_m;
+    double betaH_1_perc;
+    double betaH_1_nuc;
+    double Gamma_0_perc;
+    double Gamma_0_nuc;
+    double Gamma_M;
+    double RsH_exp_perc;
+    double RsH_exp_nuc;
+    double RsH_sim_perc;
+    double RsH_sim_nuc;
+    double RsH_sim_m;
+
+}; // struct NucleationHistory
+
 struct TransitionMilestone
 {
     MilestoneType type;
@@ -78,6 +116,7 @@ struct TransitionMilestone
     double alpha;
     double alpha_munu;
     double betaH;
+    double betaH_eff;
     double H;
     double we;
     double cs_plus;
@@ -140,6 +179,7 @@ public:
             output += "  alpha = " + std::to_string(alpha) + "\n";
             output += "  alpha_munu = " + std::to_string(alpha_munu) + "\n";
             output += "  betaH = " + std::to_string(betaH) + "\n";
+            output += "  betaH_eff = " + std::to_string(betaH_eff) + "\n";
             output += "  H = " + format_double(H) + "\n";
         }
 
@@ -263,7 +303,7 @@ public :
     TransitionMilestone completion_milestone;
     TransitionMilestone nucleation_milestone;
 
-    NucleationType nucleation_type;
+    NucleationHistory nucleation_history;
 
     TransitionMetrics(const FalseVacuumDecayRate& decay_rate_in, const EquationOfState& eos_in) :
     decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
@@ -289,11 +329,11 @@ public :
         nucleation_milestone = get_transition_milestone(MilestoneType::NUCLEATION);
     }
 
-    void compute_nucleation_type(const double& t_guess, const double& t_min, const double& t_max);
+    void compute_nucleation_history(const double& t_min, const double& t_max);
 
-    const double get_hubble_rate(const double& T);
+    const double get_hubble_rate(const double& T) const;
 
-    const double get_dtdT(const double& T);
+    const double get_dtdT(const double& T) const;
 
     const double get_atop_abottom(const double& Ttop, const double& Tbottom);
 

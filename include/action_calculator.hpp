@@ -255,7 +255,7 @@ public:
     return action_PD;
 #endif
   }
-  Profile1D get_bubble_profile() {
+  Profile1D get_bubble_profile() const {
     return bubble_profile;
   }
   std::vector<Eigen::VectorXd> get_tunneling_path() {
