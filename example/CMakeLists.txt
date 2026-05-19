@@ -1,8 +1,14 @@
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
+find_package(GSL REQUIRED)
+find_package(NLopt REQUIRED)
+
 link_libraries(
   phasetracer
   effectivepotential
+  GSL::gsl
+  GSL::gslcblas
+  ${NLopt_LIBRARIES}
 )
 
 add_executable(run_1D_test_model run_1D_test_model.cpp)
