@@ -156,6 +156,8 @@ class ThermoFinder {
 
     PROPERTY(bool, compute_profiles, false);
 
+    PROPERTY(bool, update_percolation_temperature, false);
+
     PROPERTY(double, n_temp_profiles, 250);
 
     PROPERTY(double, vw, 1/sqrt(3.0));
@@ -227,6 +229,12 @@ public :
     const double get_Rbar_integral(const double& temperature, TransitionMetrics& tm);
 
     const double get_dt(const double& temperature, TransitionMetrics& tm);
+
+    const double get_percolation_temperature_wrapper(const double& vw, const double& percolation_target, const TransitionMetrics& tm);
+
+    const double get_vw_wrapper(const double& temperature, const EquationOfState& eos);
+
+    const void revise_percolation_temperature(TransitionMilestone& percolation, const EquationOfState& eos, const TransitionMetrics& tm);
 
 };
 

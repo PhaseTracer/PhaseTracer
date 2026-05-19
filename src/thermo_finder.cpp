@@ -47,6 +47,12 @@ namespace PhaseTracer {
 
         output.percolation = output.transition_metrics.percolation_milestone;
         output.percolation.set_print_setting(percolation_print_setting);
+
+        // update the percolation temperature 
+        if(update_percolation_temperature)
+        {
+            revise_percolation_temperature(output.percolation, output.eos, output.transition_metrics);
+        }
         add_thermal_parameter_values(output.percolation, output.decay_rate, output.eos, output.transition_metrics);
 
         output.completion = output.transition_metrics.completion_milestone;
@@ -388,6 +394,103 @@ namespace PhaseTracer {
     ThermoFinder::get_dt(const double& temperature, TransitionMetrics& tm)
     {
         return tm.get_duration(temperature);
+    }
+
+    const double
+    ThermoFinder::get_percolation_temperature_wrapper(const double& vw, const double& percolation_target, const TransitionMetrics& tm)
+    {
+        auto tm_copy = tm;
+        tm_copy.set_vw(vw);
+        tm_copy.set_percolation_target(percolation_target);
+
+        const auto percolation_milestone = tm_copy.get_transition_milestone(MilestoneType::PERCOLATION);
+        if (percolation_milestone.status == MilestoneStatus::YES || percolation_milestone.status == MilestoneStatus::FAST)
+        {
+            return percolation_milestone.temperature;
+        }
+
+        std::ostringstream message;
+        message << "Failed to find percolation temperature for vw = " << vw
+                << " and percolation_target = " << percolation_target;
+        throw std::runtime_error(message.str());
+    }
+
+    const double
+    ThermoFinder::get_vw_wrapper(const double& temperature, const EquationOfState& eos)
+    {
+        // 2303.10171
+        
+        const double cb = get_cs(temperature, eos).first; 
+        const double alpha = get_alpha(temperature, eos, false);
+        const double wb = eos.get_enthalpy_minus(temperature);
+        const double wp = eos.get_enthalpy_plus(temperature);
+        const double Psi = wb/wp;
+
+        const double vJ = cb * (1 + sqrt(3 * alpha * (1 - cb*cb + 3*cb*cb*alpha)))/(1 + 3*cb*cb*alpha);
+        
+        const double v_low = sqrt((3*alpha + Psi - 1)/(2*(2 - 3*Psi + Psi*Psi*Psi)));
+
+        const double a = 0.2233;
+        const double b = 1.704;
+
+        const double v_high = vJ * (1 - a * pow(1-Psi, b)/alpha);
+
+        LOG(debug) << "In vw calculation: vJ = " << vJ << ", v_low = " << v_low << ", v_high = " << v_high;
+
+        const double p = -3.433;
+
+        const double vw = pow(pow(abs(v_low), p) + pow(abs(v_high), p), 1/p);
+
+        return vw;
+    }
+
+    const void
+    ThermoFinder::revise_percolation_temperature(TransitionMilestone& percolation, const EquationOfState& eos, const TransitionMetrics& tm)
+    {
+        const double vw_initial = vw;
+        const double percolation_temp_initial = percolation.temperature;
+
+        double vw_updated = vw_initial;
+        double percolation_temp_updated = percolation_temp_initial;
+
+        const int max_iter = 100;
+        const double tol      = 1e-10;
+        bool converged = false;
+
+        LOG(info) << "Updated Tp and vw using fixed-point iteration. Initial guess: [vw, Tp] = [" << vw_initial << ", " << percolation_temp_initial << "]\n";
+
+        for (int i = 0; i < max_iter; i++) 
+        {
+            const double vw_new = get_vw_wrapper(percolation_temp_updated, eos);
+            const double Tp_new = get_percolation_temperature_wrapper(vw_new, 0.71, tm);
+
+            const double delta_vw = std::abs(vw_new - vw_updated) / (std::abs(vw_updated) + 1e-30);
+            const double delta_Tp = std::abs(Tp_new - percolation_temp_updated) / (std::abs(percolation_temp_updated) + 1e-30);
+
+            vw_updated = vw_new;
+            percolation_temp_updated = Tp_new;
+
+            LOG(debug) << std::setprecision(10)
+                    << "Iteration " << i << ": [vw, Tp] = [" << vw_updated << ", " << percolation_temp_updated << "]"
+                    << "  |delta_vw| = " << delta_vw << ", |delta_Tp| = " << delta_Tp << "\n";
+
+            if (delta_vw < tol && delta_Tp < tol) 
+            {
+                converged = true;
+                LOG(info) << "Converged after " << i + 1 << " iterations.\n";
+                break;
+            }
+        }
+
+        if (!converged) 
+        {
+            LOG(debug) << "Warning: fixed-point iteration did not converge within " << max_iter << " iterations.\n";
+        }
+
+        LOG(info) << "Final values after iteration: [vw, Tp] = [" << vw_updated << ", " << percolation_temp_updated << "]\n";
+
+        percolation.temperature = percolation_temp_updated;
+        set_vw(vw_updated);
     }
 
 } // namespace PhaseTracer
