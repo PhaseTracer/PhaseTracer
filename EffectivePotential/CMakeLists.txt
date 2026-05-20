@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1...3.15)
+cmake_minimum_required(VERSION 3.10)
 project(EffectivePotential VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 enable_language(CXX)
@@ -7,6 +7,10 @@ enable_language(CXX)
 option(BUILD_WITH_EXAMPLE "Build example programs" OFF)
 
 # packages
+
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)
+endif()
 
 find_package(Eigen3 3.1 REQUIRED)
 find_package(ALGLIB REQUIRED)
