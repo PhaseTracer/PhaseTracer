@@ -19,6 +19,7 @@
 #define PHASETRACER_EQUATION_OF_STATE_HPP_
 
 #include <cmath>
+#include <array>
 #include <vector>
 #include <optional>
 #include <stdexcept>
@@ -54,6 +55,8 @@ private:
         alglib::spline1dinterpolant energy_spline;
         alglib::spline1dinterpolant enthalpy_spline;
         alglib::spline1dinterpolant entropy_spline;
+
+        const alglib::spline1dinterpolant& get_potential_spline() const { return potential_spline; }
 
         EquationOfStateInPhase(Phase phase_in, int n_temp_in, double background_dof_in) :
         phase(phase_in),
@@ -94,6 +97,8 @@ private:
 
     Transition transition;
     double t_min, t_max;
+    alglib::spline1dinterpolant false_potential_spline;
+    alglib::spline1dinterpolant true_potential_spline;
     alglib::spline1dinterpolant p_plus_spline;
     alglib::spline1dinterpolant p_minus_spline;
     alglib::spline1dinterpolant e_plus_spline;
@@ -129,6 +134,8 @@ public:
 
         p_plus_spline = eos_plus.pressure_spline;
         p_minus_spline = eos_minus.pressure_spline;
+        false_potential_spline = eos_plus.get_potential_spline();
+        true_potential_spline = eos_minus.get_potential_spline();
         e_plus_spline = eos_plus.energy_spline;
         e_minus_spline = eos_minus.energy_spline;
         w_plus_spline = eos_plus.enthalpy_spline;
@@ -136,6 +143,9 @@ public:
         s_plus_spline = eos_plus.entropy_spline;
         s_minus_spline = eos_minus.entropy_spline;
     }
+
+    std::array<double, 3> eval_false_potential(double T) const;
+    std::array<double, 3> eval_true_potential(double T) const;
 
     std::pair<double, double> get_energy(double T) const;
     std::pair<double, double> get_pressure(double T) const;

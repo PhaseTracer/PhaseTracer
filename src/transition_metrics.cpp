@@ -58,7 +58,9 @@ namespace PhaseTracer {
         for (int i = 0; i < total_number_temp_steps; i++) 
         {
             double tt = t_min + i * dt;
-            double integrand = get_dtdT(tt) * get_hubble_rate(tt);
+            // double integrand = get_dtdT(tt) * get_hubble_rate(tt);
+            auto potential = eos.eval_false_potential(tt);
+            double integrand = potential[2] / (3. * potential[1]);
             temp_array[i] = tt;
             integrand_array[i] = integrand;
         }

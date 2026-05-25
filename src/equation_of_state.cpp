@@ -16,10 +16,21 @@
 // ====================================================================
 
 #include <cmath>
+#include <array>
 #include "logger.hpp"
 #include "equation_of_state.hpp"
 
 namespace PhaseTracer {
+
+    namespace {
+        std::array<double, 3>
+        eval_potential_spline(const alglib::spline1dinterpolant& potential_spline, double T)
+        {
+            double potential, dpotential, ddpotential;
+            alglib::spline1ddiff(potential_spline, T, potential, dpotential, ddpotential);
+            return {potential, dpotential, ddpotential};
+        }
+    }
 
     void 
     EquationOfState::EquationOfStateInPhase::get_thermodynamic_splines() 
@@ -67,6 +78,20 @@ namespace PhaseTracer {
             LOG(error) << "Error in spline1dbuildcubic: " << e.what() << std::endl;
             throw std::runtime_error("Failed to build thermodynamic splines");
         }
+    }
+
+    std::array<double, 3>
+    EquationOfState::eval_false_potential(double T) const
+    {
+        check_temperature_range(T, "eval_false_potential");
+        return eval_potential_spline(this->false_potential_spline, T);
+    }
+
+    std::array<double, 3>
+    EquationOfState::eval_true_potential(double T) const
+    {
+        check_temperature_range(T, "eval_true_potential");
+        return eval_potential_spline(this->true_potential_spline, T);
     }
 
     std::pair<double, double>
