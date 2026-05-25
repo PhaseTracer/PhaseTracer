@@ -24,10 +24,14 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_hubble_rate(const double& T) const
     {
-        const double e_radiation = dof * M_PI * M_PI * T*T*T*T / 30.;
-        const double e_vacuum = abs(eos.get_energy_plus(T) - eos.get_energy_minus(T)); // TODO
+        double false_vacuum_fraction = 1.0;
+        
+        const double e_false_vacuum = abs(eos.get_energy_minus(T));
+        const double e_true_vacuum = abs(eos.get_energy_plus(T));
 
-        const double Hsq = 8. * M_PI * newtonG/3. * (e_radiation + e_vacuum);
+        const double e_averaged = false_vacuum_fraction * e_false_vacuum + (1 - false_vacuum_fraction) * e_true_vacuum;
+
+        const double Hsq = 8. * M_PI * newtonG/3. * e_averaged;
 
         return sqrt(Hsq);
     }
@@ -58,7 +62,6 @@ namespace PhaseTracer {
         for (int i = 0; i < total_number_temp_steps; i++) 
         {
             double tt = t_min + i * dt;
-            // double integrand = get_dtdT(tt) * get_hubble_rate(tt);
             auto potential = eos.eval_false_potential(tt);
             double integrand = potential[2] / (3. * potential[1]);
             temp_array[i] = tt;
