@@ -76,7 +76,7 @@ namespace PhaseTracer {
 
             for(double tt = t_min; tt < t_max; tt += dt)
             {
-                double dtdT, dt, H, action, gamma, vext, pf, nt, n, Rs, Rbar;
+                double dtdT, dt, H, action, gamma, vext, pf, d_pf, nt, n, Rs, Rbar;
 
                 try {
                     dtdT = output.transition_metrics.get_dtdT(tt);
@@ -86,6 +86,7 @@ namespace PhaseTracer {
                     gamma = output.decay_rate.get_gamma(tt);
                     vext = output.transition_metrics.get_extended_volume_from_spline(tt);
                     pf = output.transition_metrics.get_false_vacuum_fraction(tt);
+                    d_pf = output.transition_metrics.get_d_false_vacuum_fraction_dT(tt);
                     nt =  output.transition_metrics.get_nucleation_rate(tt);
                     n = get_n(tt, output.transition_metrics);
                     Rs = std::pow(n, -1./3.) * H;
@@ -106,6 +107,7 @@ namespace PhaseTracer {
                 profile_out.false_vacuum_decay_rate.push_back(gamma);
                 profile_out.extended_volume.push_back(vext);
                 profile_out.false_vacuum_fraction.push_back(pf);
+                profile_out.d_false_vacuum_fraction.push_back(d_pf);
                 profile_out.nucleation_rate.push_back(nt);
                 profile_out.mean_bubble_separation.push_back(Rs);
                 profile_out.mean_bubble_radius.push_back(Rbar);
@@ -147,8 +149,6 @@ namespace PhaseTracer {
             double dt;
             dt = get_dt(temp, tm);
             milestone.dt = dt * H;
-        } else {
-            return; // redundant
         }
     }
 
@@ -424,7 +424,9 @@ namespace PhaseTracer {
         const double alpha = get_alpha(temperature, eos, false);
         const double wb = eos.get_enthalpy_minus(temperature);
         const double wp = eos.get_enthalpy_plus(temperature);
-        const double Psi = wb/wp;
+        const double Psi = std::min(wb/wp, 1.0);
+
+        LOG(debug) << "In vw calculation: cb = " << cb << ", alpha = " << alpha << ", Psi = " << Psi;
 
         const double vJ = cb * (1 + sqrt(3 * alpha * (1 - cb*cb + 3*cb*cb*alpha)))/(1 + 3*cb*cb*alpha);
         
@@ -462,7 +464,7 @@ namespace PhaseTracer {
         for (int i = 0; i < max_iter; i++) 
         {
             const double vw_new = get_vw_wrapper(percolation_temp_updated, eos);
-            const double Tp_new = get_percolation_temperature_wrapper(vw_new, 0.71, tm);
+            const double Tp_new = get_percolation_temperature_wrapper(vw_new, percolation_target, tm);
 
             const double delta_vw = std::abs(vw_new - vw_updated) / (std::abs(vw_updated) + 1e-30);
             const double delta_Tp = std::abs(Tp_new - percolation_temp_updated) / (std::abs(percolation_temp_updated) + 1e-30);
@@ -470,9 +472,7 @@ namespace PhaseTracer {
             vw_updated = vw_new;
             percolation_temp_updated = Tp_new;
 
-            LOG(debug) << std::setprecision(10)
-                    << "Iteration " << i << ": [vw, Tp] = [" << vw_updated << ", " << percolation_temp_updated << "]"
-                    << "  |delta_vw| = " << delta_vw << ", |delta_Tp| = " << delta_Tp << "\n";
+            LOG(info) << std::setprecision(10) << "Iteration " << i << ": [vw, Tp] = [" << vw_updated << ", " << percolation_temp_updated << "], |delta_vw| = " << delta_vw << ", |delta_Tp| = " << delta_Tp << "\n";
 
             if (delta_vw < tol && delta_Tp < tol) 
             {

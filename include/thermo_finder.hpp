@@ -46,6 +46,7 @@ struct ThermalProfiles
     std::vector<double> extended_volume;
     std::vector<double> false_vacuum_decay_rate;
     std::vector<double> false_vacuum_fraction;
+    std::vector<double> d_false_vacuum_fraction;
     std::vector<double> nucleation_rate;
     std::vector<double> mean_bubble_separation;
     std::vector<double> mean_bubble_radius;
@@ -56,7 +57,7 @@ struct ThermalProfiles
     write(const std::string& filename) const
     {
         std::ofstream file(filename);
-        file << "# T,dtdT,t,H,S3/T,Gamma,Vext,Pf,Nt,RsH,RbarH\n";
+        file << "# T,dtdT,t,H,S3/T,Gamma,Vext,Pf,dPf,Nt,RsH,RbarH\n";
         for (size_t i = 0; i < temperature.size(); ++i) {
             file << std::scientific << std::setprecision(10)
                  << temperature[i] << ","
@@ -67,6 +68,7 @@ struct ThermalProfiles
                  << false_vacuum_decay_rate[i] << ","
                  << extended_volume[i] << ","
                  << false_vacuum_fraction[i] << ","
+                 << d_false_vacuum_fraction[i] << ","
                  << nucleation_rate[i] << ","
                  << mean_bubble_separation[i] << ","
                  << mean_bubble_radius[i] << "\n";

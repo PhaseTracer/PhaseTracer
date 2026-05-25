@@ -261,6 +261,12 @@ private:
 
 }; // struct RadiiDistribution
 
+struct LifetimeDistribution
+{
+    std::vector<double> temperature_values;
+    std::vector<double> lifetime_values;
+};
+
 class TransitionMetrics 
 {
 
@@ -343,6 +349,8 @@ public :
 
     const double get_false_vacuum_fraction(const double& T);
 
+    const double get_d_false_vacuum_fraction_dT(const double& T);
+
     const double get_nucleation_rate(const double& T);
 
     const double get_bubble_density(const double& T);
@@ -354,6 +362,8 @@ public :
     const TransitionMilestone get_transition_milestone(const MilestoneType type);
 
     const RadiiDistribution get_radii_distribution(const double& temperature);
+
+    const LifetimeDistribution get_lifetime_distribution(const double& timescale, const double& lifetime_min_fraction = 1e-6);
 
 private:
 
