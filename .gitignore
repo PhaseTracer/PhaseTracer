@@ -35,5 +35,6 @@ scan.py
 /zData/
 /example/Inference/
 /example/HydroGravScripts/
+/example/TestThermalParameters/
 /comparisonData/
 *.pdf
