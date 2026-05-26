@@ -278,7 +278,15 @@ class TransitionMetrics
 
     alglib::spline1dinterpolant a2a1_integrand_spline;
 
+    alglib::spline1dinterpolant energy_density_true_spline;
+    bool energy_density_true_spline_computed = false;
+
     alglib::spline1dinterpolant log_Vext_spline;
+    bool log_Vext_spline_computed = false;
+
+    PROPERTY(int, max_extended_volume_refinements, 50);
+    PROPERTY(double, extended_volume_t_perc_tolerance, 1e-6);
+    PROPERTY(bool, refine_extended_volume_spline, true);
 
     PROPERTY(double, total_number_temp_steps, 200);
 
@@ -314,17 +322,7 @@ public :
     TransitionMetrics(const FalseVacuumDecayRate& decay_rate_in, const EquationOfState& eos_in) :
     decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
     {
-        auto start_scale_factor_calculation = std::chrono::high_resolution_clock::now();
-        make_scale_factor_ratio_integrand_spline();
-        auto end_scale_factor_calculation = std::chrono::high_resolution_clock::now();
-        auto duration_scale_factor_calculation = std::chrono::duration_cast<std::chrono::milliseconds>(end_scale_factor_calculation - start_scale_factor_calculation);
-        LOG(info) << "scale_factor_ratio_integrand spline created in " << duration_scale_factor_calculation.count() << " ms" << std::endl;
-
-        auto start_log_extended_volume_calculation = std::chrono::high_resolution_clock::now();
-        compute_log_extended_volume_spline();
-        auto end_log_extended_volume_calculation = std::chrono::high_resolution_clock::now();
-        auto duration_log_extended_volume_calculation = std::chrono::duration_cast<std::chrono::milliseconds>(end_log_extended_volume_calculation - start_log_extended_volume_calculation);
-        LOG(info) << "log_extended_volume spline created in " << duration_log_extended_volume_calculation.count() << " ms" << std::endl;
+        calculate_false_vacuum_fraction();
     }
 
     void compute_milestones() 
@@ -339,25 +337,31 @@ public :
 
     const double get_hubble_rate(const double& T) const;
 
-    const double get_dtdT(const double& T) const;
+    const double get_de_true_dt(const double& T) const;
+
+    const double get_e_true(const double& T) const;
+
+    const double get_dt_dTf(const double& T) const;
+
+    const double get_t(const double& T);
+
+    const double get_T_true(const double& T, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
 
     const double get_atop_abottom(const double& Ttop, const double& Tbottom);
 
     const double get_extended_volume(const double& T);
 
-    const double get_extended_volume_from_spline(const double& T);
+    const double get_extended_volume_from_spline(const double& T) const;
 
-    const double get_false_vacuum_fraction(const double& T);
+    const double get_false_vacuum_fraction(const double& T) const;
 
-    const double get_d_false_vacuum_fraction_dT(const double& T);
+    const double get_d_false_vacuum_fraction_dT(const double& T) const;
 
     const double get_nucleation_rate(const double& T);
 
     const double get_bubble_density(const double& T);
 
     const double get_bubble_radius_integral(const double& T);
-
-    const double get_duration(const double& T);
 
     const TransitionMilestone get_transition_milestone(const MilestoneType type);
 
@@ -377,6 +381,10 @@ private:
     std::function<double(double)> get_target_function(const MilestoneType type);
 
     void make_scale_factor_ratio_integrand_spline();
+
+    void make_energy_density_true_spline();
+
+    void calculate_false_vacuum_fraction();
 
     const double get_volume_term(const double& T1, const double& T2);
 

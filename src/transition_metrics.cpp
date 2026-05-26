@@ -24,31 +24,27 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_hubble_rate(const double& T) const
     {
-        double false_vacuum_fraction = 1.0;
+        double false_vacuum_fraction = log_Vext_spline_computed ? get_false_vacuum_fraction(T) : 1.0;
+
+        double true_vacuum_fraction = 1.0 - false_vacuum_fraction;
         
-        const double e_false_vacuum = abs(eos.get_energy_minus(T));
-        const double e_true_vacuum = abs(eos.get_energy_plus(T));
+        double e_false_vacuum = abs(eos.get_energy_plus(T));
+        double e_true_vacuum = get_e_true(T);
 
-        const double e_averaged = false_vacuum_fraction * e_false_vacuum + (1 - false_vacuum_fraction) * e_true_vacuum;
-
+        const double e_averaged = false_vacuum_fraction * e_false_vacuum + true_vacuum_fraction * e_true_vacuum;
         const double Hsq = 8. * M_PI * newtonG/3. * e_averaged;
 
         return sqrt(Hsq);
     }
 
     const double
-    TransitionMetrics::get_dtdT(const double& T) const
+    TransitionMetrics::get_dt_dTf(const double& T) const
     {
-        const double prefac = -1./3. * 1/get_hubble_rate(T);
-
-        const auto pressure_derivs = eos.get_pressure_derivs_plus(T);
-        const double pressure_ratio = use_bag_dtdT ? 3. / T : pressure_derivs[2]/pressure_derivs[1];
-
-        if (pressure_ratio < 0) {
-            return prefac * 3./T;
-        } // TODO
-
-        return prefac * pressure_ratio;
+        const double prefac = - 3. * T * get_hubble_rate(T);
+        const double cs_false = eos.get_sound_speed_plus(T);
+        const double cs_sq = cs_false*cs_false;
+        const double dT_dt = prefac * cs_sq;
+        return 1. / dT_dt;
     }
 
     void
@@ -83,7 +79,7 @@ namespace PhaseTracer {
     {
         auto integrand = [this, T2](double Tdash) 
         {
-            double dtdT = get_dtdT(Tdash);
+            double dtdT = get_dt_dTf(Tdash);
             double aT2_on_aTdash = get_atop_abottom(T2, Tdash);
             return dtdT * aT2_on_aTdash;
         };
@@ -94,7 +90,7 @@ namespace PhaseTracer {
     const double 
     TransitionMetrics::extended_volume_integrand(const double& T1, const double& T2)
     {
-        double dtdT = get_dtdT(T1);
+        double dtdT = get_dt_dTf(T1);
         double gamma = decay_rate.get_gamma(T1);
         double aT1_on_aT2 = get_atop_abottom(T1, T2);
         double volume_term = get_volume_term(T1, T2);
@@ -137,27 +133,178 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_extended_volume_from_spline(const double& T)
+    TransitionMetrics::get_extended_volume_from_spline(const double& T) const
     {
         return 4 * M_PI * vw*vw*vw / 3 * exp(alglib::spline1dcalc(log_Vext_spline, T));
     }
 
     const double
-    TransitionMetrics::get_false_vacuum_fraction(const double& T)
+    TransitionMetrics::get_false_vacuum_fraction(const double& T) const
     {
         double Vext = get_extended_volume_from_spline(T);
         return exp(-Vext);
     }
 
     const double
-    TransitionMetrics::get_d_false_vacuum_fraction_dT(const double& T)
+    TransitionMetrics::get_d_false_vacuum_fraction_dT(const double& T) const
     {
         double Vext = get_extended_volume_from_spline(T);
         double y, dy, ddy;
-        double dtdT = get_dtdT(T);
         alglib::spline1ddiff(log_Vext_spline, T, y, dy, ddy);
 
-        return Vext * exp(-Vext) * dy;
+        return -exp(-Vext) * Vext * dy;
+    }
+
+    void
+    TransitionMetrics::make_energy_density_true_spline()
+    {
+        const int N  = 50;
+        const double dT = (t_max - t_min) / (N - 1);
+
+        std::vector<double> T_grid(N);
+        std::vector<double> e_true_grid(N);
+
+        double e_t = get_e_true(t_max);
+        T_grid[N - 1] = t_max;
+        e_true_grid[N - 1] = e_t;
+
+        for(int i = N - 2; i >= 0; --i)
+        {
+            const double T_curr = t_max - static_cast<double>(N - 1 - i) * dT;
+            const double T_prev = T_curr + dT;
+            T_grid[i] = T_curr;
+
+            const double H      = get_hubble_rate(T_prev);
+            const double dtdT   = get_dt_dTf(T_prev);
+            const double p_t    = eos.get_pressure_minus(T_prev);
+            const double e_f    = eos.get_energy_plus(T_prev);
+            const double Pf     = get_false_vacuum_fraction(T_prev);
+            const double d_Pf_dT = get_d_false_vacuum_fraction_dT(T_prev);
+
+            const double Pt      = 1.0 - Pf;
+            const double d_Pt_dT = -d_Pf_dT;
+
+            double d_Pt_dt_over_Pt = 0.0;
+            if (Pt > 1e-30 && std::abs(dtdT) > 1e-30)
+                d_Pt_dt_over_Pt = (d_Pt_dT / dtdT) / Pt;
+
+            const double d_e_true_dt = -3.0 * H * (e_t + p_t) + d_Pt_dt_over_Pt * (e_f - e_t);
+            const double d_e_true_dT = d_e_true_dt * dtdT;
+
+            e_t = e_t - d_e_true_dT * dT;
+            e_true_grid[i] = e_t;
+        }
+
+        alglib::real_1d_array T_arr, e_arr;
+        T_arr.setcontent(N, T_grid.data());
+        e_arr.setcontent(N, e_true_grid.data());
+        alglib::spline1dbuildcubic(T_arr, e_arr, energy_density_true_spline);
+
+        LOG(debug) << "log_rho_true spline built over [" << t_min << ", " << t_max << "]";
+    }
+
+    const double
+    TransitionMetrics::get_e_true(const double& T) const
+    {
+        double e_true = energy_density_true_spline_computed ? alglib::spline1dcalc(energy_density_true_spline, T) : abs(eos.get_energy_minus(T));
+        return e_true;
+    }
+
+    const double 
+    TransitionMetrics::get_T_true(const double& T, double tol, boost::uintmax_t max_iter) const
+    {
+        // T_true should be higher than T_false, so we bracket the root between T and t_max
+        std::pair<double, double> bracket = {T, t_max};
+
+        auto target_function = [this, T](double T_true)
+        {
+            double e_true_from_ode = get_e_true(T);
+            double e_true_from_eos = abs(eos.get_energy_minus(T_true));
+            return e_true_from_eos - e_true_from_ode;
+        };
+
+        const double e_ode = get_e_true(T);
+        const double e_at_lower = abs(eos.get_energy_minus(T));
+        const double e_at_upper = abs(eos.get_energy_minus(t_max));
+
+        auto root_pair = boost::math::tools::toms748_solve(
+            target_function,
+            bracket.first,
+            bracket.second,
+            [=](double l, double u){ return std::abs(u - l) < tol; },
+            max_iter
+        );
+
+        double root = (root_pair.first + root_pair.second) / 2.0;
+        return root;
+    }
+
+    void
+    TransitionMetrics::calculate_false_vacuum_fraction()
+    {
+        double prev_percolation_temperature = t_max;
+
+        {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            make_scale_factor_ratio_integrand_spline();
+            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
+            LOG(info) << "  scale_factor_ratio_integrand spline: " << dt.count() << " ms";
+        }
+
+        for (int iter = 0; iter < max_extended_volume_refinements; ++iter)
+        {
+            LOG(info) << "Running false vacuum iteration " << iter;
+
+            {
+                auto t0 = std::chrono::high_resolution_clock::now();
+                compute_log_extended_volume_spline();
+                log_Vext_spline_computed = true;
+                auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
+                LOG(info) << "  time to build Vext spline: " << dt.count() << " ms"; 
+            }
+            
+            // if (iter > 0 && refine_extended_volume_spline)
+            // {
+            //     auto t0 = std::chrono::high_resolution_clock::now();
+            //     make_energy_density_true_spline();
+            //     energy_density_true_spline_computed = true;
+            //     auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
+            //     LOG(info) << "  log_rho_true spline: " << dt.count() << " ms";
+            // }
+
+            if (!refine_extended_volume_spline) { break; }
+
+            const auto perc = get_transition_milestone(MilestoneType::PERCOLATION);
+            const double percolation_temperature = (perc.status == MilestoneStatus::YES || perc.status == MilestoneStatus::FAST) ? perc.temperature : t_min;
+            const double d_perc_temp = std::abs(percolation_temperature - prev_percolation_temperature) / (std::abs(prev_percolation_temperature) + 1e-30);
+
+            LOG(info) << "  Tp = " << percolation_temperature << ", d(Tp) = " << d_perc_temp;
+
+            if (iter > 0 && d_perc_temp < extended_volume_t_perc_tolerance)
+            {
+                LOG(info) << "  false vacuum refinement converged after " << iter + 1 << " iterations.";
+                break;
+            }
+
+            prev_percolation_temperature = percolation_temperature;
+        }
+
+        // std::cout << "Process completed, printing debug\n";
+        // double dt = (t_max - t_min)/(200 - 1);
+        // for(double T = t_max; T > t_min; T -= dt)
+        // {
+        //     double log_Vext = alglib::spline1dcalc(log_Vext_spline, T);
+        //     double actual_Vext = get_extended_volume(T);
+        //     double Vext = get_extended_volume_from_spline(T);
+        //     double Pf = get_false_vacuum_fraction(T);
+        //     double d_Pf_dT = get_d_false_vacuum_fraction_dT(T);
+        //     double time = get_t(T);
+        //     double T_false = T;
+        //     double T_true = 0.0;
+        //     double e_true = get_e_true(T);
+        //     double naive_e_true = abs(eos.get_energy_plus(T));
+        //     double hubble = get_hubble_rate(T);
+        // }
     }
 
     const double 
@@ -168,8 +315,8 @@ namespace PhaseTracer {
             double Pf = use_pf_in_nt_integrand ? get_false_vacuum_fraction(Tdash) : 1.0;
             double gamma = decay_rate.get_gamma(Tdash);
             double hubble = get_hubble_rate(Tdash);
-            double dtdT = get_dtdT(Tdash);
-            return Pf * gamma * dtdT / (hubble*hubble*hubble); // This is missing a factor of hubble?
+            double dtdT = get_dt_dTf(Tdash);
+            return Pf * gamma * dtdT / (hubble*hubble*hubble);
         };
 
         if(T >= t_max) { return 0.0; }
@@ -183,7 +330,7 @@ namespace PhaseTracer {
     {
         auto integrand = [this, T](double Tdash)
         {
-            double dtdT = get_dtdT(Tdash);
+            double dtdT = get_dt_dTf(Tdash);
             double gamma = decay_rate.get_gamma(Tdash);
             double pf = get_false_vacuum_fraction(Tdash);
             double a_ratio = get_atop_abottom(Tdash, T);
@@ -199,7 +346,7 @@ namespace PhaseTracer {
     const double 
     TransitionMetrics::bubble_radius_integrand(const double& T1, const double& T2)
     {
-        double dtdT = get_dtdT(T1);
+        double dtdT = get_dt_dTf(T1);
         double gamma = decay_rate.get_gamma(T1);
         double pf = get_false_vacuum_fraction(T1);
         double aT1_on_aT2 = get_atop_abottom(T1, T2);
@@ -223,20 +370,18 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_duration(const double& T)
+    TransitionMetrics::get_t(const double& T)
     {
         auto integrand = [this](double Tdash) 
         {
-            // double H = get_hubble_rate(Tdash);
-            double H = 1.0;
-            double dtdT = get_dtdT(Tdash);
-            return dtdT*H;
+            double dtdT = get_dt_dTf(Tdash);
+            return dtdT;
         };
 
         if(T >= t_max) { return 0.0; }
         
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T, 5, 1e-5);
-        return result; // why was vw here?
+        return result;
     }
 
     const RadiiDistribution 
@@ -280,191 +425,191 @@ namespace PhaseTracer {
         return output;
     };
 
- const LifetimeDistribution
-TransitionMetrics::get_lifetime_distribution(const double& timescale, const double& lifetime_min_fraction)
-{
-    if (timescale <= 0.0) {
-        throw std::invalid_argument(
-            "TransitionMetrics::get_lifetime_distribution requires a positive timescale.");
-    }
-
-    const int n = 200;
-
-    // -------------------------------------------------------------------------
-    // The maximum elapsed time is tau(t_min) — the full duration of the transition.
-    // -------------------------------------------------------------------------
-    const double max_time     = std::abs(get_duration(t_min));
-    const double max_lifetime = max_time * timescale;
-
-    // -------------------------------------------------------------------------
-    // Pre-compute log(gamma) on a temperature grid and build a spline.
-    // Splining log(gamma) then exp()-ing inside the integrand avoids
-    // overflow/underflow when gamma spans many orders of magnitude.
-    // -------------------------------------------------------------------------
-    const int    n_spline        = 400;
-    const double LOG_GAMMA_FLOOR = -700.0;
-    const double dT_spline       = (t_max - t_min) / (n_spline - 1);
-
-    std::vector<double> T_grid(n_spline), log_gamma_grid(n_spline);
-    for (int k = 0; k < n_spline; ++k)
+    const LifetimeDistribution
+    TransitionMetrics::get_lifetime_distribution(const double& timescale, const double& lifetime_min_fraction)
     {
-        const double T     = t_min + k * dT_spline;
-        T_grid[k]          = T;
-        const double g     = decay_rate.get_gamma(T);
-        log_gamma_grid[k]  = (g > 0.0 && std::isfinite(g))
-            ? std::max(std::log(g), LOG_GAMMA_FLOOR)
-            : LOG_GAMMA_FLOOR;
-    }
-
-    alglib::real_1d_array alg_T, alg_log_gamma;
-    alg_T.setcontent(n_spline, T_grid.data());
-    alg_log_gamma.setcontent(n_spline, log_gamma_grid.data());
-    alglib::spline1dinterpolant log_gamma_spline;
-    alglib::spline1dbuildcubic(alg_T, alg_log_gamma, log_gamma_spline);
-
-    auto gamma_at = [&](double T) -> double {
-        return std::exp(alglib::spline1dcalc(log_gamma_spline, T));
-    };
-
-    // -------------------------------------------------------------------------
-    // Build a duration spline: tau(T) = get_duration(T), then invert it to
-    // give T as a function of tau. This lets us cheaply find T_shifted from
-    // tau(T_current) + Delta_tau without a root search per quadrature point.
-    // -------------------------------------------------------------------------
-    std::vector<double> duration_grid(n_spline);
-    for (int k = 0; k < n_spline; ++k)
-        duration_grid[k] = get_duration(T_grid[k]);
-
-    // duration_grid increases as k increases (lower T = more elapsed time).
-    // Collect strictly increasing (tau, T) pairs for the inverse spline.
-    std::vector<double> tau_inc, T_inc;
-    tau_inc.reserve(n_spline);
-    T_inc.reserve(n_spline);
-    for (int k = n_spline - 1; k >= 0; --k)
-    {
-        const double tau = duration_grid[k];
-        if (tau_inc.empty() || tau > tau_inc.back() + 1e-30)
-        {
-            tau_inc.push_back(tau);
-            T_inc.push_back(T_grid[k]);
-        }
-    }
-
-    if (tau_inc.size() < 2)
-        throw std::runtime_error(
-            "get_lifetime_distribution: duration is not monotone over [t_min, t_max].");
-
-    alglib::real_1d_array alg_tau, alg_T_from_tau;
-    alg_tau.setcontent(tau_inc.size(), tau_inc.data());
-    alg_T_from_tau.setcontent(T_inc.size(), T_inc.data());
-    alglib::spline1dinterpolant T_from_tau_spline;
-    alglib::spline1dbuildcubic(alg_tau, alg_T_from_tau, T_from_tau_spline);
-
-    const double tau_min = tau_inc.front();
-    const double tau_max = tau_inc.back();
-
-    // -------------------------------------------------------------------------
-    // Build a log-spaced lifetime axis.
-    // lifetime = 0 is excluded (log undefined); the smallest bin is one
-    // linear-equivalent step above zero, i.e. max_lifetime / (n-1).
-    // -------------------------------------------------------------------------
-    const double lifetime_min = lifetime_min_fraction * max_lifetime;
-    const double log_lmin     = std::log(lifetime_min);
-    const double log_lmax     = std::log(max_lifetime);
-    const double dlog_l       = (log_lmax - log_lmin) / (n - 1);
-
-    std::vector<double> lifetime_axis(n);
-    std::vector<double> lifetime_pdf(n, 0.0);
-    for (int i = 0; i < n; ++i)
-        lifetime_axis[i] = std::exp(log_lmin + i * dlog_l);
-
-    // -------------------------------------------------------------------------
-    // Sample the PDF at each lifetime bin.
-    //
-    // pdf(Delta_tau) = integral over T_current of:
-    //   -dpf/dt(T_shifted) * gamma(T_current) * (a_current/a_shifted)^3 * dtdT(T_current)
-    //
-    // where T_shifted satisfies tau(T_shifted) = tau(T_current) + Delta_tau.
-    //
-    // get_atop_abottom(Ttop, Tbottom) = a(Tbottom)/a(Ttop).
-    // T_current is cooler (later) than T_shifted (earlier/hotter), so:
-    //   a_current/a_shifted = get_atop_abottom(T_current, T_shifted).
-    //
-    // dtdT(T_current) is the Jacobian converting dT -> dt; it is negative
-    // (T decreases with time), which combined with -dpf/dt > 0 gives a
-    // positive integrand without any manual sign flip.
-    // -------------------------------------------------------------------------
-    for (int i = 0; i < n; ++i)
-    {
-        const double Delta_tau = lifetime_axis[i] / timescale;
-
-        const double tau_current_upper = tau_max - Delta_tau;
-        if (tau_current_upper <= tau_min)
-        {
-            lifetime_pdf[i] = 0.0;
-            continue;
+        if (timescale <= 0.0) {
+            throw std::invalid_argument(
+                "TransitionMetrics::get_lifetime_distribution requires a positive timescale.");
         }
 
-        const double T_current_lower = alglib::spline1dcalc(T_from_tau_spline, tau_current_upper);
+        const int n = 200;
 
-        auto integrand = [&](double T_current) -> double
+        // -------------------------------------------------------------------------
+        // The maximum elapsed time is tau(t_min) — the full duration of the transition.
+        // -------------------------------------------------------------------------
+        const double max_time     = std::abs(get_t(t_min));
+        const double max_lifetime = max_time * timescale;
+
+        // -------------------------------------------------------------------------
+        // Pre-compute log(gamma) on a temperature grid and build a spline.
+        // Splining log(gamma) then exp()-ing inside the integrand avoids
+        // overflow/underflow when gamma spans many orders of magnitude.
+        // -------------------------------------------------------------------------
+        const int    n_spline        = 400;
+        const double LOG_GAMMA_FLOOR = -700.0;
+        const double dT_spline       = (t_max - t_min) / (n_spline - 1);
+
+        std::vector<double> T_grid(n_spline), log_gamma_grid(n_spline);
+        for (int k = 0; k < n_spline; ++k)
         {
-            if (T_current < t_min || T_current > t_max) return 0.0;
+            const double T     = t_min + k * dT_spline;
+            T_grid[k]          = T;
+            const double g     = decay_rate.get_gamma(T);
+            log_gamma_grid[k]  = (g > 0.0 && std::isfinite(g))
+                ? std::max(std::log(g), LOG_GAMMA_FLOOR)
+                : LOG_GAMMA_FLOOR;
+        }
 
-            const double tau_current = get_duration(T_current);
-            const double tau_shifted = tau_current + Delta_tau;
+        alglib::real_1d_array alg_T, alg_log_gamma;
+        alg_T.setcontent(n_spline, T_grid.data());
+        alg_log_gamma.setcontent(n_spline, log_gamma_grid.data());
+        alglib::spline1dinterpolant log_gamma_spline;
+        alglib::spline1dbuildcubic(alg_T, alg_log_gamma, log_gamma_spline);
 
-            if (tau_shifted > tau_max || tau_shifted < tau_min) return 0.0;
-
-            const double T_shifted = alglib::spline1dcalc(T_from_tau_spline, tau_shifted);
-            if (T_shifted < t_min || T_shifted > t_max) return 0.0;
-
-            const double dpf_dT      = get_d_false_vacuum_fraction_dT(T_shifted);
-            const double dtdT_shift  = get_dtdT(T_shifted);
-            if (std::abs(dtdT_shift) < 1e-14) return 0.0;
-            const double dpf_dt      = dpf_dT / dtdT_shift;
-
-            const double gamma_c     = gamma_at(T_current);
-
-            const double a_ratio     = get_atop_abottom(T_current, T_shifted);
-            if (!std::isfinite(a_ratio) || a_ratio <= 0.0) return 0.0;
-
-            const double dtdT_current = get_dtdT(T_current);
-
-            return -dpf_dt * gamma_c
-                   * a_ratio * a_ratio * a_ratio
-                   * dtdT_current;
+        auto gamma_at = [&](double T) -> double {
+            return std::exp(alglib::spline1dcalc(log_gamma_spline, T));
         };
 
-        const double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(
-            integrand, T_current_lower, t_max, 7, 1e-6);
+        // -------------------------------------------------------------------------
+        // Build a duration spline: tau(T) = get_t(T), then invert it to
+        // give T as a function of tau. This lets us cheaply find T_shifted from
+        // tau(T_current) + Delta_tau without a root search per quadrature point.
+        // -------------------------------------------------------------------------
+        std::vector<double> duration_grid(n_spline);
+        for (int k = 0; k < n_spline; ++k)
+            duration_grid[k] = get_t(T_grid[k]);
 
-        lifetime_pdf[i] = std::isfinite(result) ? result : 0.0;
+        // duration_grid increases as k increases (lower T = more elapsed time).
+        // Collect strictly increasing (tau, T) pairs for the inverse spline.
+        std::vector<double> tau_inc, T_inc;
+        tau_inc.reserve(n_spline);
+        T_inc.reserve(n_spline);
+        for (int k = n_spline - 1; k >= 0; --k)
+        {
+            const double tau = duration_grid[k];
+            if (tau_inc.empty() || tau > tau_inc.back() + 1e-30)
+            {
+                tau_inc.push_back(tau);
+                T_inc.push_back(T_grid[k]);
+            }
+        }
+
+        if (tau_inc.size() < 2)
+            throw std::runtime_error(
+                "get_lifetime_distribution: duration is not monotone over [t_min, t_max].");
+
+        alglib::real_1d_array alg_tau, alg_T_from_tau;
+        alg_tau.setcontent(tau_inc.size(), tau_inc.data());
+        alg_T_from_tau.setcontent(T_inc.size(), T_inc.data());
+        alglib::spline1dinterpolant T_from_tau_spline;
+        alglib::spline1dbuildcubic(alg_tau, alg_T_from_tau, T_from_tau_spline);
+
+        const double tau_min = tau_inc.front();
+        const double tau_max = tau_inc.back();
+
+        // -------------------------------------------------------------------------
+        // Build a log-spaced lifetime axis.
+        // lifetime = 0 is excluded (log undefined); the smallest bin is one
+        // linear-equivalent step above zero, i.e. max_lifetime / (n-1).
+        // -------------------------------------------------------------------------
+        const double lifetime_min = lifetime_min_fraction * max_lifetime;
+        const double log_lmin     = std::log(lifetime_min);
+        const double log_lmax     = std::log(max_lifetime);
+        const double dlog_l       = (log_lmax - log_lmin) / (n - 1);
+
+        std::vector<double> lifetime_axis(n);
+        std::vector<double> lifetime_pdf(n, 0.0);
+        for (int i = 0; i < n; ++i)
+            lifetime_axis[i] = std::exp(log_lmin + i * dlog_l);
+
+        // -------------------------------------------------------------------------
+        // Sample the PDF at each lifetime bin.
+        //
+        // pdf(Delta_tau) = integral over T_current of:
+        //   -dpf/dt(T_shifted) * gamma(T_current) * (a_current/a_shifted)^3 * dtdT(T_current)
+        //
+        // where T_shifted satisfies tau(T_shifted) = tau(T_current) + Delta_tau.
+        //
+        // get_atop_abottom(Ttop, Tbottom) = a(Tbottom)/a(Ttop).
+        // T_current is cooler (later) than T_shifted (earlier/hotter), so:
+        //   a_current/a_shifted = get_atop_abottom(T_current, T_shifted).
+        //
+        // dtdT(T_current) is the Jacobian converting dT -> dt; it is negative
+        // (T decreases with time), which combined with -dpf/dt > 0 gives a
+        // positive integrand without any manual sign flip.
+        // -------------------------------------------------------------------------
+        for (int i = 0; i < n; ++i)
+        {
+            const double Delta_tau = lifetime_axis[i] / timescale;
+
+            const double tau_current_upper = tau_max - Delta_tau;
+            if (tau_current_upper <= tau_min)
+            {
+                lifetime_pdf[i] = 0.0;
+                continue;
+            }
+
+            const double T_current_lower = alglib::spline1dcalc(T_from_tau_spline, tau_current_upper);
+
+            auto integrand = [&](double T_current) -> double
+            {
+                if (T_current < t_min || T_current > t_max) return 0.0;
+
+                const double tau_current = get_t(T_current);
+                const double tau_shifted = tau_current + Delta_tau;
+
+                if (tau_shifted > tau_max || tau_shifted < tau_min) return 0.0;
+
+                const double T_shifted = alglib::spline1dcalc(T_from_tau_spline, tau_shifted);
+                if (T_shifted < t_min || T_shifted > t_max) return 0.0;
+
+                const double dpf_dT      = get_d_false_vacuum_fraction_dT(T_shifted);
+                const double dtdT_shift  = get_dt_dTf(T_shifted);
+                if (std::abs(dtdT_shift) < 1e-14) return 0.0;
+                const double dpf_dt      = dpf_dT / dtdT_shift;
+
+                const double gamma_c     = gamma_at(T_current);
+
+                const double a_ratio     = get_atop_abottom(T_current, T_shifted);
+                if (!std::isfinite(a_ratio) || a_ratio <= 0.0) return 0.0;
+
+                const double dtdT_current = get_dt_dTf(T_current);
+
+                return -dpf_dt * gamma_c
+                    * a_ratio * a_ratio * a_ratio
+                    * dtdT_current;
+            };
+
+            const double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(
+                integrand, T_current_lower, t_max, 7, 1e-6);
+
+            lifetime_pdf[i] = std::isfinite(result) ? result : 0.0;
+        }
+
+        // -------------------------------------------------------------------------
+        // Normalise to unit area using the trapezoid rule.
+        // The variable bin widths from the log-spaced axis are handled correctly
+        // since we use lifetime_axis[i] - lifetime_axis[i-1] directly.
+        // -------------------------------------------------------------------------
+        double normalisation = 0.0;
+        for (int i = 1; i < n; ++i)
+            normalisation += 0.5 * (lifetime_pdf[i-1] + lifetime_pdf[i])
+                                * (lifetime_axis[i] - lifetime_axis[i-1]);
+
+        if (normalisation <= 0.0 || !std::isfinite(normalisation))
+            throw std::runtime_error(
+                "get_lifetime_distribution: normalisation failed ("
+                + std::to_string(normalisation) + "). "
+                "Check get_false_vacuum_fraction, get_gamma, and get_atop_abottom "
+                "over [t_min=" + std::to_string(t_min)
+                + ", t_max=" + std::to_string(t_max) + "].");
+
+        for (double& v : lifetime_pdf)
+            v /= normalisation;
+
+        return LifetimeDistribution{lifetime_axis, lifetime_pdf};
     }
-
-    // -------------------------------------------------------------------------
-    // Normalise to unit area using the trapezoid rule.
-    // The variable bin widths from the log-spaced axis are handled correctly
-    // since we use lifetime_axis[i] - lifetime_axis[i-1] directly.
-    // -------------------------------------------------------------------------
-    double normalisation = 0.0;
-    for (int i = 1; i < n; ++i)
-        normalisation += 0.5 * (lifetime_pdf[i-1] + lifetime_pdf[i])
-                             * (lifetime_axis[i] - lifetime_axis[i-1]);
-
-    if (normalisation <= 0.0 || !std::isfinite(normalisation))
-        throw std::runtime_error(
-            "get_lifetime_distribution: normalisation failed ("
-            + std::to_string(normalisation) + "). "
-            "Check get_false_vacuum_fraction, get_gamma, and get_atop_abottom "
-            "over [t_min=" + std::to_string(t_min)
-            + ", t_max=" + std::to_string(t_max) + "].");
-
-    for (double& v : lifetime_pdf)
-        v /= normalisation;
-
-    return LifetimeDistribution{lifetime_axis, lifetime_pdf};
-}
 
     const double 
     TransitionMetrics::find_temperature(std::function<double(double)> target_function, double tol, boost::uintmax_t max_iter)

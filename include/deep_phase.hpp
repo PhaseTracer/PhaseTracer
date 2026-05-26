@@ -169,7 +169,7 @@ get_pt_params_from_transition_milestone(
 	const double cs_plus = milestone.cs_plus;
 	const double cs_minus = milestone.cs_minus;
 
-	char* nuc_type; // why isn't this a string in deepphase?
+	std::string nuc_type;
 	if (milestone.type == MilestoneType::PERCOLATION)
 	{
 		if (milestone.nucleation_type == PhaseTracer::NucleationType::EXPONENTIAL)
