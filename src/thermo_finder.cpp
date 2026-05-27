@@ -79,7 +79,7 @@ namespace PhaseTracer {
                 double dtdT, dt, H, action, gamma, vext, pf, d_pf, nt, n, Rs, Rbar;
 
                 try {
-                    dtdT = output.transition_metrics.get_dt_dTf(tt);
+                    dtdT = output.transition_metrics.get_time_temperature_false(tt);
                     dt = get_dt(tt, output.transition_metrics);
                     H = get_H(tt, output.transition_metrics);
                     action = output.decay_rate.get_action(tt)/tt;
@@ -316,7 +316,7 @@ namespace PhaseTracer {
     ThermoFinder::get_betaH_1(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm)
     {
         const double dy = decay_rate.get_action_deriv(temperature);
-        const double dtdT = tm.get_dt_dTf(temperature);
+        const double dtdT = tm.get_time_temperature_false(temperature);
         const double H = tm.get_hubble_rate(temperature);
         return - dy/(dtdT*H);
     }
@@ -324,7 +324,7 @@ namespace PhaseTracer {
     const double
     ThermoFinder::get_betaH_2(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm)
     {
-        const double dtdT = tm.get_dt_dTf(temperature);
+        const double dtdT = tm.get_time_temperature_false(temperature);
         const double ddSdTT2 = decay_rate.get_action_double_deriv(temperature);
         const double H = tm.get_hubble_rate(temperature);
         return std::sqrt(ddSdTT2/(dtdT*dtdT*H*H));
@@ -351,7 +351,7 @@ namespace PhaseTracer {
 
         auto integrand = [&tm](double T) 
         {
-            return tm.get_dt_dTf(T) * tm.get_hubble_rate(T);
+            return tm.get_time_temperature_false(T) * tm.get_hubble_rate(T);
         };
         const double FWHM = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, upper_root, lower_root, 5, 1e-5);
 

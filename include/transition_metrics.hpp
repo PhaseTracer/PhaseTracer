@@ -278,14 +278,15 @@ class TransitionMetrics
 
     alglib::spline1dinterpolant a2a1_integrand_spline;
 
-    alglib::spline1dinterpolant energy_density_true_spline;
-    bool energy_density_true_spline_computed = false;
+    alglib::spline1dinterpolant T_true_spline;
+    bool T_true_spline_computed = false;
 
     alglib::spline1dinterpolant log_Vext_spline;
     bool log_Vext_spline_computed = false;
 
-    PROPERTY(int, max_extended_volume_refinements, 50);
+    PROPERTY(int, max_extended_volume_refinements, 10);
     PROPERTY(double, extended_volume_t_perc_tolerance, 1e-6);
+    PROPERTY(bool, include_reheating, true);
     PROPERTY(bool, refine_extended_volume_spline, true);
 
     PROPERTY(double, total_number_temp_steps, 200);
@@ -337,17 +338,21 @@ public :
 
     const double get_hubble_rate(const double& T) const;
 
+    const double get_hubble_rate(const double& T, const double& e_true) const;
+
     const double get_de_true_dt(const double& T) const;
 
-    const double get_e_true(const double& T) const;
+    const double get_e_true(const double& T_true) const;
 
-    const double get_dt_dTf(const double& T) const;
+    const double get_time_temperature_false(const double& T) const;
 
     const double get_t(const double& T);
 
-    const double get_T_true(const double& T, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
+    const double get_T_true_matching(const double& T_false, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
 
-    const double get_atop_abottom(const double& Ttop, const double& Tbottom);
+    const double get_T_true_adiabatic(const double& T_false, const double& T_false_prev ,const double& T_true_prev, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
+
+    const double get_atop_abottom(const double& Ttop, const double& Tbottom) const;
 
     const double get_extended_volume(const double& T);
 
@@ -382,7 +387,8 @@ private:
 
     void make_scale_factor_ratio_integrand_spline();
 
-    void make_energy_density_true_spline();
+    // void make_energy_density_true_spline();
+    void make_T_true_spline();
 
     void calculate_false_vacuum_fraction();
 
