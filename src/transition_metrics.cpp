@@ -86,21 +86,50 @@ namespace PhaseTracer {
         return use_bag_dtdT ? Tbottom/Ttop : exp(integral);
     }
 
-    const double
-    TransitionMetrics::get_volume_term(const double& T1, const double& T2)
+    void
+    TransitionMetrics::make_volume_term_integral_spline()
     {
+        if (volume_term_integration_steps < 2)
+        {
+            volume_term_integral_spline_computed = false;
+            return;
+        }
+
+        auto integrand = [this](double t)
+        {
+            double log_a = use_bag_dtdT ? std::log(t) : alglib::spline1dintegrate(a2a1_integrand_spline, t);
+            return get_time_temperature_false(t) * exp(-log_a);
+        };
+
+        integrate_and_fit_spline(volume_term_integral_spline, integrand, volume_term_integration_steps);
+        volume_term_integral_spline_computed = true;
+    }
+
+    const double
+    TransitionMetrics::get_volume_term(const double& T1, const double& T2) const
+    {
+
+        if (include_optimisations && volume_term_integral_spline_computed)
+        {
+            double log_a_T2 = use_bag_dtdT ? std::log(T2) : alglib::spline1dintegrate(a2a1_integrand_spline, T2);
+            double K_T1 = alglib::spline1dcalc(volume_term_integral_spline, T1);
+            double K_T2 = alglib::spline1dcalc(volume_term_integral_spline, T2);
+            return exp(log_a_T2) * (K_T2 - K_T1);
+        }
+
         auto integrand = [this, T2](double Tdash) 
         {
             double dtdT = get_time_temperature_false(Tdash);
-            double aT2_on_aTdash = get_atop_abottom(T2, Tdash);
-            return dtdT * aT2_on_aTdash;
+            double exp_aTdash = exp(alglib::spline1dintegrate(a2a1_integrand_spline, Tdash));
+            return dtdT * exp_aTdash;
         };
-        double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, T1, T2, 5, 1e-5);
+        double prefactor = exp(- alglib::spline1dintegrate(a2a1_integrand_spline, T2));
+        double result = prefactor * boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, T1, T2, 5, 1e-5);
         return result;
     }
 
     const double 
-    TransitionMetrics::extended_volume_integrand(const double& T1, const double& T2)
+    TransitionMetrics::extended_volume_integrand(const double& T1, const double& T2) const
     {
         double dtdT = get_time_temperature_false(T1);
         double gamma = decay_rate.get_gamma(T1);
@@ -111,7 +140,7 @@ namespace PhaseTracer {
     }
 
     const double 
-    TransitionMetrics::get_extended_volume(const double& T) 
+    TransitionMetrics::get_extended_volume(const double& T) const
     {
         auto integrand = [this, T](double Tdash) 
         {
@@ -127,6 +156,15 @@ namespace PhaseTracer {
     void
     TransitionMetrics::compute_log_extended_volume_spline()
     {
+        if (include_optimisations)
+        {
+            make_volume_term_integral_spline();
+        }
+        else
+        {
+            volume_term_integral_spline_computed = false;
+        }
+
         alglib::real_1d_array temp_array, Vext_array;
         temp_array.setlength(total_number_temp_steps);
         Vext_array.setlength(total_number_temp_steps);
@@ -153,7 +191,7 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_false_vacuum_fraction(const double& T) const
     {
-        double Vext = get_extended_volume_from_spline(T);
+        double Vext = include_optimisations ? get_extended_volume_from_spline(T) : get_extended_volume(T);
         return exp(-Vext);
     }
 
@@ -569,7 +607,7 @@ namespace PhaseTracer {
     }
 
     const double 
-    TransitionMetrics::bubble_radius_integrand(const double& T1, const double& T2)
+    TransitionMetrics::bubble_radius_integrand(const double& T1, const double& T2) const
     {
         double dtdT = get_time_temperature_false(T1);
         double gamma = decay_rate.get_gamma(T1);
@@ -976,6 +1014,81 @@ namespace PhaseTracer {
             percolation_milestone.nucleation_type = NucleationType::EXPONENTIAL;
             nucleation_milestone.nucleation_type = NucleationType::EXPONENTIAL;
         }
+    }
+
+    std::vector<double> 
+    TransitionMetrics::cumulative_simpson(const std::function<double(double)>& integrand, const std::vector<double>& x, double F_initial)
+    {
+        const int N = x.size();
+        assert(N >= 2);
+
+        auto simpson_step = [&integrand](double x_lo, double x_hi, double f_lo, double f_hi)
+        {
+            double h     = x_hi - x_lo;
+            double f_mid = integrand(x_lo + h * 0.5);
+            return (h / 6.0) * (f_lo + 4.0 * f_mid + f_hi);
+        };
+
+        std::vector<double> F(N);
+        F[0] = F_initial;
+
+        double f_prev = integrand(x[0]);
+        for (int i = 1; i < N; ++i)
+        {
+            double f_hi = integrand(x[i]);
+            F[i] = F[i-1] + simpson_step(x[i-1], x[i], f_prev, f_hi);
+            f_prev = f_hi;
+        }
+
+        return F;
+    }
+
+    alglib::real_1d_array 
+    TransitionMetrics::cumulative_simpson(const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial)
+    {
+        const int N = x.length();
+        assert(N >= 2);
+
+        auto simpson_step = [&integrand](double x_lo, double x_hi, double f_lo, double f_hi)
+        {
+            double h     = x_hi - x_lo;
+            double f_mid = integrand(x_lo + h * 0.5);
+            return (h / 6.0) * (f_lo + 4.0 * f_mid + f_hi);
+        };
+
+        alglib::real_1d_array F;
+        F.setlength(N);
+        F[0] = F_initial;
+
+        double f_prev = integrand(x[0]);
+        for (int i = 1; i < N; ++i)
+        {
+            double f_hi = integrand(x[i]);
+            F[i] = F[i-1] + simpson_step(x[i-1], x[i], f_prev, f_hi);
+            f_prev = f_hi;
+        }
+
+        return F;
+    }
+
+    void
+    TransitionMetrics::integrate_and_fit_spline
+    (
+        alglib::spline1dinterpolant& spline, 
+        const std::function<double(double)>& integrand, 
+        int steps,
+        double F_initial
+    )
+    {
+        alglib::real_1d_array temp_grid;
+        temp_grid.setlength(steps);
+        double dt = (t_max - t_min) / (volume_term_integration_steps - 1);
+        for (int i = 0; i < volume_term_integration_steps; ++i)
+            temp_grid[i] = t_min + i * dt;
+
+        alglib::real_1d_array integral_array = cumulative_simpson(integrand, temp_grid);
+
+        alglib::spline1dbuildlinear(temp_grid, integral_array, spline);
     }
 
 } // namespace PhaseTracer

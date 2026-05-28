@@ -284,12 +284,21 @@ class TransitionMetrics
     alglib::spline1dinterpolant log_Vext_spline;
     bool log_Vext_spline_computed = false;
 
+    alglib::spline1dinterpolant volume_term_integral_spline;
+    bool volume_term_integral_spline_computed = false;
+
+    PROPERTY(bool, include_optimisations, true);
+
     PROPERTY(int, max_extended_volume_refinements, 10);
+
     PROPERTY(double, extended_volume_t_perc_tolerance, 1e-6);
+
     PROPERTY(bool, include_reheating, true);
-    PROPERTY(bool, refine_extended_volume_spline, true);
+
+    PROPERTY(bool, refine_extended_volume_spline, false);
 
     PROPERTY(double, total_number_temp_steps, 200);
+    PROPERTY(double, volume_term_integration_steps, 1000);
 
     PROPERTY(bool, use_pf_in_nt_integrand, true);
 
@@ -354,7 +363,7 @@ public :
 
     const double get_atop_abottom(const double& Ttop, const double& Tbottom) const;
 
-    const double get_extended_volume(const double& T);
+    const double get_extended_volume(const double& T) const;
 
     const double get_extended_volume_from_spline(const double& T) const;
 
@@ -387,18 +396,28 @@ private:
 
     void make_scale_factor_ratio_integrand_spline();
 
-    // void make_energy_density_true_spline();
+    void make_volume_term_integral_spline();
+
     void make_T_true_spline();
 
     void calculate_false_vacuum_fraction();
 
-    const double get_volume_term(const double& T1, const double& T2);
+    const double get_volume_term(const double& T1, const double& T2) const;
 
-    const double extended_volume_integrand(const double& T1, const double& T2);
+    const double extended_volume_integrand(const double& T1, const double& T2) const;
 
-    const double bubble_radius_integrand(const double& T1, const double& T2);
+    const double bubble_radius_integrand(const double& T1, const double& T2) const;
 
     void compute_log_extended_volume_spline();
+
+    alglib::real_1d_array cumulative_simpson(const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial = 0.0);
+
+    std::vector<double> cumulative_simpson(const std::function<double(double)>& integrand, const std::vector<double>& x, double F_initial = 0.0);
+
+    void integrate_and_fit_spline(alglib::spline1dinterpolant& spline, const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial = 0.0);
+
+    void integrate_and_fit_spline(alglib::spline1dinterpolant& spline, const std::function<double(double)>& integrand, int steps, double F_initial = 0.0);
+
 };
 
 
