@@ -84,8 +84,8 @@ namespace PhaseTracer {
                     H = get_H(tt, output.transition_metrics);
                     action = output.decay_rate.get_action(tt)/tt;
                     gamma = output.decay_rate.get_gamma(tt);
-                    vext = output.transition_metrics.get_extended_volume_from_spline(tt);
                     pf = output.transition_metrics.get_false_vacuum_fraction(tt);
+                    vext = -log(pf);
                     d_pf = output.transition_metrics.get_d_false_vacuum_fraction_dT(tt);
                     nt =  output.transition_metrics.get_nucleation_rate(tt);
                     n = get_n(tt, output.transition_metrics);

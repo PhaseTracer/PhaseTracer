@@ -276,7 +276,8 @@ class TransitionMetrics
 
     double t_min, t_max;
 
-    alglib::spline1dinterpolant a2a1_integrand_spline;
+    mutable alglib::spline1dinterpolant scale_factor_spline;
+    mutable bool scale_factor_spline_computed = false;
 
     alglib::spline1dinterpolant T_true_spline;
     bool T_true_spline_computed = false;
@@ -284,8 +285,8 @@ class TransitionMetrics
     alglib::spline1dinterpolant log_Vext_spline;
     bool log_Vext_spline_computed = false;
 
-    alglib::spline1dinterpolant volume_term_integral_spline;
-    bool volume_term_integral_spline_computed = false;
+    mutable alglib::spline1dinterpolant volume_term_integral_spline;
+    mutable bool volume_term_integral_spline_computed = false;
 
     PROPERTY(bool, include_optimisations, true);
 
@@ -295,9 +296,10 @@ class TransitionMetrics
 
     PROPERTY(bool, include_reheating, true);
 
-    PROPERTY(bool, refine_extended_volume_spline, false);
+    PROPERTY(bool, refine_extended_volume_spline, true);
 
     PROPERTY(double, total_number_temp_steps, 200);
+
     PROPERTY(double, volume_term_integration_steps, 1000);
 
     PROPERTY(bool, use_pf_in_nt_integrand, true);
@@ -394,9 +396,9 @@ private:
 
     std::function<double(double)> get_target_function(const MilestoneType type);
 
-    void make_scale_factor_ratio_integrand_spline();
+    void make_scale_factor_ratio_spline() const;
 
-    void make_volume_term_integral_spline();
+    void make_volume_term_integral_spline() const;
 
     void make_T_true_spline();
 
@@ -410,13 +412,13 @@ private:
 
     void compute_log_extended_volume_spline();
 
-    alglib::real_1d_array cumulative_simpson(const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial = 0.0);
+    alglib::real_1d_array cumulative_simpson(const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial = 0.0) const;
 
-    std::vector<double> cumulative_simpson(const std::function<double(double)>& integrand, const std::vector<double>& x, double F_initial = 0.0);
+    std::vector<double> cumulative_simpson(const std::function<double(double)>& integrand, const std::vector<double>& x, double F_initial = 0.0) const;
 
-    void integrate_and_fit_spline(alglib::spline1dinterpolant& spline, const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial = 0.0);
+    void integrate_and_fit_spline(alglib::spline1dinterpolant& spline, const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial = 0.0) const;
 
-    void integrate_and_fit_spline(alglib::spline1dinterpolant& spline, const std::function<double(double)>& integrand, int steps, double F_initial = 0.0);
+    void integrate_and_fit_spline(alglib::spline1dinterpolant& spline, const std::function<double(double)>& integrand, int steps, double F_initial = 0.0) const;
 
 };
 
