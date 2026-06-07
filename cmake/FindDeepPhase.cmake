@@ -43,21 +43,21 @@ find_library(DeepPhase_LIB
 
 # Find DeepPhase's dependencies (FINUFFT and FFTW3)
 # These are required because DeepPhase is a static library
-find_package(GSL REQUIRED)
-find_library(FINUFFT_LIBRARY finufft PATHS /usr/local/lib REQUIRED)
-find_library(FFTW3_LIBRARY fftw3 REQUIRED)
-find_library(FFTW3F_LIBRARY fftw3f REQUIRED)
-find_library(FFTW3_OMP_LIBRARY fftw3_omp REQUIRED)
-find_library(FFTW3F_OMP_LIBRARY fftw3f_omp REQUIRED)
+# find_package(GSL REQUIRED)
+# find_library(FINUFFT_LIBRARY finufft PATHS /usr/local/lib REQUIRED)
+# find_library(FFTW3_LIBRARY fftw3 REQUIRED)
+# find_library(FFTW3F_LIBRARY fftw3f REQUIRED)
+# find_library(FFTW3_OMP_LIBRARY fftw3_omp REQUIRED)
+# find_library(FFTW3F_OMP_LIBRARY fftw3f_omp REQUIRED)
 
 # Package all DeepPhase-related libraries
 set(DeepPhase_LIBRARIES
   ${DeepPhase_LIB}
   GSL::gsl
   GSL::gslcblas
-  ${FINUFFT_LIBRARY}
-  ${FFTW3_LIBRARY}
-  ${FFTW3F_LIBRARY}
-  ${FFTW3_OMP_LIBRARY}
-  ${FFTW3F_OMP_LIBRARY}
+  # ${FINUFFT_LIBRARY}
+  # ${FFTW3_LIBRARY}
+  # ${FFTW3F_LIBRARY}
+  # ${FFTW3_OMP_LIBRARY}
+  # ${FFTW3F_OMP_LIBRARY}
 )
