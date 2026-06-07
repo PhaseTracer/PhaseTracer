@@ -24,6 +24,7 @@
 */
 
 #include <vector>
+#include <map>
 
 #include "potential.hpp"
 #include "pow.hpp"
