@@ -33,7 +33,7 @@ inputFiles/
 scan.py
 *.json
 /zData/
-/example/Inference/
+/example/InferenceScripts/
 /example/HydroGravScripts/
 /example/TestThermalParameters/
 /comparisonData/
