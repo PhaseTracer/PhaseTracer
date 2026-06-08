@@ -29,7 +29,6 @@
 #include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <boost/math/tools/minima.hpp>
 #include <eigen3/Eigen/Core>
-#include <gsl/gsl_sf_bessel.h>
 
 #include "potential.hpp"
 #include "property.hpp"
