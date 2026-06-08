@@ -270,222 +270,222 @@ namespace PhaseTracer {
         return -exp(-Vext) * Vext * dy;
     }
 
-    // void
-    // TransitionMetrics::make_T_true_spline()
-    // {
-    //     const int N = 100;
-    //     const double dT_false = (t_max - t_min) / (N - 1);
-
-    //     std::vector<double> T_false_grid(N);
-    //     std::vector<double> T_true_grid(N);
-
-    //     T_false_grid[N - 1] = t_max;
-    //     T_true_grid[N - 1]  = t_max;
-
-    //     const double tol = 1e-8;
-    //     boost::uintmax_t max_iter = 100;
-
-    //     bool printed_ic = false;
-    //     bool printed_reheat_start = false;
-    //     bool printed_reheat_end = false;
-    //     bool adiabatic_seen = false;
-    //     bool reheating_seen = false;
-    //     bool last_reheat_valid = false;
-    //     bool last_adiabatic_valid = false;
-    //     double last_reheat_Pt = 0.0;
-    //     double last_reheat_Pf = 0.0;
-    //     double last_reheat_T_false = 0.0;
-    //     double last_reheat_T_true = 0.0;
-    //     double last_adiabatic_Pt = 0.0;
-    //     double last_adiabatic_Pf = 0.0;
-    //     double last_adiabatic_T_false = 0.0;
-    //     double last_adiabatic_T_true = 0.0;
-
-    //     if (!printed_ic)
-    //     {
-    //         const double Pf_ic = get_false_vacuum_fraction(t_max);
-    //         const double Pt_ic = 1.0 - Pf_ic;
-    //         LOG(info)
-    //             << "[IC] "
-    //             << "Pt = " << Pt_ic
-    //             << ", Pf = " << Pf_ic
-    //             << ", T_false = " << t_max
-    //             << ", T_true = " << t_max;
-    //         printed_ic = true;
-    //     }
-
-    //     for(int i = N - 2; i >= 0; --i)
-    //     {
-    //         const double T_false_prev = T_false_grid[i + 1];
-    //         const double T_true_prev = T_true_grid[i + 1];
-
-    //         // iterate T_false down
-    //         const double T_false = T_false_prev - dT_false;
-    //         T_false_grid[i] = T_false;
-
-    //         // to track the evolutin of the false vacuum fraction
-    //         const double Pf_prev = get_false_vacuum_fraction(T_false_prev);
-    //         const double Pf = get_false_vacuum_fraction(T_false);
-    //         const double Pt_prev = 1.0 - Pf_prev;
-    //         const double Pt = 1.0 - Pf;
-    //         const double dPt = Pt - Pt_prev;
-
-    //         if(Pt < 1e-16)
-    //         {
-    //             const double T_true = true ? get_T_true_matching(T_false, tol, max_iter) : T_false;
-    //             T_true_grid[i] = T_true;
-    //             continue;
-    //         }
-
-    //         const double reheating_pt_min = 1e-8;
-    //         if (Pt < 1.0 - 1e-16)
-    //         {
-    //             const double e_false = std::abs(eos.get_energy_plus(T_false));
-    //             // const double e_old = std::abs(eos.get_energy_minus(T_true_prev));
-    //             const double e_old = get_e_true(T_true_prev);
-    //             const double target = e_old * (Pt - dPt) + dPt * e_false;
-
-    //             auto reheating_eq = [this, Pt, target](double T_trial)
-    //             {
-    //                 // const double e_new = std::abs(eos.get_energy_minus(T_trial));
-    //                 const double e_new = get_e_true(T_trial);
-    //                 return e_new * Pt - target;
-    //             };
-
-    //             const double T_low = eos.get_t_min();
-    //             const double T_high = eos.get_t_max();
-    //             const int n_scan = 60;
-    //             double best_T_abs = T_true_prev;
-    //             double best_abs = std::numeric_limits<double>::infinity();
-    //             double best_T_root = T_true_prev;
-    //             double best_root_dist = std::numeric_limits<double>::infinity();
-    //             bool found_root = false;
-
-    //             if (T_low < T_high)
-    //             {
-    //                 double prev_T = T_low;
-    //                 double prev_f = reheating_eq(prev_T);
-    //                 best_T_abs = prev_T;
-    //                 best_abs = std::abs(prev_f);
-    //                 if (prev_f == 0.0)
-    //                 {
-    //                     found_root = true;
-    //                     best_T_root = prev_T;
-    //                     best_root_dist = std::abs(prev_T - T_true_prev);
-    //                 }
-
-    //                 for (int j = 1; j < n_scan; ++j)
-    //                 {
-    //                     const double T = T_low + (T_high - T_low) * static_cast<double>(j) / (n_scan - 1);
-    //                     const double f = reheating_eq(T);
-
-    //                     const double abs_f = std::abs(f);
-    //                     if (abs_f < best_abs)
-    //                     {
-    //                         best_abs = abs_f;
-    //                         best_T_abs = T;
-    //                     }
-
-    //                     if (f == 0.0)
-    //                     {
-    //                         const double dist = std::abs(T - T_true_prev);
-    //                         if (!found_root || dist < best_root_dist)
-    //                         {
-    //                             found_root = true;
-    //                             best_T_root = T;
-    //                             best_root_dist = dist;
-    //                         }
-    //                         prev_T = T;
-    //                         prev_f = f;
-    //                         continue;
-    //                     }
-
-    //                     if ((prev_f < 0.0 && f > 0.0) || (prev_f > 0.0 && f < 0.0))
-    //                     {
-    //                         auto root_pair = boost::math::tools::toms748_solve(
-    //                             reheating_eq,
-    //                             prev_T, T,
-    //                             [=](double l, double u){ return std::abs(u - l) < tol; },
-    //                             max_iter
-    //                         );
-
-    //                         const double root = (root_pair.first + root_pair.second) / 2.0;
-    //                         const double dist = std::abs(root - T_true_prev);
-    //                         if (!found_root || dist < best_root_dist)
-    //                         {
-    //                             found_root = true;
-    //                             best_T_root = root;
-    //                             best_root_dist = dist;
-    //                         }
-    //                     }
-
-    //                     prev_T = T;
-    //                     prev_f = f;
-    //                 }
-    //             }
-
-    //             T_true_grid[i] = found_root ? best_T_root : best_T_abs;
-
-    //             reheating_seen = true;
-    //             last_reheat_valid = true;
-    //             last_reheat_Pt = Pt;
-    //             last_reheat_Pf = Pf;
-    //             last_reheat_T_false = T_false;
-    //             last_reheat_T_true = T_true_grid[i];
-
-    //             if (!printed_reheat_start)
-    //             {
-    //                 LOG(info)
-    //                     << "[REHEATING START] "
-    //                     << "Pt = " << Pt
-    //                     << ", Pf = " << Pf
-    //                     << ", T_false = " << T_false
-    //                     << ", T_true = " << T_true_grid[i];
-    //                 printed_reheat_start = true;
-    //             }
-    //             continue;
-    //         }
-
-    //         if (reheating_seen && last_reheat_valid && !printed_reheat_end)
-    //         {
-    //             LOG(info)
-    //                 << "[REHEATING END] "
-    //                 << "Pt = " << last_reheat_Pt
-    //                 << ", Pf = " << last_reheat_Pf
-    //                 << ", T_false = " << last_reheat_T_false
-    //                 << ", T_true = " << last_reheat_T_true;
-    //             printed_reheat_end = true;
-    //         }
-
-    //         const double T_true_adiabatic = get_T_true_adiabatic(T_false, T_false_prev, T_true_prev, tol, max_iter);
-    //         T_true_grid[i] = T_true_adiabatic;
-
-    //         adiabatic_seen = true;
-    //         last_adiabatic_valid = true;
-    //         last_adiabatic_Pt = Pt;
-    //         last_adiabatic_Pf = Pf;
-    //         last_adiabatic_T_false = T_false;
-    //         last_adiabatic_T_true = T_true_adiabatic;
-    //     }
-
-    //     if (adiabatic_seen && last_adiabatic_valid)
-    //     {
-    //         LOG(info)
-    //             << "[ADIABATIC END] "
-    //             << "Pt = " << last_adiabatic_Pt
-    //             << ", Pf = " << last_adiabatic_Pf
-    //             << ", T_false = " << last_adiabatic_T_false
-    //             << ", T_true = " << last_adiabatic_T_true;
-    //     }
-
-    //     alglib::real_1d_array T_false_arr, T_true_arr;
-    //     T_false_arr.setcontent(N, T_false_grid.data());
-    //     T_true_arr.setcontent(N, T_true_grid.data());
-    //     alglib::spline1dbuildcubic(T_false_arr, T_true_arr, T_true_spline);
-    // }
-
     void
     TransitionMetrics::make_T_true_spline()
+    {
+        const int N = 500;
+        const double dT_false = (t_max - t_min) / (N - 1);
+
+        std::vector<double> T_false_grid(N);
+        std::vector<double> T_true_grid(N);
+
+        T_false_grid[N - 1] = t_max;
+        T_true_grid[N - 1]  = t_max;
+
+        const double tol = 1e-8;
+        boost::uintmax_t max_iter = 100;
+
+        bool printed_ic = false;
+        bool printed_reheat_start = false;
+        bool printed_reheat_end = false;
+        bool adiabatic_seen = false;
+        bool reheating_seen = false;
+        bool last_reheat_valid = false;
+        bool last_adiabatic_valid = false;
+        double last_reheat_Pt = 0.0;
+        double last_reheat_Pf = 0.0;
+        double last_reheat_T_false = 0.0;
+        double last_reheat_T_true = 0.0;
+        double last_adiabatic_Pt = 0.0;
+        double last_adiabatic_Pf = 0.0;
+        double last_adiabatic_T_false = 0.0;
+        double last_adiabatic_T_true = 0.0;
+
+        if (!printed_ic)
+        {
+            const double Pf_ic = get_false_vacuum_fraction(t_max);
+            const double Pt_ic = 1.0 - Pf_ic;
+            LOG(debug)
+                << "[IC] "
+                << "Pt = " << Pt_ic
+                << ", Pf = " << Pf_ic
+                << ", T_false = " << t_max
+                << ", T_true = " << t_max;
+            printed_ic = true;
+        }
+
+        for(int i = N - 2; i >= 0; --i)
+        {
+            const double T_false_prev = T_false_grid[i + 1];
+            const double T_true_prev = T_true_grid[i + 1];
+
+            // iterate T_false down
+            const double T_false = T_false_prev - dT_false;
+            T_false_grid[i] = T_false;
+
+            // to track the evolutin of the false vacuum fraction
+            const double Pf_prev = get_false_vacuum_fraction(T_false_prev);
+            const double Pf = get_false_vacuum_fraction(T_false);
+            const double Pt_prev = 1.0 - Pf_prev;
+            const double Pt = 1.0 - Pf;
+            const double dPt = Pt - Pt_prev;
+
+            if(Pt < 1e-16)
+            {
+                const double T_true = true ? get_T_true_matching(T_false, tol, max_iter) : T_false;
+                T_true_grid[i] = T_true;
+                continue;
+            }
+
+            const double reheating_pt_min = 1e-8;
+            if (Pt < 1.0 - 1e-16)
+            {
+                const double e_false = std::abs(eos.get_energy_plus(T_false));
+                // const double e_old = std::abs(eos.get_energy_minus(T_true_prev));
+                const double e_old = get_e_true(T_true_prev);
+                const double target = e_old * (Pt - dPt) + dPt * e_false;
+
+                auto reheating_eq = [this, Pt, target](double T_trial)
+                {
+                    // const double e_new = std::abs(eos.get_energy_minus(T_trial));
+                    const double e_new = get_e_true(T_trial);
+                    return e_new * Pt - target;
+                };
+
+                const double T_low = eos.get_t_min();
+                const double T_high = eos.get_t_max();
+                const int n_scan = 60;
+                double best_T_abs = T_true_prev;
+                double best_abs = std::numeric_limits<double>::infinity();
+                double best_T_root = T_true_prev;
+                double best_root_dist = std::numeric_limits<double>::infinity();
+                bool found_root = false;
+
+                if (T_low < T_high)
+                {
+                    double prev_T = T_low;
+                    double prev_f = reheating_eq(prev_T);
+                    best_T_abs = prev_T;
+                    best_abs = std::abs(prev_f);
+                    if (prev_f == 0.0)
+                    {
+                        found_root = true;
+                        best_T_root = prev_T;
+                        best_root_dist = std::abs(prev_T - T_true_prev);
+                    }
+
+                    for (int j = 1; j < n_scan; ++j)
+                    {
+                        const double T = T_low + (T_high - T_low) * static_cast<double>(j) / (n_scan - 1);
+                        const double f = reheating_eq(T);
+
+                        const double abs_f = std::abs(f);
+                        if (abs_f < best_abs)
+                        {
+                            best_abs = abs_f;
+                            best_T_abs = T;
+                        }
+
+                        if (f == 0.0)
+                        {
+                            const double dist = std::abs(T - T_true_prev);
+                            if (!found_root || dist < best_root_dist)
+                            {
+                                found_root = true;
+                                best_T_root = T;
+                                best_root_dist = dist;
+                            }
+                            prev_T = T;
+                            prev_f = f;
+                            continue;
+                        }
+
+                        if ((prev_f < 0.0 && f > 0.0) || (prev_f > 0.0 && f < 0.0))
+                        {
+                            auto root_pair = boost::math::tools::toms748_solve(
+                                reheating_eq,
+                                prev_T, T,
+                                [=](double l, double u){ return std::abs(u - l) < tol; },
+                                max_iter
+                            );
+
+                            const double root = (root_pair.first + root_pair.second) / 2.0;
+                            const double dist = std::abs(root - T_true_prev);
+                            if (!found_root || dist < best_root_dist)
+                            {
+                                found_root = true;
+                                best_T_root = root;
+                                best_root_dist = dist;
+                            }
+                        }
+
+                        prev_T = T;
+                        prev_f = f;
+                    }
+                }
+
+                T_true_grid[i] = found_root ? best_T_root : best_T_abs;
+
+                reheating_seen = true;
+                last_reheat_valid = true;
+                last_reheat_Pt = Pt;
+                last_reheat_Pf = Pf;
+                last_reheat_T_false = T_false;
+                last_reheat_T_true = T_true_grid[i];
+
+                if (!printed_reheat_start)
+                {
+                    LOG(debug)
+                        << "[REHEATING START] "
+                        << "Pt = " << Pt
+                        << ", Pf = " << Pf
+                        << ", T_false = " << T_false
+                        << ", T_true = " << T_true_grid[i];
+                    printed_reheat_start = true;
+                }
+                continue;
+            }
+
+            if (reheating_seen && last_reheat_valid && !printed_reheat_end)
+            {
+                LOG(debug)
+                    << "[REHEATING END] "
+                    << "Pt = " << last_reheat_Pt
+                    << ", Pf = " << last_reheat_Pf
+                    << ", T_false = " << last_reheat_T_false
+                    << ", T_true = " << last_reheat_T_true;
+                printed_reheat_end = true;
+            }
+
+            const double T_true_adiabatic = get_T_true_adiabatic(T_false, T_false_prev, T_true_prev, tol, max_iter);
+            T_true_grid[i] = T_true_adiabatic;
+
+            adiabatic_seen = true;
+            last_adiabatic_valid = true;
+            last_adiabatic_Pt = Pt;
+            last_adiabatic_Pf = Pf;
+            last_adiabatic_T_false = T_false;
+            last_adiabatic_T_true = T_true_adiabatic;
+        }
+
+        if (adiabatic_seen && last_adiabatic_valid)
+        {
+            LOG(debug)
+                << "[ADIABATIC END] "
+                << "Pt = " << last_adiabatic_Pt
+                << ", Pf = " << last_adiabatic_Pf
+                << ", T_false = " << last_adiabatic_T_false
+                << ", T_true = " << last_adiabatic_T_true;
+        }
+
+        alglib::real_1d_array T_false_arr, T_true_arr;
+        T_false_arr.setcontent(N, T_false_grid.data());
+        T_true_arr.setcontent(N, T_true_grid.data());
+        alglib::spline1dbuildcubic(T_false_arr, T_true_arr, T_true_spline);
+    }
+
+    void
+    TransitionMetrics::solve_friedmann()
     {
         const int N = 500; // TODO
 
@@ -526,10 +526,21 @@ namespace PhaseTracer {
 
         for(int i = N - 2; i >= 0; --i)
         {
+            /*
+                1. Step down in T_false by dT_false
+            */
             const double T_false_prev = T_false_grid[i+1];
             const double T_false_current = T_false_prev - dT_false;
             T_false_grid[i] = T_false_current;
 
+
+            /*
+                2.  Evaluate the false vacuum fraction at new temp.
+
+                    As a sanity check, we expect d(P_false)/d(T_false) to be positive, because as
+                    we move towards T_f -> T_c, P_f increases towards 1. Likewise, d(P_true)/d(T_false)
+                    should be negative, because as T_f -> T_c, P_t decreases towards 0.
+            */
             const double false_vacuum_prev = false_vacuum_grid[i+1];
             const double false_vacuum_current = get_false_vacuum_fraction(T_false_current);
             const double true_vacuum_prev = 1.0 - false_vacuum_prev;
@@ -538,95 +549,125 @@ namespace PhaseTracer {
             const double d_true_vacuum = - d_false_vacuum;
             false_vacuum_grid[i] = false_vacuum_current;
             true_vacuum_grid[i] = true_vacuum_current;
+            if ( d_false_vacuum > 0.0 )
+            {
+                LOG(warning) << "Warning: d(P_false) is positive at T_false = " << T_false_current;
+            }
+            if ( d_true_vacuum < 0.0 )
+            {
+                LOG(warning) << "Warning: d(P_true) is negative at T_false = " << T_false_current;
+            }
 
-            const double d_true_vacuum_dT_false = d_true_vacuum/dT_false;
-            const double transfer_rate = (true_vacuum_prev == 0.0) ? 0.0 : d_true_vacuum_dT_false/true_vacuum_prev; 
-            const bool reheatingQ = std::abs(transfer_rate) > 1e-16;
+            /*
+                3.  Evaluate the rate of change of d_true and the decay_rate dot(f)/f.
+                    Set reheating flag based on the size of dot(f)/f. We manually make
+                    this negative to agree with 2.
+            */
+            const double d_true_vacuum_dT_false = - d_true_vacuum/dT_false;
+            double transfer_rate = (true_vacuum_prev == 0.0) ? 0.0 : d_true_vacuum_dT_false/true_vacuum_prev; 
+            const bool reheatingQ = std::abs(transfer_rate) > 1e-10;
+            // const bool reheatingQ = true_vacuum_current > 1e-10;
 
-            // integrate time-temperature relation to get the time elapsed since the previous step
-            const double t_current = get_t(T_false_current);
-            const double log_t_current = log(t_current);
-            t_grid[i] = t_current;
-            const double d_log_t = log_t_current - log(t_grid[i+1]);
+            /*
+                4.a If we are not reheating, solving the matching equation for T_true
+                    this assumes instant thermalisation of the true vacuum.
+
+                    As a sanity check, we expect e_true(T_false) < e_false(T_false). Hence, matching 
+                    e(T_true) = e(T_false) forces T_true > T_false.
+            */
+            if(!reheatingQ)
+            {
+                const double T_true_current = get_T_true_matching(T_false_current, 1e-12, max_iter);
+                const double e_false_current = std::abs(eos.get_energy_plus(T_false_current));
+                const double e_true_current = std::abs(eos.get_energy_minus(T_true_current));
+                const double p_true_current = std::abs(eos.get_pressure_minus(T_true_current));
+                e_false_grid[i] = e_false_current;
+                e_true_grid[i] = e_true_current;
+                p_true_grid[i] = p_true_current;
+                T_true_grid[i] = T_true_current;
+                std::cout << "T_false = " << T_false_current
+                    << ", T_true = " << T_true_current
+                    << ", Pf = " << false_vacuum_current
+                    << ", Pt = " << true_vacuum_current
+                    << ", transfer_rate = " << transfer_rate
+                    << (reheatingQ ? " [REHEATING]" : " [ADIABATIC]")
+                    << ", e_false = " << e_false_current
+                    << ", e_true = " << e_true_current
+                    << std::endl;
+                continue;
+            }
+
+            /*
+                4.b If we are reheating, first evaluate false vacuum energy density.
+            */
+            const double e_false_current = std::abs(eos.get_energy_plus(T_false_current));
+            e_false_grid[i] = e_false_current;
+
+            /*
+                5. Evaluate d(e_true)/dT_f. This has contributions from Hubble expansion
+                   and the injected energy. 
+
+                   The hubble term is - 3 H (e_t + p_t), which is negative such that as t
+                   increases, e_t will lose energy due to redshift. But, changing 
+                   d/dt = dT_f/dt d/dT_f = dot(T_f) d/dT_f introduces a factor 
+                   of - 3 H (e_t + p_t) / dot(T_f). dot(T_f) is negative because 
+                   such that the term is positive; as T_f increases, t decreases,
+                   so the hubble term is positive.
+
+                   The injected energy, dot(f)/f (e_f - e_t) is positive, provided
+                   e_f > e_t (e_t is more stable). Hence, as time progresses, we gain 
+                   energy due to reheating. But, we cancel the dT_f/dt term to get 
+                   (df/dT_f)/f (e_f - e_t). As above, df/dT_f is negative, so as T_f
+                   increases, t decreases, and we lose energy.
+            */
+            // double latent_heat = e_false_grid[i+1] - e_true_grid[i+1];
+            double latent_heat = e_false_grid[i+1] - std::abs(eos.get_energy_minus(T_false_prev));
+            if(std::abs(latent_heat) <= 1e-4) { latent_heat = 0.0; }
+            const double injected_energy = transfer_rate * latent_heat;
+            const double hubble = get_hubble_rate(T_false_prev);
+            const double dt_dT_false = get_time_temperature_false(T_false_prev);
+            const double redshifted_energy = -3.0 * dt_dT_false * hubble * (e_true_grid[i+1] + p_true_grid[i+1]);
+            double d_e_true_dT_false = injected_energy + redshifted_energy;
+
+            /*
+                6. Update e_true by adding the above term.
+            */
+            const double d_e_true = d_e_true_dT_false * (-dT_false);
+            const double e_true_current = e_true_grid[i+1] + d_e_true;
+            e_true_grid[i] = e_true_current;
+
+            /*
+                7. Solve the matching condition for e_true, and update p_true
+            */
+            auto target_function = [this, e_true_current](double T_trial)
+            {
+                double e_true = abs(eos.get_energy_minus(T_trial));
+                return e_true_current / e_true - 1.0;
+            };
+
+            auto root_pair = boost::math::tools::toms748_solve(
+                target_function,
+                eos.get_t_min(), eos.get_t_max(),
+                [=](double l, double u){ return std::abs(u - l) < tol; },
+                max_iter
+            );
+
+            const double T_true_current = (root_pair.first + root_pair.second) / 2.0;
+            T_true_grid[i] = T_true_current;
+            p_true_grid[i] = std::abs(eos.get_pressure_minus(T_true_current));
 
             std::cout << "T_false = " << T_false_current
-                << ", T_true = " << T_true_grid[i+1]
-                << ", Pf = " << false_vacuum_current
-                << ", Pt = " << true_vacuum_current
-                << ", transfer_rate = " << transfer_rate
-                << (reheatingQ ? " [REHEATING]" : " [ADIABATIC]")
-                << ", d_log_t = " << d_log_t
-                << std::endl;
-
-            // const double e_false_current = std::abs(eos.get_energy_plus(T_false_current));
-            // e_false_grid[i] = e_false_current;
+                    << ", T_true = " << T_true_current
+                    << ", e_false = " << e_false_current
+                    << ", e_true = " << e_true_current
+                    << ", Pt = " << true_vacuum_current
+                    << (reheatingQ ? " [REHEATING]" : " [ADIABATIC]")
+                    << ", latent_heat = " << latent_heat
+                    << ", sign(injected) = " << (injected_energy > 0.0 ? "+" : "-")
+                    << ", sign(redshifted) = " << (redshifted_energy > 0.0 ? "+" : "-")
+                    << ", sign(d_e_true) = " << (d_e_true > 0.0 ? "+" : "-")
+                    << std::endl;
             
-            // if(!reheatingQ)
-            // {
-            //     const double T_true_current = get_T_true_matching(T_false_current, 1e-12, max_iter);
-            //     const double e_true_current = std::abs(eos.get_energy_minus(T_true_current));
-            //     const double p_true_current = std::abs(eos.get_pressure_minus(T_true_current));
-            //     e_true_grid[i] = e_true_current;
-            //     p_true_grid[i] = p_true_current;
-            //     T_true_grid[i] = T_true_current;
-            //     std::cout << "T_false = " << T_false_current
-            //         << ", T_true = " << T_true_current
-            //         << ", Pf = " << false_vacuum_current
-            //         << ", Pt = " << true_vacuum_current
-            //         << ", transfer_rate = " << transfer_rate
-            //         << (reheatingQ ? " [REHEATING]" : " [ADIABATIC]")
-            //         << ", e_false = " << e_false_current
-            //         << ", e_true = " << e_true_current
-            //         << std::endl;
-            //     continue;
-            // }
-
-            // // we are reheating
-            // double latent_heat = e_false_grid[i+1] - e_true_grid[i+1];
-            // if(std::abs(latent_heat) <= 1e-4) { latent_heat = 0.0; }
-            
-            // const double injected_energy = transfer_rate * latent_heat;
-
-            // const double hubble = get_hubble_rate(T_false_prev);
-            // const double dt_dT_false = get_time_temperature_false(T_false_prev);
-            // const double redshift = -3.0 * dt_dT_false * hubble * (e_true_grid[i+1] + p_true_grid[i+1]);
-
-            // double d_e_true_dT_false = injected_energy + redshift;
-            // const double d_e_true = d_e_true_dT_false * dT_false;
-            // const double e_true_current = e_true_grid[i+1] + d_e_true;
-            // e_true_grid[i] = e_true_current;
-
-            // // get T_true_current by solving when std::abs(eos.get_energy_minus(T_true_current)) = e_true_current
-            // auto target_function = [this, e_true_current](double T_trial)
-            // {
-            //     double e_true = abs(eos.get_energy_minus(T_trial));
-            //     return e_true_current / e_true - 1.0;
-            // };
-
-            // auto root_pair = boost::math::tools::toms748_solve(
-            //     target_function,
-            //     eos.get_t_min(), eos.get_t_max(),
-            //     [=](double l, double u){ return std::abs(u - l) < tol; },
-            //     max_iter
-            // );
-
-            // const double T_true_current = (root_pair.first + root_pair.second) / 2.0;
-            // T_true_grid[i] = T_true_current;
-            // p_true_grid[i] = std::abs(eos.get_pressure_minus(T_true_current));
-            
-
-            // std::cout << "T_false = " << T_false_current
-            //     << ", T_true = " << T_true_current
-            //     << ", Pf = " << false_vacuum_current
-            //     << ", Pt = " << true_vacuum_current
-            //     << ", transfer_rate = " << transfer_rate
-            //     << (reheatingQ ? " [REHEATING]" : " [ADIABATIC]")
-            //     << ", latent_heat = " << latent_heat
-            //     << ", injected_energy = " << injected_energy
-            //     << ", redshift = " << redshift
-            //     << ", e_false = " << e_false_current
-            //     << ", e_true = " << e_true_current
-            //     << std::endl;
         }
         
     }
@@ -769,7 +810,8 @@ namespace PhaseTracer {
             if (iter > 0 && include_reheating)
             {
                 auto t0 = std::chrono::high_resolution_clock::now();
-                make_T_true_spline();
+                // make_T_true_spline();
+                solve_friedmann();
                 T_true_spline_computed = true;
                 auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
                 LOG(debug) << "  T_true spline: " << dt.count() << " ms";

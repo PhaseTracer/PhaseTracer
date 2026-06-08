@@ -288,6 +288,9 @@ class TransitionMetrics
     mutable alglib::spline1dinterpolant volume_term_integral_spline;
     mutable bool volume_term_integral_spline_computed = false;
 
+    mutable alglib::spline1dinterpolant time_spline;
+    mutable bool time_spline_computed = false;
+
     PROPERTY(bool, include_optimisations, true);
 
     PROPERTY(int, max_extended_volume_refinements, 10);
@@ -401,6 +404,8 @@ private:
     void make_volume_term_integral_spline() const;
 
     void make_T_true_spline();
+
+    void solve_friedmann();
 
     void calculate_false_vacuum_fraction();
 
