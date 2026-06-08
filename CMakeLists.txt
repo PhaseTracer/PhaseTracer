@@ -26,8 +26,9 @@ endif()
 find_package(Boost 1.53.0 REQUIRED
   COMPONENTS
   filesystem
-  system
   log
+  OPTIONAL_COMPONENTS
+  system
 )
 set(Boost_USE_MULTITHREADED ON)
 
