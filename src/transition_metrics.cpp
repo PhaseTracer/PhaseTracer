@@ -489,7 +489,7 @@ namespace PhaseTracer {
     {
         const int N = 500; // TODO
 
-        double dT_false = (t_max - t_min)/(N - 1);
+        const double dT_false = (t_min - t_max)/(N - 1);
 
         // cache values
         std::vector<double> T_false_grid(N);
@@ -530,7 +530,7 @@ namespace PhaseTracer {
                 1. Step down in T_false by dT_false
             */
             const double T_false_prev = T_false_grid[i+1];
-            const double T_false_current = T_false_prev - dT_false;
+            const double T_false_current = T_false_prev + dT_false;
             T_false_grid[i] = T_false_current;
 
 
@@ -563,10 +563,9 @@ namespace PhaseTracer {
                     Set reheating flag based on the size of dot(f)/f. We manually make
                     this negative to agree with 2.
             */
-            const double d_true_vacuum_dT_false = - d_true_vacuum/dT_false;
+            const double d_true_vacuum_dT_false = d_true_vacuum/dT_false;
             double transfer_rate = (true_vacuum_prev == 0.0) ? 0.0 : d_true_vacuum_dT_false/true_vacuum_prev; 
             const bool reheatingQ = std::abs(transfer_rate) > 1e-10;
-            // const bool reheatingQ = true_vacuum_current > 1e-10;
 
             /*
                 4.a If we are not reheating, solving the matching equation for T_true
@@ -627,12 +626,12 @@ namespace PhaseTracer {
             const double hubble = get_hubble_rate(T_false_prev);
             const double dt_dT_false = get_time_temperature_false(T_false_prev);
             const double redshifted_energy = -3.0 * dt_dT_false * hubble * (e_true_grid[i+1] + p_true_grid[i+1]);
-            double d_e_true_dT_false = injected_energy + redshifted_energy;
+            double d_e_true_dT_false = injected_energy; // + redshifted_energy;
 
             /*
                 6. Update e_true by adding the above term.
             */
-            const double d_e_true = d_e_true_dT_false * (-dT_false);
+            const double d_e_true = d_e_true_dT_false * dT_false;
             const double e_true_current = e_true_grid[i+1] + d_e_true;
             e_true_grid[i] = e_true_current;
 
