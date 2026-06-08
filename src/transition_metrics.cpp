@@ -575,7 +575,8 @@ namespace PhaseTracer {
             {
                 const double T_true_prev = T_true_grid[i+1];
                 const double dT_true = dT_false; // same step size, same direction
-                const double T_true_current = T_true_prev + dT_true;
+                // const double T_true_current = T_true_prev + dT_true;
+                const double T_true_current = get_T_true_adiabatic(T_false_current, T_false_prev, T_true_prev, tol, max_iter);
                 const double e_true_current = std::abs(eos.get_energy_minus(T_true_current));
                 const double e_false_current = 0.0;
                 T_true_grid[i] = T_true_current;
@@ -702,7 +703,25 @@ namespace PhaseTracer {
                     << ", sign(d_e_true) = " << (d_e_true > 0.0 ? "+" : "-")
                     << std::endl;
         }
-        
+
+        // write out all of the computed values to a file
+        std::ofstream outfile("example/TestThermalParameters/reheating_data/reheating.csv");
+        outfile << "# T_false,T_true,time,e_false,e_true,Pf,Pt" << std::endl;
+        if (outfile.is_open())
+        {
+            for (int i = 0; i < N; ++i)
+            {
+                outfile << T_false_grid[i] << ","
+                        << T_true_grid[i] << ","
+                        << get_t(T_false_grid[i]) << ","
+                        << e_false_grid[i] << ","
+                        << e_true_grid[i] << ","
+                        << false_vacuum_grid[i] << ","
+                        << true_vacuum_grid[i] << std::endl;
+            }
+            outfile.close();
+        }
+
         alglib::real_1d_array T_false_arr, T_true_arr;
         T_false_arr.setcontent(N, T_false_grid.data());
         T_true_arr.setcontent(N, T_true_grid.data());
@@ -831,7 +850,7 @@ namespace PhaseTracer {
             LOG(debug) << "  scale_factor_ratio_integrand spline: " << dt.count() << " ms";
         }
         
-
+        bool one_reheating_iteration = false;
         for (int iter = 0; iter < max_extended_volume_refinements; ++iter)
         {
             LOG(debug) << "Running false vacuum iteration " << iter;
@@ -844,11 +863,13 @@ namespace PhaseTracer {
                 LOG(debug) << "  time to build Vext spline: " << dt.count() << " ms"; 
             }
 
-            if (iter > 0 && include_reheating)
+            
+            if (iter > 0 && include_reheating && !one_reheating_iteration)
             {
                 auto t0 = std::chrono::high_resolution_clock::now();
                 // make_T_true_spline();
                 solve_friedmann();
+                one_reheating_iteration = true;
                 T_true_spline_computed = true;
                 auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
                 LOG(debug) << "  T_true spline: " << dt.count() << " ms";
