@@ -53,7 +53,7 @@ namespace PhaseTracer {
             false_vacuum_fraction = std::exp(-Vext);
         }
         const double true_vacuum_fraction = 1.0 - false_vacuum_fraction;
-        const double e_false = abs(eos.get_energy_minus(T));
+        const double e_false = abs(eos.get_energy_plus(T));
 
         const double e_bar = false_vacuum_fraction * e_false + true_vacuum_fraction * e_true;
         const double Hsq = 8. * M_PI * newtonG / 3. * e_bar;
@@ -144,31 +144,6 @@ namespace PhaseTracer {
 
         integrate_and_fit_spline(volume_term_integral_spline, integrand, volume_term_integration_steps);
         volume_term_integral_spline_computed = true;
-
-        // compare volume term integral spline to direct integration
-        // evaluate at points not on the spline grid
-        // for (int i = 0; i < 10; i++)
-        // {
-        //     double T1 = t_min + (t_max - t_min) * (i + 0.5) / 10;
-        //     double T2 = t_min + (t_max - t_min) * (i + 1.0) / 10;
-        //     double K_spline_T1 = alglib::spline1dcalc(volume_term_integral_spline, T1);
-        //     double K_spline_T2 = alglib::spline1dcalc(volume_term_integral_spline, T2);
-        //     double K_direct_T1 = boost::math::quadrature::gauss_kronrod<double, 61>::integrate(integrand, t_min, T1, 12, 1e-8);
-        //     double K_direct_T2 = boost::math::quadrature::gauss_kronrod<double, 61>::integrate(integrand, t_min, T2, 12, 1e-8);
-        //     std::cout << "Testing volume term integral spline at T1 = " << T1 << ", T2 = " << T2 << std::endl;
-        //     std::cout << "K from spline: " << K_spline_T1 << ", K from direct integration: " << K_direct_T1 << std::endl;
-        //     std::cout << "K from spline: " << K_spline_T2 << ", K from direct integration: " << K_direct_T2 << std::endl;
-        //     if (std::abs(K_spline_T1 - K_direct_T1) > 1e-3)
-        //     {
-        //         LOG(warning) << "Volume term integral spline differs from direct integration by more than 0.1% at T = " << T1;
-        //         LOG(warning) << "K from spline: " << K_spline_T1 << ", K from direct integration: " << K_direct_T1;
-        //     }
-        //     if (std::abs(K_spline_T2 - K_direct_T2) > 1e-3)
-        //     {
-        //         LOG(warning) << "Volume term integral spline differs from direct integration by more than 0.1% at T = " << T2;
-        //         LOG(warning) << "K from spline: " << K_spline_T2 << ", K from direct integration: " << K_direct_T2;
-        //     }
-        // }
     }
 
     const double
