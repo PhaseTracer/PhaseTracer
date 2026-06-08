@@ -245,6 +245,47 @@ namespace PhaseTracer {
         return -exp(-Vext) * Vext * dy;
     }
 
+    void TransitionMetrics::refine_temperature_bounds()
+    {
+        const int N = 1000;
+        const double dT = (t_max - t_min) / (N - 1);
+        const double monotonicity_tol = 10.0 * temperature_abs_tol;
+
+        double e_false_prev = eos.get_energy_plus(t_max);
+        double e_true_prev  = eos.get_energy_minus(t_max);
+        double p_false_prev = eos.get_pressure_plus(t_max);
+        double p_true_prev  = eos.get_pressure_minus(t_max);
+
+        for(int i = 1; i < N; ++i)
+        {
+            const double T = t_max - i * dT; // step down from t_max
+
+            const double e_false = eos.get_energy_plus(T);
+            const double e_true  = eos.get_energy_minus(T);
+            const double p_false = eos.get_pressure_plus(T);
+            const double p_true  = eos.get_pressure_minus(T);
+
+            const bool monotonic_decreasing_broken =
+                e_false > e_false_prev + monotonicity_tol ||
+                e_true  > e_true_prev  + monotonicity_tol ||
+                p_false > p_false_prev + monotonicity_tol ||
+                p_true  > p_true_prev  + monotonicity_tol;
+
+            if(monotonic_decreasing_broken)
+            {
+                t_min = T + dT; // last good temperature
+                LOG(warning) << "Refining temperature bounds: setting t_min to " << t_min
+                            << " GeV to keep e(T) and p(T) monotonically decreasing";
+                break;
+            }
+
+            e_false_prev = e_false;
+            e_true_prev  = e_true;
+            p_false_prev = p_false;
+            p_true_prev  = p_true;
+        }
+    }
+
     void
     TransitionMetrics::solve_friedmann()
     {

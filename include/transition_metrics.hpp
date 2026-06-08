@@ -337,6 +337,8 @@ public :
     TransitionMetrics(const FalseVacuumDecayRate& decay_rate_in, const EquationOfState& eos_in) :
     decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
     {
+        refine_temperature_bounds();
+
         calculate_false_vacuum_fraction();
     }
 
@@ -406,6 +408,8 @@ private:
     void make_T_true_spline();
 
     void solve_friedmann();
+
+    void refine_temperature_bounds();
 
     void calculate_false_vacuum_fraction();
 
