@@ -487,7 +487,7 @@ namespace PhaseTracer {
     void
     TransitionMetrics::solve_friedmann()
     {
-        const int N = 500; // TODO
+        const int N = 250; // TODO
 
         const double dT_false = (t_min - t_max)/(N - 1);
 
@@ -524,6 +524,8 @@ namespace PhaseTracer {
         const double tol = 1e-8;
         boost::uintmax_t max_iter = 100;
 
+        bool transition_complete = false;
+
         for(int i = N - 2; i >= 0; --i)
         {
             /*
@@ -556,6 +558,39 @@ namespace PhaseTracer {
             if ( d_true_vacuum < 0.0 )
             {
                 LOG(warning) << "Warning: d(P_true) is negative at T_false = " << T_false_current;
+            }
+
+            /*
+                2.5 Check if the transition is complete. If so, we simply step down T_true.
+
+
+            */
+            if(!transition_complete && true_vacuum_current > 1.0 - 1e-6)
+            {
+                transition_complete = true;
+                LOG(info) << "Transition complete at T_false = " << T_false_current;
+            }
+
+            if(transition_complete)
+            {
+                const double T_true_prev = T_true_grid[i+1];
+                const double dT_true = dT_false; // same step size, same direction
+                const double T_true_current = T_true_prev + dT_true;
+                const double e_true_current = std::abs(eos.get_energy_minus(T_true_current));
+                const double e_false_current = 0.0;
+                T_true_grid[i] = T_true_current;
+                e_true_grid[i] = e_true_current;
+                e_false_grid[i] = e_false_current;
+                p_true_grid[i] = std::abs(eos.get_pressure_minus(T_true_current));
+
+                std::cout << "T_false = " << T_false_current
+                    << ", T_true = " << T_true_current
+                    << ", Pf = " << false_vacuum_current
+                    << ", Pt = " << true_vacuum_current
+                    << " [POST-TRANSITION]"
+                    << ", e_true = " << e_true_current
+                    << std::endl;
+                continue;
             }
 
             /*
@@ -626,7 +661,7 @@ namespace PhaseTracer {
             const double hubble = get_hubble_rate(T_false_prev);
             const double dt_dT_false = get_time_temperature_false(T_false_prev);
             const double redshifted_energy = -3.0 * dt_dT_false * hubble * (e_true_grid[i+1] + p_true_grid[i+1]);
-            double d_e_true_dT_false = injected_energy; // + redshifted_energy;
+            double d_e_true_dT_false = injected_energy + redshifted_energy;
 
             /*
                 6. Update e_true by adding the above term.
@@ -666,9 +701,12 @@ namespace PhaseTracer {
                     << ", sign(redshifted) = " << (redshifted_energy > 0.0 ? "+" : "-")
                     << ", sign(d_e_true) = " << (d_e_true > 0.0 ? "+" : "-")
                     << std::endl;
-            
         }
         
+        alglib::real_1d_array T_false_arr, T_true_arr;
+        T_false_arr.setcontent(N, T_false_grid.data());
+        T_true_arr.setcontent(N, T_true_grid.data());
+        alglib::spline1dbuildcubic(T_false_arr, T_true_arr, T_true_spline);
     }
 
     const double 
