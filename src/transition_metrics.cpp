@@ -274,7 +274,7 @@ namespace PhaseTracer {
             if(monotonic_decreasing_broken)
             {
                 t_min = T + dT;
-                LOG(warning) << "Refining temperature bounds: setting t_min to " << t_min << " GeV to keep e(T) and p(T) monotonically decreasing";
+                LOG(debug) << "Refining temperature bounds: setting t_min to " << t_min << " GeV to keep e(T) and p(T) monotonically decreasing";
                 break;
             }
 
@@ -293,8 +293,6 @@ namespace PhaseTracer {
         double tol, 
         boost::uintmax_t max_iter)
     {
-        LOG(debug) << "Finding reheating start temperature between " << T_low << " GeV and " << T_high << " GeV with target reheating rate of " << reheating_target;
-
         auto target_function = [this, reheating_target](double T_trial)
         {
             double d_Pf_d_Tf = get_d_false_vacuum_fraction_dT(T_trial);
@@ -327,8 +325,6 @@ namespace PhaseTracer {
         const double completion_temp = 
             (completion_milestone.status == MilestoneStatus::YES || completion_milestone.status == MilestoneStatus::FAST) ? 
             completion_milestone.temperature : T_high;
-
-        LOG(debug) << "Found reheating end temperature: " << reheating_end_temp << " GeV, completion temperature: " << completion_temp << " GeV";
 
         return std::max(reheating_end_temp, completion_temp);
     }
@@ -534,8 +530,11 @@ namespace PhaseTracer {
             dstate[0] = injected + redshifted;
         };
 
+        bool first_observer_call = true;
+
         auto observer = [&](const state_type& state, double T_false)
         {
+            if(first_observer_call) { first_observer_call = false; return; }
             const double e_true = state[0];
 
             if(e_true < e_true_min)
@@ -614,67 +613,32 @@ namespace PhaseTracer {
     void
     TransitionMetrics::solve_friedmann()
     {
-        const int N = 250; // TODO
-
-        const double dT_false = (t_min - t_max)/(N - 1);
-
-        // cache values
-        std::vector<double> T_false_grid(N);
-        std::vector<double> T_true_grid(N);
-        std::vector<double> t_grid(N);
-        std::vector<double> false_vacuum_grid(N);
-        std::vector<double> true_vacuum_grid(N);
-        std::vector<double> e_false_grid(N);
-        std::vector<double> e_true_grid(N);
-        std::vector<double> p_true_grid(N);
-        
-        // initial conditions
-        T_false_grid[N-1] = t_max;
-        T_true_grid[N-1] = t_max;
-        t_grid[N-1] = 0.0; // by definition
-        false_vacuum_grid[N-1] = 1.0; // by definition
-        true_vacuum_grid[N-1] = 0.0; // by definition
-        e_false_grid[N-1] = std::abs(eos.get_energy_plus(t_max));
-        e_true_grid[N-1] = std::abs(eos.get_energy_plus(t_max));
-        p_true_grid[N-1] = std::abs(eos.get_pressure_minus(t_max));
-
-        std::cout << "initial conditions: "
-            << " T_false = " << T_false_grid[N-1]
-            << ", T_true = " << T_true_grid[N-1]
-            << ", Pf = " << false_vacuum_grid[N-1]
-            << ", Pt = " << true_vacuum_grid[N-1]
-            << ", e_false = " << e_false_grid[N-1]
-            << ", e_true = " << e_true_grid[N-1]
-            << ", p_true = " << p_true_grid[N-1]
-            << std::endl;
-
         const double tol = 1e-8;
         boost::uintmax_t max_iter = 100;
-
-        bool transition_complete = false;
 
         const auto perc = get_transition_milestone(MilestoneType::PERCOLATION);
         const double percolation_temperature = (perc.status == MilestoneStatus::YES || perc.status == MilestoneStatus::FAST) ? perc.temperature : t_min;
 
         double reheating_target = 1e-10;
         double T_start = find_reheating_start_temp(percolation_temperature, t_max, reheating_target);
-        LOG(debug) << "Found reheating start temperature: " << T_start << " GeV";
-
         double T_end = find_reheating_end_temp(t_min, percolation_temperature, reheating_target);
-        LOG(debug) << "Found reheating end temperature: " << T_end << " GeV";
+        LOG(debug) << "Reheating start temperature: " << T_start << ", Reheating end temperature: " << T_end;
 
         ReheatingArrays arrays;
 
+        LOG(debug) << "Evaluating pre-onset evolution...";
         evaluate_pre_onset_evolution(t_max, T_start, arrays, tol, max_iter);
 
+        LOG(debug) << "Evaluating reheating evolution...";
         try{
             evaluate_reheating_evolution(T_start, T_end, arrays, tol, max_iter);
         } catch (const TransitionCompleteException& e)
         {
-            LOG(debug) << "Transition complete during reheating evolution.";
+            LOG(debug) << "Transition complete during reheating evolution. Exiting reheating phase...";
             T_end = arrays.T_false_grid.back();
         }
 
+        LOG(debug) << "Evaluating post-reheating evolution...";
         evaluate_post_reheating_evolution(T_end, t_min, arrays, tol, max_iter);
 
         // iterate over arrays.T_false_grid and add t values
@@ -686,213 +650,19 @@ namespace PhaseTracer {
 
         arrays.write("example/TestThermalParameters/reheating_data/reheating.csv");
 
-        // debug print state vectors after integration
-        LOG(debug) << "Finished reheating evolution. Final state:";
-        for (size_t i = 0; i < arrays.T_false_grid.size(); ++i)
+        LOG(debug) << "Friedmann solver complete. Building T_true spline...";
+        try{
+            alglib::real_1d_array T_false_arr, T_true_arr;
+            T_false_arr.setcontent(arrays.T_false_grid.size(), arrays.T_false_grid.data());
+            T_true_arr.setcontent(arrays.T_true_grid.size(), arrays.T_true_grid.data());
+            alglib::spline1dbuildcubic(T_false_arr, T_true_arr, T_true_spline);
+        } catch (const std::exception& e)
         {
-            LOG(debug) << "T_false = " << arrays.T_false_grid[i]
-                    << ", T_true = " << arrays.T_true_grid[i]
-                    << ", e_true = " << arrays.e_true_grid[i]
-                    << ", Pt = " << arrays.true_vacuum_grid[i];
+            LOG(error) << "Error building T_true spline: " << e.what();
+            T_true_spline_computed = false;
+            return;
         }
-
-        for(int i = N - 2; i >= 0; --i)
-        {
-            /*
-                1. Step down in T_false by dT_false
-            */
-            const double T_false_prev = T_false_grid[i+1];
-            const double T_false_current = T_false_prev + dT_false;
-            T_false_grid[i] = T_false_current;
-
-
-            /*
-                2.  Evaluate the false vacuum fraction at new temp.
-
-                    As a sanity check, we expect d(P_false)/d(T_false) to be positive, because as
-                    we move towards T_f -> T_c, P_f increases towards 1. Likewise, d(P_true)/d(T_false)
-                    should be negative, because as T_f -> T_c, P_t decreases towards 0.
-            */
-            const double false_vacuum_prev = false_vacuum_grid[i+1];
-            const double false_vacuum_current = get_false_vacuum_fraction(T_false_current);
-            const double true_vacuum_prev = 1.0 - false_vacuum_prev;
-            const double true_vacuum_current = 1.0 - false_vacuum_current;
-            const double d_false_vacuum = false_vacuum_current - false_vacuum_prev;
-            const double d_true_vacuum = - d_false_vacuum;
-            false_vacuum_grid[i] = false_vacuum_current;
-            true_vacuum_grid[i] = true_vacuum_current;
-            if ( d_false_vacuum > 0.0 )
-            {
-                LOG(warning) << "Warning: d(P_false) is positive at T_false = " << T_false_current;
-            }
-            if ( d_true_vacuum < 0.0 )
-            {
-                LOG(warning) << "Warning: d(P_true) is negative at T_false = " << T_false_current;
-            }
-
-            /*
-                3.  Evaluate the rate of change of d_true and the decay_rate dot(f)/f.
-                    Set reheating flag based on the size of dot(f)/f. 
-            */
-            const double d_true_vacuum_dT_false = d_true_vacuum/dT_false;
-            double transfer_rate = (true_vacuum_prev == 0.0) ? 0.0 : d_true_vacuum_dT_false/true_vacuum_prev; 
-
-            static bool reheating_started = false;
-            if(!reheating_started && std::abs(transfer_rate) > 1e-10)
-                reheating_started = true;
-
-            if(!transition_complete)
-            {
-                /*
-                    Two end conditions. P_t = 1, or P_t > 0 and transfer_rate = 0
-                */
-               if(true_vacuum_current > 1.0 - 1e-2 || (true_vacuum_current > 1e-2 && std::abs(transfer_rate) < 1e-10))
-            {
-                transition_complete = true;
-                LOG(info) << "Transition complete at T_false = " << T_false_current;
-            }
-            }
-
-            const bool reheatingQ = reheating_started;
-
-            /*
-                4.a If we are not reheating, solving the matching equation for T_true
-                    this assumes instant thermalisation of the true vacuum.
-
-                    As a sanity check, we expect e_true(T_false) < e_false(T_false). Hence, matching 
-                    e(T_true) = e(T_false) forces T_true > T_false.
-            */
-            if(!reheatingQ)
-            {
-                const double T_true_current = get_T_true_matching_e_false(T_false_current, 1e-12, max_iter);
-                const double e_false_current = std::abs(eos.get_energy_plus(T_false_current));
-                const double e_true_current = std::abs(eos.get_energy_minus(T_true_current));
-                const double p_true_current = std::abs(eos.get_pressure_minus(T_true_current));
-                e_false_grid[i] = e_false_current;
-                e_true_grid[i] = e_true_current;
-                p_true_grid[i] = p_true_current;
-                T_true_grid[i] = T_true_current;
-                std::cout << "T_false = " << T_false_current
-                    << ", T_true = " << T_true_current
-                    << ", Pf = " << false_vacuum_current
-                    << ", Pt = " << true_vacuum_current
-                    << ", transfer_rate = " << transfer_rate
-                    << (reheatingQ ? " [REHEATING]" : " [ADIABATIC]")
-                    << ", e_false = " << e_false_current
-                    << ", e_true = " << e_true_current
-                    << std::endl;
-                continue;
-            }
-
-            /*
-                4.c If the transition has completed, we assume we are now in the true_vacuum phase
-                    undergoing adiabatic expansion. Note that even if P_t =/= 1, the fact 
-                    the transfer_rate is zero means we are undergoing adiabatic expansion
-                    anyway.
-            */
-            if(transition_complete)
-            {
-                const double T_true_prev = T_true_grid[i+1];
-                const double T_true_current = get_T_true_adiabatic(T_false_current, T_false_prev, T_true_prev, tol, max_iter);
-                const double e_true_current = std::abs(eos.get_energy_minus(T_true_current));
-                const double e_false_current = 0.0;
-                T_true_grid[i] = T_true_current;
-                e_true_grid[i] = e_true_current;
-                e_false_grid[i] = e_false_current;
-                p_true_grid[i] = std::abs(eos.get_pressure_minus(T_true_current));
-
-                std::cout << "T_false = " << T_false_current
-                    << ", T_true = " << T_true_current
-                    << ", Pf = " << false_vacuum_current
-                    << ", Pt = " << true_vacuum_current
-                    << " [POST-TRANSITION]"
-                    << ", e_true = " << e_true_current
-                    << std::endl;
-                continue;
-            }
-
-            /*
-                4.b If we are reheating, first evaluate false vacuum energy density.
-            */
-            const double e_false_current = std::abs(eos.get_energy_plus(T_false_current));
-            e_false_grid[i] = e_false_current;
-
-            /*
-                5. Evaluate d(e_true)/dT_f. This has contributions from Hubble expansion
-                   and the injected energy. 
-
-                   The hubble term is - 3 H (e_t + p_t), which is negative such that as t
-                   increases, e_t will lose energy due to redshift. But, changing 
-                   d/dt = dT_f/dt d/dT_f = dot(T_f) d/dT_f introduces a factor 
-                   of - 3 H (e_t + p_t) / dot(T_f). dot(T_f) is negative because 
-                   such that the term is positive; as T_f increases, t decreases,
-                   so the hubble term is positive.
-
-                   The injected energy, dot(f)/f (e_f - e_t) is positive, provided
-                   e_f > e_t (e_t is more stable). Hence, as time progresses, we gain 
-                   energy due to reheating. But, we cancel the dT_f/dt term to get 
-                   (df/dT_f)/f (e_f - e_t). As above, df/dT_f is negative, so as T_f
-                   increases, t decreases, and we lose energy.
-            */
-            // double latent_heat = e_false_grid[i+1] - e_true_grid[i+1];
-            double latent_heat = e_false_grid[i+1] - std::abs(eos.get_energy_minus(T_false_prev));
-            if(std::abs(latent_heat) <= 1e-4) { latent_heat = 0.0; }
-            const double injected_energy = transfer_rate * latent_heat;
-            const double hubble = get_hubble_rate(T_false_prev);
-            const double dt_dT_false = get_time_temperature_false(T_false_prev);
-            const double redshifted_energy = -3.0 * dt_dT_false * hubble * (e_true_grid[i+1] + p_true_grid[i+1]);
-            double d_e_true_dT_false = injected_energy + redshifted_energy;
-
-            /*
-                6. Update e_true by adding the above term.
-            */
-            const double d_e_true = d_e_true_dT_false * dT_false;
-            const double e_true_current = e_true_grid[i+1] + d_e_true;
-            e_true_grid[i] = e_true_current;
-
-            /*
-                7. Solve the matching condition for e_true, and update p_true
-            */
-            const double T_true_current = get_T_true_matching_e_true(T_false_current, e_true_current, tol, max_iter);
-            T_true_grid[i] = T_true_current;
-            p_true_grid[i] = std::abs(eos.get_pressure_minus(T_true_current));
-
-            std::cout << "T_false = " << T_false_current
-                    << ", T_true = " << T_true_current
-                    << ", e_false = " << e_false_current
-                    << ", e_true = " << e_true_current
-                    << ", Pt = " << true_vacuum_current
-                    << (reheatingQ ? " [REHEATING]" : " [ADIABATIC]")
-                    << ", transfer_rate = " << transfer_rate
-                    // << ", latent_heat = " << latent_heat
-                    // << ", sign(injected) = " << (injected_energy > 0.0 ? "+" : "-")
-                    // << ", sign(redshifted) = " << (redshifted_energy > 0.0 ? "+" : "-")
-                    // << ", sign(d_e_true) = " << (d_e_true > 0.0 ? "+" : "-")
-                    << std::endl;
-        }
-
-        // // write out all of the computed values to a file
-        // std::ofstream outfile("example/TestThermalParameters/reheating_data/reheating.csv");
-        // outfile << "# T_false,T_true,time,e_false,e_true,Pf,Pt" << std::endl;
-        // if (outfile.is_open())
-        // {
-        //     for (int i = 0; i < N; ++i)
-        //     {
-        //         outfile << T_false_grid[i] << ","
-        //                 << T_true_grid[i] << ","
-        //                 << get_t(T_false_grid[i]) << ","
-        //                 << e_false_grid[i] << ","
-        //                 << e_true_grid[i] << ","
-        //                 << false_vacuum_grid[i] << ","
-        //                 << true_vacuum_grid[i] << std::endl;
-        //     }
-        //     outfile.close();
-        // }
-
-        alglib::real_1d_array T_false_arr, T_true_arr;
-        T_false_arr.setcontent(N, arrays.T_false_grid.data());
-        T_true_arr.setcontent(N, arrays.T_true_grid.data());
-        alglib::spline1dbuildcubic(T_false_arr, T_true_arr, T_true_spline);
+        LOG(debug) << "T_true spline built.";
     }
 
     const double
@@ -938,7 +708,6 @@ namespace PhaseTracer {
             if (iter > 0 && include_reheating && !one_reheating_iteration)
             {
                 auto t0 = std::chrono::high_resolution_clock::now();
-                // make_T_true_spline();
                 solve_friedmann();
                 one_reheating_iteration = true;
                 T_true_spline_computed = true;
