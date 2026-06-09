@@ -24,12 +24,12 @@ if(BUILD_WITH_BP)
   )
 endif(BUILD_WITH_BP)
 
-if(BUILD_WITH_DP)
+if(BUILD_WITH_HG)
   find_package(OpenMP REQUIRED) # this line might not be needed
   target_link_libraries(phasetracer PRIVATE
-    ${DeepPhase_LIBRARIES}
+    ${HydroGrav_LIBRARIES}
     OpenMP::OpenMP_CXX
     GSL::gsl
     GSL::gslcblas
   )
-endif(BUILD_WITH_DP)
+endif(BUILD_WITH_HG)

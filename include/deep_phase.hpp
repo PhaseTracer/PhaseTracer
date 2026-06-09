@@ -18,8 +18,8 @@
 #ifndef PHASETRACER_DP_HPP_
 #define PHASETRACER_DP_HPP_
 
-#include "DeepPhase/include/deepphase.hpp"
-#include "DeepPhase/include/maths_ops.hpp"
+#include "HydroGrav/include/hydrograv.hpp"
+#include "HydroGrav/include/maths_ops.hpp"
 #include "thermo_finder.hpp"
 #include "logger.hpp"
 #include <iostream>
@@ -308,7 +308,7 @@ struct DeepPhaseResults
 			std::cout << profile_bag->xi_min() << "\n";
 			std::cout << profile_bag->xi_max() << "\n";
 			std::cout << profile_bag->mode_str() << "\n";
-			spectrum_bag = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec(kRs_vals, *ptparams_bag));
+			spectrum_bag = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec(kRs_vals, *ptparams_bag, true));
 		}
 
 		if (eos_model == EoSModel::MUNU || eos_model == EoSModel::ALL) 
@@ -316,7 +316,7 @@ struct DeepPhaseResults
 			auto ptparams_variant = get_pt_params_from_transition_milestone(milestone, eos, dof, vw, dtauRs, EoSModel::MUNU);
 			ptparams_munu = std::make_unique<PhaseTransition::PTParams_Bag>(get_bag(ptparams_variant));
 			profile_munu = std::make_unique<Hydrodynamics::FluidProfile>(*ptparams_munu);
-			spectrum_munu = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec(kRs_vals, *ptparams_munu));
+			spectrum_munu = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec(kRs_vals, *ptparams_munu, true));
 		}
 		
 		if (eos_model == EoSModel::VEFF || eos_model == EoSModel::ALL)
@@ -326,7 +326,7 @@ struct DeepPhaseResults
 			profile_veff = std::make_unique<Hydrodynamics::FluidProfile>(*ptparams_veff);
 			std::cout << profile_veff->xi_min() << "\n";
 			std::cout << profile_veff->xi_max() << "\n";
-			spectrum_veff = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec(kRs_vals, *ptparams_veff));
+			spectrum_veff = std::make_unique<Spectrum::PowerSpec>(Spectrum::GWSpec(kRs_vals, *ptparams_veff, true));
 		}
 	}
 	

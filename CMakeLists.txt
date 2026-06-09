@@ -17,8 +17,8 @@ option(BUILD_WITH_BSMPT "Build BSMPT example programs" OFF)
 # option for including BubbleProfiler
 option(BUILD_WITH_BP "Build example programs including BubbleProfiler" OFF)
 
-# option for including DeepPhase
-option(BUILD_WITH_DP "Build example programs including DeepPhase" ON)
+# option for including HydroGrav
+option(BUILD_WITH_HG "Build example programs including HydroGrav" ON)
 
 # packages
 
@@ -47,16 +47,16 @@ if(BUILD_WITH_BP)
   find_package(BubbleProfiler REQUIRED)
 endif(BUILD_WITH_BP)
 
-if(BUILD_WITH_DP)
-  add_definitions(-DBUILD_WITH_DP)
+if(BUILD_WITH_HG)
+  add_definitions(-DBUILD_WITH_HG)
   find_package(GSL REQUIRED)
-  find_package(DeepPhase REQUIRED)
-endif(BUILD_WITH_DP)
+  find_package(HydroGrav REQUIRED)
+endif(BUILD_WITH_HG)
 
 # flags
 
 set(CMAKE_CXX_FLAGS "-O3")
-set(CMAKE_CXX_STANDARD 17) # must be 17 for DeepPhase
+set(CMAKE_CXX_STANDARD 17) # must be 17 for HydroGrav
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -78,11 +78,11 @@ if(BUILD_WITH_BP)
   )
 endif(BUILD_WITH_BP)
 
-if(BUILD_WITH_DP)
+if(BUILD_WITH_HG)
   include_directories(
     ${PROJECT_SOURCE_DIR}
   )
-endif(BUILD_WITH_DP)
+endif(BUILD_WITH_HG)
 
 # add relevant dirs
 
