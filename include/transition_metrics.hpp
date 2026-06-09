@@ -399,7 +399,27 @@ private:
         std::vector<double> e_false_grid;
         std::vector<double> e_true_grid;
         std::vector<double> p_true_grid;
+
+        void write(std::string filename) const
+        {
+            std::ofstream file(filename);
+            file << "# T_false,T_true,time,e_false,e_true,Pf,Pt\n";
+            for (size_t i = 0; i < T_false_grid.size(); ++i)
+            {
+                double T_false = T_false_grid[i];
+                double T_true = T_true_grid[i];
+                double time = t_grid[i];
+                double e_false = e_false_grid[i];
+                double e_true = e_true_grid[i];
+                double Pf = false_vacuum_grid[i];
+                double Pt = true_vacuum_grid[i];
+                file << T_false << "," << T_true << "," << time << "," << e_false << "," << e_true << "," << Pf << "," << Pt << "\n";
+            }
+            file.close();
+        }
     };
+
+    struct TransitionCompleteException {};
 
     const double find_temperature(std::function<double(double)> target_function, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
@@ -431,6 +451,8 @@ private:
     void evaluate_pre_onset_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
     void evaluate_reheating_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+
+    void evaluate_post_reheating_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
     void solve_friedmann();
 

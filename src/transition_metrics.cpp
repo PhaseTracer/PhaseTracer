@@ -369,6 +369,98 @@ namespace PhaseTracer {
         return root;
     }
 
+    const double 
+    TransitionMetrics::get_T_true_matching_e_true(const double& T_false, const double& e_true, double tol, boost::uintmax_t max_iter) const
+    {
+        std::pair<double, double> bracket = {t_min, t_max};
+
+        if (std::abs(T_false - t_max) < tol) 
+        {
+            return T_false;
+        }
+
+        auto target_function = [this, e_true](double T_true)
+        {
+            double e_true_eos = abs(eos.get_energy_minus(T_true));
+            return e_true / e_true_eos - 1.0;
+        };
+
+        double f_low = target_function(bracket.first);
+        double f_high = target_function(bracket.second);
+        if (f_low * f_high > 0.0)        
+        {
+            return T_false;
+        }
+
+        auto root_pair = boost::math::tools::toms748_solve(
+            target_function,
+            bracket.first, bracket.second,
+            [=](double l, double u){ return std::abs(u - l) < tol; },
+            max_iter
+        );
+
+        double root = (root_pair.first + root_pair.second) / 2.0;
+        return root;
+    }
+
+    const double 
+    TransitionMetrics::get_T_true_adiabatic(const double& T_false, const double& T_false_prev, const double& T_true_prev, double tol, boost::uintmax_t max_iter) const
+    {
+        auto adiabatic_eq = [this, T_false, T_false_prev, T_true_prev](double T_trial)
+        {
+            const double s_trial = std::abs(eos.get_entropy_minus(T_trial));
+            const double a_ratio = get_atop_abottom(T_false_prev, T_false);
+            const double s_true = std::abs(eos.get_entropy_minus(T_true_prev));
+            return s_trial - s_true * a_ratio*a_ratio*a_ratio;
+        };
+
+        const double T_low = eos.get_t_min();
+        const double T_high = eos.get_t_max();
+        if (T_low >= T_high) { return T_true_prev; }
+
+        const int n_scan = 60;
+        double best_T = T_true_prev;
+        double best_abs = std::numeric_limits<double>::infinity();
+
+        double prev_T = T_low;
+        double prev_f = adiabatic_eq(prev_T);
+        best_T = prev_T;
+        best_abs = std::abs(prev_f);
+
+        for (int i = 1; i < n_scan; ++i)
+        {
+            const double T = T_low + (T_high - T_low) * static_cast<double>(i) / (n_scan - 1);
+            const double f = adiabatic_eq(T);
+
+            const double abs_f = std::abs(f);
+            if (abs_f < best_abs)
+            {
+                best_abs = abs_f;
+                best_T = T;
+            }
+
+            if (prev_f == 0.0) { return prev_T; }
+            if (f == 0.0) { return T; }
+
+            if ((prev_f < 0.0 && f > 0.0) || (prev_f > 0.0 && f < 0.0))
+            {
+                auto root_pair = boost::math::tools::toms748_solve(
+                    adiabatic_eq,
+                    prev_T, T,
+                    [=](double l, double u){ return std::abs(u - l) < tol; },
+                    max_iter
+                );
+
+                return (root_pair.first + root_pair.second) / 2.0;
+            }
+
+            prev_T = T;
+            prev_f = f;
+        }
+
+        return best_T;
+    }
+
     void
     TransitionMetrics::evaluate_pre_onset_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol, boost::uintmax_t max_iter)
     {
@@ -404,47 +496,6 @@ namespace PhaseTracer {
         }
     }
 
-    const double 
-    TransitionMetrics::get_T_true_matching_e_true(const double& T_false, const double& e_true, double tol, boost::uintmax_t max_iter) const
-    {
-        std::pair<double, double> bracket = {t_min, t_max};
-
-        if (std::abs(T_false - t_max) < tol) 
-        {
-            return T_false;
-        }
-
-        auto target_function = [this, e_true](double T_true)
-        {
-            double e_true_eos = abs(eos.get_energy_minus(T_true));
-            return e_true / e_true_eos - 1.0;
-        };
-
-        double f_low = target_function(bracket.first);
-        double f_high = target_function(bracket.second);
-        if (f_low * f_high > 0.0)        
-        {
-            // LOG(debug) << "T_true matching failed. Returning T_false = " << T_false;
-            return T_false;
-        }
-
-        auto root_pair = boost::math::tools::toms748_solve(
-            target_function,
-            bracket.first, bracket.second,
-            [=](double l, double u){ return std::abs(u - l) < tol; },
-            max_iter
-        );
-
-        double root = (root_pair.first + root_pair.second) / 2.0;
-        return root;
-    }
-
-    // const double 
-    // TransitionMetrics::get_T_true_matching_e_true(const double& e_true, double tol, boost::uintmax_t max_iter) const
-    // {
-    //     return get_T_true_matching_e_true(t_min, e_true, tol, max_iter);
-    // }
-
     void
     TransitionMetrics::evaluate_reheating_evolution(
         const double& T_high, 
@@ -456,13 +507,12 @@ namespace PhaseTracer {
         namespace odeint = boost::numeric::odeint;
         using state_type = std::array<double, 1>;
 
+        const double e_true_min = std::abs(eos.get_energy_minus(t_min));
+
         const double T_false_initial = arrays.T_false_grid.back();
         const double e_true_initial  = arrays.e_true_grid.back();
         const double p_true_initial  = arrays.p_true_grid.back();
 
-        LOG(debug) << "Starting reheating evolution at T_false = " << T_false_initial << ", e_true = " << e_true_initial;
-
-        // RHS of the e_true ODE, using T_false
         auto rhs = [&](const state_type& state, state_type& dstate, double T_false)
         {
             const double e_true = state[0];
@@ -487,6 +537,13 @@ namespace PhaseTracer {
         auto observer = [&](const state_type& state, double T_false)
         {
             const double e_true = state[0];
+
+            if(e_true < e_true_min)
+            {
+                LOG(debug) << "Transition complete as e_true < e_true_min at T_false = " << T_false;
+                throw TransitionCompleteException();
+            }
+
             const double T_true = get_T_true_matching_e_true(T_false, e_true, tol, max_iter);
 
             const double e_false = std::abs(eos.get_energy_plus(T_false));
@@ -500,41 +557,58 @@ namespace PhaseTracer {
             arrays.p_true_grid.push_back(p_true);
             arrays.false_vacuum_grid.push_back(Pf);
             arrays.true_vacuum_grid.push_back(1.0 - Pf);
-
-            // LOG(debug) << "T_false = " << T_false
-            //         << ", T_true = " << T_true
-            //         << ", e_true = " << e_true
-            //         << ", Pt = " << (1.0 - Pf);
         };
 
         const double abs_tol = 1e2;
         const double rel_tol = 1e-4;
 
-        auto stepper = odeint::make_controlled<odeint::runge_kutta_dopri5<state_type>>(abs_tol, rel_tol);
+        // auto stepper = odeint::make_controlled<odeint::runge_kutta_dopri5<state_type>>(abs_tol, rel_tol);
+        odeint::runge_kutta4<state_type> stepper;
 
         state_type state = {e_true_initial};
-        const double dT_initial = (T_low - T_high) / 249.0; // negative
+        const int N = 250;
+        const double dT_initial = (T_low - T_high) / (N-1);
 
         odeint::integrate_adaptive(
             stepper,
             rhs,
             state,
-            T_false_initial,  // start
-            T_low,            // end (lower temperature)
-            dT_initial,       // initial step (negative)
+            T_false_initial,
+            T_low,
+            dT_initial,
             observer
         );
+    }
 
-        // debug print state vectors after integration
-        LOG(debug) << "Finished reheating evolution. Final state:";
-        for (size_t i = 0; i < arrays.T_false_grid.size(); ++i)
+    void
+    TransitionMetrics::evaluate_post_reheating_evolution(
+        const double& T_high, 
+        const double& T_low, 
+        ReheatingArrays& arrays, 
+        double tol, 
+        boost::uintmax_t max_iter)
+    {
+        const int N = 100;
+        const double dT_false = (T_low - T_high)/(N - 1);
+
+        for(int i = 1; i < N; ++i)
         {
-            LOG(debug) << "T_false = " << arrays.T_false_grid[i]
-                    << ", T_true = " << arrays.T_true_grid[i]
-                    << ", e_true = " << arrays.e_true_grid[i]
-                    << ", Pt = " << arrays.true_vacuum_grid[i];
-        }
+            const double T_false = T_high + i * dT_false;
+            const double T_true = get_T_true_adiabatic(T_false, arrays.T_false_grid.back(), arrays.T_true_grid.back(), tol, max_iter);
+            const double e_false = std::abs(eos.get_energy_plus(T_false));
+            const double e_true = std::abs(eos.get_energy_minus(T_true));
+            const double p_true = std::abs(eos.get_pressure_minus(T_true));
+            const double false_vacuum_fraction = get_false_vacuum_fraction(T_false);
+            const double true_vacuum_fraction = 1.0 - false_vacuum_fraction;
 
+            arrays.T_false_grid.push_back(T_false);
+            arrays.T_true_grid.push_back(T_true);
+            arrays.false_vacuum_grid.push_back(false_vacuum_fraction);
+            arrays.true_vacuum_grid.push_back(true_vacuum_fraction);
+            arrays.e_false_grid.push_back(e_false);
+            arrays.e_true_grid.push_back(e_true);
+            arrays.p_true_grid.push_back(p_true);
+        }
     }
 
     void
@@ -593,7 +667,34 @@ namespace PhaseTracer {
 
         evaluate_pre_onset_evolution(t_max, T_start, arrays, tol, max_iter);
 
-        evaluate_reheating_evolution(T_start, T_end, arrays, tol, max_iter);
+        try{
+            evaluate_reheating_evolution(T_start, T_end, arrays, tol, max_iter);
+        } catch (const TransitionCompleteException& e)
+        {
+            LOG(debug) << "Transition complete during reheating evolution.";
+            T_end = arrays.T_false_grid.back();
+        }
+
+        evaluate_post_reheating_evolution(T_end, t_min, arrays, tol, max_iter);
+
+        // iterate over arrays.T_false_grid and add t values
+        for(auto T_false : arrays.T_false_grid)
+        {
+            double t = get_t(T_false);
+            arrays.t_grid.push_back(t);
+        }
+
+        arrays.write("example/TestThermalParameters/reheating_data/reheating.csv");
+
+        // debug print state vectors after integration
+        LOG(debug) << "Finished reheating evolution. Final state:";
+        for (size_t i = 0; i < arrays.T_false_grid.size(); ++i)
+        {
+            LOG(debug) << "T_false = " << arrays.T_false_grid[i]
+                    << ", T_true = " << arrays.T_true_grid[i]
+                    << ", e_true = " << arrays.e_true_grid[i]
+                    << ", Pt = " << arrays.true_vacuum_grid[i];
+        }
 
         for(int i = N - 2; i >= 0; --i)
         {
@@ -770,86 +871,28 @@ namespace PhaseTracer {
                     << std::endl;
         }
 
-        // write out all of the computed values to a file
-        std::ofstream outfile("example/TestThermalParameters/reheating_data/reheating.csv");
-        outfile << "# T_false,T_true,time,e_false,e_true,Pf,Pt" << std::endl;
-        if (outfile.is_open())
-        {
-            for (int i = 0; i < N; ++i)
-            {
-                outfile << T_false_grid[i] << ","
-                        << T_true_grid[i] << ","
-                        << get_t(T_false_grid[i]) << ","
-                        << e_false_grid[i] << ","
-                        << e_true_grid[i] << ","
-                        << false_vacuum_grid[i] << ","
-                        << true_vacuum_grid[i] << std::endl;
-            }
-            outfile.close();
-        }
+        // // write out all of the computed values to a file
+        // std::ofstream outfile("example/TestThermalParameters/reheating_data/reheating.csv");
+        // outfile << "# T_false,T_true,time,e_false,e_true,Pf,Pt" << std::endl;
+        // if (outfile.is_open())
+        // {
+        //     for (int i = 0; i < N; ++i)
+        //     {
+        //         outfile << T_false_grid[i] << ","
+        //                 << T_true_grid[i] << ","
+        //                 << get_t(T_false_grid[i]) << ","
+        //                 << e_false_grid[i] << ","
+        //                 << e_true_grid[i] << ","
+        //                 << false_vacuum_grid[i] << ","
+        //                 << true_vacuum_grid[i] << std::endl;
+        //     }
+        //     outfile.close();
+        // }
 
         alglib::real_1d_array T_false_arr, T_true_arr;
-        T_false_arr.setcontent(N, T_false_grid.data());
-        T_true_arr.setcontent(N, T_true_grid.data());
+        T_false_arr.setcontent(N, arrays.T_false_grid.data());
+        T_true_arr.setcontent(N, arrays.T_true_grid.data());
         alglib::spline1dbuildcubic(T_false_arr, T_true_arr, T_true_spline);
-    }
-
-    const double 
-    TransitionMetrics::get_T_true_adiabatic(const double& T_false, const double& T_false_prev, const double& T_true_prev, double tol, boost::uintmax_t max_iter) const
-    {
-        auto adiabatic_eq = [this, T_false, T_false_prev, T_true_prev](double T_trial)
-        {
-            const double s_trial = std::abs(eos.get_entropy_minus(T_trial));
-            const double a_ratio = get_atop_abottom(T_false_prev, T_false);
-            const double s_true = std::abs(eos.get_entropy_minus(T_true_prev));
-            return s_trial - s_true * a_ratio*a_ratio*a_ratio;
-        };
-
-        const double T_low = eos.get_t_min();
-        const double T_high = eos.get_t_max();
-        if (T_low >= T_high) { return T_true_prev; }
-
-        const int n_scan = 60;
-        double best_T = T_true_prev;
-        double best_abs = std::numeric_limits<double>::infinity();
-
-        double prev_T = T_low;
-        double prev_f = adiabatic_eq(prev_T);
-        best_T = prev_T;
-        best_abs = std::abs(prev_f);
-
-        for (int i = 1; i < n_scan; ++i)
-        {
-            const double T = T_low + (T_high - T_low) * static_cast<double>(i) / (n_scan - 1);
-            const double f = adiabatic_eq(T);
-
-            const double abs_f = std::abs(f);
-            if (abs_f < best_abs)
-            {
-                best_abs = abs_f;
-                best_T = T;
-            }
-
-            if (prev_f == 0.0) { return prev_T; }
-            if (f == 0.0) { return T; }
-
-            if ((prev_f < 0.0 && f > 0.0) || (prev_f > 0.0 && f < 0.0))
-            {
-                auto root_pair = boost::math::tools::toms748_solve(
-                    adiabatic_eq,
-                    prev_T, T,
-                    [=](double l, double u){ return std::abs(u - l) < tol; },
-                    max_iter
-                );
-
-                return (root_pair.first + root_pair.second) / 2.0;
-            }
-
-            prev_T = T;
-            prev_f = f;
-        }
-
-        return best_T;
     }
 
     const double
