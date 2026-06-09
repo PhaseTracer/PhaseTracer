@@ -333,6 +333,210 @@ namespace PhaseTracer {
         return std::max(reheating_end_temp, completion_temp);
     }
 
+    const double 
+    TransitionMetrics::get_T_true_matching_e_false(const double& T_false, double tol, boost::uintmax_t max_iter) const
+    {
+        std::pair<double, double> bracket = {T_false, t_max};
+
+        if (std::abs(T_false - t_max) < tol) 
+        {
+            return T_false;
+        }
+
+        auto target_function = [this, T_false](double T_true)
+        {
+            double e_true = abs(eos.get_energy_minus(T_true));
+            double e_false = abs(eos.get_energy_plus(T_false));
+            return e_false / e_true - 1.0;
+        };
+
+        double f_low = target_function(bracket.first);
+        double f_high = target_function(bracket.second);
+        if (f_low * f_high > 0.0)        
+        {
+            LOG(debug) << "T_true matching failed (likely due to e_true > e_false at T_c). Returning T_false = " << T_false;
+            return T_false;
+        }
+
+        auto root_pair = boost::math::tools::toms748_solve(
+            target_function,
+            bracket.first, bracket.second,
+            [=](double l, double u){ return std::abs(u - l) < tol; },
+            max_iter
+        );
+
+        double root = (root_pair.first + root_pair.second) / 2.0;
+        return root;
+    }
+
+    void
+    TransitionMetrics::evaluate_pre_onset_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol, boost::uintmax_t max_iter)
+    {
+        const int N = 100;
+        const double dT_false = (T_low - T_high)/(N - 1);
+
+        arrays.T_false_grid.push_back(T_high);
+        arrays.T_true_grid.push_back(T_high);
+        arrays.t_grid.push_back(0.0);
+        arrays.false_vacuum_grid.push_back(1.0);
+        arrays.true_vacuum_grid.push_back(0.0);
+        arrays.e_false_grid.push_back(std::abs(eos.get_energy_plus(T_high)));
+        arrays.e_true_grid.push_back(std::abs(eos.get_energy_plus(T_high))); // intentionally using e_plus
+        arrays.p_true_grid.push_back(std::abs(eos.get_pressure_minus(T_high)));
+
+        for(int i = 1; i < N; ++i)
+        {
+            const double T_false = T_high + i * dT_false;
+            const double false_vacuum_fraction = get_false_vacuum_fraction(T_false);
+            const double true_vacuum_fraction = 1.0 - false_vacuum_fraction;
+            const double T_true = get_T_true_matching_e_false(T_false, tol, max_iter);
+            const double e_false = std::abs(eos.get_energy_plus(T_false));
+            const double e_true = std::abs(eos.get_energy_minus(T_true));
+            const double p_true = std::abs(eos.get_pressure_minus(T_true));
+
+            arrays.T_false_grid.push_back(T_false);
+            arrays.T_true_grid.push_back(T_true);
+            arrays.false_vacuum_grid.push_back(false_vacuum_fraction);
+            arrays.true_vacuum_grid.push_back(true_vacuum_fraction);
+            arrays.e_false_grid.push_back(e_false);
+            arrays.e_true_grid.push_back(e_true);
+            arrays.p_true_grid.push_back(p_true);
+        }
+    }
+
+    const double 
+    TransitionMetrics::get_T_true_matching_e_true(const double& T_false, const double& e_true, double tol, boost::uintmax_t max_iter) const
+    {
+        std::pair<double, double> bracket = {t_min, t_max};
+
+        if (std::abs(T_false - t_max) < tol) 
+        {
+            return T_false;
+        }
+
+        auto target_function = [this, e_true](double T_true)
+        {
+            double e_true_eos = abs(eos.get_energy_minus(T_true));
+            return e_true / e_true_eos - 1.0;
+        };
+
+        double f_low = target_function(bracket.first);
+        double f_high = target_function(bracket.second);
+        if (f_low * f_high > 0.0)        
+        {
+            // LOG(debug) << "T_true matching failed. Returning T_false = " << T_false;
+            return T_false;
+        }
+
+        auto root_pair = boost::math::tools::toms748_solve(
+            target_function,
+            bracket.first, bracket.second,
+            [=](double l, double u){ return std::abs(u - l) < tol; },
+            max_iter
+        );
+
+        double root = (root_pair.first + root_pair.second) / 2.0;
+        return root;
+    }
+
+    // const double 
+    // TransitionMetrics::get_T_true_matching_e_true(const double& e_true, double tol, boost::uintmax_t max_iter) const
+    // {
+    //     return get_T_true_matching_e_true(t_min, e_true, tol, max_iter);
+    // }
+
+    void
+    TransitionMetrics::evaluate_reheating_evolution(
+        const double& T_high, 
+        const double& T_low, 
+        ReheatingArrays& arrays, 
+        double tol, 
+        boost::uintmax_t max_iter)
+    {
+        namespace odeint = boost::numeric::odeint;
+        using state_type = std::array<double, 1>;
+
+        const double T_false_initial = arrays.T_false_grid.back();
+        const double e_true_initial  = arrays.e_true_grid.back();
+        const double p_true_initial  = arrays.p_true_grid.back();
+
+        LOG(debug) << "Starting reheating evolution at T_false = " << T_false_initial << ", e_true = " << e_true_initial;
+
+        // RHS of the e_true ODE, using T_false
+        auto rhs = [&](const state_type& state, state_type& dstate, double T_false)
+        {
+            const double e_true = state[0];
+            const double T_true = get_T_true_matching_e_true(T_false, e_true, tol, max_iter);
+            const double p_true = abs(eos.get_energy_minus(T_true));
+
+            const double e_false       = std::abs(eos.get_energy_plus(T_false));
+            const double latent_heat   = e_false - std::abs(eos.get_energy_minus(T_false));
+            const double Pf            = get_false_vacuum_fraction(T_false);
+            const double Pt            = 1.0 - Pf;
+            const double dPf_dT        = get_d_false_vacuum_fraction_dT(T_false);
+            const double transfer_rate = (Pt < 1e-30) ? 0.0 : -dPf_dT / Pt;
+            const double injected      = transfer_rate * latent_heat;
+
+            const double hubble      = get_hubble_rate(T_false, e_true);
+            const double dt_dT_false = get_time_temperature_false(T_false);
+            const double redshifted  = -3.0 * dt_dT_false * hubble * (e_true + p_true);
+
+            dstate[0] = injected + redshifted;
+        };
+
+        auto observer = [&](const state_type& state, double T_false)
+        {
+            const double e_true = state[0];
+            const double T_true = get_T_true_matching_e_true(T_false, e_true, tol, max_iter);
+
+            const double e_false = std::abs(eos.get_energy_plus(T_false));
+            const double p_true  = std::abs(eos.get_pressure_minus(T_true));
+            const double Pf      = get_false_vacuum_fraction(T_false);
+
+            arrays.T_false_grid.push_back(T_false);
+            arrays.T_true_grid.push_back(T_true);
+            arrays.e_false_grid.push_back(e_false);
+            arrays.e_true_grid.push_back(e_true);
+            arrays.p_true_grid.push_back(p_true);
+            arrays.false_vacuum_grid.push_back(Pf);
+            arrays.true_vacuum_grid.push_back(1.0 - Pf);
+
+            // LOG(debug) << "T_false = " << T_false
+            //         << ", T_true = " << T_true
+            //         << ", e_true = " << e_true
+            //         << ", Pt = " << (1.0 - Pf);
+        };
+
+        const double abs_tol = 1e2;
+        const double rel_tol = 1e-4;
+
+        auto stepper = odeint::make_controlled<odeint::runge_kutta_dopri5<state_type>>(abs_tol, rel_tol);
+
+        state_type state = {e_true_initial};
+        const double dT_initial = (T_low - T_high) / 249.0; // negative
+
+        odeint::integrate_adaptive(
+            stepper,
+            rhs,
+            state,
+            T_false_initial,  // start
+            T_low,            // end (lower temperature)
+            dT_initial,       // initial step (negative)
+            observer
+        );
+
+        // debug print state vectors after integration
+        LOG(debug) << "Finished reheating evolution. Final state:";
+        for (size_t i = 0; i < arrays.T_false_grid.size(); ++i)
+        {
+            LOG(debug) << "T_false = " << arrays.T_false_grid[i]
+                    << ", T_true = " << arrays.T_true_grid[i]
+                    << ", e_true = " << arrays.e_true_grid[i]
+                    << ", Pt = " << arrays.true_vacuum_grid[i];
+        }
+
+    }
+
     void
     TransitionMetrics::solve_friedmann()
     {
@@ -384,6 +588,12 @@ namespace PhaseTracer {
 
         double T_end = find_reheating_end_temp(t_min, percolation_temperature, reheating_target);
         LOG(debug) << "Found reheating end temperature: " << T_end << " GeV";
+
+        ReheatingArrays arrays;
+
+        evaluate_pre_onset_evolution(t_max, T_start, arrays, tol, max_iter);
+
+        evaluate_reheating_evolution(T_start, T_end, arrays, tol, max_iter);
 
         for(int i = N - 2; i >= 0; --i)
         {
@@ -453,7 +663,7 @@ namespace PhaseTracer {
             */
             if(!reheatingQ)
             {
-                const double T_true_current = get_T_true_matching(T_false_current, 1e-12, max_iter);
+                const double T_true_current = get_T_true_matching_e_false(T_false_current, 1e-12, max_iter);
                 const double e_false_current = std::abs(eos.get_energy_plus(T_false_current));
                 const double e_true_current = std::abs(eos.get_energy_minus(T_true_current));
                 const double p_true_current = std::abs(eos.get_pressure_minus(T_true_current));
@@ -542,20 +752,7 @@ namespace PhaseTracer {
             /*
                 7. Solve the matching condition for e_true, and update p_true
             */
-            auto target_function = [this, e_true_current](double T_trial)
-            {
-                double e_true = abs(eos.get_energy_minus(T_trial));
-                return e_true_current / e_true - 1.0;
-            };
-
-            auto root_pair = boost::math::tools::toms748_solve(
-                target_function,
-                eos.get_t_min(), eos.get_t_max(),
-                [=](double l, double u){ return std::abs(u - l) < tol; },
-                max_iter
-            );
-
-            const double T_true_current = (root_pair.first + root_pair.second) / 2.0;
+            const double T_true_current = get_T_true_matching_e_true(T_false_current, e_true_current, tol, max_iter);
             T_true_grid[i] = T_true_current;
             p_true_grid[i] = std::abs(eos.get_pressure_minus(T_true_current));
 
@@ -595,44 +792,6 @@ namespace PhaseTracer {
         T_false_arr.setcontent(N, T_false_grid.data());
         T_true_arr.setcontent(N, T_true_grid.data());
         alglib::spline1dbuildcubic(T_false_arr, T_true_arr, T_true_spline);
-    }
-
-    const double 
-    TransitionMetrics::get_T_true_matching(const double& T_false, double tol, boost::uintmax_t max_iter) const
-    {
-        std::pair<double, double> bracket = {T_false, t_max};
-
-        if (std::abs(T_false - t_max) < tol) 
-        {
-            return T_false;
-        }
-
-        auto target_function = [this, T_false](double T_true)
-        {
-            double e_true = abs(eos.get_energy_minus(T_true));
-            double e_false = abs(eos.get_energy_plus(T_false));
-            return e_false / e_true - 1.0;
-        };
-
-        // there should, in principle, always be a solution
-        // this could be due to numerical error in the EOS
-        double f_low = target_function(bracket.first);
-        double f_high = target_function(bracket.second);
-        if (f_low * f_high > 0.0)        
-        {
-            std::cout << "Target function does not change sign in the bracket. Returning T_false = " << T_false << std::endl;
-            return T_false;
-        }
-
-        auto root_pair = boost::math::tools::toms748_solve(
-            target_function,
-            bracket.first, bracket.second,
-            [=](double l, double u){ return std::abs(u - l) < tol; },
-            max_iter
-        );
-
-        double root = (root_pair.first + root_pair.second) / 2.0;
-        return root;
     }
 
     const double 

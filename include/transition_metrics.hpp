@@ -30,6 +30,7 @@
 #include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/tools/minima.hpp>
+#include <boost/numeric/odeint.hpp>
 
 #include "property.hpp"
 #include "phase_finder.hpp"
@@ -364,10 +365,6 @@ public :
 
     const double get_t(const double& T);
 
-    const double get_T_true_matching(const double& T_false, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
-
-    const double get_T_true_adiabatic(const double& T_false, const double& T_false_prev ,const double& T_true_prev, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
-
     const double get_atop_abottom(const double& Ttop, const double& Tbottom) const;
 
     const double get_extended_volume(const double& T) const;
@@ -422,6 +419,18 @@ private:
     double find_reheating_start_temp(const double& T_low, const double& T_high, const double& reheating_target, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
     double find_reheating_end_temp(const double& T_low, const double& T_high, const double& reheating_target, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+
+    const double get_T_true_matching_e_false(const double& T_false, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
+
+    const double get_T_true_matching_e_true(const double& T_false, const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
+
+    const double get_T_true_matching_e_true(const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
+
+    const double get_T_true_adiabatic(const double& T_false, const double& T_false_prev ,const double& T_true_prev, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
+
+    void evaluate_pre_onset_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+
+    void evaluate_reheating_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
     void solve_friedmann();
 
