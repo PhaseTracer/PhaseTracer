@@ -258,7 +258,7 @@ namespace PhaseTracer {
 
         for(int i = 1; i < N; ++i)
         {
-            const double T = t_max - i * dT; // step down from t_max
+            const double T = t_max - i * dT;
 
             const double e_false = eos.get_energy_plus(T);
             const double e_true  = eos.get_energy_minus(T);
@@ -273,9 +273,8 @@ namespace PhaseTracer {
 
             if(monotonic_decreasing_broken)
             {
-                t_min = T + dT; // last good temperature
-                LOG(warning) << "Refining temperature bounds: setting t_min to " << t_min
-                            << " GeV to keep e(T) and p(T) monotonically decreasing";
+                t_min = T + dT;
+                LOG(warning) << "Refining temperature bounds: setting t_min to " << t_min << " GeV to keep e(T) and p(T) monotonically decreasing";
                 break;
             }
 
@@ -378,7 +377,7 @@ namespace PhaseTracer {
                 /*
                     Two end conditions. P_t = 1, or P_t > 0 and transfer_rate = 0
                 */
-               if(true_vacuum_current > 1.0 - 1e-6 || (true_vacuum_current > 1e-6 && std::abs(transfer_rate) < 1e-10))
+               if(true_vacuum_current > 1.0 - 1e-2 || (true_vacuum_current > 1e-2 && std::abs(transfer_rate) < 1e-10))
             {
                 transition_complete = true;
                 LOG(info) << "Transition complete at T_false = " << T_false_current;
@@ -417,7 +416,7 @@ namespace PhaseTracer {
             }
 
             /*
-                4.b If the transition has completed, we assume we are now in the true_vacuum phase
+                4.c If the transition has completed, we assume we are now in the true_vacuum phase
                     undergoing adiabatic expansion. Note that even if P_t =/= 1, the fact 
                     the transfer_rate is zero means we are undergoing adiabatic expansion
                     anyway.
