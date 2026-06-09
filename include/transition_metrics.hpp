@@ -392,6 +392,18 @@ public :
 
 private:
 
+    struct ReheatingArrays
+    {
+        std::vector<double> T_false_grid;
+        std::vector<double> T_true_grid;
+        std::vector<double> t_grid;
+        std::vector<double> false_vacuum_grid;
+        std::vector<double> true_vacuum_grid;
+        std::vector<double> e_false_grid;
+        std::vector<double> e_true_grid;
+        std::vector<double> p_true_grid;
+    };
+
     const double find_temperature(std::function<double(double)> target_function, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
     const bool valid_lower_bound(std::function<double(double)> target_function, double tol = 1e-8)
@@ -406,6 +418,10 @@ private:
     void make_volume_term_integral_spline() const;
 
     void make_T_true_spline();
+
+    double find_reheating_start_temp(const double& T_low, const double& T_high, const double& reheating_target, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+
+    double find_reheating_end_temp(const double& T_low, const double& T_high, const double& reheating_target, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
     void solve_friedmann();
 

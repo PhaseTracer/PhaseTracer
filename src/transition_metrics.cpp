@@ -285,6 +285,54 @@ namespace PhaseTracer {
         }
     }
 
+    double
+    TransitionMetrics::find_reheating_start_temp(
+        const double& T_low, 
+        const double& T_high,
+        const double& reheating_target,
+        double tol, 
+        boost::uintmax_t max_iter)
+    {
+        LOG(debug) << "Finding reheating start temperature between " << T_low << " GeV and " << T_high << " GeV with target reheating rate of " << reheating_target;
+
+        auto target_function = [this, reheating_target](double T_trial)
+        {
+            double d_Pf_d_Tf = get_d_false_vacuum_fraction_dT(T_trial);
+            double Pt = 1 - get_false_vacuum_fraction(T_trial);
+            double transfer_rate = (Pt == 0.0) ? 0.0 : - d_Pf_d_Tf/Pt;
+            return std::abs(transfer_rate)/reheating_target - 1.0;
+        };
+
+        auto root_pair = boost::math::tools::toms748_solve(
+            target_function,
+            T_low, T_high,
+            [=](double l, double u){ return std::abs(u - l) < tol; },
+            max_iter
+        );
+
+        return 0.5 * (root_pair.first + root_pair.second);
+    }
+
+    double
+    TransitionMetrics::find_reheating_end_temp(
+        const double& T_low, 
+        const double& T_high,
+        const double& reheating_target,
+        double tol, 
+        boost::uintmax_t max_iter)
+    {
+        const double reheating_end_temp = find_reheating_start_temp(T_low, T_high, reheating_target, tol, max_iter);
+
+        const auto completion_milestone = get_transition_milestone(MilestoneType::COMPLETION);
+        const double completion_temp = 
+            (completion_milestone.status == MilestoneStatus::YES || completion_milestone.status == MilestoneStatus::FAST) ? 
+            completion_milestone.temperature : T_high;
+
+        LOG(debug) << "Found reheating end temperature: " << reheating_end_temp << " GeV, completion temperature: " << completion_temp << " GeV";
+
+        return std::max(reheating_end_temp, completion_temp);
+    }
+
     void
     TransitionMetrics::solve_friedmann()
     {
@@ -326,6 +374,16 @@ namespace PhaseTracer {
         boost::uintmax_t max_iter = 100;
 
         bool transition_complete = false;
+
+        const auto perc = get_transition_milestone(MilestoneType::PERCOLATION);
+        const double percolation_temperature = (perc.status == MilestoneStatus::YES || perc.status == MilestoneStatus::FAST) ? perc.temperature : t_min;
+
+        double reheating_target = 1e-10;
+        double T_start = find_reheating_start_temp(percolation_temperature, t_max, reheating_target);
+        LOG(debug) << "Found reheating start temperature: " << T_start << " GeV";
+
+        double T_end = find_reheating_end_temp(t_min, percolation_temperature, reheating_target);
+        LOG(debug) << "Found reheating end temperature: " << T_end << " GeV";
 
         for(int i = N - 2; i >= 0; --i)
         {
