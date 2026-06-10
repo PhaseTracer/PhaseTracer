@@ -28,7 +28,6 @@ namespace PhaseTracer {
         double false_vacuum_fraction = 1.0;
         if (log_Vext_spline_computed)
         {
-            // Avoid recursion when include_optimisations is false.
             const double Vext = get_extended_volume_from_spline(T);
             false_vacuum_fraction = std::exp(-Vext);
         }
@@ -87,23 +86,6 @@ namespace PhaseTracer {
 
         integrate_and_fit_spline(scale_factor_spline, integrand, volume_term_integration_steps);
         scale_factor_spline_computed = true;
-
-        // test, compare atop_abottom from spline to direct integration
-        // evaluate at points not on the spline grid
-        // for (int i = 0; i < 10; i++)
-        // {
-        //     double Ttop = t_min + (t_max - t_min) * (i + 0.5) / 10;
-        //     double Tbottom = t_min + (t_max - t_min) * (i + 1.0) / 10;
-        //     double ratio_spline = exp(alglib::spline1dcalc(scale_factor_spline, Tbottom) - alglib::spline1dcalc(scale_factor_spline, Ttop));
-        //     double ratio_direct = get_atop_abottom(Ttop, Tbottom);
-        //     std::cout << "Testing scale factor ratio spline at Ttop = " << Ttop << ", Tbottom = " << Tbottom << std::endl;
-        //     std::cout << "Ratio from spline: " << ratio_spline << ", Ratio from direct integration: " << ratio_direct << std::endl;
-        //     if (std::abs(ratio_spline - ratio_direct) > 1e-3)
-        //     {
-        //         LOG(warning) << "Scale factor ratio spline differs from direct integration by more than 0.1% at Ttop = " << Ttop << ", Tbottom = " << Tbottom;
-        //         LOG(warning) << "Ratio from spline: " << ratio_spline << ", Ratio from direct integration: " << ratio_direct;
-        //     }
-        // }
     }
 
     const double
@@ -523,9 +505,6 @@ namespace PhaseTracer {
             const double transfer_rate = (Pt < 1e-30) ? 0.0 : -dPf_dT / Pt;
             const double injected      = transfer_rate * latent_heat;
 
-            // const double hubble      = get_hubble_rate(T_false, e_true);
-            // const double dt_dT_false = get_time_temperature_false(T_false);
-            // const double redshifted  = -3.0 * dt_dT_false * hubble * (e_true + p_true);
             const double cs_false = eos.get_sound_speed_plus(T_false);
             const double redshifted  = (e_true + p_true)/(T_false*cs_false*cs_false);
 
@@ -643,8 +622,6 @@ namespace PhaseTracer {
         LOG(debug) << "Evaluating post-reheating evolution...";
         evaluate_post_reheating_evolution(T_end, t_min, arrays, tol, max_iter);
 
-        // iterate over arrays.T_false_grid and add t values
-        // use a simple trapezoidal rule for integration to get t(T_false) from dt/dT_false
         arrays.t_grid.push_back(0.0);
         for (size_t i = 1; i < arrays.T_false_grid.size(); ++i)
         {            
@@ -715,7 +692,7 @@ namespace PhaseTracer {
             }
 
             
-            if (iter > 0 && include_reheating && !one_reheating_iteration)
+            if (iter > 0 && include_reheating && !one_reheating_iteration) //  && !one_reheating_iteration
             {
                 auto t0 = std::chrono::high_resolution_clock::now();
                 solve_friedmann();
@@ -740,23 +717,6 @@ namespace PhaseTracer {
             }
 
             prev_percolation_temperature = percolation_temperature;
-        }
-
-        // write T_true as a function of T_false to file for debugging
-        {
-            std::ofstream file("example/TestThermalParameters/T_true_vs_T_false.csv");
-            file << "# T_false,T_true,time,e_false,e_true,Pf,Pt\n";
-            for (double T_false = t_min; T_false <= t_max; T_false += 0.1)
-            {
-                double T_true = T_true_spline_computed ? alglib::spline1dcalc(T_true_spline, T_false) : T_false;
-                double e_false = std::abs(eos.get_energy_plus(T_false));
-                double time = get_t(T_false);
-                double e_true = get_e_true(T_false);
-                double Pf = get_false_vacuum_fraction(T_false);
-                double Pt = 1.0 - Pf;
-                file << T_false << "," << T_true << "," << time << "," << e_false << "," << e_true << "," << Pf << "," << Pt << "\n";
-            }
-            file.close();
         }
     }
 
