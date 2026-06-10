@@ -523,9 +523,11 @@ namespace PhaseTracer {
             const double transfer_rate = (Pt < 1e-30) ? 0.0 : -dPf_dT / Pt;
             const double injected      = transfer_rate * latent_heat;
 
-            const double hubble      = get_hubble_rate(T_false, e_true);
-            const double dt_dT_false = get_time_temperature_false(T_false);
-            const double redshifted  = -3.0 * dt_dT_false * hubble * (e_true + p_true);
+            // const double hubble      = get_hubble_rate(T_false, e_true);
+            // const double dt_dT_false = get_time_temperature_false(T_false);
+            // const double redshifted  = -3.0 * dt_dT_false * hubble * (e_true + p_true);
+            const double cs_false = eos.get_sound_speed_plus(T_false);
+            const double redshifted  = (e_true + p_true)/(T_false*cs_false*cs_false);
 
             dstate[0] = injected + redshifted;
         };
@@ -642,11 +644,19 @@ namespace PhaseTracer {
         evaluate_post_reheating_evolution(T_end, t_min, arrays, tol, max_iter);
 
         // iterate over arrays.T_false_grid and add t values
-        for(auto T_false : arrays.T_false_grid)
-        {
-            double t = get_t(T_false);
-            arrays.t_grid.push_back(t);
+        // use a simple trapezoidal rule for integration to get t(T_false) from dt/dT_false
+        arrays.t_grid.push_back(0.0);
+        for (size_t i = 1; i < arrays.T_false_grid.size(); ++i)
+        {            
+            double T_false_prev = arrays.T_false_grid[i-1];
+            double T_false = arrays.T_false_grid[i];
+            double dt_dT_prev = get_time_temperature_false(T_false_prev);
+            double dt_dT = get_time_temperature_false(T_false);
+            double dT = T_false - T_false_prev;
+            double dt = 0.5 * (dt_dT_prev + dt_dT) * dT;
+            arrays.t_grid.push_back(arrays.t_grid.back() + dt);
         }
+        
 
         arrays.write("example/TestThermalParameters/reheating_data/reheating.csv");
 
