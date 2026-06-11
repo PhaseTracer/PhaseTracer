@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 3.10)
 project(PhaseTracer VERSION 2.1.0 LANGUAGES CXX)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 enable_language(CXX)
-enable_testing()
+
+option(PHASETRACER_BUILD_EXAMPLES "Build PhaseTracer example programs" ON)
+option(PHASETRACER_BUILD_TESTS "Build PhaseTracer unit tests" ON)
+
+if(PHASETRACER_BUILD_TESTS)
+  enable_testing()
+endif()
 
 # option for building models with FlexibleSUSY
 option(BUILD_WITH_FS "Build FlexibleSUSY example program (THDMS with NMSSM BCs) " OFF)
@@ -74,5 +80,11 @@ endif(BUILD_WITH_BP)
 # add relevant dirs
 
 add_subdirectory(src)
-add_subdirectory(example)
-add_subdirectory(unit_tests)
+
+if(PHASETRACER_BUILD_EXAMPLES)
+  add_subdirectory(example)
+endif()
+
+if(PHASETRACER_BUILD_TESTS)
+  add_subdirectory(unit_tests)
+endif()
