@@ -592,16 +592,18 @@ void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double> *p, std::vector
   alglib::real_1d_array phi_arr;
   alglib::real_1d_array dphi_arr;
   size_t arr_npoints = filtered_phi.size();
-  if (fixAbs and phi_absMin < filtered_phi[0]) {
+  const bool add_abs_endpoint = fixAbs and filtered_phi[0] - phi_absMin > 1e-10;
+  const bool add_meta_endpoint = phi_metaMin - filtered_phi[filtered_phi.size() - 1] > 1e-10;
+  if (add_abs_endpoint) {
     arr_npoints++;
   }
-  if (phi_metaMin > filtered_phi[filtered_phi.size() - 1]) {
+  if (add_meta_endpoint) {
     arr_npoints++;
   }
   phi_arr.setlength(arr_npoints);
   dphi_arr.setlength(arr_npoints);
   size_t ii = 0;
-  if (fixAbs and filtered_phi[0] - phi_absMin > 1e-10) { // Adding 1e-10 is due to precision in alglib
+  if (add_abs_endpoint) { // Adding 1e-10 is due to precision in alglib
     phi_arr[ii] = phi_absMin;
     dphi_arr[ii] = 0.;
     ii++;
@@ -611,7 +613,7 @@ void Shooting::evenlySpacedPhi(Profile1D pf, std::vector<double> *p, std::vector
     dphi_arr[ii] = filtered_dphi[jj];
     ii++;
   }
-  if (phi_metaMin - filtered_phi[filtered_phi.size() - 1] > 1e-10) {
+  if (add_meta_endpoint) {
     phi_arr[ii] = phi_metaMin;
     dphi_arr[ii] = 0.;
   }
