@@ -20,8 +20,11 @@
 
 #include <algorithm>
 #include <limits>
+#include <iomanip>
 #include <memory>
 #include <ostream>
+#include <sstream>
+#include <stdexcept>
 #include <vector>
 
 #ifdef BUILD_WITH_BP
@@ -184,16 +187,28 @@ public:
           bubble_profile = st.findProfile(false_vacuum[0], true_vacuum[0]);
           action_PD = st.calAction(bubble_profile);
         } catch (const alglib::ap_error &e) {
-          LOG(warning) << "ALGLIB error at T = " << T
-                       << ", between " << false_vacuum << " and " << true_vacuum
-                       << ": " << e.msg;
+          std::ostringstream message;
+          message << "ActionCalculator 1D shooting action failed with alglib::ap_error at T="
+                  << std::setprecision(17) << T
+                  << ", between " << false_vacuum << " and " << true_vacuum
+                  << ": " << e.msg;
+          LOG(error) << message.str();
+          throw std::runtime_error(message.str());
         } catch (const std::exception &e) {
-          LOG(warning) << "Standard exception at T = " << T
-                       << ", between " << false_vacuum << " and " << true_vacuum
-                       << ": " << e.what();
+          std::ostringstream message;
+          message << "ActionCalculator 1D shooting action failed with std::exception at T="
+                  << std::setprecision(17) << T
+                  << ", between " << false_vacuum << " and " << true_vacuum
+                  << ": " << e.what();
+          LOG(error) << message.str();
+          throw std::runtime_error(message.str());
         } catch (...) {
-          LOG(warning) << "Unknown exception at T = " << T
-                       << ", between " << false_vacuum << " and " << true_vacuum;
+          std::ostringstream message;
+          message << "ActionCalculator 1D shooting action failed with unknown exception at T="
+                  << std::setprecision(17) << T
+                  << ", between " << false_vacuum << " and " << true_vacuum;
+          LOG(error) << message.str();
+          throw std::runtime_error(message.str());
         }
 
       } else {
@@ -225,16 +240,28 @@ public:
           phi_for_profile = full_tunneling.phi_for_profile1D;
           tunneling_path = full_tunneling.phi;
         } catch (const alglib::ap_error &e) {
-          LOG(warning) << "ALGLIB error at T = " << T
-                       << ", between " << false_vacuum << " and " << true_vacuum
-                       << ": " << e.msg;
+          std::ostringstream message;
+          message << "PathDeformation::full_tunneling failed with alglib::ap_error at T="
+                  << std::setprecision(17) << T
+                  << ", between " << false_vacuum << " and " << true_vacuum
+                  << ": " << e.msg;
+          LOG(error) << message.str();
+          throw std::runtime_error(message.str());
         } catch (const std::exception &e) {
-          LOG(warning) << "Standard exception at T = " << T
-                       << ", between " << false_vacuum << " and " << true_vacuum
-                       << ": " << e.what();
+          std::ostringstream message;
+          message << "PathDeformation::full_tunneling failed with std::exception at T="
+                  << std::setprecision(17) << T
+                  << ", between " << false_vacuum << " and " << true_vacuum
+                  << ": " << e.what();
+          LOG(error) << message.str();
+          throw std::runtime_error(message.str());
         } catch (...) {
-          LOG(warning) << "Unknown exception at T = " << T
-                       << ", between " << false_vacuum << " and " << true_vacuum;
+          std::ostringstream message;
+          message << "PathDeformation::full_tunneling failed with unknown exception at T="
+                  << std::setprecision(17) << T
+                  << ", between " << false_vacuum << " and " << true_vacuum;
+          LOG(error) << message.str();
+          throw std::runtime_error(message.str());
         }
         action_PD = pd.get_action();
       }
