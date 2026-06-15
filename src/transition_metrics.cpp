@@ -188,7 +188,7 @@ namespace PhaseTracer {
             const double false_vacuum_fraction = get_false_vacuum_fraction_from_I3(I_3);
             const double true_vacuum_fraction = 1 - false_vacuum_fraction;
 
-            const double hubble = get_hubble_rate(true_vacuum_fraction, e_false - e_true_min, e_true - e_true_min);
+            const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
             const double gamma = decay_rate.get_gamma(T_false);
 
             const double time = std::exp(tau); // time is log-time: tau = ln(t)
@@ -234,7 +234,7 @@ namespace PhaseTracer {
             const double false_vacuum_fraction = get_false_vacuum_fraction_from_I3(I_3);
             const double true_vacuum_fraction = 1 - false_vacuum_fraction;
 
-            const double hubble = get_hubble_rate(true_vacuum_fraction, e_false - e_true_min, e_true - e_true_min);
+            const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
             const double gamma  = decay_rate.get_gamma(T_false);
 
             const double t      = std::exp(tau);

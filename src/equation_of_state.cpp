@@ -56,8 +56,8 @@ namespace PhaseTracer {
             double background_pressure = background_dof * M_PI * M_PI / 90.0 * temp4;
 
             pressure[i] = background_pressure - v;
-            energy[i] = 3.0 * background_pressure + v - temp * dvdT;
-            enthalpy[i] = 4.0 * background_pressure - temp * dvdT;
+            energy[i] = 3.0 * background_pressure + v - temp * dvdT - energy_norm;
+            enthalpy[i] = 4.0 * background_pressure - temp * dvdT - energy_norm;
             entropy[i] = 4.0 * background_pressure / temp - dvdT;
         }
 

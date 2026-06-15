@@ -49,6 +49,7 @@ private:
         double t_min, t_max;
         int n_temp;
         double background_dof;
+        double energy_norm;
 
     public:
         alglib::spline1dinterpolant pressure_spline;
@@ -58,14 +59,15 @@ private:
 
         const alglib::spline1dinterpolant& get_potential_spline() const { return potential_spline; }
 
-        EquationOfStateInPhase(Phase phase_in, int n_temp_in, double background_dof_in) :
+        EquationOfStateInPhase(Phase phase_in, int n_temp_in, double background_dof_in, double energy_norm_in = 0.0) :
         phase(phase_in),
         potential_values(phase_in.V),
         temperature_values(phase_in.T),
         t_min(phase_in.T.front()),
         t_max(phase_in.T.back()),
         n_temp(n_temp_in),
-        background_dof(background_dof_in) 
+        background_dof(background_dof_in),
+        energy_norm(energy_norm_in)
         {
             alglib::real_1d_array t, v;
             v.setcontent(potential_values.size(), potential_values.data());
@@ -129,8 +131,22 @@ public:
     n_temp(n_temp_in), 
     background_dof(background_dof_in) 
     {
-        EquationOfStateInPhase eos_plus(transition.false_phase, n_temp, background_dof);
-        EquationOfStateInPhase eos_minus(transition.true_phase, n_temp, background_dof);
+        // Compute energy normalisation: field contribution (v - T*dv/dT) in the
+        // true vacuum at T_min, so that at T_min only the radiation bath
+        // contributes to the energy density (and hence the Hubble rate).
+        const auto& true_T = transition.true_phase.T;
+        const auto& true_V = transition.true_phase.V;
+        alglib::real_1d_array t_norm_arr, v_norm_arr;
+        t_norm_arr.setcontent(true_T.size(), true_T.data());
+        v_norm_arr.setcontent(true_V.size(), true_V.data());
+        alglib::spline1dinterpolant true_pot_norm_spline;
+        alglib::spline1dbuildcubic(t_norm_arr, v_norm_arr, true_pot_norm_spline);
+        double v_norm, dvdT_norm, ddvdT_norm;
+        alglib::spline1ddiff(true_pot_norm_spline, true_T.front(), v_norm, dvdT_norm, ddvdT_norm);
+        const double energy_norm = v_norm - true_T.front() * dvdT_norm;
+
+        EquationOfStateInPhase eos_plus(transition.false_phase, n_temp, background_dof, energy_norm);
+        EquationOfStateInPhase eos_minus(transition.true_phase, n_temp, background_dof, energy_norm);
 
         p_plus_spline = eos_plus.pressure_spline;
         p_minus_spline = eos_minus.pressure_spline;
