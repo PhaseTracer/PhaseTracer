@@ -70,8 +70,8 @@ namespace PhaseTracer {
         if(compute_profiles)
         {
             ThermalProfiles profile_out;
-            double t_min = output.decay_rate.get_t_min();
-            double t_max = output.decay_rate.get_t_max();
+            double t_min = output.transition_metrics.get_t_min();
+            double t_max = output.transition_metrics.get_t_max();
             double dt = (t_max - t_min)/(n_temp_profiles-1);
 
             for(double tt = t_min; tt < t_max; tt += dt)
@@ -86,11 +86,11 @@ namespace PhaseTracer {
                     gamma = output.decay_rate.get_gamma(tt);
                     pf = output.transition_metrics.get_false_vacuum_fraction(tt);
                     vext = -log(pf);
-                    d_pf = output.transition_metrics.get_d_false_vacuum_fraction_dT(tt);
+                    // d_pf = output.transition_metrics.get_d_false_vacuum_fraction_dT(tt);
                     nt =  output.transition_metrics.get_nucleation_rate(tt);
                     n = get_n(tt, output.transition_metrics);
                     Rs = std::pow(n, -1./3.) * H;
-                    Rbar = get_Rbar_integral(tt, output.transition_metrics)/n * H; 
+                    // Rbar = get_Rbar_integral(tt, output.transition_metrics)/n * H; 
                 } catch (const std::exception& e) {
                     LOG(debug) << "Error computing thermal profile values at T = " << tt << ": " << e.what();
                     continue;
@@ -141,7 +141,7 @@ namespace PhaseTracer {
             double n = get_n(temp, tm);
             milestone.n = n;
             milestone.Rs = std::pow(n, -1./3.) * H;
-            milestone.Rbar = get_Rbar_integral(temp, tm)/n * H;
+            // milestone.Rbar = get_Rbar_integral(temp, tm)/n * H;
 
             double betaH_eff = get_betaH_eff(vw, milestone.Rs);
             milestone.betaH_eff = betaH_eff;
@@ -170,7 +170,8 @@ namespace PhaseTracer {
         for(double TT = T_max; TT > T_min; TT -= dt)
         {
             double t = get_dt(TT, tm);
-            double a = tm.get_atop_abottom(T_max, TT);
+            // double a = tm.get_atop_abottom(T_max, TT);
+            double a = tm.get_scale_factor_ratio(T_max, TT);
 
             if(first_iter)
             {
@@ -384,11 +385,11 @@ namespace PhaseTracer {
         return tm.get_bubble_density(temperature);
     }
 
-    const double 
-    ThermoFinder::get_Rbar_integral(const double& temperature, TransitionMetrics& tm)
-    {
-        return tm.get_bubble_radius_integral(temperature);
-    }
+    // const double 
+    // ThermoFinder::get_Rbar_integral(const double& temperature, TransitionMetrics& tm)
+    // {
+    //     return tm.get_bubble_radius_integral(temperature);
+    // }
 
     const double
     ThermoFinder::get_dt(const double& temperature, TransitionMetrics& tm)

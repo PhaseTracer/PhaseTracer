@@ -307,7 +307,11 @@ struct FriedmannSystem
                 << T_t[i]    << ","
                 << hubble[i] << ","
                 << a[i]      << ","
-                << gamma[i]  << "\n";
+                << gamma[i]  << ","
+                << std::exp( - 4.0 * M_PI * 0.577*0.577*0.577 / 3.0 * I_3[i]) << ","
+                << nucleation_rate[i] << ","
+                << number_density[i] <<
+                "\n";
         }
         out.close();
     }
@@ -322,32 +326,14 @@ class TransitionMetrics
 
     double t_min, t_max;
 
-    alglib::spline1dinterpolant log_Vext_spline;
-    bool log_Vext_spline_computed = false;
-
     /* Friedmann splines */
     mutable alglib::spline1dinterpolant reheating_spline; // T_true(T_false)
-    mutable alglib::spline1dinterpolant T_false_spline; // log_time(T_false)
-    mutable alglib::spline1dinterpolant scale_factor_spline; // a(log_time)
+    mutable alglib::spline1dinterpolant scale_factor_spline; // a(T_false)
+    mutable alglib::spline1dinterpolant hubble_rate_spline; // H(T_false)
+    mutable alglib::spline1dinterpolant log_I_3_spline; // log_I_3(T_false)
+    mutable alglib::spline1dinterpolant log_nucleation_rate_spline; // log_N(T_false)
+    mutable alglib::spline1dinterpolant log_bubble_number_density_spline; // log_n(T_false)
     mutable bool friedmann_splines_computed = false;
-    mutable bool scale_factor_spline_computed = false; // backwards compatible temp
-    mutable bool T_true_spline_computed = false;
-
-    mutable alglib::spline1dinterpolant volume_term_integral_spline;
-    mutable bool volume_term_integral_spline_computed = false;
-
-    mutable alglib::spline1dinterpolant time_spline;
-    mutable bool time_spline_computed = false;
-
-    PROPERTY(bool, include_optimisations, true);
-
-    PROPERTY(int, max_extended_volume_refinements, 10);
-
-    PROPERTY(double, extended_volume_t_perc_tolerance, 1e-6);
-
-    PROPERTY(bool, include_reheating, true);
-
-    PROPERTY(bool, refine_extended_volume_spline, true);
 
     PROPERTY(double, total_number_temp_steps, 200);
 
@@ -403,16 +389,16 @@ public :
 
         {
             auto t0 = std::chrono::high_resolution_clock::now();
-            fit_friedmann_splines();
+            calculate_distributions();
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
-            LOG(debug) << "Fit splines to Friedmann solution. Time: " << dt.count() << " ms"; 
+            LOG(debug) << "Calculated distributions. Time: " << dt.count() << " ms"; 
         }
 
         {
             auto t0 = std::chrono::high_resolution_clock::now();
-            calculate_distributions();
+            fit_friedmann_splines();
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
-            LOG(debug) << "Calculated distributions. Time: " << dt.count() << " ms"; 
+            LOG(debug) << "Fit splines to Friedmann solution. Time: " << dt.count() << " ms"; 
         }
 
         // Write FridmannSystem arrays to reheating.csv
@@ -429,39 +415,25 @@ public :
 
     void compute_nucleation_history(const double& t_min, const double& t_max);
 
-    const double get_hubble_rate(const double& T) const;
+    const double get_hubble_rate(const double& T_false) const;
 
-    const double get_de_true_dt(const double& T) const;
-
-    const double get_e_true(const double& T_true) const;
-
-    const double get_time_temperature_false(const double& T) const;
-
-    const double get_t(const double& T);
-
-    const double get_atop_abottom(const double& Ttop, const double& Tbottom) const;
+    const double get_time_temperature_false(const double& T_false) const;
 
     const double get_scale_factor(const double& T_false) const;
 
-    const double get_scale_factor_log_time(const double& log_t) const;
-
     const double get_scale_factor_ratio(const double& Ttop, const double& Tbottom) const;
 
-    const double get_scale_factor_ratio_log_time(const double& log_t_top, const double& log_t_bottom) const;
+    const double get_false_vacuum_fraction(const double& T_false) const;
 
-    const double get_extended_volume(const double& T) const;
+    const double get_t(const double& T) const;
 
-    const double get_extended_volume_from_spline(const double& T) const;
+    const double get_nucleation_rate(const double& T_false) const;
 
-    const double get_false_vacuum_fraction(const double& T) const;
+    const double get_bubble_density(const double& T_false) const;
 
-    const double get_d_false_vacuum_fraction_dT(const double& T) const;
+    const double get_t_min() const { return t_min; }
 
-    const double get_nucleation_rate(const double& T);
-
-    const double get_bubble_density(const double& T);
-
-    const double get_bubble_radius_integral(const double& T);
+    const double get_t_max() const { return t_max; }
 
     const TransitionMilestone get_transition_milestone(const MilestoneType type);
 
@@ -488,9 +460,9 @@ private:
 
     void refine_temperature_bounds();
 
-    double get_T_true(const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+    double match_T_true(const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
-    double get_T_false(const double& e_false, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+    double match_T_false(const double& e_false, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
     const double get_hubble_rate(const double& true_vacuum_fraction, const double& e_false, const double& e_true) const;
 
