@@ -359,19 +359,6 @@ namespace PhaseTracer {
             log_bubble_number_density_array[i] = std::log(system.number_density[i]);
         }
 
-        // print out the arrays for debugging
-        LOG(debug) << "Fitting Friedmann splines with data points:";
-        for (std::size_t i = 0; i < system.time.size(); ++i)
-        {
-            LOG(debug) << "T_false: " << T_false_array[i]
-                       << ", T_true: " << T_true_array[i]
-                       << ", scale_factor: " << scale_factor_array[i]
-                        << ", hubble_rate: " << hubble_rate_array[i]
-                       << ", log_I_3: " << log_I_3_array[i]
-                       << ", log_nucleation_rate: " << log_nucleation_rate_array[i]
-                       << ", log_bubble_number_density: " << log_bubble_number_density_array[i];
-        }
-
         alglib::spline1dbuildcubic(T_false_array, T_true_array, reheating_spline);
         alglib::spline1dbuildcubic(T_false_array, scale_factor_array, scale_factor_spline);
         alglib::spline1dbuildcubic(T_false_array, hubble_rate_array, hubble_rate_spline);
@@ -453,6 +440,13 @@ namespace PhaseTracer {
         
         double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T_false, 5, 1e-5);
         return result;
+    }
+
+    const double
+    TransitionMetrics::get_T_true(const double& T_false) const
+    {
+        double T_true = alglib::spline1dcalc(reheating_spline, T_false);
+        return T_true;
     }
 
     std::vector<double>

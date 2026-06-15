@@ -431,6 +431,8 @@ public :
 
     const double get_bubble_density(const double& T_false) const;
 
+    const double get_T_true(const double& T_true) const;
+
     const double get_t_min() const { return t_min; }
 
     const double get_t_max() const { return t_max; }
