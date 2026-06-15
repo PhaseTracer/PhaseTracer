@@ -51,7 +51,13 @@ namespace PhaseTracer {
         // update the percolation temperature 
         if(update_percolation_temperature)
         {
-            revise_percolation_temperature(output.percolation, output.eos, output.transition_metrics);
+            try{
+                revise_percolation_temperature(output.percolation, output.eos, output.transition_metrics);
+            } catch (const std::exception& e) {
+                LOG(debug) << "Error updating percolation temperature: " << e.what();
+            } catch (...) {
+                LOG(debug) << "Unknown error updating percolation temperature.";
+            }
         }
         add_thermal_parameter_values(output.percolation, output.decay_rate, output.eos, output.transition_metrics);
 
@@ -417,15 +423,16 @@ namespace PhaseTracer {
     }
 
     const double
-    ThermoFinder::get_vw_wrapper(const double& temperature, const EquationOfState& eos)
+    ThermoFinder::get_vw_wrapper(const double& temperature, const TransitionMetrics& tm, const EquationOfState& eos)
     {
         // 2303.10171
         
         const double cb = get_cs(temperature, eos).first; 
         const double alpha = get_alpha(temperature, eos, false);
-        const double wb = eos.get_enthalpy_minus(temperature);
+        const double T_true = tm.get_T_true(temperature);
+        const double wb = eos.get_enthalpy_minus(T_true);
         const double wp = eos.get_enthalpy_plus(temperature);
-        const double Psi = std::min(wb/wp, 1.0);
+        const double Psi = std::min(wp/wb, 1.0);
 
         LOG(debug) << "In vw calculation: cb = " << cb << ", alpha = " << alpha << ", Psi = " << Psi;
 
@@ -437,6 +444,13 @@ namespace PhaseTracer {
         const double b = 1.704;
 
         const double v_high = vJ * (1 - a * pow(1-Psi, b)/alpha);
+
+        if(isnan(vJ) || isnan(v_low) || isnan(v_high))
+        {
+            std::ostringstream message;
+            message << "Failed to compute vw: vJ = " << vJ << ", v_low = " << v_low << ", v_high = " << v_high << ", cb = " << cb << ", alpha = " << alpha << ", Psi = " << Psi;
+            throw std::runtime_error(message.str());
+        }
 
         LOG(debug) << "In vw calculation: vJ = " << vJ << ", v_low = " << v_low << ", v_high = " << v_high;
 
@@ -460,11 +474,11 @@ namespace PhaseTracer {
         const double tol      = 1e-10;
         bool converged = false;
 
-        LOG(info) << "Updated Tp and vw using fixed-point iteration. Initial guess: [vw, Tp] = [" << vw_initial << ", " << percolation_temp_initial << "]\n";
+        LOG(debug) << "Updated Tp and vw using fixed-point iteration. Initial guess: [vw, Tp] = [" << vw_initial << ", " << percolation_temp_initial << "]";
 
         for (int i = 0; i < max_iter; i++) 
         {
-            const double vw_new = get_vw_wrapper(percolation_temp_updated, eos);
+            const double vw_new = get_vw_wrapper(percolation_temp_updated, tm, eos);
             const double Tp_new = get_percolation_temperature_wrapper(vw_new, percolation_target, tm);
 
             const double delta_vw = std::abs(vw_new - vw_updated) / (std::abs(vw_updated) + 1e-30);
@@ -473,12 +487,12 @@ namespace PhaseTracer {
             vw_updated = vw_new;
             percolation_temp_updated = Tp_new;
 
-            LOG(info) << std::setprecision(10) << "Iteration " << i << ": [vw, Tp] = [" << vw_updated << ", " << percolation_temp_updated << "], |delta_vw| = " << delta_vw << ", |delta_Tp| = " << delta_Tp << "\n";
+            LOG(debug) << std::setprecision(10) << "Iteration " << i << ": [vw, Tp] = [" << vw_updated << ", " << percolation_temp_updated << "], |delta_vw| = " << delta_vw << ", |delta_Tp| = " << delta_Tp;
 
             if (delta_vw < tol && delta_Tp < tol) 
             {
                 converged = true;
-                LOG(info) << "Converged after " << i + 1 << " iterations.\n";
+                LOG(debug) << "Converged after " << i + 1 << " iterations.\n";
                 break;
             }
         }
@@ -488,7 +502,7 @@ namespace PhaseTracer {
             LOG(debug) << "Warning: fixed-point iteration did not converge within " << max_iter << " iterations.\n";
         }
 
-        LOG(info) << "Final values after iteration: [vw, Tp] = [" << vw_updated << ", " << percolation_temp_updated << "]\n";
+        LOG(debug) << "Final values after iteration: [vw, Tp] = [" << vw_updated << ", " << percolation_temp_updated << "]\n";
 
         percolation.temperature = percolation_temp_updated;
         set_vw(vw_updated);

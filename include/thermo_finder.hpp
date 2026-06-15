@@ -234,7 +234,7 @@ public :
 
     const double get_percolation_temperature_wrapper(const double& vw, const double& percolation_target, const TransitionMetrics& tm);
 
-    const double get_vw_wrapper(const double& temperature, const EquationOfState& eos);
+    const double get_vw_wrapper(const double& temperature, const TransitionMetrics& tm, const EquationOfState& eos);
 
     const void revise_percolation_temperature(TransitionMilestone& percolation, const EquationOfState& eos, const TransitionMetrics& tm);
 

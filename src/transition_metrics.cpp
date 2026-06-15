@@ -289,6 +289,8 @@ namespace PhaseTracer {
         }
         catch (const TransitionCompleteException&) {
             LOG(debug) << "Transition complete: integration stopped.";
+        } catch (const std::domain_error& e) {
+            LOG(debug) << "Boost rootfinder error: integration stopped.";
         }
     }
 
