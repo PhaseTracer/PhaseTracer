@@ -470,36 +470,6 @@ public :
 
 private:
 
-    struct ReheatingArrays
-    {
-        std::vector<double> T_false_grid;
-        std::vector<double> T_true_grid;
-        std::vector<double> t_grid;
-        std::vector<double> false_vacuum_grid;
-        std::vector<double> true_vacuum_grid;
-        std::vector<double> e_false_grid;
-        std::vector<double> e_true_grid;
-        std::vector<double> p_true_grid;
-
-        void write(std::string filename) const
-        {
-            std::ofstream file(filename);
-            file << "# T_false,T_true,time,e_false,e_true,Pf,Pt\n";
-            for (size_t i = 0; i < T_false_grid.size(); ++i)
-            {
-                double T_false = T_false_grid[i];
-                double T_true = T_true_grid[i];
-                double time = t_grid[i];
-                double e_false = e_false_grid[i];
-                double e_true = e_true_grid[i];
-                double Pf = false_vacuum_grid[i];
-                double Pt = true_vacuum_grid[i];
-                file << T_false << "," << T_true << "," << time << "," << e_false << "," << e_true << "," << Pf << "," << Pt << "\n";
-            }
-            file.close();
-        }
-    };
-
     struct TransitionCompleteException {};
 
     const double find_temperature(std::function<double(double)> target_function, double tol = 1e-8, boost::uintmax_t max_iter = 100);
@@ -516,34 +486,6 @@ private:
     void make_volume_term_integral_spline() const;
 
     void make_T_true_spline();
-
-    /////////////////////////
-
-    // double find_reheating_start_temp(const double& T_low, const double& T_high, const double& reheating_target, double tol = 1e-8, boost::uintmax_t max_iter = 100);
-
-    // double find_reheating_end_temp(const double& T_low, const double& T_high, const double& reheating_target, double tol = 1e-8, boost::uintmax_t max_iter = 100);
-
-    // const double get_T_true_matching_e_false(const double& T_false, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
-
-    // const double get_T_true_matching_e_true(const double& T_false, const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
-
-    // const double get_T_true_matching_e_true(const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
-
-    // const double get_T_true_adiabatic(const double& T_false, const double& T_false_prev ,const double& T_true_prev, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
-
-    // void evaluate_pre_onset_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
-
-    // void evaluate_reheating_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
-
-    // void evaluate_post_reheating_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
-
-    // void solve_friedmann();
-
-    // 
-
-    // void calculate_false_vacuum_fraction();
-
-    /////////////////////////
 
     void refine_temperature_bounds();
 
