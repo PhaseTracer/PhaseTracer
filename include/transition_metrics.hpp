@@ -270,6 +270,7 @@ struct LifetimeDistribution
 
 struct FriedmannSystem
 {
+    std::vector<double> log_time;
     std::vector<double> time;
 
     std::vector<double> e_t;
@@ -283,8 +284,9 @@ struct FriedmannSystem
 
     std::vector<double> T_f;
     std::vector<double> T_t;
-    std::vector<double> Hubble;
-    std::vector<double> Gamma;
+    std::vector<double> hubble;
+    std::vector<double> a;
+    std::vector<double> gamma;
 
     std::vector<double> I_0;
     std::vector<double> I_1;
@@ -294,7 +296,7 @@ struct FriedmannSystem
     void write(std::string filename) const
     {
         std::ofstream out(filename);
-        out << "#time,T_f,T_t,e_f,e_t,p_f,p_t,w_f,w_t,s_f,s_t,Hubble,Gamma,I_0,I_1,I_2,I_3\n";
+        out << "#time,T_f,T_t,e_f,e_t,p_f,p_t,w_f,w_t,s_f,s_t,hubble,a,gamma,I_0,I_1,I_2,I_3\n";
         for (std::size_t i = 0; i < time.size(); ++i)
         {
             out << time[i]   << ","
@@ -308,8 +310,9 @@ struct FriedmannSystem
                 << w_t[i]    << ","
                 << s_f[i]    << ","
                 << s_t[i]    << ","
-                << Hubble[i] << ","
-                << Gamma[i]  << ","
+                << hubble[i] << ","
+                << a[i]      << ","
+                << gamma[i]  << ","
                 << I_0[i]    << ","
                 << I_1[i]    << ","
                 << I_2[i]    << ","
@@ -328,14 +331,16 @@ class TransitionMetrics
 
     double t_min, t_max;
 
-    mutable alglib::spline1dinterpolant scale_factor_spline;
-    mutable bool scale_factor_spline_computed = false;
-
-    alglib::spline1dinterpolant T_true_spline;
-    bool T_true_spline_computed = false;
-
     alglib::spline1dinterpolant log_Vext_spline;
     bool log_Vext_spline_computed = false;
+
+    /* Friedmann splines */
+    mutable alglib::spline1dinterpolant reheating_spline; // T_true(T_false)
+    mutable alglib::spline1dinterpolant T_false_spline; // log_time(T_false)
+    mutable alglib::spline1dinterpolant scale_factor_spline; // a(log_time)
+    mutable bool friedmann_splines_computed = false;
+    mutable bool scale_factor_spline_computed = false; // backwards compatible temp
+    mutable bool T_true_spline_computed = false;
 
     mutable alglib::spline1dinterpolant volume_term_integral_spline;
     mutable bool volume_term_integral_spline_computed = false;
@@ -391,9 +396,26 @@ public :
     TransitionMetrics(const FalseVacuumDecayRate& decay_rate_in, const EquationOfState& eos_in) :
     decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
     {
-        refine_temperature_bounds();
+        {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            refine_temperature_bounds();
+            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
+            LOG(debug) << "Refined temperature bounds. Time: " << dt.count() << " ms"; 
+        }
+        
+        {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            evolve_friedmann();
+            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
+            LOG(debug) << "Solved Friedmann equations. Time: " << dt.count() << " ms"; 
+        }
 
-        evolve_friedmann();
+        {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            fit_friedmann_splines();
+            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
+            LOG(debug) << "Fit splines to Friedmann solution. Time: " << dt.count() << " ms"; 
+        }
     }
 
     void compute_milestones() 
@@ -408,8 +430,6 @@ public :
 
     const double get_hubble_rate(const double& T) const;
 
-    const double get_hubble_rate(const double& T, const double& e_true) const;
-
     const double get_de_true_dt(const double& T) const;
 
     const double get_e_true(const double& T_true) const;
@@ -419,6 +439,14 @@ public :
     const double get_t(const double& T);
 
     const double get_atop_abottom(const double& Ttop, const double& Tbottom) const;
+
+    const double get_scale_factor(const double& T_false) const;
+
+    const double get_scale_factor_log_time(const double& log_t) const;
+
+    const double get_scale_factor_ratio(const double& Ttop, const double& Tbottom) const;
+
+    const double get_scale_factor_ratio_log_time(const double& log_t_top, const double& log_t_bottom) const;
 
     const double get_extended_volume(const double& T) const;
 
@@ -483,41 +511,53 @@ private:
 
     std::function<double(double)> get_target_function(const MilestoneType type);
 
-    void make_scale_factor_ratio_spline() const;
+    const void make_scale_factor_ratio_spline() const;
 
     void make_volume_term_integral_spline() const;
 
     void make_T_true_spline();
 
-    double find_reheating_start_temp(const double& T_low, const double& T_high, const double& reheating_target, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+    /////////////////////////
 
-    double find_reheating_end_temp(const double& T_low, const double& T_high, const double& reheating_target, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+    // double find_reheating_start_temp(const double& T_low, const double& T_high, const double& reheating_target, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
-    const double get_T_true_matching_e_false(const double& T_false, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
+    // double find_reheating_end_temp(const double& T_low, const double& T_high, const double& reheating_target, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
-    const double get_T_true_matching_e_true(const double& T_false, const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
+    // const double get_T_true_matching_e_false(const double& T_false, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
 
-    const double get_T_true_matching_e_true(const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
+    // const double get_T_true_matching_e_true(const double& T_false, const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
 
-    const double get_T_true_adiabatic(const double& T_false, const double& T_false_prev ,const double& T_true_prev, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
+    // const double get_T_true_matching_e_true(const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
 
-    void evaluate_pre_onset_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+    // const double get_T_true_adiabatic(const double& T_false, const double& T_false_prev ,const double& T_true_prev, double tol = 1e-8, boost::uintmax_t max_iter = 100) const;
 
-    void evaluate_reheating_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+    // void evaluate_pre_onset_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
-    void evaluate_post_reheating_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+    // void evaluate_reheating_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
-    void solve_friedmann();
+    // void evaluate_post_reheating_evolution(const double& T_high, const double& T_low, ReheatingArrays& arrays, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+
+    // void solve_friedmann();
+
+    // 
+
+    // void calculate_false_vacuum_fraction();
+
+    /////////////////////////
 
     void refine_temperature_bounds();
-
-    void calculate_false_vacuum_fraction();
 
     double get_T_true(const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
     double get_T_false(const double& e_false, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
+    const double get_hubble_rate(const double& true_vacuum_fraction, const double& e_false, const double& e_true) const;
+
+    const double get_false_vacuum_fraction_from_I3(const double& I3) const;
+
     void evolve_friedmann();
+
+    const void fit_friedmann_splines() const;
 
     const double get_volume_term(const double& T1, const double& T2) const;
 
