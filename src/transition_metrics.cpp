@@ -263,9 +263,6 @@ namespace PhaseTracer {
         catch (const TransitionCompleteException&) {
             LOG(debug) << "Transition complete: integration stopped.";
         }
-
-        // Write FridmannSystem arrays to reheating.csv
-        system.write("example/TestThermalParameters/reheating_data/reheating.csv");
     }
 
     const void
@@ -341,6 +338,95 @@ namespace PhaseTracer {
         double a_top = get_scale_factor_log_time(log_t_top);
         double a_bottom = get_scale_factor_log_time(log_t_bottom);
         return a_bottom/a_top;
+    }
+
+    void
+    TransitionMetrics::calculate_distributions() // TODO 4th order
+    {
+        double nucleation_rate = 0.0;
+        double bubble_density_int = 0.0;
+
+        const size_t n = system.log_time.size();
+        system.nucleation_rate.resize(n);
+        system.number_density.resize(n);
+
+        for(size_t i = 0; i < n; ++i)
+        {
+            double d_log_time = (i==0) ? system.log_time[0] : system.log_time[i] - system.log_time[i-1];
+            double time = std::exp(system.log_time[i]);
+
+            double false_vacuum_fraction = std::exp(-4.0/3.0 * M_PI * vw*vw*vw * system.I_3[i]);
+            double gamma = system.gamma[i];
+            double hubble = system.hubble[i];
+            double scale_factor = system.a[i];
+
+            double d_nucleation_rate = 4.0/3.0 * M_PI * time * gamma * false_vacuum_fraction / (hubble*hubble*hubble) * d_log_time;
+            double d_number_density_int = time * gamma * false_vacuum_fraction * scale_factor*scale_factor*scale_factor * d_log_time;
+
+            nucleation_rate  += d_nucleation_rate;
+            bubble_density_int += d_number_density_int;
+
+            system.nucleation_rate[i] = nucleation_rate;
+            system.number_density[i]  = bubble_density_int / (scale_factor*scale_factor*scale_factor);
+        }
+    }
+
+    std::vector<double>
+    TransitionMetrics::calculate_lifetime_distribution(const double beta, const std::vector<double>& lifetime_grid) const
+    {
+        const size_t n_grid = system.log_time.size();
+        const double n_asymptotic = system.number_density.back();
+        const double Vext_prefac = 4.0/3.0 * M_PI * vw*vw*vw;
+
+        // Build spline for I_3(log_t) so we can interpolate and differentiate
+        alglib::real_1d_array log_time_arr, I3_arr;
+        log_time_arr.setlength(n_grid);
+        I3_arr.setlength(n_grid);
+        for (size_t i = 0; i < n_grid; ++i)
+        {
+            log_time_arr[i] = system.log_time[i];
+            I3_arr[i]       = system.I_3[i];
+        }
+        alglib::spline1dinterpolant I3_spline;
+        alglib::spline1dbuildcubic(log_time_arr, I3_arr, I3_spline);
+
+        const double log_t_min = system.log_time.front();
+        const double log_t_max = system.log_time.back();
+
+        // df/dt at arbitrary time t_eval (zero outside the grid range)
+        auto df_dt = [&](double t_eval) -> double
+        {
+            const double log_t_eval = std::log(t_eval);
+            if (log_t_eval < log_t_min || log_t_eval > log_t_max) return 0.0;
+
+            double I3_val, dI3_dlnt, d2I3;
+            alglib::spline1ddiff(I3_spline, log_t_eval, I3_val, dI3_dlnt, d2I3);
+
+            const double h        = std::exp(-Vext_prefac * I3_val);   // false vacuum fraction
+            const double dVdt     = Vext_prefac * dI3_dlnt / t_eval;   // dV_ext/dt
+            return h * dVdt;
+        };
+
+        // For each lifetime value t, integrate over t' in the grid
+        std::vector<double> result(lifetime_grid.size());
+        for (size_t k = 0; k < lifetime_grid.size(); ++k)
+        {
+            const double tau = lifetime_grid[k];
+            double integral = 0.0;
+
+            for (size_t i = 0; i < n_grid; ++i)
+            {
+                const double t_prime  = system.time[i];
+                const double d_log_t  = (i == 0) ? system.log_time[i] : system.log_time[i] - system.log_time[i-1];
+                const double dt_prime = t_prime * d_log_t;
+
+                integral += system.gamma[i] * df_dt(t_prime + tau) * dt_prime;
+            }
+
+            result[k] = integral / (beta * n_asymptotic);
+        }
+
+        return result;
     }
 
     const double

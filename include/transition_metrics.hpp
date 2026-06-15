@@ -293,30 +293,21 @@ struct FriedmannSystem
     std::vector<double> I_2;
     std::vector<double> I_3;
 
+    std::vector<double> nucleation_rate;
+    std::vector<double> number_density;
+
     void write(std::string filename) const
     {
         std::ofstream out(filename);
-        out << "#time,T_f,T_t,e_f,e_t,p_f,p_t,w_f,w_t,s_f,s_t,hubble,a,gamma,I_0,I_1,I_2,I_3\n";
+        out << "# time,T_f,T_t,hubble,a,gamma,P_f,N,n\n";
         for (std::size_t i = 0; i < time.size(); ++i)
         {
             out << time[i]   << ","
                 << T_f[i]    << ","
                 << T_t[i]    << ","
-                << e_f[i]    << ","
-                << e_t[i]    << ","
-                << p_f[i]    << ","
-                << p_t[i]    << ","
-                << w_f[i]    << ","
-                << w_t[i]    << ","
-                << s_f[i]    << ","
-                << s_t[i]    << ","
                 << hubble[i] << ","
                 << a[i]      << ","
-                << gamma[i]  << ","
-                << I_0[i]    << ","
-                << I_1[i]    << ","
-                << I_2[i]    << ","
-                << I_3[i]    << "\n";
+                << gamma[i]  << "\n";
         }
         out.close();
     }
@@ -416,6 +407,16 @@ public :
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
             LOG(debug) << "Fit splines to Friedmann solution. Time: " << dt.count() << " ms"; 
         }
+
+        {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            calculate_distributions();
+            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
+            LOG(debug) << "Calculated distributions. Time: " << dt.count() << " ms"; 
+        }
+
+        // Write FridmannSystem arrays to reheating.csv
+        system.write("example/TestThermalParameters/reheating_data/reheating.csv");
     }
 
     void compute_milestones() 
@@ -485,8 +486,6 @@ private:
 
     void make_volume_term_integral_spline() const;
 
-    void make_T_true_spline();
-
     void refine_temperature_bounds();
 
     double get_T_true(const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100);
@@ -500,6 +499,10 @@ private:
     void evolve_friedmann();
 
     const void fit_friedmann_splines() const;
+
+    void calculate_distributions();
+
+    std::vector<double> calculate_lifetime_distribution(const double beta, const std::vector<double>& lifetime_grid) const;
 
     const double get_volume_term(const double& T1, const double& T2) const;
 
