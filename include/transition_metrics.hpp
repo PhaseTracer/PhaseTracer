@@ -268,6 +268,57 @@ struct LifetimeDistribution
     std::vector<double> lifetime_values;
 };
 
+struct FriedmannSystem
+{
+    std::vector<double> time;
+
+    std::vector<double> e_t;
+    std::vector<double> p_t;
+    std::vector<double> w_t;
+    std::vector<double> s_t;
+    std::vector<double> e_f;
+    std::vector<double> p_f;
+    std::vector<double> w_f;
+    std::vector<double> s_f;
+
+    std::vector<double> T_f;
+    std::vector<double> T_t;
+    std::vector<double> Hubble;
+    std::vector<double> Gamma;
+
+    std::vector<double> I_0;
+    std::vector<double> I_1;
+    std::vector<double> I_2;
+    std::vector<double> I_3;
+
+    void write(std::string filename) const
+    {
+        std::ofstream out(filename);
+        out << "#time,T_f,T_t,e_f,e_t,p_f,p_t,w_f,w_t,s_f,s_t,Hubble,Gamma,I_0,I_1,I_2,I_3\n";
+        for (std::size_t i = 0; i < time.size(); ++i)
+        {
+            out << time[i]   << ","
+                << T_f[i]    << ","
+                << T_t[i]    << ","
+                << e_f[i]    << ","
+                << e_t[i]    << ","
+                << p_f[i]    << ","
+                << p_t[i]    << ","
+                << w_f[i]    << ","
+                << w_t[i]    << ","
+                << s_f[i]    << ","
+                << s_t[i]    << ","
+                << Hubble[i] << ","
+                << Gamma[i]  << ","
+                << I_0[i]    << ","
+                << I_1[i]    << ","
+                << I_2[i]    << ","
+                << I_3[i]    << "\n";
+        }
+        out.close();
+    }
+};
+
 class TransitionMetrics 
 {
 
@@ -328,6 +379,8 @@ class TransitionMetrics
 
 public :
 
+    FriedmannSystem system;
+
     TransitionMilestone onset_milestone;
     TransitionMilestone percolation_milestone;
     TransitionMilestone completion_milestone;
@@ -340,7 +393,7 @@ public :
     {
         refine_temperature_bounds();
 
-        calculate_false_vacuum_fraction();
+        evolve_friedmann();
     }
 
     void compute_milestones() 
@@ -459,6 +512,12 @@ private:
     void refine_temperature_bounds();
 
     void calculate_false_vacuum_fraction();
+
+    double get_T_true(const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+
+    double get_T_false(const double& e_false, double tol = 1e-8, boost::uintmax_t max_iter = 100);
+
+    void evolve_friedmann();
 
     const double get_volume_term(const double& T1, const double& T2) const;
 

@@ -267,6 +267,208 @@ namespace PhaseTracer {
         }
     }
 
+    double 
+    TransitionMetrics::get_T_true(const double& e_true, double tol, boost::uintmax_t max_iter)
+    {
+        // LOG(debug) << "get_T_true called for e_true = " << e_true;
+        std::pair<double, double> bracket = {t_min, t_max};
+
+        const double e_true_max = eos.get_energy_minus(t_max);
+        if (e_true > e_true_max)
+        {
+            return t_max;
+        }
+
+        auto target_function = [this, e_true](double T_true)
+        {
+            double e_true_eos = eos.get_energy_minus(T_true);
+            return e_true_eos - e_true;
+        };
+
+        double f_low = target_function(bracket.first);
+        double f_high = target_function(bracket.second);
+        if (f_low * f_high > 0.0)        
+        {
+            return t_max;
+        }
+
+        auto root_pair = boost::math::tools::toms748_solve(
+            target_function,
+            bracket.first, bracket.second,
+            [=](double l, double u){ return std::abs(u - l) < tol; },
+            max_iter
+        );
+
+        double root = (root_pair.first + root_pair.second) / 2.0;
+        return root;
+    }
+
+    double 
+    TransitionMetrics::get_T_false(const double& e_false, double tol, boost::uintmax_t max_iter)
+    {
+        // LOG(debug) << "get_T_false called for e_false = " << e_false;
+        std::pair<double, double> bracket = {t_min, t_max};
+
+        const double e_false_min = eos.get_energy_plus(t_min);
+        if (e_false < e_false_min)
+        {
+            return t_min;
+        }
+
+        auto target_function = [this, e_false](double T_false)
+        {
+            double e_false_eos = eos.get_energy_plus(T_false);
+            return e_false_eos - e_false;
+        };
+
+        double f_low = target_function(bracket.first);
+        double f_high = target_function(bracket.second);
+        if (f_low * f_high > 0.0)        
+        {
+            return t_max;
+        }
+
+        auto root_pair = boost::math::tools::toms748_solve(
+            target_function,
+            bracket.first, bracket.second,
+            [=](double l, double u){ return std::abs(u - l) < tol; },
+            max_iter
+        );
+
+        double root = (root_pair.first + root_pair.second) / 2.0;
+        return root;
+    }
+
+    void
+    TransitionMetrics::evolve_friedmann()
+    {
+        const double e_false_min = eos.get_energy_plus(t_min);
+        const double e_true_min = eos.get_energy_minus(t_min);
+
+        namespace odeint = boost::numeric::odeint;
+        using state_type = std::array<double, 6>;
+
+        auto rhs = [&](const state_type& state, state_type& dstate, double tau)
+        {
+            const double e_false = state[0];
+            const double e_true = state[1];
+            const double I_0 = state[2];
+            const double I_1 = state[3];
+            const double I_2 = state[4];
+            const double I_3 = state[5];
+
+            const double T_true = get_T_true(e_true);
+            const double T_false = get_T_false(e_false);
+
+            const double p_false = eos.get_pressure_plus(T_false);
+            const double p_true = eos.get_pressure_minus(T_true);
+            const double latent_heat = e_false - eos.get_energy_minus(T_false);
+
+            const double true_vacuum_fraction = 1 - std::exp(- 4.0/3.0*M_PI*vw*vw*vw * I_3);
+
+            const double e_averaged = (1-true_vacuum_fraction)*(e_false - e_true_min) + true_vacuum_fraction*(e_true - e_true_min);
+            const double hubble = std::sqrt(8. * M_PI * newtonG/3. * e_averaged);
+            const double gamma = decay_rate.get_gamma(T_false);
+            // double gamma = decay_rate.get_gamma_no_spline(T_false);
+            // if(isnan(gamma)) { gamma = 0.0; }
+            // LOG(debug) << "T_false = " << T_false << ", Gamma = " << gamma;
+            const double time = std::exp(tau); // time is log-time: tau = ln(t)
+
+            dstate[2] = time * (gamma       - 3.0 * hubble * I_0); // d(I_0)/d(ln t)
+            dstate[3] = time * (      I_0   - 2.0 * hubble * I_1); // d(I_1)/d(ln t)
+            dstate[4] = time * (2.0 * I_1   - 1.0 * hubble * I_2); // d(I_2)/d(ln t)
+            dstate[5] = time * (3.0 * I_2);                        // d(I_3)/d(ln t)
+
+            const double deriv_true_vacuum_fraction = 4.0/3.0*M_PI*vw*vw*vw * (1-true_vacuum_fraction) * dstate[5];
+            const double reheating = (true_vacuum_fraction < 1e-30) ? 0.0 : deriv_true_vacuum_fraction/true_vacuum_fraction * latent_heat;
+
+            dstate[0] = time * (- 3.0 * hubble * (e_false + p_false));           // d(e_false)/d(ln t)
+            dstate[1] = time * (- 3.0 * hubble * (e_true + p_true)) + reheating; // d(e_true)/d(ln t)
+        };
+
+        auto observer = [&](const state_type& state, double tau)
+        {
+            const double e_false = state[0];
+            const double e_true = state[1];
+            const double I_0 = state[2];
+            const double I_1 = state[3];
+            const double I_2 = state[4];
+            const double I_3 = state[5];
+
+            const double T_false = get_T_false(e_false);
+            const double T_true  = get_T_true(e_true);
+
+            // Stop if either temperature has reached (or gone below) t_min
+            if (T_false <= t_min || T_true <= t_min)
+            {
+                throw TransitionCompleteException{};
+            }
+
+            const double p_false = eos.get_pressure_plus(T_false);
+            const double p_true  = eos.get_pressure_minus(T_true);
+            const double s_false = eos.get_entropy_plus(T_false);
+            const double s_true  = eos.get_entropy_minus(T_true);
+
+            const double e_averaged = (e_false - e_true_min) * (1.0 - (1.0 - std::exp(-4.0/3.0*M_PI*vw*vw*vw * I_3)))
+                                    + (e_true  - e_true_min)  * (1.0 - std::exp(-4.0/3.0*M_PI*vw*vw*vw * I_3));
+            const double hubble = std::sqrt(std::max(8.0 * M_PI * newtonG / 3.0 * e_averaged, 0.0));
+            const double gamma  = decay_rate.get_gamma(T_false);
+            const double t      = std::exp(tau);
+
+            LOG(debug) << "t = " 
+                << t << " GeV^-1, T_false = " 
+                << T_false << " GeV, T_true = " 
+                << T_true << " GeV, e_false = " 
+                << e_false << " GeV^4, e_true = " 
+                << e_true << " GeV^4";
+
+            system.time.push_back(t);
+            system.e_f.push_back(e_false);
+            system.e_t.push_back(e_true);
+            system.p_f.push_back(p_false);
+            system.p_t.push_back(p_true);
+            system.w_f.push_back(e_false + p_false);
+            system.w_t.push_back(e_true  + p_true);
+            system.s_f.push_back(s_false);
+            system.s_t.push_back(s_true);
+            system.T_f.push_back(T_false);
+            system.T_t.push_back(T_true);
+            system.Hubble.push_back(hubble);
+            system.Gamma.push_back(gamma);
+            system.I_0.push_back(I_0);
+            system.I_1.push_back(I_1);
+            system.I_2.push_back(I_2);
+            system.I_3.push_back(I_3);
+        };
+
+        state_type initial_state = {eos.get_energy_plus(t_max), eos.get_energy_plus(t_max), 0.0, 0.0, 0.0, 0.0};
+
+        // set initial time to be just below critical temp.
+        double d_temp = 1e-3*(t_max - t_min);
+        double T_initial = t_max - d_temp;
+        double initial_time = std::log(0 - d_temp*get_time_temperature_false(T_initial));
+
+        // estimate final time to be at t_min, but add a buffer to ensure we capture the full transition
+        double final_time = std::log(get_t(t_min)) + 1.0;
+
+        double dt = (final_time - initial_time)/(250.0-1.0);
+
+        LOG(debug) << "Starting Friedmann evolution from T_initial = " << T_initial << " GeV at time " << exp(initial_time) << " GeV^-1, with estimated final time " << exp(final_time) << " GeV^-1";
+
+        try
+        {
+            odeint::integrate_adaptive(
+                odeint::make_controlled<odeint::runge_kutta_dopri5<state_type>>(1e-6, 1e-6),
+                rhs, initial_state, initial_time, final_time, dt, observer);
+        }
+        catch (const TransitionCompleteException&) {
+            LOG(debug) << "Transition complete: integration stopped.";
+        }
+
+        // Write FridmannSystem arrays to reheating.csv
+        system.write("example/TestThermalParameters/reheating_data/reheating.csv");
+    }
+
     double
     TransitionMetrics::find_reheating_start_temp(
         const double& T_low, 
