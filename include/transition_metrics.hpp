@@ -299,12 +299,14 @@ struct FriedmannSystem
     void write(std::string filename) const
     {
         std::ofstream out(filename);
-        out << "# time,T_f,T_t,hubble,a,gamma,P_f,N,n\n";
+        out << "# time,T_f,T_t,e_t,e_f,hubble,a,gamma,P_f,N,n\n";
         for (std::size_t i = 0; i < time.size(); ++i)
         {
             out << time[i]   << ","
                 << T_f[i]    << ","
                 << T_t[i]    << ","
+                << e_t[i]    << ","
+                << e_f[i]    << ","
                 << hubble[i] << ","
                 << a[i]      << ","
                 << gamma[i]  << ","
@@ -373,6 +375,19 @@ public :
     TransitionMetrics(const FalseVacuumDecayRate& decay_rate_in, const EquationOfState& eos_in) :
     decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
     {
+        // print out the eos for debug
+        std::ofstream eos_out("debug_eos.csv");
+        eos_out << "# T, e_plus, e_minus, p_plus, p_minus\n";
+        for(double t = t_min; t <= t_max; t += (t_max - t_min) / 199)
+        {
+            double e_plus = eos.get_energy_plus(t);
+            double e_minus = eos.get_energy_minus(t);
+            double p_plus = eos.get_pressure_plus(t);
+            double p_minus = eos.get_pressure_minus(t);
+            eos_out << t << "," << e_plus << "," << e_minus << "," << p_plus << "," << p_minus << "\n";
+        }
+        eos_out.close();
+
         {
             auto t0 = std::chrono::high_resolution_clock::now();
             refine_temperature_bounds();
@@ -394,15 +409,15 @@ public :
             LOG(debug) << "Calculated distributions. Time: " << dt.count() << " ms"; 
         }
 
+        // Write FridmannSystem arrays to reheating.csv
+        system.write("example/TestThermalParameters/reheating_data/reheating.csv");
+
         {
             auto t0 = std::chrono::high_resolution_clock::now();
             fit_friedmann_splines();
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
             LOG(debug) << "Fit splines to Friedmann solution. Time: " << dt.count() << " ms"; 
         }
-
-        // Write FridmannSystem arrays to reheating.csv
-        system.write("example/TestThermalParameters/reheating_data/reheating.csv");
     }
 
     void compute_milestones() 

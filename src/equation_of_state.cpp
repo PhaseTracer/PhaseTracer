@@ -55,9 +55,9 @@ namespace PhaseTracer {
             double temp4 = temp2 * temp2;
             double background_pressure = background_dof * M_PI * M_PI / 90.0 * temp4;
 
-            pressure[i] = background_pressure - v;
+            pressure[i] = background_pressure - v + energy_norm;
             energy[i] = 3.0 * background_pressure + v - temp * dvdT - energy_norm;
-            enthalpy[i] = 4.0 * background_pressure - temp * dvdT - energy_norm;
+            enthalpy[i] = 4.0 * background_pressure - temp * dvdT;
             entropy[i] = 4.0 * background_pressure / temp - dvdT;
         }
 
@@ -78,6 +78,40 @@ namespace PhaseTracer {
             LOG(error) << "Error in spline1dbuildcubic: " << e.what() << std::endl;
             throw std::runtime_error("Failed to build thermodynamic splines");
         }
+    }
+
+    double
+    EquationOfState::find_normalisation(Phase true_vacuum)
+    {
+        const auto& true_T = true_vacuum.T;
+        const auto& true_V = true_vacuum.V;
+
+        alglib::real_1d_array t_norm_arr, v_norm_arr;
+        t_norm_arr.setcontent(true_T.size(), true_T.data());
+        v_norm_arr.setcontent(true_V.size(), true_V.data());
+        alglib::spline1dinterpolant true_pot_norm_spline;
+        alglib::spline1dbuildcubic(t_norm_arr, v_norm_arr, true_pot_norm_spline);
+
+        double normalisation = 0.0;
+        double t_min = true_T.front();
+        double t_max = true_T.back();
+        int n_temp = 500.0;
+        for(double t = t_min; t <= t_max; t += (t_max - t_min) / n_temp) 
+        {
+            double v, dvdT, ddvdT;
+             try {
+                alglib::spline1ddiff(true_pot_norm_spline, t, v, dvdT, ddvdT);
+            } catch (const std::exception& e) {
+                LOG(error) << "Error in spline1ddiff while finding normalization: " << e.what() << "for temperature " << t;
+                continue;
+            }
+            double energy = v - t * dvdT;
+            if (energy < normalisation) {
+                normalisation = energy;
+            }
+        }
+        LOG(debug) << "Energy normalization set to " << normalisation;
+        return normalisation;
     }
 
     std::array<double, 3>

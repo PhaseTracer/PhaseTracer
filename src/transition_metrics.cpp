@@ -183,7 +183,7 @@ namespace PhaseTracer {
 
             const double p_false = eos.get_pressure_plus(T_false);
             const double p_true = eos.get_pressure_minus(T_true);
-            const double latent_heat = e_false - eos.get_energy_minus(T_false);
+            const double latent_heat = e_false - e_true;
 
             const double false_vacuum_fraction = get_false_vacuum_fraction_from_I3(I_3);
             const double true_vacuum_fraction = 1 - false_vacuum_fraction;
@@ -205,6 +205,10 @@ namespace PhaseTracer {
 
             dstate[0] = time * (- 3.0 * hubble * (e_false + p_false));           // d(e_false)/d(ln t)
             dstate[1] = time * (- 3.0 * hubble * (e_true + p_true)) + reheating; // d(e_true)/d(ln t)
+
+            LOG(debug) << "tau = " << tau << ", e_true = " << e_true << ", reheating = " << reheating << ", redshift = " << time * (- 3.0 * hubble * (e_true + p_true));
+
+            // LOG(debug) << "dstate = " << dstate[0] << ", " << dstate[1] << ", " << dstate[2] << ", " << dstate[3] << ", " << dstate[4] << ", " << dstate[5] << ", " << dstate[6];
         };
 
         auto observer = [&](const state_type& state, double tau)
@@ -217,11 +221,15 @@ namespace PhaseTracer {
             const double I_2     = state[5];
             const double I_3     = state[6];
 
+            // LOG(debug) <<"Is e_true > e_false? " << (e_true > e_false ? "Yes" : "No");
+
+            // LOG(debug) << "Observer: tau = " << tau << ", e_false = " << e_false << ", e_true = " << e_true << ", a = " << a << ", I_0 = " << I_0 << ", I_1 = " << I_1 << ", I_2 = " << I_2 << ", I_3 = " << I_3;
+
             const double T_false = match_T_false(e_false);
             const double T_true  = match_T_true(e_true);
 
             // Stop if either temperature has reached (or gone below) t_min
-            if (T_false <= t_min || T_true <= t_min)
+            if (T_false <= t_min || T_true <= t_min || e_false <= e_false_min || e_true <= e_true_min)
             {
                 throw TransitionCompleteException{};
             }

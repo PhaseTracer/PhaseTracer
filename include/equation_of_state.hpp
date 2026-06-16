@@ -134,16 +134,7 @@ public:
         // Compute energy normalisation: field contribution (v - T*dv/dT) in the
         // true vacuum at T_min, so that at T_min only the radiation bath
         // contributes to the energy density (and hence the Hubble rate).
-        const auto& true_T = transition.true_phase.T;
-        const auto& true_V = transition.true_phase.V;
-        alglib::real_1d_array t_norm_arr, v_norm_arr;
-        t_norm_arr.setcontent(true_T.size(), true_T.data());
-        v_norm_arr.setcontent(true_V.size(), true_V.data());
-        alglib::spline1dinterpolant true_pot_norm_spline;
-        alglib::spline1dbuildcubic(t_norm_arr, v_norm_arr, true_pot_norm_spline);
-        double v_norm, dvdT_norm, ddvdT_norm;
-        alglib::spline1ddiff(true_pot_norm_spline, true_T.front(), v_norm, dvdT_norm, ddvdT_norm);
-        const double energy_norm = v_norm - true_T.front() * dvdT_norm;
+        double energy_norm = find_normalisation(transition.true_phase);
 
         EquationOfStateInPhase eos_plus(transition.false_phase, n_temp, background_dof, energy_norm);
         EquationOfStateInPhase eos_minus(transition.true_phase, n_temp, background_dof, energy_norm);
@@ -200,6 +191,9 @@ public:
     int get_n_temp() const { return n_temp; }
 
 private : 
+
+    double find_normalisation(Phase true_vacuum);
+
     void 
     check_temperature_range(double T, const char* caller) const 
     {
