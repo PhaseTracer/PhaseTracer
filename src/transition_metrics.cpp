@@ -166,7 +166,7 @@ namespace PhaseTracer {
         const double e_true_min = eos.get_energy_minus(t_min);
 
         namespace odeint = boost::numeric::odeint;
-        using state_type = std::array<double, 7>;
+        using state_type = std::array<double, 10>;
 
         auto rhs = [&](const state_type& state, state_type& dstate, double tau)
         {
@@ -177,6 +177,9 @@ namespace PhaseTracer {
             const double I_1     = state[4];
             const double I_2     = state[5];
             const double I_3     = state[6];
+            const double nucleation_rate = state[7];
+            const double number_density = state[8];
+            const double J = std::max(0.0, state[9]); // J = number_density * mean_bubble_radius
 
             const double T_true = match_T_true(e_true);
             const double T_false = match_T_false(e_false);
@@ -191,9 +194,9 @@ namespace PhaseTracer {
             const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
             const double gamma = decay_rate.get_gamma(T_false);
 
-            const double time = std::exp(tau); // time is log-time: tau = ln(t)
+            const double time = std::exp(tau);
 
-            dstate[2] = time * a * hubble; // da/d(ln t) = a * H
+            dstate[2] = time * a * hubble;
 
             dstate[3] = time * (gamma       - 3.0 * hubble * I_0); // d(I_0)/d(ln t)
             dstate[4] = time * (      I_0   - 2.0 * hubble * I_1); // d(I_1)/d(ln t)
@@ -206,9 +209,9 @@ namespace PhaseTracer {
             dstate[0] = time * (- 3.0 * hubble * (e_false + p_false));           // d(e_false)/d(ln t)
             dstate[1] = time * (- 3.0 * hubble * (e_true + p_true)) + reheating; // d(e_true)/d(ln t)
 
-            // LOG(debug) << "tau = " << tau << ", e_true = " << e_true << ", reheating = " << reheating << ", redshift = " << time * (- 3.0 * hubble * (e_true + p_true));
-
-            // LOG(debug) << "dstate = " << dstate[0] << ", " << dstate[1] << ", " << dstate[2] << ", " << dstate[3] << ", " << dstate[4] << ", " << dstate[5] << ", " << dstate[6];
+            dstate[7] = time * (4.0/3.0 * M_PI * gamma * false_vacuum_fraction / (hubble*hubble*hubble));
+            dstate[8] = time * (- 3.0 * hubble * number_density + gamma * false_vacuum_fraction);
+            dstate[9] = (number_density < 1e-100) ? 0.0 : time * (number_density - 2.0 * hubble * J);
         };
 
         auto observer = [&](const state_type& state, double tau)
@@ -220,10 +223,10 @@ namespace PhaseTracer {
             const double I_1     = state[4];
             const double I_2     = state[5];
             const double I_3     = state[6];
-
-            // LOG(debug) <<"Is e_true > e_false? " << (e_true > e_false ? "Yes" : "No");
-
-            // LOG(debug) << "Observer: tau = " << tau << ", e_false = " << e_false << ", e_true = " << e_true << ", a = " << a << ", I_0 = " << I_0 << ", I_1 = " << I_1 << ", I_2 = " << I_2 << ", I_3 = " << I_3;
+            const double nucleation_rate = state[7];
+            const double number_density = state[8];
+            const double J = std::max(0.0, state[9]); // J = number_density * mean_bubble_radius
+            const double mean_bubble_radius = (number_density > 1e-100) ? J / number_density : 0.0;
 
             const double T_false = match_T_false(e_false);
             const double T_true  = match_T_true(e_true);
@@ -245,7 +248,7 @@ namespace PhaseTracer {
             const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
             const double gamma  = decay_rate.get_gamma(T_false);
 
-            const double t      = std::exp(tau);
+            const double t = std::exp(tau);
 
             system.log_time.push_back(tau);
             system.time.push_back(t);
@@ -266,9 +269,12 @@ namespace PhaseTracer {
             system.I_1.push_back(I_1);
             system.I_2.push_back(I_2);
             system.I_3.push_back(I_3);
+            system.nucleation_rate.push_back(nucleation_rate);
+            system.number_density.push_back(number_density);
+            system.mean_bubble_radius.push_back(mean_bubble_radius);
         };
 
-        state_type initial_state = {eos.get_energy_plus(t_max), eos.get_energy_plus(t_max), 1.0, 0.0, 0.0, 0.0, 0.0};
+        state_type initial_state = {eos.get_energy_plus(t_max), eos.get_energy_plus(t_max), 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
         // set initial time to be just below critical temp.
         double d_temp = 1e-3*(t_max - t_min);
@@ -299,37 +305,6 @@ namespace PhaseTracer {
             LOG(debug) << "Transition complete: integration stopped.";
         } catch (const std::domain_error& e) {
             LOG(debug) << "Boost rootfinder error: integration stopped.";
-        }
-    }
-
-    void
-    TransitionMetrics::calculate_distributions() // TODO 4th order
-    {
-        double nucleation_rate = 0.0;
-        double bubble_density_int = 0.0;
-
-        const size_t n = system.log_time.size();
-        system.nucleation_rate.resize(n);
-        system.number_density.resize(n);
-
-        for(size_t i = 0; i < n; ++i)
-        {
-            double d_log_time = (i==0) ? system.log_time[0] : system.log_time[i] - system.log_time[i-1];
-            double time = std::exp(system.log_time[i]);
-
-            double false_vacuum_fraction = std::exp(-4.0/3.0 * M_PI * vw*vw*vw * system.I_3[i]);
-            double gamma = system.gamma[i];
-            double hubble = system.hubble[i];
-            double scale_factor = system.a[i];
-
-            double d_nucleation_rate = 4.0/3.0 * M_PI * time * gamma * false_vacuum_fraction / (hubble*hubble*hubble) * d_log_time;
-            double d_number_density_int = time * gamma * false_vacuum_fraction * scale_factor*scale_factor*scale_factor * d_log_time;
-
-            nucleation_rate  += d_nucleation_rate;
-            bubble_density_int += d_number_density_int;
-
-            system.nucleation_rate[i] = nucleation_rate;
-            system.number_density[i]  = bubble_density_int / (scale_factor*scale_factor*scale_factor);
         }
     }
 
@@ -365,8 +340,8 @@ namespace PhaseTracer {
             scale_factor_array[i] = system.a[i];
             hubble_rate_array[i] = system.hubble[i];
             log_I_3_array[i] = (i==0) ? -700 : std::log(system.I_3[i]);
-            log_nucleation_rate_array[i] = std::log(system.gamma[i]);
-            log_bubble_number_density_array[i] = std::log(system.number_density[i]);
+            log_nucleation_rate_array[i] = (i==0) ? -700 : std::log(system.gamma[i]);
+            log_bubble_number_density_array[i] = (i==0) ? -700 : std::log(system.number_density[i]);
         }
 
         alglib::spline1dbuildcubic(T_false_array, T_true_array, reheating_spline);

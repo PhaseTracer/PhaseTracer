@@ -295,11 +295,12 @@ struct FriedmannSystem
 
     std::vector<double> nucleation_rate;
     std::vector<double> number_density;
+    std::vector<double> mean_bubble_radius;
 
     void write(std::string filename) const
     {
         std::ofstream out(filename);
-        out << "# time,T_f,T_t,e_t,e_f,hubble,a,gamma,P_f,N,n\n";
+        out << "# time,T_f,T_t,e_t,e_f,hubble,a,gamma,P_f,N,n,Rbar\n";
         for (std::size_t i = 0; i < time.size(); ++i)
         {
             out << time[i]   << ","
@@ -312,7 +313,8 @@ struct FriedmannSystem
                 << gamma[i]  << ","
                 << std::exp( - 4.0 * M_PI * 0.577*0.577*0.577 / 3.0 * I_3[i]) << ","
                 << nucleation_rate[i] << ","
-                << number_density[i] <<
+                << number_density[i] << ","
+                << mean_bubble_radius[i] <<
                 "\n";
         }
         out.close();
@@ -400,13 +402,6 @@ public :
             evolve_friedmann();
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
             LOG(debug) << "Solved Friedmann equations. Time: " << dt.count() << " ms"; 
-        }
-
-        {
-            auto t0 = std::chrono::high_resolution_clock::now();
-            calculate_distributions();
-            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
-            LOG(debug) << "Calculated distributions. Time: " << dt.count() << " ms"; 
         }
 
         // Write FridmannSystem arrays to reheating.csv
