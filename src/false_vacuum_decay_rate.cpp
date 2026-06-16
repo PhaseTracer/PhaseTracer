@@ -40,17 +40,14 @@ namespace PhaseTracer {
         std::vector<bool> valid_flags(spline_evaluations, false);
         
         auto start_time = std::chrono::high_resolution_clock::now();
-        
-        // Note: OpenMP parallelization disabled because ActionCalculator has mutable state
-        // and is not thread-safe (contains mutable bubble_profile, phi_for_profile, tunneling_path)
-        // #ifdef _OPENMP
-        // #pragma omp parallel for schedule(dynamic)
-        // #endif
 
-        for (int i = 1; i < spline_evaluations; i++) 
+        #ifdef _OPENMP
+        #pragma omp parallel for schedule(dynamic)
+        #endif
+        for (int i = 1; i < spline_evaluations; i++)
         {
             double tt = t_min + i * dt;
-            
+
             double action;
             try {
                 action = ac.get_action(t.true_phase, t.false_phase, tt) / tt;

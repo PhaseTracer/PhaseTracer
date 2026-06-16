@@ -156,8 +156,7 @@ public:
         if (temperature < t_min || temperature > t_max) {
             throw std::out_of_range("Temperature is outside the valid range [t_min, t_max].");
         }
-        ac.get_action(t.true_phase, t.false_phase, temperature);
-        return ac.get_bubble_profile();
+        return ac.get_action_full(t.true_phase, t.false_phase, temperature).bubble_profile;
     }
 
 private:

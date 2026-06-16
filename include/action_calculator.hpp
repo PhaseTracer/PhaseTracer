@@ -31,6 +31,13 @@
 
 namespace PhaseTracer {
 
+struct ActionResult {
+    double action = std::numeric_limits<double>::quiet_NaN();
+    Profile1D bubble_profile;
+    std::vector<Eigen::VectorXd> phi_for_profile;
+    std::vector<Eigen::VectorXd> tunneling_path;
+};
+
 /** Method for action calculation */
 enum class ActionMethod { None,
                           BubbleProfiler,
@@ -48,10 +55,6 @@ private:
   /** Number of dimensions */
   PROPERTY(size_t, num_dims, 3)
 
-  // Save the profile and path
-  mutable Profile1D bubble_profile;
-  mutable std::vector<Eigen::VectorXd> phi_for_profile;
-  mutable std::vector<Eigen::VectorXd> tunneling_path;
 
   /** Choose method to calculate the action */
   ActionMethod action_method = ActionMethod::PathDeformation;
@@ -123,12 +126,13 @@ public:
     return {phase2_at_T.x, true_vacua_at_T[i_unique]};
   }
 
-  double get_action(const Phase &phase1, const Phase &phase2, double T, size_t i_unique = 0) const {
+  ActionResult get_action_full(const Phase &phase1, const Phase &phase2, double T, size_t i_unique = 0) const {
     const auto vacua = get_vacua_at_T(phase1, phase2, T, i_unique);
-    return get_action(vacua[0], vacua[1], T);
+    return get_action_full(vacua[0], vacua[1], T);
   }
 
-  double get_action(Eigen::VectorXd true_vacuum, Eigen::VectorXd false_vacuum, double T) const {
+  ActionResult get_action_full(Eigen::VectorXd true_vacuum, Eigen::VectorXd false_vacuum, double T) const {
+    ActionResult result;
 
     if (potential.V(true_vacuum, T) > potential.V(false_vacuum, T))
       true_vacuum.swap(false_vacuum);
@@ -201,8 +205,8 @@ public:
         st.set_max_iter(PD_max_iter);
 
         try {
-          bubble_profile = st.findProfile(false_vacuum[0], true_vacuum[0]);
-          action_PD = st.calAction(bubble_profile);
+          result.bubble_profile = st.findProfile(false_vacuum[0], true_vacuum[0]);
+          action_PD = st.calAction(result.bubble_profile);
         } catch (const std::exception &e) {
           LOG(warning) << "At T = " << T << ", between " << false_vacuum << " and " << true_vacuum << ": " << e.what();
         }
@@ -232,9 +236,9 @@ public:
         path_pts.push_back(false_vacuum);
         try {
           FullTunneling full_tunneling = pd.full_tunneling(path_pts);
-          bubble_profile = full_tunneling.profile1D;
-          phi_for_profile = full_tunneling.phi_for_profile1D;
-          tunneling_path = full_tunneling.phi;
+          result.bubble_profile = full_tunneling.profile1D;
+          result.phi_for_profile = full_tunneling.phi_for_profile1D;
+          result.tunneling_path = full_tunneling.phi;
         } catch (const std::exception &e) {
           LOG(warning) << "At T = " << T << ", between " << false_vacuum << " and " << true_vacuum << ": " << e.what();
         }
@@ -245,24 +249,24 @@ public:
 
 #ifdef BUILD_WITH_BP
     if (std::isnan(action_BP)) {
-      return action_PD;
+      result.action = action_PD;
+    } else if (std::isnan(action_PD)) {
+      result.action = action_BP;
+    } else {
+      result.action = std::min(action_BP, action_PD);
     }
-    if (std::isnan(action_PD)) {
-      return action_BP;
-    }
-    return std::min(action_BP, action_PD);
 #else
-    return action_PD;
+    result.action = action_PD;
 #endif
+    return result;
   }
-  Profile1D get_bubble_profile() const {
-    return bubble_profile;
+
+  double get_action(const Phase &phase1, const Phase &phase2, double T, size_t i_unique = 0) const {
+    return get_action_full(phase1, phase2, T, i_unique).action;
   }
-  std::vector<Eigen::VectorXd> get_tunneling_path() {
-    return tunneling_path;
-  }
-  std::vector<Eigen::VectorXd> get_phi_for_profile() {
-    return phi_for_profile;
+
+  double get_action(Eigen::VectorXd true_vacuum, Eigen::VectorXd false_vacuum, double T) const {
+    return get_action_full(true_vacuum, false_vacuum, T).action;
   }
 };
 

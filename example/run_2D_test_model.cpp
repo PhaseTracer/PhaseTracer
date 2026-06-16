@@ -44,12 +44,12 @@ int main(int argc, char *argv[]) {
 
   if (debug_mode) {
     const auto trans = tf.get_transitions();
-    double action = ac.get_action(trans[0].true_vacuum_TN, trans[0].false_vacuum_TN, trans[0].TN);
-    std::cout << "action = " << std::setprecision(15) << action << std::endl;
+    auto result = ac.get_action_full(trans[0].true_vacuum_TN, trans[0].false_vacuum_TN, trans[0].TN);
+    std::cout << "action = " << std::setprecision(15) << result.action << std::endl;
 
     std::ofstream file1("profile1D_for_2d_example.txt");
-    PhaseTracer::Profile1D profile = ac.get_bubble_profile();
-    std::vector<Eigen::VectorXd> phi_for_profile = ac.get_phi_for_profile();
+    PhaseTracer::Profile1D profile = result.bubble_profile;
+    std::vector<Eigen::VectorXd> phi_for_profile = result.phi_for_profile;
     file1 << "R,Phi,dPhi,phi_s1,phi_s2\n";
     for (int i = 0; i < profile.R.size(); ++i) {
       file1 << std::setprecision(10) << profile.R[i] << "," << profile.Phi[i] << "," << profile.dPhi[i] << "," << phi_for_profile[i][0] << "," << phi_for_profile[i][1] << std::endl;

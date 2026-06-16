@@ -206,7 +206,7 @@ namespace PhaseTracer {
             dstate[0] = time * (- 3.0 * hubble * (e_false + p_false));           // d(e_false)/d(ln t)
             dstate[1] = time * (- 3.0 * hubble * (e_true + p_true)) + reheating; // d(e_true)/d(ln t)
 
-            LOG(debug) << "tau = " << tau << ", e_true = " << e_true << ", reheating = " << reheating << ", redshift = " << time * (- 3.0 * hubble * (e_true + p_true));
+            // LOG(debug) << "tau = " << tau << ", e_true = " << e_true << ", reheating = " << reheating << ", redshift = " << time * (- 3.0 * hubble * (e_true + p_true));
 
             // LOG(debug) << "dstate = " << dstate[0] << ", " << dstate[1] << ", " << dstate[2] << ", " << dstate[3] << ", " << dstate[4] << ", " << dstate[5] << ", " << dstate[6];
         };
