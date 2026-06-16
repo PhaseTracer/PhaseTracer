@@ -319,37 +319,56 @@ namespace PhaseTracer {
 
         alglib::real_1d_array T_false_array;
         alglib::real_1d_array T_true_array; 
+        alglib::real_1d_array log_time_array;
         alglib::real_1d_array scale_factor_array;
         alglib::real_1d_array hubble_rate_array;
         alglib::real_1d_array log_I_3_array;
         alglib::real_1d_array log_nucleation_rate_array;
         alglib::real_1d_array log_bubble_number_density_array;
+        alglib::real_1d_array log_mean_bubble_radius_array;
 
         T_false_array.setlength(system.time.size());
         T_true_array.setlength(system.time.size());
+        log_time_array.setlength(system.time.size());
         scale_factor_array.setlength(system.time.size());
         hubble_rate_array.setlength(system.time.size());
         log_I_3_array.setlength(system.time.size());
         log_nucleation_rate_array.setlength(system.time.size());
         log_bubble_number_density_array.setlength(system.time.size());
+        log_mean_bubble_radius_array.setlength(system.time.size());
 
         for (std::size_t i = 0; i < system.time.size(); ++i)
         {
             T_false_array[i] = system.T_f[i];
             T_true_array[i] = system.T_t[i];
+            log_time_array[i] = system.log_time[i];
             scale_factor_array[i] = system.a[i];
             hubble_rate_array[i] = system.hubble[i];
             log_I_3_array[i] = (i==0) ? -700 : std::log(system.I_3[i]);
             log_nucleation_rate_array[i] = (i==0) ? -700 : std::log(system.gamma[i]);
             log_bubble_number_density_array[i] = (i==0) ? -700 : std::log(system.number_density[i]);
+            log_mean_bubble_radius_array[i] = (system.mean_bubble_radius[i]>0) ? std::log(system.mean_bubble_radius[i]) : -700;
+
+            // LOG(debug) << "Friedmann data point " << i 
+            //     << ": T_false = " << T_false_array[i] 
+            //     << ", T_true = " << T_true_array[i] 
+            //     << ", log_time = " << log_time_array[i] 
+            //     << ", scale_factor = " << scale_factor_array[i] 
+            //     << ", hubble_rate = " << hubble_rate_array[i] 
+            //     << ", log_I_3 = " << log_I_3_array[i] 
+            //     << ", log_nucleation_rate = " << log_nucleation_rate_array[i] 
+            //     << ", log_bubble_number_density = " << log_bubble_number_density_array[i] 
+            //     << ", log_mean_bubble_radius = " << log_mean_bubble_radius_array[i];
         }
 
         alglib::spline1dbuildcubic(T_false_array, T_true_array, reheating_spline);
+        alglib::spline1dbuildcubic(T_false_array, log_time_array, log_time_spline);
         alglib::spline1dbuildcubic(T_false_array, scale_factor_array, scale_factor_spline);
         alglib::spline1dbuildcubic(T_false_array, hubble_rate_array, hubble_rate_spline);
         alglib::spline1dbuildcubic(T_false_array, log_I_3_array, log_I_3_spline);
         alglib::spline1dbuildcubic(T_false_array, log_nucleation_rate_array, log_nucleation_rate_spline);
         alglib::spline1dbuildcubic(T_false_array, log_bubble_number_density_array, log_bubble_number_density_spline);
+        alglib::spline1dbuildcubic(T_false_array, log_mean_bubble_radius_array, log_mean_bubble_radius_spline);
 
         friedmann_splines_computed = true;
     }
@@ -357,6 +376,11 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_scale_factor(const double& T_false) const
     {
+        if(!friedmann_splines_computed)
+        {
+            LOG(warning) << "Friedmann splines not computed. Cannot compute scale factor.";
+            return 1.0;
+        }
         double scale_factor = alglib::spline1dcalc(scale_factor_spline, T_false);
         return scale_factor;
     }
@@ -393,6 +417,11 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_false_vacuum_fraction(const double& T_false) const
     {
+        if(!friedmann_splines_computed)
+        {
+            LOG(warning) << "Friedmann splines not computed. Cannot compute false vacuum fraction.";
+            return 1.0;
+        }
         double log_I_3 = alglib::spline1dcalc(log_I_3_spline, T_false);
         double I_3 = std::exp(log_I_3);
         return get_false_vacuum_fraction_from_I3(I_3);
@@ -401,6 +430,11 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_nucleation_rate(const double& T_false) const
     {
+        if(!friedmann_splines_computed)
+        {
+            LOG(warning) << "Friedmann splines not computed. Cannot compute nucleation rate.";
+            return 0.0;
+        }
         double log_N = alglib::spline1dcalc(log_nucleation_rate_spline, T_false);
         return std::exp(log_N);
     }
@@ -408,13 +442,36 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_bubble_density(const double& T_false) const
     {
-        double log_n= alglib::spline1dcalc(log_bubble_number_density_spline, T_false);
+        if(!friedmann_splines_computed)
+        {
+            LOG(warning) << "Friedmann splines not computed. Cannot compute bubble number density.";
+            return 0.0;
+        }
+        double log_n = alglib::spline1dcalc(log_bubble_number_density_spline, T_false);
         return std::exp(log_n);
+    }
+
+    const double
+    TransitionMetrics::get_mean_bubble_radius(const double& T_false) const
+    {
+        if(!friedmann_splines_computed)
+        {
+            LOG(warning) << "Friedmann splines not computed. Cannot compute mean bubble radius.";
+            return 0.0;
+        }
+        double log_Rbar = alglib::spline1dcalc(log_mean_bubble_radius_spline, T_false);
+        return std::exp(log_Rbar);
     }
 
     const double
     TransitionMetrics::get_t(const double& T_false) const
     {
+        if(friedmann_splines_computed)
+        {
+            double log_t = alglib::spline1dcalc(log_time_spline, T_false);
+            return std::exp(log_t);
+        }
+
         auto integrand = [this](double Tdash) 
         {
             double dtdT = get_time_temperature_false(Tdash);
@@ -430,6 +487,11 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_T_true(const double& T_false) const
     {
+        if(!friedmann_splines_computed)
+        {
+            LOG(warning) << "Friedmann splines not computed. Cannot compute T_true.";
+            return T_false;
+        }
         double T_true = alglib::spline1dcalc(reheating_spline, T_false);
         return T_true;
     }

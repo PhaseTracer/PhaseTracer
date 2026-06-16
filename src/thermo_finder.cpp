@@ -96,7 +96,7 @@ namespace PhaseTracer {
                     nt =  output.transition_metrics.get_nucleation_rate(tt);
                     n = get_n(tt, output.transition_metrics);
                     Rs = std::pow(n, -1./3.) * H;
-                    // Rbar = get_Rbar_integral(tt, output.transition_metrics)/n * H; 
+                    Rbar = get_Rbar(tt, output.transition_metrics) * H; 
                 } catch (const std::exception& e) {
                     LOG(debug) << "Error computing thermal profile values at T = " << tt << ": " << e.what();
                     continue;
@@ -147,7 +147,7 @@ namespace PhaseTracer {
             double n = get_n(temp, tm);
             milestone.n = n;
             milestone.Rs = std::pow(n, -1./3.) * H;
-            // milestone.Rbar = get_Rbar_integral(temp, tm)/n * H;
+            milestone.Rbar = get_Rbar(temp, tm) * H;
 
             double betaH_eff = get_betaH_eff(vw, milestone.Rs);
             milestone.betaH_eff = betaH_eff;
@@ -391,11 +391,11 @@ namespace PhaseTracer {
         return tm.get_bubble_density(temperature);
     }
 
-    // const double 
-    // ThermoFinder::get_Rbar_integral(const double& temperature, TransitionMetrics& tm)
-    // {
-    //     return tm.get_bubble_radius_integral(temperature);
-    // }
+    const double 
+    ThermoFinder::get_Rbar(const double& temperature, TransitionMetrics& tm)
+    {
+        return tm.get_mean_bubble_radius(temperature);
+    }
 
     const double
     ThermoFinder::get_dt(const double& temperature, TransitionMetrics& tm)

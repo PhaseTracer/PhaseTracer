@@ -228,7 +228,7 @@ public :
 
     const double get_n(const double& temperature, TransitionMetrics& tm);
 
-    const double get_Rbar_integral(const double& temperature, TransitionMetrics& tm);
+    const double get_Rbar(const double& temperature, TransitionMetrics& tm);
 
     const double get_dt(const double& temperature, TransitionMetrics& tm);
 

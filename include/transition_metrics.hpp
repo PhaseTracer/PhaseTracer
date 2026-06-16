@@ -332,11 +332,13 @@ class TransitionMetrics
 
     /* Friedmann splines */
     mutable alglib::spline1dinterpolant reheating_spline; // T_true(T_false)
+    mutable alglib::spline1dinterpolant log_time_spline; // log(t)(T_false)
     mutable alglib::spline1dinterpolant scale_factor_spline; // a(T_false)
     mutable alglib::spline1dinterpolant hubble_rate_spline; // H(T_false)
     mutable alglib::spline1dinterpolant log_I_3_spline; // log_I_3(T_false)
     mutable alglib::spline1dinterpolant log_nucleation_rate_spline; // log_N(T_false)
     mutable alglib::spline1dinterpolant log_bubble_number_density_spline; // log_n(T_false)
+    mutable alglib::spline1dinterpolant log_mean_bubble_radius_spline; // log_Rbar(T_false)
     mutable bool friedmann_splines_computed = false;
 
     PROPERTY(double, total_number_temp_steps, 200);
@@ -440,6 +442,8 @@ public :
     const double get_nucleation_rate(const double& T_false) const;
 
     const double get_bubble_density(const double& T_false) const;
+
+    const double get_mean_bubble_radius(const double& T_false) const;
 
     const double get_T_true(const double& T_true) const;
 
