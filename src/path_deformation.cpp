@@ -17,6 +17,10 @@
 
 #include "path_deformation.hpp"
 
+#include "phase_finder.hpp"
+
+#include <stdexcept>
+
 namespace PhaseTracer {
 
 double max_norm(std::vector<Eigen::VectorXd> vec) {
@@ -38,7 +42,10 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
   std::vector<Eigen::VectorXd> dpts = _pathDeriv(pts);
   // 2. Extend the path
   if (extend_to_minima) {
-    double xmin = find_loc_min_w_guess(pts[0], dpts[0]); // TODO: This may return global mim instead of local minimum
+    const Eigen::VectorXd first_endpoint = pts.front();
+    const Eigen::VectorXd last_endpoint = pts.back();
+
+    double xmin = find_loc_min_w_guess(pts[0], dpts[0], 0., &last_endpoint);
     xmin = std::min(xmin, 0.0);
     int nx = static_cast<int>(std::ceil(std::abs(xmin) - .5)) + 1;
     if (nx > 1) {
@@ -53,7 +60,7 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
       pts = new_pts;
     }
 
-    xmin = find_loc_min_w_guess(pts.back(), dpts.back());
+    xmin = find_loc_min_w_guess(pts.back(), dpts.back(), 0., &first_endpoint);
     xmin = std::max(xmin, 0.0);
     nx = static_cast<int>(std::ceil(std::abs(xmin) - 0.5)) + 1;
     if (nx > 1) {
@@ -135,7 +142,7 @@ std::vector<Eigen::VectorXd> SplinePath::_pathDeriv(const std::vector<Eigen::Vec
   return dphi;
 }
 
-double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0, double guess) {
+double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0, double guess, const Eigen::VectorXd *avoid_symmetric_partner) {
 
   std::shared_ptr<std::function<double(const std::vector<double> &)>> V_lin = std::make_shared<std::function<double(const std::vector<double> &)>>([this, p0, dp0](const std::vector<double> &x) {
     return this->P.V(p0 + x[0] * dp0, T);
@@ -145,6 +152,10 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
     auto v_lin = reinterpret_cast<std::shared_ptr<std::function<double(const std::vector<double> &)>> *>(data);
     return (*(*v_lin))(x);
   };
+  auto neg_V_lin_func = [](const std::vector<double> &x, std::vector<double> &grad, void *data) -> double {
+    auto v_lin = reinterpret_cast<std::shared_ptr<std::function<double(const std::vector<double> &)>> *>(data);
+    return -(*(*v_lin))(x);
+  };
 
   nlopt::opt optimizer(nlopt::LN_SBPLX, 1);
   optimizer.set_min_objective(V_lin_func, &V_lin);
@@ -153,6 +164,64 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
   std::vector<double> xmin(1, guess);
   double fmin;
   optimizer.optimize(xmin, fmin);
+
+  if (avoid_symmetric_partner != nullptr) {
+    const Eigen::VectorXd candidate = p0 + xmin[0] * dp0;
+    PhaseFinder phase_finder(P);
+    const double direct_distance = (candidate - *avoid_symmetric_partner).norm();
+    const double direct_tolerance = phase_finder.get_x_abs_identical() +
+                                    phase_finder.get_x_rel_identical() *
+                                        std::max(candidate.norm(), avoid_symmetric_partner->norm());
+    const bool same_point = direct_distance < direct_tolerance;
+    if (!phase_finder.identical_within_tol(candidate, *avoid_symmetric_partner) || same_point) {
+      return xmin[0];
+    }
+  } else {
+    return xmin[0];
+  }
+
+  const double local_minimum_bound = 0.25;
+  const double lower_bound = guess - local_minimum_bound;
+  const double upper_bound = guess + local_minimum_bound;
+  optimizer.set_lower_bounds(std::vector<double>{lower_bound});
+  optimizer.set_upper_bounds(std::vector<double>{upper_bound});
+  xmin[0] = guess;
+  optimizer.optimize(xmin, fmin);
+
+  const double boundary_tol = 1e-5;
+  const bool hit_lower_bound = std::abs(xmin[0] - lower_bound) < boundary_tol;
+  const bool hit_upper_bound = std::abs(xmin[0] - upper_bound) < boundary_tol;
+  if (hit_lower_bound || hit_upper_bound) {
+    const double boundary = hit_lower_bound ? lower_bound : upper_bound;
+    const double interval_lower = std::min(guess, boundary);
+    const double interval_upper = std::max(guess, boundary);
+
+    nlopt::opt maximum_optimizer(nlopt::LN_SBPLX, 1);
+    maximum_optimizer.set_min_objective(neg_V_lin_func, &V_lin);
+    maximum_optimizer.set_xtol_abs(1e-6);
+    maximum_optimizer.set_lower_bounds(std::vector<double>{interval_lower});
+    maximum_optimizer.set_upper_bounds(std::vector<double>{interval_upper});
+    std::vector<double> xmax(1, 0.5 * (guess + boundary));
+    double fmax_neg;
+    maximum_optimizer.optimize(xmax, fmax_neg);
+
+    if (std::abs(xmax[0] - guess) < boundary_tol) {
+      throw std::runtime_error("Endpoint extension minimum is not locally bracketed.");
+    }
+    if (std::abs(xmax[0] - boundary) < boundary_tol) {
+      throw std::runtime_error("Endpoint extension barrier is not locally bracketed.");
+    }
+
+    optimizer.set_lower_bounds(std::vector<double>{std::min(guess, xmax[0])});
+    optimizer.set_upper_bounds(std::vector<double>{std::max(guess, xmax[0])});
+    xmin[0] = guess;
+    optimizer.optimize(xmin, fmin);
+
+    if (std::abs(xmin[0] - xmax[0]) < boundary_tol) {
+      return guess;
+    }
+  }
+
   return xmin[0];
 }
 

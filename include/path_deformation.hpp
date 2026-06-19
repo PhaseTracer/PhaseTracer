@@ -61,7 +61,7 @@ public:
   /* Calculates to 4th order if len(phi) >= 5, otherwise 1st/2nd order. */
   std::vector<Eigen::VectorXd> _pathDeriv(const std::vector<Eigen::VectorXd> phi);
 
-  double find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0, double guess = 0.);
+  double find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0, double guess = 0., const Eigen::VectorXd *avoid_symmetric_partner = nullptr);
 
   void set_path_tck(std::vector<double> pdist);
 
