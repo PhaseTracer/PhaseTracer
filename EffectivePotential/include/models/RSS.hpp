@@ -31,6 +31,7 @@
 #include "pow.hpp"
 #include "SM_parameters.hpp"
 
+#include <cstdio>
 #include <vector>
 #include <eigen3/Eigen/Eigenvalues>
 #include <iostream>
@@ -429,6 +430,34 @@ public:
   }
 
   std::vector<Eigen::VectorXd> apply_symmetry(Eigen::VectorXd phi) const override {
+#ifdef EIGEN_VECTORIZE_AVX
+    constexpr int vectorize_avx = 1;
+#else
+    constexpr int vectorize_avx = 0;
+#endif
+#ifdef EIGEN_VECTORIZE_AVX2
+    constexpr int vectorize_avx2 = 1;
+#else
+    constexpr int vectorize_avx2 = 0;
+#endif
+#ifdef EIGEN_VECTORIZE_AVX512
+    constexpr int vectorize_avx512 = 1;
+#else
+    constexpr int vectorize_avx512 = 0;
+#endif
+
+    static const bool reported_eigen_configuration = []() {
+      std::fprintf(stderr,
+                   "[PTSYM][RSS] Eigen max-align=%d default-align=%d "
+                   "malloc-aligned=%d avx=%d avx2=%d avx512=%d cxx=%ld\n",
+                   EIGEN_MAX_ALIGN_BYTES, EIGEN_DEFAULT_ALIGN_BYTES,
+                   EIGEN_MALLOC_ALREADY_ALIGNED, vectorize_avx, vectorize_avx2,
+                   vectorize_avx512, static_cast<long>(__cplusplus));
+      std::fflush(stderr);
+      return true;
+    }();
+    static_cast<void>(reported_eigen_configuration);
+
     auto negH = phi;
     negH[0] = -phi[0];
 

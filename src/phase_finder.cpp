@@ -22,7 +22,50 @@
 #include <boost/math/special_functions/sign.hpp>
 #include <eigen3/Eigen/Eigenvalues>
 
+#include <cstdio>
+
 namespace PhaseTracer {
+
+namespace {
+
+void trace_eigen_configuration() {
+#ifdef EIGEN_VECTORIZE_AVX
+  constexpr int vectorize_avx = 1;
+#else
+  constexpr int vectorize_avx = 0;
+#endif
+#ifdef EIGEN_VECTORIZE_AVX2
+  constexpr int vectorize_avx2 = 1;
+#else
+  constexpr int vectorize_avx2 = 0;
+#endif
+#ifdef EIGEN_VECTORIZE_AVX512
+  constexpr int vectorize_avx512 = 1;
+#else
+  constexpr int vectorize_avx512 = 0;
+#endif
+
+  std::fprintf(stderr,
+               "[PTSYM][libphasetracer] Eigen max_align=%d default_align=%d "
+               "malloc_aligned=%d avx=%d avx2=%d avx512=%d cxx=%ld\n",
+               EIGEN_MAX_ALIGN_BYTES, EIGEN_DEFAULT_ALIGN_BYTES,
+               EIGEN_MALLOC_ALREADY_ALIGNED, vectorize_avx, vectorize_avx2,
+               vectorize_avx512, static_cast<long>(__cplusplus));
+  std::fflush(stderr);
+}
+
+void trace_vector(const char *label, const Eigen::VectorXd &vector) {
+  std::fprintf(stderr,
+               "[PTSYM][libphasetracer] %s object=%p size=%lld data=%p "
+               "finite=%d norm=%.17g\n",
+               label, static_cast<const void *>(&vector),
+               static_cast<long long>(vector.size()),
+               static_cast<const void *>(vector.data()), vector.allFinite(),
+               vector.norm());
+  std::fflush(stderr);
+}
+
+} // namespace
 
 std::ostream &operator<<(std::ostream &o, const phase_end_descriptor &d) {
   switch (d) {
@@ -95,26 +138,135 @@ bool PhaseFinder::consistent_vacuum(const Eigen::VectorXd &x) const {
   return std::abs(found - v) < x_abs_identical;
 }
 
-std::vector<Eigen::VectorXd> PhaseFinder::symmetric_partners(const Eigen::VectorXd &a) const {
+std::vector<Eigen::VectorXd> PhaseFinder::symmetric_partners(
+    const Eigen::VectorXd &a, bool trace) const {
+  if (trace) {
+    std::fprintf(stderr, "[PTSYM][symmetric_partners] enter potential=%p\n",
+                 static_cast<const void *>(&P));
+    std::fflush(stderr);
+    trace_eigen_configuration();
+    trace_vector("input", a);
+  }
+
   std::vector<Eigen::VectorXd> partners;
   partners.push_back(a);
-  for (size_t i = 0; i < P.apply_symmetry(a).size(); i++) {
+  if (trace) {
+    std::fprintf(stderr,
+                 "[PTSYM][symmetric_partners] initial-push complete size=%zu\n",
+                 partners.size());
+    std::fflush(stderr);
+  }
+
+  size_t i = 0;
+  while (true) {
+    if (trace) {
+      std::fprintf(stderr,
+                   "[PTSYM][symmetric_partners] symmetry-count before i=%zu\n",
+                   i);
+      std::fflush(stderr);
+    }
+    const size_t symmetry_count = P.apply_symmetry(a).size();
+    if (trace) {
+      std::fprintf(stderr,
+                   "[PTSYM][symmetric_partners] symmetry-count after count=%zu\n",
+                   symmetry_count);
+      std::fflush(stderr);
+    }
+
+    if (i >= symmetry_count) {
+      break;
+    }
+
     const size_t n = partners.size();
     for (size_t j = 0; j < n; j++) {
       const auto x = partners[j];
+      if (trace) {
+        std::fprintf(stderr,
+                     "[PTSYM][symmetric_partners] apply-before i=%zu j=%zu\n",
+                     i, j);
+        std::fflush(stderr);
+        trace_vector("apply-input", x);
+      }
       const auto x_ = P.apply_symmetry(x)[i];
+      if (trace) {
+        std::fprintf(stderr,
+                     "[PTSYM][symmetric_partners] apply-after i=%zu j=%zu\n",
+                     i, j);
+        std::fflush(stderr);
+        trace_vector("apply-output", x_);
+      }
       partners.push_back(x_);
+      if (trace) {
+        std::fprintf(stderr,
+                     "[PTSYM][symmetric_partners] push-after size=%zu\n",
+                     partners.size());
+        std::fflush(stderr);
+      }
     }
+    ++i;
+  }
+
+  if (trace) {
+    std::fprintf(stderr,
+                 "[PTSYM][symmetric_partners] return partners=%zu\n",
+                 partners.size());
+    std::fflush(stderr);
   }
   return partners;
 }
 
-bool PhaseFinder::identical_within_tol(const Eigen::VectorXd &a, const Eigen::VectorXd &b) const {
-  double min_distance = (a - b).norm();
-  for (const auto b_ : symmetric_partners(b)) {
-    min_distance = std::min(min_distance, (a - b_).norm());
+bool PhaseFinder::identical_within_tol(const Eigen::VectorXd &a,
+                                       const Eigen::VectorXd &b,
+                                       bool trace) const {
+  if (trace) {
+    std::fprintf(stderr, "[PTSYM][identical_within_tol] enter\n");
+    std::fflush(stderr);
+    trace_vector("candidate", a);
+    trace_vector("reference", b);
   }
-  return min_distance < x_abs_identical + x_rel_identical * std::max(a.norm(), b.norm());
+
+  double min_distance = (a - b).norm();
+  {
+    if (trace) {
+      std::fprintf(stderr,
+                   "[PTSYM][identical_within_tol] partners-before\n");
+      std::fflush(stderr);
+    }
+    const auto partners = symmetric_partners(b, trace);
+    if (trace) {
+      std::fprintf(stderr,
+                   "[PTSYM][identical_within_tol] partners-after size=%zu\n",
+                   partners.size());
+      std::fflush(stderr);
+    }
+
+    for (const auto b_ : partners) {
+      min_distance = std::min(min_distance, (a - b_).norm());
+    }
+
+    if (trace) {
+      std::fprintf(stderr,
+                   "[PTSYM][identical_within_tol] partners-destroy-before\n");
+      std::fflush(stderr);
+    }
+  }
+  if (trace) {
+    std::fprintf(stderr,
+                 "[PTSYM][identical_within_tol] partners-destroy-after\n");
+    std::fflush(stderr);
+  }
+
+  const double tolerance =
+      x_abs_identical + x_rel_identical * std::max(a.norm(), b.norm());
+  const bool identical = min_distance < tolerance;
+  if (trace) {
+    std::fprintf(stderr,
+                 "[PTSYM][identical_within_tol] exit distance=%.17g "
+                 "tolerance=%.17g identical=%d\n",
+                 min_distance, tolerance, identical);
+    std::fflush(stderr);
+  }
+  return identical;
 }
 
 bool PhaseFinder::jump(const Eigen::VectorXd &a, const Eigen::VectorXd &b) const {

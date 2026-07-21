@@ -165,10 +165,13 @@ public:
   }
 
   /** Generate symmetric partners for a point */
-  std::vector<Eigen::VectorXd> symmetric_partners(const Eigen::VectorXd &a) const;
+  std::vector<Eigen::VectorXd> symmetric_partners(const Eigen::VectorXd &a,
+                                                  bool trace = false) const;
 
   /** Check that two minima are identical to within a particular tolerance */
-  bool identical_within_tol(const Eigen::VectorXd &a, const Eigen::VectorXd &b) const;
+  bool identical_within_tol(const Eigen::VectorXd &a,
+                            const Eigen::VectorXd &b,
+                            bool trace = false) const;
 
   /** Check whether two phases overlap at T */
   bool phases_overlap(const Phase &phase1, const Phase &phase2, double T) const;

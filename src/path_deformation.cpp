@@ -19,6 +19,7 @@
 
 #include "phase_finder.hpp"
 
+#include <cstdio>
 #include <stdexcept>
 
 namespace PhaseTracer {
@@ -167,13 +168,35 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
 
   if (avoid_symmetric_partner != nullptr) {
     const Eigen::VectorXd candidate = p0 + xmin[0] * dp0;
+    std::fprintf(stderr,
+                 "[PTSYM][SplinePath] compare-enter candidate-size=%lld "
+                 "candidate-data=%p partner-size=%lld partner-data=%p\n",
+                 static_cast<long long>(candidate.size()),
+                 static_cast<const void *>(candidate.data()),
+                 static_cast<long long>(avoid_symmetric_partner->size()),
+                 static_cast<const void *>(avoid_symmetric_partner->data()));
+    std::fflush(stderr);
     PhaseFinder phase_finder(P);
+    std::fprintf(stderr, "[PTSYM][SplinePath] phase-finder-constructed\n");
+    std::fflush(stderr);
     const double direct_distance = (candidate - *avoid_symmetric_partner).norm();
     const double direct_tolerance = phase_finder.get_x_abs_identical() +
                                     phase_finder.get_x_rel_identical() *
                                         std::max(candidate.norm(), avoid_symmetric_partner->norm());
     const bool same_point = direct_distance < direct_tolerance;
-    if (!phase_finder.identical_within_tol(candidate, *avoid_symmetric_partner) || same_point) {
+    std::fprintf(stderr,
+                 "[PTSYM][SplinePath] identical-before direct-distance=%.17g "
+                 "direct-tolerance=%.17g same-point=%d\n",
+                 direct_distance, direct_tolerance, same_point);
+    std::fflush(stderr);
+    const bool identical =
+        phase_finder.identical_within_tol(candidate,
+                                          *avoid_symmetric_partner, true);
+    std::fprintf(stderr,
+                 "[PTSYM][SplinePath] identical-after result=%d\n",
+                 identical);
+    std::fflush(stderr);
+    if (!identical || same_point) {
       return xmin[0];
     }
   } else {
