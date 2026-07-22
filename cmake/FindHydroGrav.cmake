@@ -1,6 +1,6 @@
 # Find HydroGrav
 
-set(HydroGrav_GIT_BRANCH "dev" CACHE STRING "Branch of HydroGrav to clone")
+set(HydroGrav_GIT_BRANCH "main" CACHE STRING "Branch of HydroGrav to clone")
 set(HydroGrav "${PROJECT_SOURCE_DIR}/HydroGrav")
 
 if(Git_FOUND)
@@ -12,7 +12,7 @@ endif()
 # Download HydroGrav if required
 if(NOT EXISTS ${HydroGrav})
   message(STATUS "Downloading HydroGrav (branch: ${HydroGrav_GIT_BRANCH})")
-  set(HydroGrav_git_rep "https://github.com/Comparison-Project/HydroGrav.git")
+  set(HydroGrav_git_rep "https://github.com/Hydro-Grav/HydroGrav.git")
   execute_process(COMMAND git clone --branch ${HydroGrav_GIT_BRANCH} --single-branch ${HydroGrav_git_rep} ${HydroGrav}
                  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     )

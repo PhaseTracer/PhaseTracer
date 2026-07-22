@@ -92,8 +92,7 @@ private:
             get_thermodynamic_splines();
         }
 
-        void 
-        get_thermodynamic_splines();
+        void get_thermodynamic_splines();
 
     }; // class EquationOfStateInPhase
 

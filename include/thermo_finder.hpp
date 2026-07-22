@@ -107,9 +107,11 @@ struct ThermalParameterSet
         double completion_target = 1e-8,
         double onset_target = 1 - 1e-8,
         double nucleation_target = 1.00,
-        double temperature_abs_tol = 1e-8
+        double temperature_abs_tol = 1e-8,
+        FalseVacuumDecayRate::PrefactorFunction prefactor = {}
     ) :
-    decay_rate(t_in, ac_in, t_in.false_phase.T.front(), t_in.TC, n_temp_action),
+    decay_rate(t_in, ac_in, t_in.false_phase.T.front(), t_in.TC, n_temp_action,
+               prefactor ? prefactor : FalseVacuumDecayRate::default_decay_rate_prefactor()),
     eos(t_in, n_temp_eos, background_dof), 
     transition_metrics(decay_rate, eos), 
     TC(decay_rate.get_t_max()) 
@@ -188,9 +190,17 @@ class ThermoFinder {
 
     PROPERTY(double, temperature_abs_tol, 1e-6);
 
-public : 
+    /** Optional custom decay-rate prefactor (e.g. a BubbleDetPrefactor). When
+     *  empty the FalseVacuumDecayRate uses its default analytic prefactor. */
+    FalseVacuumDecayRate::PrefactorFunction prefactor_function;
+
+public :
 
     ThermoFinder(ActionCalculator ac_in) : ac(ac_in) {};
+
+    /** Install a custom decay-rate prefactor used for all subsequent
+     *  get_thermal_parameter_set calls. */
+    void set_prefactor_function(FalseVacuumDecayRate::PrefactorFunction f) { prefactor_function = f; }
 
     // std::vector<ThermalParameterSet> find_thermal_parameters;
 

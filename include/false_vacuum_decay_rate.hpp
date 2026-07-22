@@ -28,14 +28,23 @@
 #include "property.hpp"
 #include "phase_finder.hpp"
 #include "transition_finder.hpp"
+#include "action_calculator.hpp"
 
 namespace PhaseTracer {
 
 class FalseVacuumDecayRate {
 
-private:
-
 public:
+
+    /**
+     * Signature of a decay-rate prefactor A(T). It receives the temperature,
+     * the action-on-temperature S/T, and the full ActionResult (bounce action,
+     * profile and tunneling path) so that a prefactor needing the bounce
+     * solution -- e.g. a one-loop functional determinant via BubbleDet -- can
+     * access it. The default analytic prefactor ignores the ActionResult.
+     */
+    using PrefactorFunction = std::function<double(double temperature, double action_on_T, const ActionResult& bounce)>;
+
     
     // Delete copy constructor and copy assignment to prevent shallow copies of ALGLIB splines
     FalseVacuumDecayRate(const FalseVacuumDecayRate&) = delete;
@@ -59,16 +68,16 @@ public:
         get_splines();
     }
 
-    FalseVacuumDecayRate(Transition t_in, const ActionCalculator& ac_in, 
-                         std::function<double(double, double)> custom_prefactor)
+    FalseVacuumDecayRate(Transition t_in, const ActionCalculator& ac_in,
+                         PrefactorFunction custom_prefactor)
     : t(t_in), ac(ac_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC), spline_evaluations(50),
       prefactor_function(custom_prefactor)
     {
         get_splines();
     }
 
-    FalseVacuumDecayRate(Transition t_in, const ActionCalculator& ac_in, double t_min_in, double t_max_in, 
-                         int spline_evaluations_in, std::function<double(double, double)> custom_prefactor)
+    FalseVacuumDecayRate(Transition t_in, const ActionCalculator& ac_in, double t_min_in, double t_max_in,
+                         int spline_evaluations_in, PrefactorFunction custom_prefactor)
     : t(t_in), ac(ac_in), t_min(t_min_in), t_max(t_max_in), spline_evaluations(spline_evaluations_in),
       prefactor_function(custom_prefactor)
     {
@@ -119,31 +128,32 @@ public:
      * @brief Set a custom decay rate prefactor function.
      * @param custom_prefactor A function taking (temperature, action_on_T) and returning the prefactor.
     */
-    void set_prefactor_function(std::function<double(double, double)> custom_prefactor) {
+    void set_prefactor_function(PrefactorFunction custom_prefactor) {
         prefactor_function = custom_prefactor;
     }
 
-    /** 
+    /**
      * @brief Get the current decay rate prefactor function.
      * @return The prefactor function.
     */
-    const std::function<double(double, double)>& get_prefactor_function() const {
+    const PrefactorFunction& get_prefactor_function() const {
         return prefactor_function;
     }
 
-    /** 
+    /**
      * @brief Compute the decay rate prefactor using the current prefactor function.
      * @param temperature The temperature at which to evaluate.
      * @param action_on_T The action divided by temperature (S/T).
+     * @param bounce The full bounce solution (action, profile, path) at this temperature.
      * @return The decay rate prefactor.
     */
-    double decay_rate_prefactor(double temperature, double action_on_T) const;
+    double decay_rate_prefactor(double temperature, double action_on_T, const ActionResult& bounce) const;
 
-    /** 
+    /**
      * @brief Default decay rate prefactor function following standard bounce action formula.
      * @return A function object that computes the standard prefactor.
     */
-    static std::function<double(double, double)> default_decay_rate_prefactor();
+    static PrefactorFunction default_decay_rate_prefactor();
 
     /** 
      * @brief Computes the bubble profile at a given temperature.
@@ -180,7 +190,7 @@ private:
     alglib::spline1dinterpolant log_action_spline, log_gamma_spline;
     
     /** Function for computing the decay rate prefactor */
-    std::function<double(double, double)> prefactor_function;
+    PrefactorFunction prefactor_function;
 
 }; // class FalseVacuumDecayRate
 

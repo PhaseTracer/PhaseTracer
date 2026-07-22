@@ -19,7 +19,7 @@
 #define PHASETRACER_DP_HPP_
 
 #include "HydroGrav/include/hydrograv.hpp"
-#include "HydroGrav/include/maths_ops.hpp"
+#include "HydroGrav/include/maths.hpp"
 #include "thermo_finder.hpp"
 #include "logger.hpp"
 #include <iostream>

@@ -264,8 +264,12 @@ private:
 
 struct LifetimeDistribution
 {
-    std::vector<double> temperature_values;
+    std::vector<double> chi_values;
     std::vector<double> lifetime_values;
+    std::vector<double> distribution_values;
+    
+    alglib::spline1dinterpolant h_spline;
+    alglib::spline1dinterpolant log_gamma_spline;
 };
 
 struct FriedmannSystem
@@ -300,14 +304,16 @@ struct FriedmannSystem
     void write(std::string filename) const
     {
         std::ofstream out(filename);
-        out << "# time,T_f,T_t,e_t,e_f,hubble,a,gamma,P_f,N,n,Rbar\n";
+        out << "# time,T_f,T_t,e_f,e_t,p_f,p_t,hubble,a,gamma,h,N,n,Rbar\n";
         for (std::size_t i = 0; i < time.size(); ++i)
         {
             out << time[i]   << ","
                 << T_f[i]    << ","
                 << T_t[i]    << ","
-                << e_t[i]    << ","
                 << e_f[i]    << ","
+                << e_t[i]    << ","
+                << p_f[i] << ","
+                << p_t[i] << ","
                 << hubble[i] << ","
                 << a[i]      << ","
                 << gamma[i]  << ","
@@ -381,16 +387,20 @@ public :
     {
         // print out the eos for debug
         std::ofstream eos_out("debug_eos.csv");
-        eos_out << "# T, e_plus, e_minus, p_plus, p_minus\n";
+        eos_out << "# T, e_plus, e_minus, p_plus, p_minus, w_plus, w_minus\n";
         for(double t = t_min; t <= t_max; t += (t_max - t_min) / 199)
         {
             double e_plus = eos.get_energy_plus(t);
             double e_minus = eos.get_energy_minus(t);
             double p_plus = eos.get_pressure_plus(t);
             double p_minus = eos.get_pressure_minus(t);
-            eos_out << t << "," << e_plus << "," << e_minus << "," << p_plus << "," << p_minus << "\n";
+            double w_plus = p_plus/e_plus;
+            double w_minus = p_minus/e_minus;
+            eos_out << t << "," << e_plus << "," << e_minus << "," << p_plus << "," << p_minus << "," << w_plus << "," << w_minus << "\n";
         }
         eos_out.close();
+
+        LOG(debug) << "Initialized TransitionMetrics with t_min = " << t_min << " GeV and t_max = " << t_max << " GeV.";
 
         {
             auto t0 = std::chrono::high_resolution_clock::now();
@@ -470,10 +480,6 @@ private:
 
     std::function<double(double)> get_target_function(const MilestoneType type);
 
-    const void make_scale_factor_ratio_spline() const;
-
-    void make_volume_term_integral_spline() const;
-
     void refine_temperature_bounds();
 
     double match_T_true(const double& e_true, double tol = 1e-8, boost::uintmax_t max_iter = 100);
@@ -484,21 +490,11 @@ private:
 
     const double get_false_vacuum_fraction_from_I3(const double& I3) const;
 
+    const double get_d_false_vacuum_fraction_from_I3(const double& I3, const double& I3_dot) const;
+
     void evolve_friedmann();
 
     const void fit_friedmann_splines() const;
-
-    void calculate_distributions();
-
-    std::vector<double> calculate_lifetime_distribution(const double beta, const std::vector<double>& lifetime_grid) const;
-
-    const double get_volume_term(const double& T1, const double& T2) const;
-
-    const double extended_volume_integrand(const double& T1, const double& T2) const;
-
-    const double bubble_radius_integrand(const double& T1, const double& T2) const;
-
-    void compute_log_extended_volume_spline();
 
     alglib::real_1d_array cumulative_simpson(const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial = 0.0) const;
 

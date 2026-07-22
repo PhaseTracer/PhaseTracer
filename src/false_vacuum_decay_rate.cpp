@@ -48,23 +48,28 @@ namespace PhaseTracer {
         {
             double tt = t_min + i * dt;
 
+            // Compute the full bounce (action + profile + path) once: the action
+            // builds the spline and the profile is forwarded to the prefactor,
+            // which a one-loop determinant prefactor (e.g. BubbleDet) needs.
+            ActionResult bounce;
             double action;
             try {
-                action = ac.get_action(t.true_phase, t.false_phase, tt) / tt;
+                bounce = ac.get_action_full(t.true_phase, t.false_phase, tt);
+                action = bounce.action / tt;
             } catch ( ... )
             {
                 action = 1.;
                 valid_flags[i] = false;
                 continue;
             }
-            
-            if (std::isnan(action) || std::isinf(action) || action > 1e150 || action < 0) 
+
+            if (std::isnan(action) || std::isinf(action) || action > 1e150 || action < 0)
             {
                 valid_flags[i] = false;
                 continue;
             }
-            
-            double prefactor = decay_rate_prefactor(tt, action);
+
+            double prefactor = decay_rate_prefactor(tt, action, bounce);
             double log_gamma = log(prefactor) - action;
             
             if (log_gamma < -700) 
@@ -108,19 +113,21 @@ namespace PhaseTracer {
         alglib::spline1dbuildcubic(temp_array, log_action_array, this->log_action_spline);
         alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->log_gamma_spline);
         
-        LOG(debug) << "Built splines with " << valid_temps.size() << " valid points" << std::endl;
+        LOG(debug) << "Built splines with " << valid_temps.size() << " valid points";
     }
 
     double
-    FalseVacuumDecayRate::decay_rate_prefactor(double temperature, double action_on_T) const
+    FalseVacuumDecayRate::decay_rate_prefactor(double temperature, double action_on_T, const ActionResult& bounce) const
     {
-        return prefactor_function(temperature, action_on_T);
+        return prefactor_function(temperature, action_on_T, bounce);
     }
 
-    std::function<double(double, double)>
+    FalseVacuumDecayRate::PrefactorFunction
     FalseVacuumDecayRate::default_decay_rate_prefactor()
     {
-        return [](double temperature, double action_on_T) -> double {
+        // Standard analytic thermal prefactor T^4 (S/2pi)^{3/2}. It needs only
+        // the temperature and S/T, so the full bounce solution is ignored.
+        return [](double temperature, double action_on_T, const ActionResult&) -> double {
             double t4 = temperature * temperature * temperature * temperature;
             double ratio = std::pow(action_on_T / (2. * M_PI), 1.5);
             return t4 * ratio;

@@ -87,6 +87,13 @@ namespace PhaseTracer {
         return exp(-Veff);
     }
 
+    const double
+    TransitionMetrics::get_d_false_vacuum_fraction_from_I3(const double& I3, const double& I3_dot) const
+    {
+        double pf = get_false_vacuum_fraction_from_I3(I3);
+        return - 4.0 * M_PI * vw*vw*vw / 3.0 * pf * I3_dot;
+    }
+
     double 
     TransitionMetrics::match_T_true(const double& e_true, double tol, boost::uintmax_t max_iter)
     {
@@ -190,6 +197,11 @@ namespace PhaseTracer {
 
             const double false_vacuum_fraction = get_false_vacuum_fraction_from_I3(I_3);
             const double true_vacuum_fraction = 1 - false_vacuum_fraction;
+
+            const double e_average = false_vacuum_fraction * e_false + true_vacuum_fraction * e_true;
+            const double x_f = false_vacuum_fraction * e_false / e_average;
+            const double x_t = true_vacuum_fraction * e_true / e_average;
+            // LOG(debug) << "Tau = " << tau << ", x_f = " << x_f << ", x_t = " << x_t;
 
             const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
             const double gamma = decay_rate.get_gamma(T_false);
@@ -345,7 +357,7 @@ namespace PhaseTracer {
             scale_factor_array[i] = system.a[i];
             hubble_rate_array[i] = system.hubble[i];
             log_I_3_array[i] = (i==0) ? -700 : std::log(system.I_3[i]);
-            log_nucleation_rate_array[i] = (i==0) ? -700 : std::log(system.gamma[i]);
+            log_nucleation_rate_array[i] = (i==0) ? -700 : std::log(system.nucleation_rate[i]);
             log_bubble_number_density_array[i] = (i==0) ? -700 : std::log(system.number_density[i]);
             log_mean_bubble_radius_array[i] = (system.mean_bubble_radius[i]>0) ? std::log(system.mean_bubble_radius[i]) : -700;
 
@@ -496,62 +508,90 @@ namespace PhaseTracer {
         return T_true;
     }
 
-    std::vector<double>
-    TransitionMetrics::calculate_lifetime_distribution(const double beta, const std::vector<double>& lifetime_grid) const
+    const LifetimeDistribution
+    TransitionMetrics::get_lifetime_distribution(const double& timescale, const double& lifetime_min_fraction)
     {
+        LifetimeDistribution distribution_out;
+
         const size_t n_grid = system.log_time.size();
         const double n_asymptotic = system.number_density.back();
-        const double Vext_prefac = 4.0/3.0 * M_PI * vw*vw*vw;
 
-        // Build spline for I_3(log_t) so we can interpolate and differentiate
-        alglib::real_1d_array log_time_arr, I3_arr;
-        log_time_arr.setlength(n_grid);
-        I3_arr.setlength(n_grid);
+        LOG(debug) << "Calculating lifetime distribution with timescale = " << timescale << " and lifetime_min_fraction = " << lifetime_min_fraction;
+        LOG(debug) << "Number of grid points: " << n_grid;
+        LOG(debug) << "Asymptotic number density: " << n_asymptotic;
+
+        alglib::real_1d_array h_array, log_gamma_array, log_time_array;
+        h_array.setlength(n_grid);
+        log_time_array.setlength(n_grid);
+        log_gamma_array.setlength(n_grid);
         for (size_t i = 0; i < n_grid; ++i)
         {
-            log_time_arr[i] = system.log_time[i];
-            I3_arr[i]       = system.I_3[i];
+            double I3 = system.I_3[i];
+            log_time_array[i] = system.log_time[i];
+            h_array[i] = get_false_vacuum_fraction_from_I3(I3);
+            log_gamma_array[i] = (system.gamma[i] > 0) ? std::log(system.gamma[i]) : -700;
         }
-        alglib::spline1dinterpolant I3_spline;
-        alglib::spline1dbuildcubic(log_time_arr, I3_arr, I3_spline);
 
-        const double log_t_min = system.log_time.front();
-        const double log_t_max = system.log_time.back();
+        alglib::spline1dbuildcubic(log_time_array, h_array, distribution_out.h_spline);
+        alglib::spline1dbuildcubic(log_time_array, log_gamma_array, distribution_out.log_gamma_spline);
 
-        // df/dt at arbitrary time t_eval (zero outside the grid range)
-        auto df_dt = [&](double t_eval) -> double
+        const double log_t_min = log_time_array[0];
+        const double log_t_max = log_time_array[n_grid - 1];
+        const double t_max_linear = std::exp(log_t_max);
+
+        // build lifetime grid from lifetime_min_fraction * timescale to 10 * timescale, with 100 points spaced logarithmically
+        const double lifetime_min = lifetime_min_fraction * timescale;
+        const double lifetime_max = 100.0 * timescale;
+        const size_t n_lifetime_grid = 500;
+        std::vector<double> lifetime_grid(n_lifetime_grid);
+        for (size_t i = 0; i < n_lifetime_grid; ++i)
         {
-            const double log_t_eval = std::log(t_eval);
-            if (log_t_eval < log_t_min || log_t_eval > log_t_max) return 0.0;
+            lifetime_grid[i] = lifetime_min * std::pow(lifetime_max/lifetime_min, static_cast<double>(i)/static_cast<double>(n_lifetime_grid-1));
+        }
 
-            double I3_val, dI3_dlnt, d2I3;
-            alglib::spline1ddiff(I3_spline, log_t_eval, I3_val, dI3_dlnt, d2I3);
-
-            const double h        = std::exp(-Vext_prefac * I3_val);   // false vacuum fraction
-            const double dVdt     = Vext_prefac * dI3_dlnt / t_eval;   // dV_ext/dt
-            return h * dVdt;
-        };
-
-        // For each lifetime value t, integrate over t' in the grid
-        std::vector<double> result(lifetime_grid.size());
-        for (size_t k = 0; k < lifetime_grid.size(); ++k)
+        distribution_out.lifetime_values = lifetime_grid;
+        distribution_out.distribution_values.resize(n_lifetime_grid);
+        for (size_t k = 0; k < n_lifetime_grid; ++k)
         {
             const double tau = lifetime_grid[k];
-            double integral = 0.0;
 
-            for (size_t i = 0; i < n_grid; ++i)
+            // Upper limit on t': nucleation must happen early enough that t' + tau <= t_max_linear
+            const double t_prime_max = t_max_linear - tau;
+            if (t_prime_max <= std::exp(log_t_min))
             {
-                const double t_prime  = system.time[i];
-                const double d_log_t  = (i == 0) ? system.log_time[i] : system.log_time[i] - system.log_time[i-1];
-                const double dt_prime = t_prime * d_log_t;
-
-                integral += system.gamma[i] * df_dt(t_prime + tau) * dt_prime;
+                distribution_out.distribution_values[k] = 0.0;
+                LOG(debug) << "Lifetime grid point " << k << ": tau/timescale = " << tau/timescale << ", out of range — setting to 0";
+                continue;
             }
+            const double log_t_prime_max = std::log(t_prime_max);
 
-            result[k] = integral / (beta * n_asymptotic);
+            auto integrand = [&](double s) -> double
+            {
+                const double t_prime = std::exp(s);
+                const double t_double_prime = t_prime + tau;
+                const double log_t_double_prime = std::log(t_double_prime);
+
+                double h, dh_ds, d2h_ds2;
+                alglib::spline1ddiff(distribution_out.h_spline, log_t_double_prime, h, dh_ds, d2h_ds2);
+                double dh_dt = std::min(0.0, dh_ds / t_double_prime);
+
+                double log_gamma = alglib::spline1dcalc(distribution_out.log_gamma_spline, s);
+                double gamma = std::exp(log_gamma);
+
+                return t_prime * gamma * dh_dt / (n_asymptotic) * timescale;
+            };
+
+            double integral = boost::math::quadrature::gauss_kronrod<double, 31>::integrate(integrand, log_t_min, log_t_prime_max, 5, 1e-5);
+            distribution_out.distribution_values[k] = - integral ;
+            distribution_out.lifetime_values[k] = tau;
+            distribution_out.chi_values[k] = tau / timescale;
+
+            LOG(debug) << "Lifetime grid point " << k 
+                << ": tau = " << tau / timescale
+                << ", distribution value = " << distribution_out.distribution_values[k];
         }
 
-        return result;
+        return distribution_out;
     }
 
     const double 

@@ -46,8 +46,9 @@ namespace PhaseTracer {
             double v, dvdT, ddvdT;
             try {
                 alglib::spline1ddiff(this->potential_spline, temp, v, dvdT, ddvdT);
+                // LOG(debug) << "Phase key " << phase.key << ": At T = " << temp << ", potential = " << v << ", T * dvdT = " << temp * dvdT;
             } catch (const std::exception& e) {
-                LOG(error) << "Error in spline1ddiff: " << e.what() << "for temperature " << temp << std::endl;
+                LOG(error) << "Error in spline1ddiff: " << e.what() << "for temperature " << temp << " in phase key " << phase.key;
                 continue;
             }
 
@@ -58,8 +59,16 @@ namespace PhaseTracer {
             pressure[i] = background_pressure - v + energy_norm;
             energy[i] = 3.0 * background_pressure + v - temp * dvdT - energy_norm;
             enthalpy[i] = 4.0 * background_pressure - temp * dvdT;
-            entropy[i] = 4.0 * background_pressure / temp - dvdT;
+            entropy[i] = (temp != 0.0) ? 4.0 * background_pressure / temp - dvdT : 0.0;
         }
+
+        // write to a debug file
+        std::ofstream eos_out("example/TestThermalParameters/eos_debug_phase_" + std::to_string(phase.key) + ".csv");
+        eos_out << "# Temperature,Pressure,Energy,w,Enthalpy,Entropy\n";
+        for (int i = 0; i < n_temp; ++i) {
+            eos_out << temperature[i] << "," << pressure[i] << "," << energy[i] << "," << (energy[i] != 0.0 ? pressure[i]/energy[i] : 0.0) << "," << enthalpy[i] << "," << entropy[i] << "\n";
+        }
+        eos_out.close();
 
         alglib::real_1d_array t_array, p_array, e_array, w_array, s_array;
         t_array.setcontent(n_temp, temperature.data());
@@ -73,10 +82,13 @@ namespace PhaseTracer {
             alglib::spline1dbuildcubic(t_array, e_array, this->energy_spline);
             alglib::spline1dbuildcubic(t_array, w_array, this->enthalpy_spline);
             alglib::spline1dbuildcubic(t_array, s_array, this->entropy_spline);
-            LOG(debug) << "EquationOfStateInPhase splines built.";
+            LOG(debug) << "EquationOfStateInPhase splines built for phase key " << phase.key;
         } catch (const std::exception& e) {
-            LOG(error) << "Error in spline1dbuildcubic: " << e.what() << std::endl;
+            LOG(error) << "Error in spline1dbuildcubic: " << e.what() << " for phase key " << phase.key;
             throw std::runtime_error("Failed to build thermodynamic splines");
+        } catch (...) {
+            LOG(error) << "Unknown error in get_thermodynamic_splines for phase key " << phase.key;
+            throw;
         }
     }
 
@@ -105,11 +117,14 @@ namespace PhaseTracer {
                 LOG(error) << "Error in spline1ddiff while finding normalization: " << e.what() << "for temperature " << t;
                 continue;
             }
-            double energy = v - t * dvdT;
+            // LOG(debug) << "At T = " << t << ", potential = " << v << ", t * dvdT = " << t * dvdT;
+            double energy = v; //  - t * dvdT;
             if (energy < normalisation) {
                 normalisation = energy;
             }
         }
+        // set normalisation to value of V at T_min if it is positive
+            normalisation = alglib::spline1dcalc(true_pot_norm_spline, t_min);
         LOG(debug) << "Energy normalization set to " << normalisation;
         return normalisation;
     }

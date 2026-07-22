@@ -27,6 +27,7 @@
 #include <interpolation.h>
 
 #include "property.hpp"
+#include "particle_spec.hpp"
 
 namespace EffectivePotential {
 
@@ -64,6 +65,15 @@ public:
    * in analysing the phase history of the potential.
    */
   virtual std::vector<Eigen::VectorXd> get_low_t_phases() const { return {}; };
+
+  /**
+   * The spectrum of fluctuating fields around the bounce, used by external
+   * one-loop determinant tools (e.g. BubbleDet) to compute the nucleation-rate
+   * prefactor. The default is empty: a bare Potential carries no particle
+   * content, so any consumer must fall back to its own (analytic) prefactor.
+   * OneLoopPotential overrides this to expose its mass/dof content.
+   */
+  virtual std::vector<ParticleSpec> get_fluctuation_spectrum(double T) const { return {}; }
 
   /** Functor that returns potential */
   double operator()(Eigen::VectorXd phi, double T) const { return V(phi, T); }

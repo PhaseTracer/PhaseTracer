@@ -117,6 +117,42 @@ std::vector<double> OneLoopPotential::get_scalar_dofs() const {
   return std::vector<double>(get_n_scalars(), 1.);
 }
 
+std::vector<ParticleSpec> OneLoopPotential::get_fluctuation_spectrum(double T) const {
+  std::vector<ParticleSpec> spectrum;
+  const double xi_ = get_xi();
+  // The default uses zero-temperature field-dependent masses; models with an
+  // explicit thermal/3d spectrum can use T when overriding.
+  (void)T;
+
+  // Append one ParticleSpec per dof entry, with a mass closure that recomputes
+  // the corresponding field-dependent mass-squared on demand. Any T or xi
+  // dependence is captured here so the returned closures take only phi.
+  const auto append = [&spectrum](const std::string &tag, double spin,
+                                  FieldStatistics statistics,
+                                  const std::vector<double> &dofs,
+                                  std::function<std::vector<double>(const Eigen::VectorXd &)> masses) {
+    for (size_t i = 0; i < dofs.size(); ++i) {
+      ParticleSpec s;
+      s.name = tag + "_" + std::to_string(i);
+      s.spin = spin;
+      s.statistics = statistics;
+      s.dof = dofs[i];
+      s.zero_mode = ZeroModeType::None;
+      s.mass_sq = [masses, i](const Eigen::VectorXd &phi) { return masses(phi).at(i); };
+      spectrum.push_back(std::move(s));
+    }
+  };
+
+  append("scalar", 0.0, FieldStatistics::Boson, get_scalar_dofs(),
+         [this, xi_](const Eigen::VectorXd &phi) { return get_scalar_masses_sq(phi, xi_); });
+  append("fermion", 0.5, FieldStatistics::Fermion, get_fermion_dofs(),
+         [this](const Eigen::VectorXd &phi) { return get_fermion_masses_sq(phi); });
+  append("vector", 1.0, FieldStatistics::Boson, get_vector_dofs(),
+         [this](const Eigen::VectorXd &phi) { return get_vector_masses_sq(phi); });
+
+  return spectrum;
+}
+
 double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
                             std::vector<double> fermion_masses_sq,
                             std::vector<double> vector_masses_sq,

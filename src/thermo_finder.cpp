@@ -38,7 +38,8 @@ namespace PhaseTracer {
             completion_target,
             onset_target,
             nucleation_target,
-            temperature_abs_tol
+            temperature_abs_tol,
+            prefactor_function
         );
 
         output.onset = output.transition_metrics.onset_milestone;

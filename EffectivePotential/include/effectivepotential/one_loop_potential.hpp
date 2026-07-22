@@ -53,6 +53,16 @@ public:
   virtual std::vector<double> get_vector_dofs() const { return {}; }
   virtual std::vector<double> get_ghost_dofs() const { return {}; }
 
+  /**
+   * Synthesise the fluctuation spectrum (for the one-loop bounce determinant)
+   * from the existing field-dependent mass and dof accessors. Scalars, fermions
+   * and vectors are included; ghosts are omitted as BubbleDet handles gauge
+   * fields directly. Zero-mode assignment is left to the consumer (the field
+   * that tunnels carries the Higgs zero mode), so every species is returned
+   * with ZeroModeType::None here. Override in a model to refine.
+   */
+  std::vector<ParticleSpec> get_fluctuation_spectrum(double T) const override;
+
   /** The Hessian matrix of tree-level potential */
   Eigen::MatrixXd d2V0_dx2(Eigen::VectorXd phi) const;
   /** The derivative of the gradient of potential with respect to temperature */
