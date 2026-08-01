@@ -19,6 +19,7 @@
 #include "phase_finder.hpp"
 #include "pow.hpp"
 
+#include <cmath>
 #include <boost/math/special_functions/sign.hpp>
 #include <eigen3/Eigen/Eigenvalues>
 
@@ -227,6 +228,12 @@ void PhaseFinder::find_phases() {
 
   LOG(debug) << "Check potential at T = t_low = " << t_low;
   minima_at_t_low = find_minima_at_t(t_low);
+
+  for (const auto &minimum : minima_at_t_low) {
+    if (!std::isfinite(minimum.potential)) {
+      throw std::runtime_error("Invalid minimum found at t_low: non-finite potential");
+    }
+  }
 
   if (check_vacuum_at_low) {
     const minima_descriptor location = get_minima_descriptor(minima_at_t_low, t_low);
