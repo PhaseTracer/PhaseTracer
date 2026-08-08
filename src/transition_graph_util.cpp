@@ -299,7 +299,7 @@ void extractExplicitSymmetricPhasesAndTransitions(
 
 PhaseStructureData extractPhaseStructureData(const EffectivePotential::Potential &model,
                                              const std::vector<PhaseTracer::Phase> &phases, const std::vector<PhaseTracer::Transition> &transitions,
-                                             const std::vector<Eigen::VectorXd> &expectedLowTPhases, double Tmax, bool knownHighTPhase) {
+                                             const std::vector<Eigen::VectorXd> &expectedLowTPhases, double Tmin, double Tmax, bool knownHighTPhase) {
   if (phases.size() == 0) {
     // std::cout << "No phases identified." << std::endl;
     return PhaseStructureData({-1}, {-1}, false, {});
@@ -333,10 +333,10 @@ PhaseStructureData extractPhaseStructureData(const EffectivePotential::Potential
       }
     }
 
-    // For the rest of this iteration we check the phases at T=0.
+    // For the rest of this iteration we check the phases at the low-temperature boundary.
 
-    // Only check phases that exist at T=0. T.front() is the minimum temperature for the phase.
-    if (phases[i].T.front() > 0) {
+    // Only check phases that reach Tmin. T.front() is the minimum temperature for the phase.
+    if (phases[i].T.front() > Tmin) {
       continue;
     }
 
@@ -348,11 +348,11 @@ PhaseStructureData extractPhaseStructureData(const EffectivePotential::Potential
             continue;
     }*/
 
-    double zeroTPotential = phases[i].V.front();
+    double lowTPotential = phases[i].V.front();
 
-    // Check if this is the deepest minimum (at T=0) found so far.
-    if (zeroTPotential < minPotentialValue) {
-      minPotentialValue = zeroTPotential;
+    // Check if this is the deepest minimum at the low-temperature boundary found so far.
+    if (lowTPotential < minPotentialValue) {
+      minPotentialValue = lowTPotential;
       // globalMinimumIndex = i;
 
       // Clear the list of low-T phases since we found a lower energy phase, and add this phase to the list.
@@ -392,6 +392,11 @@ PhaseStructureData extractPhaseStructureData(const EffectivePotential::Potential
           std::cout << "EWVEVIndex " << EWVEVIndex << " !=  globalMinimumIndex " << globalMinimumIndex;
           assert(EWVEVIndex == globalMinimumIndex && "Logic to detect global minima not equal to the EWVEV is flawed!");
   }*/
+
+  if (lowTPhaseIndices.empty()) {
+    LOG(error) << "No phase reaches t_low = " << Tmin << "." << std::endl;
+    return PhaseStructureData({}, highTPhaseIndices, false, isLowTemperaturePhase);
+  }
 
   for (int i = 0; i < lowTPhaseIndices.size(); ++i) {
     isLowTemperaturePhase[lowTPhaseIndices[i]] = true;
@@ -719,10 +724,11 @@ std::vector<Path> getPhaseHistory(const PhaseTracer::TransitionFinder &tf, bool 
                                                model.get_symmetry_axes(), symmetrisedPhases, symmetrisedTransitions);
 
   PhaseStructureData phaseStructureData = extractPhaseStructureData(model, symmetrisedPhases, symmetrisedTransitions,
-                                                                    model.get_low_t_phases(), tf.pf.get_t_high(), knownHighTPhase);
+                                                                    model.get_low_t_phases(), tf.pf.get_t_low(), tf.pf.get_t_high(),
+                                                                    knownHighTPhase);
 
   if (!phaseStructureData.validAtZeroT) {
-    LOG(debug) << "Phase structure is invalid at T=0. It does not describe our Universe.";
+    LOG(debug) << "Phase structure is invalid at the low-temperature boundary. It does not describe our Universe.";
     return {};
   }
 
