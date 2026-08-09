@@ -210,70 +210,19 @@ namespace PhaseTracer {
     {
         add_history_lists(history, decay_rate, tm);
         
-
         if(percolation.status == MilestoneStatus::YES)
         {
             const double Tref = percolation.temperature;
+            const double T_m = history.T_m;
+            const double betaH_1 = get_betaH_1(Tref, decay_rate, tm);
+            const double betaH_2 = get_betaH_2(Tref, decay_rate, tm);
 
-            if(percolation.nucleation_type == NucleationType::SIMULTANEOUS)
-            {
-                const double T_m = history.T_m;
-                const double T_p = (percolation.status == MilestoneStatus::YES) ? percolation.temperature : Tref;
-                const double T_n = (nucleation.status == MilestoneStatus::YES) ? nucleation.temperature : Tref;
+            LOG(debug) << "betaH_1 (Tp) = " << betaH_1 << ", betaH_1 (Tn) = " << get_betaH_1(nucleation.temperature, decay_rate, tm);
+            LOG(debug) << "betaH_2 (Tp) = " << betaH_2 << ", betaH_2 (Tm) = " << get_betaH_2(T_m, decay_rate, tm);
 
-                const double betaH_1_perc = get_betaH_1(T_p, decay_rate, tm);
-                const double betaH_1_nuc = get_betaH_1(T_n, decay_rate, tm);
-                const double RsH_exp_perc = get_RsH_exp(betaH_1_perc);
-                const double RsH_exp_nuc = get_RsH_exp(betaH_1_nuc);
-
-                const double Gamma_0_perc = get_gamma_on_H4(T_p, decay_rate, tm);
-                const double Gamma_0_nuc = get_gamma_on_H4(T_n, decay_rate, tm);
-                const double Gamma_M = get_gamma_on_H4(T_m, decay_rate, tm);
-
-                const double betaH_2_perc = get_betaH_2(T_p, decay_rate, tm);
-                const double betaH_2_nuc = get_betaH_2(T_n, decay_rate, tm);
-                const double betaH_2_m = get_betaH_2(T_m, decay_rate, tm);
-                const double RsH_sim_perc = get_RsH_sim(Gamma_0_perc, betaH_2_perc);
-                const double RsH_sim_nuc = get_RsH_sim(Gamma_0_nuc, betaH_2_perc);
-                const double RsH_sim_m = get_RsH_sim(Gamma_M, betaH_2_m);
-
-                history.betaH_1_perc = betaH_1_perc;
-                history.betaH_1_nuc = betaH_1_nuc;
-                history.RsH_exp_perc = RsH_exp_perc;
-                history.RsH_exp_nuc = RsH_exp_nuc;
-
-                history.betaH_2_perc = betaH_2_perc;
-                history.betaH_2_nuc = betaH_2_nuc;
-                history.RsH_sim_perc = RsH_sim_perc;
-                history.RsH_sim_nuc = RsH_sim_nuc;
-
-                history.betaH_2_m = betaH_2_m;
-                history.RsH_sim_m = RsH_sim_m;
-
-                history.Gamma_0_perc = Gamma_0_perc;
-                history.Gamma_0_nuc = Gamma_0_nuc;
-                history.Gamma_M = Gamma_M;
-
-
-            } else 
-            {
-                const double T_p = (percolation.status == MilestoneStatus::YES) ? percolation.temperature : Tref;
-                const double T_n = (nucleation.status == MilestoneStatus::YES) ? nucleation.temperature : Tref;
-
-                const double betaH_1_perc = get_betaH_1(T_p, decay_rate, tm);
-                const double betaH_1_nuc = get_betaH_1(T_n, decay_rate, tm);
-                const double RsH_exp_perc = get_RsH_exp(betaH_1_perc);
-                const double RsH_exp_nuc = get_RsH_exp(betaH_1_nuc);
-                const double Gamma_0_perc = get_gamma_on_H4(T_p, decay_rate, tm);
-                const double Gamma_0_nuc = get_gamma_on_H4(T_p, decay_rate, tm);
-
-                history.betaH_1_perc = betaH_1_perc;
-                history.betaH_1_nuc = betaH_1_nuc;
-                history.RsH_exp_perc = RsH_exp_perc;
-                history.RsH_exp_nuc = RsH_exp_nuc;
-                history.Gamma_0_perc = Gamma_0_perc;
-                history.Gamma_0_nuc = Gamma_0_nuc;
-            }
+            history.betaH_1 = betaH_1;
+            history.betaH_2 = betaH_2;
+            history.betaH = percolation.betaH;
         }
     }
 
@@ -323,19 +272,27 @@ namespace PhaseTracer {
     const double
     ThermoFinder::get_betaH_1(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm)
     {
-        const double dy = decay_rate.get_action_deriv(temperature);
-        const double dtdT = tm.get_time_temperature_false(temperature);
+        // const double dy = decay_rate.get_action_deriv(temperature);
+        // const double dtdT = tm.get_time_temperature_false(temperature);
+        // const double H = tm.get_hubble_rate(temperature);
+        // return - dy/(dtdT*H);
+
+        const auto betas = tm.get_action_expansion(temperature);
         const double H = tm.get_hubble_rate(temperature);
-        return - dy/(dtdT*H);
+        return betas.first/H;
     }
 
     const double
     ThermoFinder::get_betaH_2(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm)
     {
-        const double dtdT = tm.get_time_temperature_false(temperature);
-        const double ddSdTT2 = decay_rate.get_action_double_deriv(temperature);
+        // const double dtdT = tm.get_time_temperature_false(temperature);
+        // const double ddSdTT2 = decay_rate.get_action_double_deriv(temperature);
+        // const double H = tm.get_hubble_rate(temperature);
+        // return std::sqrt(ddSdTT2/(dtdT*dtdT*H*H));
+
+        const auto betas = tm.get_action_expansion(temperature);
         const double H = tm.get_hubble_rate(temperature);
-        return std::sqrt(ddSdTT2/(dtdT*dtdT*H*H));
+        return betas.second/H;
     }
 
     const double

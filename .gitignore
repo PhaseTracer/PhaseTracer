@@ -36,5 +36,6 @@ scan.py
 /example/InferenceScripts/
 /example/HydroGravScripts/
 /example/TestThermalParameters/
+/example/BetaProject/
 /comparisonData/
 *.pdf

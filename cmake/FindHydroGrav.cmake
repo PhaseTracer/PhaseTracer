@@ -1,6 +1,6 @@
 # Find HydroGrav
 
-set(HydroGrav_GIT_BRANCH "main" CACHE STRING "Branch of HydroGrav to clone")
+set(HydroGrav_GIT_BRANCH "feature/nu_spline" CACHE STRING "Branch of HydroGrav to clone")
 set(HydroGrav "${PROJECT_SOURCE_DIR}/HydroGrav")
 
 if(Git_FOUND)

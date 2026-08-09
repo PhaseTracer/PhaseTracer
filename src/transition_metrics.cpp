@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include "logger.hpp"
@@ -258,6 +259,7 @@ namespace PhaseTracer {
             const double true_vacuum_fraction = 1 - false_vacuum_fraction;
 
             const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
+            const double action = decay_rate.get_action(T_false) / T_false;
             const double gamma  = decay_rate.get_gamma(T_false);
 
             const double t = std::exp(tau);
@@ -276,6 +278,7 @@ namespace PhaseTracer {
             system.T_t.push_back(T_true);
             system.hubble.push_back(hubble);
             system.a.push_back(a);
+            system.action.push_back(action);
             system.gamma.push_back(gamma);
             system.I_0.push_back(I_0);
             system.I_1.push_back(I_1);
@@ -284,11 +287,25 @@ namespace PhaseTracer {
             system.nucleation_rate.push_back(nucleation_rate);
             system.number_density.push_back(number_density);
             system.mean_bubble_radius.push_back(mean_bubble_radius);
+
+            {
+                double e_av = false_vacuum_fraction * e_false + true_vacuum_fraction * e_true;
+                double p_av = false_vacuum_fraction * p_false + true_vacuum_fraction * p_true;
+                double w = p_av / e_av;
+
+                LOG(debug) << "Friedmann evolution: tau = " << tau << ", T_false = " << T_false << ", T_true = " << T_true
+                       << ", w = " << w 
+                       << ", a = " << a
+                       << ", hubble = " << hubble
+                       << ", h = " << false_vacuum_fraction;
+            }
+            
         };
 
         state_type initial_state = {eos.get_energy_plus(t_max), eos.get_energy_plus(t_max), 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
         // set initial time to be just below critical temp.
+        LOG(debug) << "Friedmann evolution temperature bounds: t_min = " << t_min << ", t_max = " << t_max;
         double d_temp = 1e-3*(t_max - t_min);
         double T_initial = t_max - d_temp;
         double initial_time = std::log(0 - d_temp*get_time_temperature_false(T_initial));
@@ -296,25 +313,63 @@ namespace PhaseTracer {
         // estimate final time to be at t_min, but add a buffer to ensure we capture the full transition
         double final_time = std::log(get_t(t_min)) + 1.0;
 
-        double dt = (final_time - initial_time)/(250.0-1.0);
+        double dt = (final_time - initial_time)/(1000.0-1.0);
 
-        LOG(debug) << "Starting Friedmann evolution from T_initial = " << T_initial << " GeV at time " << exp(initial_time) << " GeV^-1, with estimated final time " << exp(final_time) << " GeV^-1";
+        LOG(debug) << "Starting Friedmann evolution from T_initial = " << T_initial << " Unit at time " << exp(initial_time) << " Unit^-1, with estimated final time " << exp(final_time) << " Unit^-1";
+
+        auto stepper = odeint::make_controlled<odeint::runge_kutta_dopri5<state_type>>(1e-6, 1e-6);
+
+        state_type x = initial_state;
+        double t = initial_time;
+        double dt_step = dt;
+
+        const double min_dt = 1e-9 * std::abs(final_time - initial_time);
+        const int max_stalled_attempts = 1000;
+        int stalled_attempts = 0;
 
         try
         {
-            odeint::integrate_adaptive
-            (
-                odeint::make_controlled<odeint::runge_kutta_dopri5<state_type>>(1e-6, 1e-6),
-                rhs, 
-                initial_state, 
-                initial_time, 
-                final_time, 
-                dt, 
-                observer
-            );
+            observer(x, t);
+
+            while (t < final_time)
+            {
+                if (t + dt_step > final_time)
+                {
+                    dt_step = final_time - t;
+                }
+
+                auto result = stepper.try_step(rhs, x, t, dt_step);
+
+                if (result == odeint::success)
+                {
+                    observer(x, t);
+                }
+
+                if (std::abs(dt_step) < min_dt)
+                {
+                    ++stalled_attempts;
+                    if (stalled_attempts > max_stalled_attempts)
+                    {
+                        throw IntegrationStalledException{};
+                    }
+                } else
+                {
+                    stalled_attempts = 0;
+                }
+            }
         }
-        catch (const TransitionCompleteException&) {
-            LOG(debug) << "Transition complete: integration stopped.";
+        catch (const TransitionCompleteException&) 
+        {
+            LOG(debug) << "Transition complete: reached bounds on temperature.";
+        } catch (const FalseVacuumTrappingException&) 
+        {
+            LOG(fatal) << "False Vacuum becomes trapped.";
+            throw std::runtime_error("False Vacuum becomes trapped.");
+        } catch (const IntegrationStalledException&)
+        {
+            LOG(warning) << "Friedmann evolution stalled: step size collapsed near tau = " << t
+                         << " (T_false = " << match_T_false(x[0]) << ") without reaching the target temperature bound. "
+                         << "Terminating integration early with the results accumulated so far.";
         } catch (const std::domain_error& e) {
             LOG(debug) << "Boost rootfinder error: integration stopped.";
         }
@@ -334,6 +389,7 @@ namespace PhaseTracer {
         alglib::real_1d_array log_time_array;
         alglib::real_1d_array scale_factor_array;
         alglib::real_1d_array hubble_rate_array;
+        alglib::real_1d_array log_action_array;
         alglib::real_1d_array log_I_3_array;
         alglib::real_1d_array log_nucleation_rate_array;
         alglib::real_1d_array log_bubble_number_density_array;
@@ -344,6 +400,7 @@ namespace PhaseTracer {
         log_time_array.setlength(system.time.size());
         scale_factor_array.setlength(system.time.size());
         hubble_rate_array.setlength(system.time.size());
+        log_action_array.setlength(system.time.size());
         log_I_3_array.setlength(system.time.size());
         log_nucleation_rate_array.setlength(system.time.size());
         log_bubble_number_density_array.setlength(system.time.size());
@@ -356,31 +413,22 @@ namespace PhaseTracer {
             log_time_array[i] = system.log_time[i];
             scale_factor_array[i] = system.a[i];
             hubble_rate_array[i] = system.hubble[i];
+            log_action_array[i] = (i==0) ? -700 : std::log(system.action[i]);
             log_I_3_array[i] = (i==0) ? -700 : std::log(system.I_3[i]);
             log_nucleation_rate_array[i] = (i==0) ? -700 : std::log(system.nucleation_rate[i]);
             log_bubble_number_density_array[i] = (i==0) ? -700 : std::log(system.number_density[i]);
             log_mean_bubble_radius_array[i] = (system.mean_bubble_radius[i]>0) ? std::log(system.mean_bubble_radius[i]) : -700;
-
-            // LOG(debug) << "Friedmann data point " << i 
-            //     << ": T_false = " << T_false_array[i] 
-            //     << ", T_true = " << T_true_array[i] 
-            //     << ", log_time = " << log_time_array[i] 
-            //     << ", scale_factor = " << scale_factor_array[i] 
-            //     << ", hubble_rate = " << hubble_rate_array[i] 
-            //     << ", log_I_3 = " << log_I_3_array[i] 
-            //     << ", log_nucleation_rate = " << log_nucleation_rate_array[i] 
-            //     << ", log_bubble_number_density = " << log_bubble_number_density_array[i] 
-            //     << ", log_mean_bubble_radius = " << log_mean_bubble_radius_array[i];
         }
 
         alglib::spline1dbuildcubic(T_false_array, T_true_array, reheating_spline);
         alglib::spline1dbuildcubic(T_false_array, log_time_array, log_time_spline);
         alglib::spline1dbuildcubic(T_false_array, scale_factor_array, scale_factor_spline);
         alglib::spline1dbuildcubic(T_false_array, hubble_rate_array, hubble_rate_spline);
-        alglib::spline1dbuildcubic(T_false_array, log_I_3_array, log_I_3_spline);
-        alglib::spline1dbuildcubic(T_false_array, log_nucleation_rate_array, log_nucleation_rate_spline);
-        alglib::spline1dbuildcubic(T_false_array, log_bubble_number_density_array, log_bubble_number_density_spline);
-        alglib::spline1dbuildcubic(T_false_array, log_mean_bubble_radius_array, log_mean_bubble_radius_spline);
+        alglib::spline1dbuildcubic(T_false_array, log_action_array, log_action_spline);
+        alglib::spline1dbuildmonotone(T_false_array, log_I_3_array, log_I_3_spline);
+        alglib::spline1dbuildmonotone(T_false_array, log_nucleation_rate_array, log_nucleation_rate_spline);
+        alglib::spline1dbuildmonotone(T_false_array, log_bubble_number_density_array, log_bubble_number_density_spline);
+        alglib::spline1dbuildmonotone(T_false_array, log_mean_bubble_radius_array, log_mean_bubble_radius_spline);
 
         friedmann_splines_computed = true;
     }
@@ -475,6 +523,58 @@ namespace PhaseTracer {
         return std::exp(log_Rbar);
     }
 
+    const std::pair<double, double>
+    TransitionMetrics::get_action_expansion(const double& temperature) const
+    {
+        if (!friedmann_splines_computed)
+        {
+            LOG(warning) << "Friedmann splines not computed. Cannot compute action expansion.";
+            return {0.0, 0.0};
+        }
+
+        // X = ln(t), Y = ln(S)
+        double X, dX, d2X;
+        double Y, dY, d2Y;
+
+        alglib::spline1ddiff(log_time_spline,   temperature, X, dX, d2X);
+        alglib::spline1ddiff(log_action_spline, temperature, Y, dY, d2Y);
+
+        const double S = std::exp(Y);
+        const double t = std::exp(X);
+
+        // dS/dT, dt/dT
+        const double g  = S * dY;
+        const double h  = t * dX;
+
+        // d^2S/dT^2, d^2t/dT^2
+        const double gp = S * (dY * dY + d2Y);
+        const double hp = t * (dX * dX + d2X);
+
+        if (std::abs(h) < 1e-300)
+        {
+            LOG(warning) << "dt/dT ~ 0 at T = " << temperature
+                        << "; cannot compute action expansion (degenerate chain rule).";
+            return {0.0, 0.0};
+        }
+
+        // dS/dt and d^2S/dt^2 via chain rule
+        const double dS_dt   = (S/t) * (dY/dX);
+        const double d2S_dt2 = (gp * h - g * hp) / (h * h * h);
+
+        const double beta_1 = -dS_dt;
+
+        if (d2S_dt2 < 0.0)
+        {
+            LOG(warning) << "d^2S/dt^2 < 0 at T = " << temperature
+                        << "; beta_2 would be imaginary. Returning beta_2 = 0.";
+            return {beta_1, 0.0};
+        }
+
+        const double beta_2 = std::sqrt(d2S_dt2);
+
+        return {beta_1, beta_2};
+    }
+
     const double
     TransitionMetrics::get_t(const double& T_false) const
     {
@@ -487,12 +587,17 @@ namespace PhaseTracer {
         auto integrand = [this](double Tdash) 
         {
             double dtdT = get_time_temperature_false(Tdash);
+            if(std::isnan(dtdT) || std::isinf(dtdT))
+            {
+                LOG(debug) << "Warning: Encountered NaN or Inf in dtdT at T = " << Tdash << ". Returning 0.";
+                return 0.0;
+            }
             return dtdT;
         };
 
         if(T_false >= t_max) { return 0.0; }
-        
-        double result = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(integrand, t_max, T_false, 5, 1e-5);
+
+        double result = simpson_integrate(integrand, t_max, T_false, 1000);
         return result;
     }
 
@@ -512,6 +617,7 @@ namespace PhaseTracer {
     TransitionMetrics::get_lifetime_distribution(const double& timescale, const double& lifetime_min_fraction)
     {
         LifetimeDistribution distribution_out;
+        distribution_out.timescale = timescale;
 
         const size_t n_grid = system.log_time.size();
         const double n_asymptotic = system.number_density.back();
@@ -520,20 +626,43 @@ namespace PhaseTracer {
         LOG(debug) << "Number of grid points: " << n_grid;
         LOG(debug) << "Asymptotic number density: " << n_asymptotic;
 
-        alglib::real_1d_array h_array, log_gamma_array, log_time_array;
-        h_array.setlength(n_grid);
+        // Note: gamma(T) and dh/dt can vary by many orders of magnitude over
+        // a small range of t, so we avoid interpolating them directly on the
+        // (comparatively coarse) time grid produced by the Friedmann ODE
+        // integration. Instead we interpolate the *smooth* quantities
+        // (I_2, I_3, T_false, a), which are well resolved by the adaptive
+        // ODE stepper, and reconstruct gamma and dh/dt from them:
+        //  - gamma(t) = decay_rate.get_gamma(T_false(t)), using
+        //    decay_rate's own dedicated spline in temperature, which is
+        //    built directly from bounce-action data and is far better
+        //    suited to resolving the sharp T-dependence of the nucleation
+        //    rate than a spline of log(gamma) vs time would be.
+        //  - dh/dt = -4*pi*vw^3 * h * I_2 is the exact analytic derivative
+        //    (from d(I_3)/dt = 3*I_2), avoiding numerical differentiation
+        //    of a spline of h(t). I_2 and I_3 are splined in log-space since
+        //    they can span many orders of magnitude (a direct cubic spline
+        //    of the raw values is poorly conditioned and can ring/diverge
+        //    on interpolation or extrapolation).
+        const double log_min = -700;
+        alglib::real_1d_array log_I3_array, log_I2_array, T_false_array, log_time_array, scale_factor_array;
+        log_I3_array.setlength(n_grid);
+        log_I2_array.setlength(n_grid);
+        T_false_array.setlength(n_grid);
         log_time_array.setlength(n_grid);
-        log_gamma_array.setlength(n_grid);
+        scale_factor_array.setlength(n_grid);
         for (size_t i = 0; i < n_grid; ++i)
         {
-            double I3 = system.I_3[i];
             log_time_array[i] = system.log_time[i];
-            h_array[i] = get_false_vacuum_fraction_from_I3(I3);
-            log_gamma_array[i] = (system.gamma[i] > 0) ? std::log(system.gamma[i]) : -700;
+            log_I3_array[i] = (system.I_3[i] > 0) ? std::log(system.I_3[i]) : log_min;
+            log_I2_array[i] = (system.I_2[i] > 0) ? std::log(system.I_2[i]) : log_min;
+            T_false_array[i] = system.T_f[i];
+            scale_factor_array[i] = system.a[i];
         }
 
-        alglib::spline1dbuildcubic(log_time_array, h_array, distribution_out.h_spline);
-        alglib::spline1dbuildcubic(log_time_array, log_gamma_array, distribution_out.log_gamma_spline);
+        alglib::spline1dbuildcubic(log_time_array, log_I3_array, distribution_out.log_I3_spline);
+        alglib::spline1dbuildcubic(log_time_array, log_I2_array, distribution_out.log_I2_spline);
+        alglib::spline1dbuildcubic(log_time_array, T_false_array, distribution_out.T_false_spline);
+        alglib::spline1dbuildcubic(log_time_array, scale_factor_array, distribution_out.scale_factor_spline);
 
         const double log_t_min = log_time_array[0];
         const double log_t_max = log_time_array[n_grid - 1];
@@ -548,9 +677,12 @@ namespace PhaseTracer {
         {
             lifetime_grid[i] = lifetime_min * std::pow(lifetime_max/lifetime_min, static_cast<double>(i)/static_cast<double>(n_lifetime_grid-1));
         }
+        LOG(debug) << "Lifetime grid: min = " << lifetime_grid.front() << ", max = " << lifetime_grid.back() << ", n_points = " << n_lifetime_grid;
 
         distribution_out.lifetime_values = lifetime_grid;
         distribution_out.distribution_values.resize(n_lifetime_grid);
+        distribution_out.chi_values.resize(n_lifetime_grid);
+
         for (size_t k = 0; k < n_lifetime_grid; ++k)
         {
             const double tau = lifetime_grid[k];
@@ -571,24 +703,141 @@ namespace PhaseTracer {
                 const double t_double_prime = t_prime + tau;
                 const double log_t_double_prime = std::log(t_double_prime);
 
-                double h, dh_ds, d2h_ds2;
-                alglib::spline1ddiff(distribution_out.h_spline, log_t_double_prime, h, dh_ds, d2h_ds2);
-                double dh_dt = std::min(0.0, dh_ds / t_double_prime);
+                // dh/dt evaluated analytically from I_2 and I_3, instead of
+                // numerically differentiating a spline of h(t). This avoids
+                // amplifying interpolation error where h changes sharply.
+                // I_2, I_3 are recovered from log-space splines and clamped
+                // before exponentiating so that interpolation/extrapolation
+                // error near the edges of the grid cannot blow up to inf/NaN
+                // (I_2, I_3 can span many tens of orders of magnitude).
+                const double log_I3_val = std::clamp(alglib::spline1dcalc(distribution_out.log_I3_spline, log_t_double_prime), -700.0, 700.0);
+                const double log_I2_val = std::clamp(alglib::spline1dcalc(distribution_out.log_I2_spline, log_t_double_prime), -700.0, 700.0);
+                const double I3_val = std::exp(log_I3_val);
+                const double I2_val = std::exp(log_I2_val);
+                double dh_dt = std::min(0.0, get_d_false_vacuum_fraction_from_I3(I3_val, 3.0 * I2_val));
 
-                double log_gamma = alglib::spline1dcalc(distribution_out.log_gamma_spline, s);
-                double gamma = std::exp(log_gamma);
+                // gamma evaluated via decay_rate's own temperature spline,
+                // rather than re-interpolating gamma on the (coarser) time
+                // grid, since decay_rate.get_gamma is specifically built to
+                // resolve the sharp T-dependence of the nucleation rate.
+                const double T_prime = alglib::spline1dcalc(distribution_out.T_false_spline, s);
+                const double gamma = decay_rate.get_gamma(T_prime);
 
-                return t_prime * gamma * dh_dt / (n_asymptotic) * timescale;
+                double a_t_prime = alglib::spline1dcalc(distribution_out.scale_factor_spline, s);
+                double a_t_double_prime = alglib::spline1dcalc(distribution_out.scale_factor_spline, log_t_double_prime);
+                double expansion_factor = std::pow(a_t_prime / a_t_double_prime, 3.0);
+
+                return t_prime * gamma * dh_dt / (n_asymptotic) * expansion_factor;
             };
 
-            double integral = boost::math::quadrature::gauss_kronrod<double, 31>::integrate(integrand, log_t_min, log_t_prime_max, 5, 1e-5);
+            // A single call to an adaptive Gauss-Kronrod integrator over the
+            // *entire* [log_t_min, log_t_prime_max] range is not robust here:
+            // gamma(t') and dh/dt(t'+tau) can each be sharply peaked over a
+            // width that is a tiny fraction of the full range. If the initial
+            // (coarse) set of quadrature nodes happens to miss the peak
+            // entirely, the two embedded rules agree (both ~0) and the
+            // adaptive bisection never triggers further refinement, silently
+            // returning ~0 instead of the true (large) contribution. Because
+            // the exact node placement shifts slightly with tau (and with
+            // tiny upstream floating-point differences), whether a peak is
+            // "seen" can differ from one evaluation to the next, which is
+            // what produced the run-to-run non-determinism.
+            //
+            // To make this robust we pre-subdivide the domain using the
+            // physical grid points where the transition dynamics are known
+            // to be resolved: the ODE's own (adaptively refined) log_time
+            // grid, both directly (for gamma, a function of t') and shifted
+            // by -tau (for dh/dt, a function of t'+tau). This guarantees no
+            // single quadrature interval can span the entire sharp feature
+            // undetected, regardless of tau.
+            std::vector<double> boundaries;
+            boundaries.reserve(2 * n_grid + 2);
+            boundaries.push_back(log_t_min);
+            for (size_t i = 0; i < n_grid; ++i)
+            {
+                const double b1 = log_time_array[i];
+                if (b1 > log_t_min && b1 < log_t_prime_max) boundaries.push_back(b1);
+
+                const double t_double_prime_grid = std::exp(log_time_array[i]);
+                const double t_prime_shifted = t_double_prime_grid - tau;
+                if (t_prime_shifted > 0.0)
+                {
+                    const double b2 = std::log(t_prime_shifted);
+                    if (b2 > log_t_min && b2 < log_t_prime_max) boundaries.push_back(b2);
+                }
+            }
+            boundaries.push_back(log_t_prime_max);
+            std::sort(boundaries.begin(), boundaries.end());
+            boundaries.erase(std::unique(boundaries.begin(), boundaries.end()), boundaries.end());
+
+            double integral = 0.0;
+            for (size_t b = 0; b + 1 < boundaries.size(); ++b)
+            {
+                const double lo = boundaries[b];
+                const double hi = boundaries[b + 1];
+                if (hi - lo < 1e-13) continue;
+                // Each subinterval is already bounded by the ODE's own grid
+                // points, so the underlying I_2/I_3/T_false/a splines are
+                // effectively single smooth cubic pieces within it. The only
+                // remaining source of a hard-to-resolve feature is that
+                // decay_rate.get_gamma is a *piecewise-linear* spline in
+                // temperature (~O(100) breakpoints), so composed with
+                // T_false(s) it has small derivative kinks that don't align
+                // with our subdivision boundaries. Chasing those kinks down
+                // to a very tight tolerance (as opposed to just resolving the
+                // physical peak) is what made this loop extremely slow
+                // (every subinterval, for every one of the ~500 lifetime
+                // values, would recurse close to max_depth). A shallow depth
+                // with a moderate tolerance resolves the physical shape
+                // (which is all we need, since we are already summing many
+                // such subintervals) without paying for that recursion.
+                integral += boost::math::quadrature::gauss_kronrod<double, 31>::integrate(integrand, lo, hi, 3, 1e-6);
+            }
             distribution_out.distribution_values[k] = - integral ;
             distribution_out.lifetime_values[k] = tau;
-            distribution_out.chi_values[k] = tau / timescale;
 
-            LOG(debug) << "Lifetime grid point " << k 
-                << ": tau = " << tau / timescale
-                << ", distribution value = " << distribution_out.distribution_values[k];
+            // LOG(debug) << "Lifetime grid point " << k << ": tau = " << tau / timescale << ", distribution value = " << distribution_out.distribution_values[k];
+        }
+
+        // calculate mean lifetime as ∫ τ P(τ) dτ / ∫ P(τ) dτ.
+        // The grid is logarithmically spaced, so the quadrature weight is
+        // dτ = τ d(ln τ), giving ∫f dτ ≈ Σ f(τ_k) τ_k Δ(ln τ).
+        // The common Δ(ln τ) factor cancels in the ratio, leaving:
+        //   <τ> = Σ τ_k² P(τ_k) / Σ τ_k P(τ_k)
+        double mean_lifetime_numerator = 0.0;
+        double mean_lifetime_denominator = 0.0;
+        for (size_t k = 0; k < n_lifetime_grid; ++k)
+        {
+            const double tau = lifetime_grid[k];
+            mean_lifetime_numerator += tau * tau * distribution_out.distribution_values[k];
+            mean_lifetime_denominator += tau * distribution_out.distribution_values[k];
+        }
+        double mean_lifetime = mean_lifetime_numerator / mean_lifetime_denominator;
+        distribution_out.mean_lifetime = mean_lifetime;
+        LOG(debug) << "Mean lifetime = " << mean_lifetime;
+
+
+        // normalise distribution and chi values by mean lifetime
+        for (size_t k = 0; k < n_lifetime_grid; ++k)
+        {
+            distribution_out.distribution_values[k] *= mean_lifetime;
+            const double tau = lifetime_grid[k];
+            distribution_out.chi_values[k] = tau / mean_lifetime;
+        }
+
+        // renormalise distribution as a function of chi to ensure ∫ P(χ) dχ = 1.0
+        double integral_chi = 0.0;
+        for (size_t k = 0; k < n_lifetime_grid - 1; ++k)
+        {
+            const double chi_k = distribution_out.chi_values[k];
+            const double chi_k1 = distribution_out.chi_values[k + 1];
+            const double P_k = distribution_out.distribution_values[k];
+            const double P_k1 = distribution_out.distribution_values[k + 1];
+            integral_chi += 0.5 * (P_k + P_k1) * (chi_k1 - chi_k);
+        }
+        for (size_t k = 0; k < n_lifetime_grid; ++k)
+        {
+            distribution_out.distribution_values[k] /= integral_chi;
         }
 
         return distribution_out;
@@ -694,17 +943,18 @@ namespace PhaseTracer {
                 auto result = boost::math::tools::brent_find_minima(action_func, lower_bound, upper_bound, bits, max_iter);
                 
                 double T_m = result.first;
-                LOG(info) << "Found minimum T_mm = " << T_m;
+                LOG(debug) << "Found minimum T_m = " << T_m;
 
                 if (abs(lower_bound - T_m) < 1e-4)
                 {
                     LOG(debug) << "TM is at lower bound, indicating exponential nucleation. Computing beta.";
                     type_out = NucleationType::EXPONENTIAL;
+                    nucleation_history.T_m = T_m;
                 } else 
                 {
                     LOG(debug) << "TM is not at lower bound, indicating simultaneous nucleation. Computing beta2.";
                     type_out = NucleationType::SIMULTANEOUS;
-                    nucleation_history.T_m = T_m; // only store if successful.
+                    nucleation_history.T_m = T_m;
                 }
             } catch (const std::exception& e) 
             {
@@ -734,6 +984,22 @@ namespace PhaseTracer {
             percolation_milestone.nucleation_type = NucleationType::EXPONENTIAL;
             nucleation_milestone.nucleation_type = NucleationType::EXPONENTIAL;
         }
+    }
+
+    double
+    TransitionMetrics::simpson_integrate(const std::function<double(double)>& integrand, const double& x_min, const double& x_max, const int& steps) const
+    {
+        double h = (x_max - x_min) / steps;
+        double sum = integrand(x_min) + integrand(x_max);
+        for (int i = 1; i < steps; i += 2)
+        {
+            sum += 4.0 * integrand(x_min + i * h);
+        }
+        for (int i = 2; i < steps - 1; i += 2)
+        {
+            sum += 2.0 * integrand(x_min + i * h);
+        }
+        return sum * h / 3.0;
     }
 
     std::vector<double> 

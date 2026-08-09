@@ -63,12 +63,12 @@ namespace PhaseTracer {
         }
 
         // write to a debug file
-        std::ofstream eos_out("example/TestThermalParameters/eos_debug_phase_" + std::to_string(phase.key) + ".csv");
-        eos_out << "# Temperature,Pressure,Energy,w,Enthalpy,Entropy\n";
-        for (int i = 0; i < n_temp; ++i) {
-            eos_out << temperature[i] << "," << pressure[i] << "," << energy[i] << "," << (energy[i] != 0.0 ? pressure[i]/energy[i] : 0.0) << "," << enthalpy[i] << "," << entropy[i] << "\n";
-        }
-        eos_out.close();
+        // std::ofstream eos_out("example/TestThermalParameters/eos_debug_phase_" + std::to_string(phase.key) + ".csv");
+        // eos_out << "# Temperature,Pressure,Energy,w,Enthalpy,Entropy\n";
+        // for (int i = 0; i < n_temp; ++i) {
+        //     eos_out << temperature[i] << "," << pressure[i] << "," << energy[i] << "," << (energy[i] != 0.0 ? pressure[i]/energy[i] : 0.0) << "," << enthalpy[i] << "," << entropy[i] << "\n";
+        // }
+        // eos_out.close();
 
         alglib::real_1d_array t_array, p_array, e_array, w_array, s_array;
         t_array.setcontent(n_temp, temperature.data());
@@ -78,10 +78,11 @@ namespace PhaseTracer {
         s_array.setcontent(n_temp, entropy.data());
 
         try {
-            alglib::spline1dbuildcubic(t_array, p_array, this->pressure_spline);
-            alglib::spline1dbuildcubic(t_array, e_array, this->energy_spline);
-            alglib::spline1dbuildcubic(t_array, w_array, this->enthalpy_spline);
-            alglib::spline1dbuildcubic(t_array, s_array, this->entropy_spline);
+            // must refine end bounds to ensure monotonicity of e(T) and p(T)
+            alglib::spline1dbuildmonotone(t_array, p_array, this->pressure_spline);
+            alglib::spline1dbuildmonotone(t_array, e_array, this->energy_spline);
+            alglib::spline1dbuildmonotone(t_array, w_array, this->enthalpy_spline);
+            alglib::spline1dbuildmonotone(t_array, s_array, this->entropy_spline);
             LOG(debug) << "EquationOfStateInPhase splines built for phase key " << phase.key;
         } catch (const std::exception& e) {
             LOG(error) << "Error in spline1dbuildcubic: " << e.what() << " for phase key " << phase.key;

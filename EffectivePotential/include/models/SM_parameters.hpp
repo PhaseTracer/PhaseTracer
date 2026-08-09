@@ -52,6 +52,35 @@ const double mtop = yt * v / sqrt(2);
 const double mb = yb * v / sqrt(2);
 const double mtau = ytau * v / sqrt(2);
 
+// Light quark MS-bar masses (PDG 2022) and derived Yukawa couplings
+// m_c, m_s, m_u, m_d are approximate values; corrections to the potential
+// from these small Yukawas are negligible at the EW scale.
+const double mc    = 1.27;      // GeV (charm)
+const double ms_q  = 0.096;     // GeV (strange)
+const double mu_q  = 0.0022;    // GeV (up)
+const double md_q  = 0.0047;    // GeV (down)
+const double mmu   = 0.10566;   // GeV (muon)
+const double mel   = 0.000511;  // GeV (electron)
+
+const double yc   = std::sqrt(2.) * mc    / v;
+const double ys   = std::sqrt(2.) * ms_q  / v;
+const double yu   = std::sqrt(2.) * mu_q  / v;
+const double yd   = std::sqrt(2.) * md_q  / v;
+const double ymu  = std::sqrt(2.) * mmu   / v;
+const double ye   = std::sqrt(2.) * mel   / v;
+
+const double yc_sq  = square(yc);
+const double ys_sq  = square(ys);
+const double yu_sq  = square(yu);
+const double yd_sq  = square(yd);
+const double ymu_sq = square(ymu);
+const double ye_sq  = square(ye);
+
+// Strong coupling at M_Z (alpha_s(M_Z) = 0.1181, PDG 2022)
+const double alpha_s = 0.1181;
+const double gs      = std::sqrt(4. * M_PI * alpha_s);
+const double gs_sq   = square(gs);
+
 } // namespace SM
 
 #endif

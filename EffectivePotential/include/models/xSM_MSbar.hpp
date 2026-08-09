@@ -361,6 +361,94 @@ public:
     }
   }
 
+  /**
+   * Full SM fermion content: t, b, tau, c, s, u, d, mu, e, nu_e, nu_mu, nu_tau.
+   *
+   * Light quarks and charged leptons couple to the Higgs via Yukawa interactions
+   * and develop field-dependent masses m_f^2 = y_f^2 h^2 / 2.  Neutrinos are
+   * treated as massless (SM Dirac limit, left-handed only).  Including these
+   * species ensures the one-loop thermal potential captures the full g* T^4
+   * radiation background without the need for a separate background_dof term.
+   */
+  std::vector<double> get_fermion_masses_sq(Eigen::VectorXd phi) const override {
+    const double h_sq = square(phi[0]);
+    return {
+      0.5 * SM_yt_sq  * h_sq,  // top
+      0.5 * SM_yb_sq  * h_sq,  // bottom
+      0.5 * SM_ytau_sq * h_sq, // tau
+      0.5 * SM_yc_sq  * h_sq,  // charm
+      0.5 * SM_ys_sq  * h_sq,  // strange
+      0.5 * SM_yu_sq  * h_sq,  // up
+      0.5 * SM_yd_sq  * h_sq,  // down
+      0.5 * SM_ymu_sq * h_sq,  // muon
+      0.5 * SM_ye_sq  * h_sq,  // electron
+      0.,                       // nu_e  (LH Weyl: nu_L + anti-nu_R)
+      0.,                       // nu_mu
+      0.,                       // nu_tau
+    };
+  }
+
+  /** Degrees of freedom matching get_fermion_masses_sq order above. */
+  std::vector<double> get_fermion_dofs() const override {
+    return {
+      12.,  // top:     N_c=3, 2 spins, particle+antiparticle
+      12.,  // bottom
+       4.,  // tau:     2 spins × 2
+      12.,  // charm
+      12.,  // strange
+      12.,  // up
+      12.,  // down
+       4.,  // muon
+       4.,  // electron
+       2.,  // nu_e:    LH only × 2 (nu_L + anti-nu_R)
+       2.,  // nu_mu
+       2.,  // nu_tau
+    };
+  }
+
+  /**
+   * Vector sector: EW bosons (W, Z, gamma) plus 8 gluons.
+   *
+   * Gluons are SU(3) gauge bosons with no coupling to the Higgs field; their
+   * T=0 (transverse) mass is zero and they pick up a field-independent Debye
+   * mass m_D^2 = g_s^2 T^2 (N_c/3 + N_f/6) = 2 g_s^2 T^2 (N_c=3, N_f=6) for
+   * the longitudinal (screened) modes.  The 16 transverse modes are massless at
+   * all field values and contribute the full bosonic radiation g T^4 term.
+   *
+   * Layout: {MW_L(2), MZ_L(1), Mphoton_L(1), MW_T(4), MZ_T(2), Mphoton_T(2),
+   *          Mgluon_L(8), Mgluon_T(16)}
+   */
+  std::vector<double> get_vector_dofs() const override {
+    return {2., 1., 1., 4., 2., 2., 8., 16.};
+  }
+
+  std::vector<double> get_vector_debye_sq(Eigen::VectorXd phi, double T) const override {
+    const double h_sq  = square(phi[0]);
+    const double T_sq  = square(T);
+
+    // ---- EW sector (identical to xSM_base) ----
+    const double MW_T_sq      = 0.25 * square(SM_g) * h_sq;
+    const double MZ_T_sq      = 0.25 * (square(SM_g) + square(SM_gp)) * h_sq;
+    const double Mphoton_T_sq = 0.;
+
+    const double MW_L_sq = 0.25 * square(SM_g) * h_sq + 11. / 6. * square(SM_g) * T_sq;
+    const double a_L = (square(SM_g) + square(SM_gp)) * (3. * h_sq + 22. * T_sq);
+    const double b_L = std::sqrt(9.  * square(square(SM_g) + square(SM_gp)) * square(h_sq) +
+                                 132. * square(square(SM_g) - square(SM_gp)) * h_sq  * T_sq +
+                                 484. * square(square(SM_g) - square(SM_gp)) * pow_4(T));
+    const double MZ_L_sq      = (a_L + b_L) / 24.;
+    const double Mphoton_L_sq = (a_L - b_L) / 24.;
+
+    // ---- QCD gluon sector ----
+    // Longitudinal Debye mass: m_D^2 = g_s^2 T^2 (N_c/3 + N_f/6) with N_c=3, N_f=6
+    const double Mgluon_L_sq = 2. * SM_gs_sq * T_sq;
+    // Transverse gluons are massless at every field point
+    const double Mgluon_T_sq = 0.;
+
+    return {MW_L_sq, MZ_L_sq, Mphoton_L_sq, MW_T_sq, MZ_T_sq, Mphoton_T_sq,
+            Mgluon_L_sq, Mgluon_T_sq};
+  }
+
   // std::vector<double> get_4d_params() const {
   //   return {g_sq, gp_sq, v, m_s, muh_sq, lambda_h, lambda_hs, lambda_s, yt_sq};
   // }
@@ -404,6 +492,15 @@ protected:
 
   // hack for covariant gauge
   double xi_covariant_internal{0.};
+
+  // Additional SM Yukawa couplings (light quarks and leptons) and QCD coupling
+  double SM_yc_sq  = SM::yc_sq;
+  double SM_ys_sq  = SM::ys_sq;
+  double SM_yu_sq  = SM::yu_sq;
+  double SM_yd_sq  = SM::yd_sq;
+  double SM_ymu_sq = SM::ymu_sq;
+  double SM_ye_sq  = SM::ye_sq;
+  double SM_gs_sq  = SM::gs_sq;
 };
 
 } // namespace EffectivePotential

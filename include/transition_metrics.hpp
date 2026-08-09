@@ -83,27 +83,6 @@ struct NucleationHistory
     double betaH_2; // evaluated from d^2(S(t))/dt^2
 
     double T_m; // temperature for peak Gamma_m
-    double Gamma_m; // Peak Gamma_m, is normalised by H^4
-
-    double T_0; // temperature for beta_1
-    double Gamma_0;
-
-    double Rs_exp; // computed from vw and beta
-    double Rs_sim; // computed from Gamma_m and beta
-
-    double betaH_2_perc;
-    double betaH_2_nuc;
-    double betaH_2_m;
-    double betaH_1_perc;
-    double betaH_1_nuc;
-    double Gamma_0_perc;
-    double Gamma_0_nuc;
-    double Gamma_M;
-    double RsH_exp_perc;
-    double RsH_exp_nuc;
-    double RsH_sim_perc;
-    double RsH_sim_nuc;
-    double RsH_sim_m;
 
 }; // struct NucleationHistory
 
@@ -264,12 +243,29 @@ private:
 
 struct LifetimeDistribution
 {
+    double timescale;
+    double mean_lifetime;
+
     std::vector<double> chi_values;
     std::vector<double> lifetime_values;
     std::vector<double> distribution_values;
-    
-    alglib::spline1dinterpolant h_spline;
-    alglib::spline1dinterpolant log_gamma_spline;
+
+    // log(I_3) and log(I_2) splines let dh/dt be evaluated analytically
+    // (dh/dt = -4*pi*vw^3 * h * I_2), instead of numerically differentiating
+    // a spline of h(t). I_2 and I_3 are splined in log-space (as elsewhere in
+    // this class, e.g. fit_friedmann_splines) because they grow by many
+    // orders of magnitude and are poorly conditioned for a direct cubic
+    // spline (interpolation/extrapolation can ring/diverge). T_false_spline
+    // lets gamma be evaluated as decay_rate.get_gamma(T_false(t)), using
+    // decay_rate's own dedicated spline in temperature (built directly from
+    // bounce-action data) rather than a second, coarser interpolation of
+    // gamma vs time. Both gamma and dh/dt can be extremely sharp functions
+    // of temperature/time, so avoiding an extra layer of interpolation of
+    // these already-sharp quantities is important for robustness.
+    alglib::spline1dinterpolant log_I3_spline;
+    alglib::spline1dinterpolant log_I2_spline;
+    alglib::spline1dinterpolant T_false_spline;
+    alglib::spline1dinterpolant scale_factor_spline;
 };
 
 struct FriedmannSystem
@@ -291,6 +287,7 @@ struct FriedmannSystem
     std::vector<double> hubble;
     std::vector<double> a;
     std::vector<double> gamma;
+    std::vector<double> action;
 
     std::vector<double> I_0;
     std::vector<double> I_1;
@@ -317,7 +314,7 @@ struct FriedmannSystem
                 << hubble[i] << ","
                 << a[i]      << ","
                 << gamma[i]  << ","
-                << std::exp( - 4.0 * M_PI * 0.577*0.577*0.577 / 3.0 * I_3[i]) << ","
+                << std::exp( - 4.0 * M_PI * 0.85*0.85*0.85 / 3.0 * I_3[i]) << ","
                 << nucleation_rate[i] << ","
                 << number_density[i] << ","
                 << mean_bubble_radius[i] <<
@@ -341,6 +338,7 @@ class TransitionMetrics
     mutable alglib::spline1dinterpolant log_time_spline; // log(t)(T_false)
     mutable alglib::spline1dinterpolant scale_factor_spline; // a(T_false)
     mutable alglib::spline1dinterpolant hubble_rate_spline; // H(T_false)
+    mutable alglib::spline1dinterpolant log_action_spline; // Action(T_false)
     mutable alglib::spline1dinterpolant log_I_3_spline; // log_I_3(T_false)
     mutable alglib::spline1dinterpolant log_nucleation_rate_spline; // log_N(T_false)
     mutable alglib::spline1dinterpolant log_bubble_number_density_spline; // log_n(T_false)
@@ -385,22 +383,7 @@ public :
     TransitionMetrics(const FalseVacuumDecayRate& decay_rate_in, const EquationOfState& eos_in) :
     decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
     {
-        // print out the eos for debug
-        std::ofstream eos_out("debug_eos.csv");
-        eos_out << "# T, e_plus, e_minus, p_plus, p_minus, w_plus, w_minus\n";
-        for(double t = t_min; t <= t_max; t += (t_max - t_min) / 199)
-        {
-            double e_plus = eos.get_energy_plus(t);
-            double e_minus = eos.get_energy_minus(t);
-            double p_plus = eos.get_pressure_plus(t);
-            double p_minus = eos.get_pressure_minus(t);
-            double w_plus = p_plus/e_plus;
-            double w_minus = p_minus/e_minus;
-            eos_out << t << "," << e_plus << "," << e_minus << "," << p_plus << "," << p_minus << "," << w_plus << "," << w_minus << "\n";
-        }
-        eos_out.close();
-
-        LOG(debug) << "Initialized TransitionMetrics with t_min = " << t_min << " GeV and t_max = " << t_max << " GeV.";
+        LOG(debug) << "Initialized TransitionMetrics with t_min = " << t_min << " INIT and t_max = " << t_max << " INIT.";
 
         {
             auto t0 = std::chrono::high_resolution_clock::now();
@@ -416,8 +399,19 @@ public :
             LOG(debug) << "Solved Friedmann equations. Time: " << dt.count() << " ms"; 
         }
 
-        // Write FridmannSystem arrays to reheating.csv
-        system.write("example/TestThermalParameters/reheating_data/reheating.csv");
+        {
+            // check sizes of Friedmann solutions are larger than 1
+            if (system.T_f.size() < 2 || system.T_t.size() < 2 || system.time.size() < 2) {
+                throw std::runtime_error("Friedmann solution has insufficient data points.");
+            }
+        }
+
+        {
+            // update t_min and t_max to be the actual bounds of the Friedmann solution, in case they were refined
+            t_min = system.T_f.back();
+            t_max = system.T_f.front();
+            LOG(debug) << "Updated t_min to " << t_min << " UNIT and t_max to " << t_max << " UNIT after Friedmann evolution.";
+        }
 
         {
             auto t0 = std::chrono::high_resolution_clock::now();
@@ -447,6 +441,8 @@ public :
 
     const double get_false_vacuum_fraction(const double& T_false) const;
 
+    const std::pair<double, double> get_action_expansion(const double& temperature) const;
+
     const double get_t(const double& T) const;
 
     const double get_nucleation_rate(const double& T_false) const;
@@ -470,6 +466,10 @@ public :
 private:
 
     struct TransitionCompleteException {};
+
+    struct FalseVacuumTrappingException {};
+
+    struct IntegrationStalledException {};
 
     const double find_temperature(std::function<double(double)> target_function, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
@@ -497,6 +497,8 @@ private:
     const void fit_friedmann_splines() const;
 
     alglib::real_1d_array cumulative_simpson(const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial = 0.0) const;
+
+    double simpson_integrate(const std::function<double(double)>& integrand, const double& x_min, const double& x_max, const int& steps = 500) const;
 
     std::vector<double> cumulative_simpson(const std::function<double(double)>& integrand, const std::vector<double>& x, double F_initial = 0.0) const;
 
