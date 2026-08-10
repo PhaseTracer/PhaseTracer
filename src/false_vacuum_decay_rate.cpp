@@ -36,6 +36,7 @@ namespace PhaseTracer {
 
         std::vector<double> temp_results(spline_evaluations);
         std::vector<double> log_action_results(spline_evaluations);
+        std::vector<double> log_prefactor_results(spline_evaluations);
         std::vector<double> log_gamma_results(spline_evaluations);
         std::vector<bool> valid_flags(spline_evaluations, false);
         
@@ -70,7 +71,13 @@ namespace PhaseTracer {
             }
 
             double prefactor = decay_rate_prefactor(tt, action, bounce);
-            double log_gamma = log(prefactor) - action;
+            if (!std::isfinite(prefactor) || prefactor <= 0.0)
+            {
+                valid_flags[i] = false;
+                continue;
+            }
+            double log_prefactor = std::log(prefactor);
+            double log_gamma = log_prefactor - action;
             
             if (log_gamma < -700) 
             {
@@ -81,6 +88,7 @@ namespace PhaseTracer {
             
             temp_results[i] = tt;
             log_action_results[i] = std::log(action);
+            log_prefactor_results[i] = log_prefactor;
             log_gamma_results[i] = log_gamma;
             valid_flags[i] = true;
         }
@@ -89,13 +97,14 @@ namespace PhaseTracer {
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
         LOG(info) << "Action calculation loop completed in " << duration.count() << " ms";
         
-        std::vector<double> valid_temps, valid_log_actions, valid_log_gammas;
+        std::vector<double> valid_temps, valid_log_actions, valid_log_prefactors, valid_log_gammas;
         for (int i = 0; i < spline_evaluations; i++) 
         {
             if (valid_flags[i]) 
             {
                 valid_temps.push_back(temp_results[i]);
                 valid_log_actions.push_back(log_action_results[i]);
+                valid_log_prefactors.push_back(log_prefactor_results[i]);
                 valid_log_gammas.push_back(log_gamma_results[i]);
             }
         }
@@ -105,12 +114,14 @@ namespace PhaseTracer {
             throw std::runtime_error("Not enough valid action points to build spline.");
         }
 
-        alglib::real_1d_array temp_array, log_action_array, log_gamma_array;
+        alglib::real_1d_array temp_array, log_action_array, log_prefactor_array, log_gamma_array;
         temp_array.setcontent(valid_temps.size(), valid_temps.data());
         log_action_array.setcontent(valid_log_actions.size(), valid_log_actions.data());
+        log_prefactor_array.setcontent(valid_log_prefactors.size(), valid_log_prefactors.data());
         log_gamma_array.setcontent(valid_log_gammas.size(), valid_log_gammas.data());
 
         alglib::spline1dbuildcubic(temp_array, log_action_array, this->log_action_spline);
+        alglib::spline1dbuildcubic(temp_array, log_prefactor_array, this->log_prefactor_spline);
         alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->log_gamma_spline);
         
         LOG(debug) << "Built splines with " << valid_temps.size() << " valid points";
@@ -162,6 +173,13 @@ namespace PhaseTracer {
     {
         double log_gamma = alglib::spline1dcalc(log_gamma_spline, temperature);
         return exp(log_gamma);
+    }
+
+    double
+    FalseVacuumDecayRate::get_prefactor(const double& temperature) const
+    {
+        double log_prefactor = alglib::spline1dcalc(log_prefactor_spline, temperature);
+        return exp(log_prefactor);
     }
 
 } // namespace PhaseTracer

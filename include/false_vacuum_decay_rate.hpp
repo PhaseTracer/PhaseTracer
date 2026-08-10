@@ -125,6 +125,13 @@ public:
     double get_gamma(const double& temperature) const;
 
     /** 
+     * @brief Evaluates the decay rate prefactor A(T) using the precomputed spline.
+     * @param temperature The temperature at which to evaluate the prefactor.
+     * @return The prefactor A(T).
+    */
+    double get_prefactor(const double& temperature) const;
+
+    /** 
      * @brief Set a custom decay rate prefactor function.
      * @param custom_prefactor A function taking (temperature, action_on_T) and returning the prefactor.
     */
@@ -186,8 +193,8 @@ private:
     /** Minimum and maximum temperatures for which the decay rate is computed */
     double t_min, t_max;
 
-    /** Splines for log(action) and log(gamma) */
-    alglib::spline1dinterpolant log_action_spline, log_gamma_spline;
+    /** Splines for log(action), log(prefactor), and log(gamma) */
+    alglib::spline1dinterpolant log_action_spline, log_prefactor_spline, log_gamma_spline;
     
     /** Function for computing the decay rate prefactor */
     PrefactorFunction prefactor_function;
