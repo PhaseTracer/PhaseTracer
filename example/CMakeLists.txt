@@ -12,8 +12,8 @@ link_libraries(
 )
 
 add_executable(run_1D_test_model run_1D_test_model.cpp)
-add_executable(run_bubbledet_prefactor run_bubbledet_prefactor.cpp)
-add_executable(run_scalar_yukawa_bubbledet run_scalar_yukawa_bubbledet.cpp)
+# add_executable(run_bubbledet_prefactor run_bubbledet_prefactor.cpp)
+# add_executable(run_scalar_yukawa_bubbledet run_scalar_yukawa_bubbledet.cpp)
 add_executable(run_2D_test_model run_2D_test_model.cpp)
 add_executable(scan_Z2_scalar_singlet_model scan_Z2_scalar_singlet_model.cpp)
 add_executable(time time.cpp)

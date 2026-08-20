@@ -484,6 +484,7 @@ namespace PhaseTracer {
         }
         double log_I_3 = alglib::spline1dcalc(log_I_3_spline, T_false);
         double I_3 = std::exp(log_I_3);
+        // LOG(debug) << "get_false_vacuum_fraction: T_false = " << T_false << ", h = " << get_false_vacuum_fraction_from_I3(I_3);
         return get_false_vacuum_fraction_from_I3(I_3);
     }
 

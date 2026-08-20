@@ -357,7 +357,7 @@ class TransitionMetrics
 
     PROPERTY(double, dof, 106.75);
 
-    PROPERTY(double, newtonG, 1/((1.22 * 1e22)*(1.22 * 1e22)));
+    PROPERTY(double, newtonG, 1/((1.22 * 1e19)*(1.22 * 1e19)));
 
     PROPERTY(double, percolation_target, 0.71);
 
@@ -393,18 +393,17 @@ public :
         }
 
         // use decay_rate_in to write out action and decay rate vs temperature for debugging
-        {
-            std::ofstream out("decay_rate_vs_temperature.csv");
-            out << "# T_false,Prefactor,Action,Gamma\n";
-            for (double T_false = t_min; T_false <= t_max; T_false *= 1.01) {
-                double prefactor = decay_rate.get_prefactor(T_false);
-                double action = decay_rate.get_action(T_false);
-                double gamma = decay_rate.get_gamma(T_false);
-                out << T_false << "," << prefactor << "," << action << "," << gamma << "\n";
-            }
-            out.close();
-            LOG(debug) << "Wrote decay rate vs temperature to decay_rate_vs_temperature.csv";
-        }
+        // {
+        //     std::ofstream out("decay_rate_vs_temperature.csv");
+        //     out << "# T_false,Prefactor,Action,Gamma\n";
+        //     for (double T_false = t_min; T_false <= t_max; T_false += (t_max - t_min) / 499.0){
+        //         double prefactor = decay_rate.get_prefactor(T_false);
+        //         double action = decay_rate.get_action(T_false);
+        //         double gamma = decay_rate.get_gamma(T_false);
+        //         out << T_false << "," << prefactor << "," << action << "," << gamma << "\n";
+        //     }
+        //     out.close();
+        // }
         
         {
             auto t0 = std::chrono::high_resolution_clock::now();

@@ -32,10 +32,15 @@ inputFiles/
 .gitignore
 scan.py
 *.json
-/zData/
+
+
 /example/InferenceScripts/
 /example/HydroGravScripts/
 /example/TestThermalParameters/
 /example/BetaProject/
-/comparisonData/
+/example/PythonInterface/
+/example/BubbleDetBridge/
+/example/run_bubbledet_prefactor.cpp
+/example/run_scalar_yukawa_bubbldet.cpp
+
 *.pdf
