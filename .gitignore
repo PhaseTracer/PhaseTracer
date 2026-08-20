@@ -41,6 +41,6 @@ scan.py
 /example/PythonInterface/
 /example/BubbleDetBridge/
 /example/run_bubbledet_prefactor.cpp
-/example/run_scalar_yukawa_bubbldet.cpp
+/example/run_scalar_yukawa_bubbledet.cpp
 
 *.pdf
