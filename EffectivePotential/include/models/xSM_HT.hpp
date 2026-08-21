@@ -41,8 +41,8 @@ public:
           double c_h = 1. / 48. *
                       (9. * g_sq + 3. * gp_sq + 12. * yt_sq + 24. * lambda_h + 2. * lambda_hs);
           double c_s = 1. / 12. * (2. * lambda_hs + 3. * lambda_s);
-          LOG(debug) << "c_h = " << c_h << ", c_s = " << c_s << ", muh_sq = " << muh_sq << ", mus_sq = " << m_s * m_s - lambda_hs * v * v / 2. 
-          << ", lambda_h = " << lambda_h << ", lambda_s = " << lambda_s << ", lambda_hs = " << lambda_hs;
+          // LOG(debug) << "c_h = " << c_h << ", c_s = " << c_s << ", muh_sq = " << muh_sq << ", mus_sq = " << m_s * m_s - lambda_hs * v * v / 2. 
+          // << ", lambda_h = " << lambda_h << ", lambda_s = " << lambda_s << ", lambda_hs = " << lambda_hs;
          }
 
   double V(Eigen::VectorXd phi, double T) const override {
