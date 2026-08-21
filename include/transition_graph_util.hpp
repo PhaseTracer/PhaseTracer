@@ -360,9 +360,11 @@ void extractExplicitSymmetricPhasesAndTransitions(
     std::vector<PhaseTracer::Phase> &out_symmetrisedPhases,
     std::vector<PhaseTracer::Transition> &out_symmetrisedTransitions);
 
-PhaseStructureData extractPhaseStructureData(const std::vector<PhaseTracer::Phase> &phases,
-                                             const std::vector<PhaseTracer::Transition> &transitions, const std::vector<Eigen::VectorXd> &expectedLowTPhases,
-                                             double Tmax, bool knownHighTPhase);
+PhaseStructureData extractPhaseStructureData(const EffectivePotential::Potential &model,
+                                             const std::vector<PhaseTracer::Phase> &phases,
+                                             const std::vector<PhaseTracer::Transition> &transitions,
+                                             const std::vector<Eigen::VectorXd> &expectedLowTPhases,
+                                             double Tmin, double Tmax, bool knownHighTPhase);
 
 std::vector<Path> getTransitionPathsFromHighTPhase(const std::vector<Vertex> &vertices, int highTPhaseIndex);
 
