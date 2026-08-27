@@ -42,43 +42,43 @@ namespace PhaseTracer {
             prefactor_function
         );
 
-        output.onset = output.transition_metrics.onset_milestone;
+        output.onset = output.transition_metrics->onset_milestone;
         output.onset.set_print_setting(onset_print_setting);
-        add_thermal_parameter_values(output.onset, output.decay_rate, output.eos, output.transition_metrics);
+        add_thermal_parameter_values(output.onset, *output.decay_rate, *output.eos, *output.transition_metrics);
 
-        output.percolation = output.transition_metrics.percolation_milestone;
+        output.percolation = output.transition_metrics->percolation_milestone;
         output.percolation.set_print_setting(percolation_print_setting);
 
         // update the percolation temperature 
         if(update_percolation_temperature)
         {
             try{
-                revise_percolation_temperature(output.percolation, output.eos, output.transition_metrics);
+                revise_percolation_temperature(output.percolation, *output.eos, *output.transition_metrics);
             } catch (const std::exception& e) {
                 LOG(debug) << "Error updating percolation temperature: " << e.what();
             } catch (...) {
                 LOG(debug) << "Unknown error updating percolation temperature.";
             }
         }
-        add_thermal_parameter_values(output.percolation, output.decay_rate, output.eos, output.transition_metrics);
+        add_thermal_parameter_values(output.percolation, *output.decay_rate, *output.eos, *output.transition_metrics);
 
-        output.completion = output.transition_metrics.completion_milestone;
+        output.completion = output.transition_metrics->completion_milestone;
         output.completion.set_print_setting(completion_print_setting);
-        add_thermal_parameter_values(output.completion, output.decay_rate, output.eos, output.transition_metrics);
+        add_thermal_parameter_values(output.completion, *output.decay_rate, *output.eos, *output.transition_metrics);
 
-        output.nucleation = output.transition_metrics.nucleation_milestone;
+        output.nucleation = output.transition_metrics->nucleation_milestone;
         output.nucleation.set_print_setting(nucleation_print_setting);
-        add_thermal_parameter_values(output.nucleation, output.decay_rate, output.eos, output.transition_metrics);
+        add_thermal_parameter_values(output.nucleation, *output.decay_rate, *output.eos, *output.transition_metrics);
 
-        output.nucleation_history = output.transition_metrics.nucleation_history;
+        output.nucleation_history = output.transition_metrics->nucleation_history;
         // output.nucleation_history.set_print_setting(nucleation_history_print_setting);
-        fill_nucleation_history(output.nucleation_history, output.percolation, output.nucleation, output.decay_rate, output.transition_metrics);
+        fill_nucleation_history(output.nucleation_history, output.percolation, output.nucleation, *output.decay_rate, *output.transition_metrics);
 
         if(compute_profiles)
         {
             ThermalProfiles profile_out;
-            double t_min = output.transition_metrics.get_t_min();
-            double t_max = output.transition_metrics.get_t_max();
+            double t_min = output.transition_metrics->get_t_min();
+            double t_max = output.transition_metrics->get_t_max();
             double dt = (t_max - t_min)/(n_temp_profiles-1);
 
             for(double tt = t_min; tt < t_max; tt += dt)
@@ -86,18 +86,18 @@ namespace PhaseTracer {
                 double dtdT, dt, H, action, gamma, vext, pf, d_pf, nt, n, Rs, Rbar;
 
                 try {
-                    dtdT = output.transition_metrics.get_time_temperature_false(tt);
-                    dt = get_dt(tt, output.transition_metrics);
-                    H = get_H(tt, output.transition_metrics);
-                    action = output.decay_rate.get_action(tt)/tt;
-                    gamma = output.decay_rate.get_gamma(tt);
-                    pf = output.transition_metrics.get_false_vacuum_fraction(tt);
+                    dtdT = output.transition_metrics->get_time_temperature_false(tt);
+                    dt = get_dt(tt, *output.transition_metrics);
+                    H = get_H(tt, *output.transition_metrics);
+                    action = output.decay_rate->get_action(tt)/tt;
+                    gamma = output.decay_rate->get_gamma(tt);
+                    pf = output.transition_metrics->get_false_vacuum_fraction(tt);
                     vext = -log(pf);
-                    // d_pf = output.transition_metrics.get_d_false_vacuum_fraction_dT(tt);
-                    nt =  output.transition_metrics.get_nucleation_rate(tt);
-                    n = get_n(tt, output.transition_metrics);
+                    // d_pf = output.transition_metrics->get_d_false_vacuum_fraction_dT(tt);
+                    nt =  output.transition_metrics->get_nucleation_rate(tt);
+                    n = get_n(tt, *output.transition_metrics);
                     Rs = std::pow(n, -1./3.) * H;
-                    Rbar = get_Rbar(tt, output.transition_metrics) * H; 
+                    Rbar = get_Rbar(tt, *output.transition_metrics) * H; 
                 } catch (const std::exception& e) {
                     LOG(debug) << "Error computing thermal profile values at T = " << tt << ": " << e.what();
                     continue;

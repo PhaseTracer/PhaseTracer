@@ -15,23 +15,36 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_PHASETRACER_HPP_
-#define PHASETRACER_PHASETRACER_HPP_
+#ifndef PHASETRACER_SCALE_HPP_
+#define PHASETRACER_SCALE_HPP_
 
-#include "logger.hpp"
-#include "property.hpp"
-#include "phase_finder.hpp"
-#include "transition_finder.hpp"
-#include "action_calculator.hpp"
-#include "gravwave_calculator.hpp"
-#include "phase_plotter.hpp"
-#include "potential_plotter.hpp"
-#include "potential_line_plotter.hpp"
-#include "spectrum_plotter.hpp"
-#include "false_vacuum_decay_rate.hpp"
-#include "equation_of_state.hpp"
-#include "transition_metrics.hpp"
-#include "thermo_finder.hpp"
-#include "scale.hpp"
+namespace PhaseTracer {
 
-#endif //  PHASETRACER_PHASETRACER_HPP_
+class Scale 
+{
+public:
+  static const Scale MEV;
+  static const Scale GEV;
+  static const Scale TEV;
+
+  double operator()() const { return factor_; }
+  const char* name() const { return name_; }
+
+  bool operator==(const Scale& other) const { return factor_ == other.factor_; }
+  bool operator!=(const Scale& other) const { return !(*this == other); }
+
+private:
+  constexpr Scale(double factor, const char* name) : factor_(factor), name_(name) {}
+  double factor_;
+  const char* name_;
+};
+
+inline constexpr Scale Scale::MEV{1e3, "MeV"};
+inline constexpr Scale Scale::GEV{1.0, "GeV"};
+inline constexpr Scale Scale::TEV{1e-3, "TeV"};
+
+inline Scale scale = Scale::GEV;
+
+} // namespace PhaseTracer
+
+#endif // PHASETRACER_SCALE_HPP_

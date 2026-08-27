@@ -24,6 +24,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <iomanip>
+#include <memory>
 #include <interpolation.h>
 
 #include "property.hpp"
@@ -77,11 +78,21 @@ struct ThermalProfiles
     }
 };
 
-struct ThermalParameterSet 
+struct ThermalParameterSet
 {
-    FalseVacuumDecayRate decay_rate;
-    EquationOfState eos;
-    TransitionMetrics transition_metrics;
+    /** Own the ActionCalculator: FalseVacuumDecayRate holds it by reference, so
+     *  binding it to a by-value constructor parameter would dangle the moment
+     *  the constructor returned. Declared first so it outlives decay_rate. */
+    ActionCalculator ac;
+
+    /** Held behind unique_ptr so their addresses survive a move of this struct.
+     *  transition_metrics holds const references to *decay_rate and *eos; with
+     *  the objects stored by value those references would point into the
+     *  moved-from instance. */
+    std::unique_ptr<FalseVacuumDecayRate> decay_rate;
+    std::unique_ptr<EquationOfState> eos;
+    std::unique_ptr<TransitionMetrics> transition_metrics;
+
     double TC;
 
     NucleationHistory nucleation_history;
@@ -110,25 +121,39 @@ struct ThermalParameterSet
         double temperature_abs_tol = 1e-8,
         FalseVacuumDecayRate::PrefactorFunction prefactor = {}
     ) :
-    decay_rate(t_in, ac_in, t_in.false_phase.T.front(), t_in.TC, n_temp_action,
-               prefactor ? prefactor : FalseVacuumDecayRate::default_decay_rate_prefactor()),
-    eos(t_in, n_temp_eos, background_dof), 
-    transition_metrics(decay_rate, eos), 
-    TC(decay_rate.get_t_max()) 
+    ac(ac_in)
     {
-        transition_metrics.set_vw(vw);
-        transition_metrics.set_dof(dof);
-        transition_metrics.set_use_pf_in_nt_integrand(use_pf_in_nt_integrand);
-        transition_metrics.set_use_bag_dtdT(use_bag_dtdT);
-        transition_metrics.set_percolation_target(percolation_target);
-        transition_metrics.set_completion_target(completion_target);
-        transition_metrics.set_onset_target(onset_target);
-        transition_metrics.set_nucleation_target(nucleation_target);
-        transition_metrics.set_temperature_abs_tol(temperature_abs_tol);
-        
-        transition_metrics.compute_milestones();
+        decay_rate = std::make_unique<FalseVacuumDecayRate>(t_in, ac);
+        decay_rate->set_t_min(t_in.false_phase.T.front());
+        decay_rate->set_t_max(t_in.TC);
+        decay_rate->set_spline_evaluations(n_temp_action);
+        if (prefactor) { decay_rate->set_prefactor_function(prefactor); }
+        decay_rate->calculate();
 
-        transition_metrics.compute_nucleation_history(t_in.false_phase.T.front(), t_in.TC);
+        eos = std::make_unique<EquationOfState>(t_in);
+        eos->set_n_temp(n_temp_eos);
+        eos->set_background_dof(background_dof);
+        eos->calculate();
+
+        transition_metrics = std::make_unique<TransitionMetrics>(*decay_rate, *eos);
+        transition_metrics->set_vw(vw);
+        transition_metrics->set_use_bag_dtdT(use_bag_dtdT);
+        transition_metrics->set_percolation_target(percolation_target);
+        transition_metrics->set_completion_target(completion_target);
+        transition_metrics->set_onset_target(onset_target);
+        transition_metrics->set_nucleation_target(nucleation_target);
+        transition_metrics->set_temperature_abs_tol(temperature_abs_tol);
+
+        // Solve only after every property is in place: vw, newtonG,
+        // temperature_abs_tol and use_bag_dtdT are all read inside
+        // refine_temperature_bounds() and evolve_friedmann().
+        transition_metrics->solve();
+
+        TC = decay_rate->get_t_max();
+
+        transition_metrics->compute_milestones();
+
+        transition_metrics->compute_nucleation_history(t_in.false_phase.T.front(), t_in.TC);
     }
 
     friend std::ostream &operator<<(std::ostream& o, const ThermalParameterSet &tps) 

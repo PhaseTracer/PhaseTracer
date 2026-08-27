@@ -32,6 +32,7 @@
 #include <boost/math/tools/minima.hpp>
 #include <boost/numeric/odeint.hpp>
 
+#include "scale.hpp"
 #include "property.hpp"
 #include "phase_finder.hpp"
 #include "transition_finder.hpp"
@@ -327,11 +328,14 @@ struct FriedmannSystem
 class TransitionMetrics 
 {
 
-    const FalseVacuumDecayRate& decay_rate;
+    FalseVacuumDecayRate& decay_rate;
+    EquationOfState& eos;
 
-    const EquationOfState& eos;
+    double t_min = 0.0;
+    double t_max = 0.0;
 
-    double t_min, t_max;
+    /** Set by solve() once the Friedmann system has been solved and splined */
+    bool solved = false;
 
     /* Friedmann splines */
     mutable alglib::spline1dinterpolant reheating_spline; // T_true(T_false)
@@ -345,19 +349,15 @@ class TransitionMetrics
     mutable alglib::spline1dinterpolant log_mean_bubble_radius_spline; // log_Rbar(T_false)
     mutable bool friedmann_splines_computed = false;
 
-    PROPERTY(double, total_number_temp_steps, 200);
-
     PROPERTY(double, volume_term_integration_steps, 1000);
-
-    PROPERTY(bool, use_pf_in_nt_integrand, true);
 
     PROPERTY(bool, use_bag_dtdT, false);
 
     PROPERTY(double, vw, 0.577);
 
-    PROPERTY(double, dof, 106.75);
+    PROPERTY(double, M_planck, PhaseTracer::scale() * 1.22e19)
 
-    PROPERTY(double, newtonG, 1/((1.22 * 1e19)*(1.22 * 1e19)));
+    PROPERTY(double, newtonG, 1/(M_planck*M_planck));
 
     PROPERTY(double, percolation_target, 0.71);
 
@@ -380,62 +380,27 @@ public :
 
     NucleationHistory nucleation_history;
 
-    TransitionMetrics(const FalseVacuumDecayRate& decay_rate_in, const EquationOfState& eos_in) :
-    decay_rate(decay_rate_in), eos(eos_in), t_min(decay_rate_in.get_t_min()), t_max(decay_rate_in.get_t_max()) 
+    /**
+     * @brief Binds the decay rate and equation of state; solves nothing.
+     *
+     * Both arguments must outlive this object.
+     */
+    TransitionMetrics(FalseVacuumDecayRate& decay_rate_in, EquationOfState& eos_in) :
+    decay_rate(decay_rate_in), eos(eos_in)
+    {}
+
+    /**
+     * @brief Refines the temperature bounds, solves the coupled F-JMAK system, 
+     * and fits the splines the accessors read.
+     */
+    void solve();
+
+    /** @brief Whether solve() has completed successfully. */
+    bool is_solved() const { return solved; }
+
+    void compute_milestones()
     {
-        LOG(debug) << "Initialized TransitionMetrics with t_min = " << t_min << " INIT and t_max = " << t_max << " INIT.";
-
-        {
-            auto t0 = std::chrono::high_resolution_clock::now();
-            refine_temperature_bounds();
-            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
-            LOG(debug) << "Refined temperature bounds. Time: " << dt.count() << " ms"; 
-        }
-
-        // use decay_rate_in to write out action and decay rate vs temperature for debugging
-        // {
-        //     std::ofstream out("decay_rate_vs_temperature.csv");
-        //     out << "# T_false,Prefactor,Action,Gamma\n";
-        //     for (double T_false = t_min; T_false <= t_max; T_false += (t_max - t_min) / 499.0){
-        //         double prefactor = decay_rate.get_prefactor(T_false);
-        //         double action = decay_rate.get_action(T_false);
-        //         double gamma = decay_rate.get_gamma(T_false);
-        //         out << T_false << "," << prefactor << "," << action << "," << gamma << "\n";
-        //     }
-        //     out.close();
-        // }
-        
-        {
-            auto t0 = std::chrono::high_resolution_clock::now();
-            evolve_friedmann();
-            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
-            LOG(debug) << "Solved Friedmann equations. Time: " << dt.count() << " ms"; 
-        }
-
-        {
-            // check sizes of Friedmann solutions are larger than 1
-            if (system.T_f.size() < 2 || system.T_t.size() < 2 || system.time.size() < 2) {
-                throw std::runtime_error("Friedmann solution has insufficient data points.");
-            }
-        }
-
-        {
-            // update t_min and t_max to be the actual bounds of the Friedmann solution, in case they were refined
-            t_min = system.T_f.back();
-            t_max = system.T_f.front();
-            LOG(debug) << "Updated t_min to " << t_min << " UNIT and t_max to " << t_max << " UNIT after Friedmann evolution.";
-        }
-
-        {
-            auto t0 = std::chrono::high_resolution_clock::now();
-            fit_friedmann_splines();
-            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
-            LOG(debug) << "Fit splines to Friedmann solution. Time: " << dt.count() << " ms"; 
-        }
-    }
-
-    void compute_milestones() 
-    {
+        require_solved("compute_milestones");
         onset_milestone = get_transition_milestone(MilestoneType::ONSET);
         percolation_milestone = get_transition_milestone(MilestoneType::PERCOLATION);
         completion_milestone = get_transition_milestone(MilestoneType::COMPLETION);
@@ -484,6 +449,15 @@ private:
 
     struct IntegrationStalledException {};
 
+    /** Throws std::logic_error if solve() has not been called */
+    void require_solved(const char* caller) const
+    {
+        if (!solved)
+        {
+            throw std::logic_error(std::string("TransitionMetrics::") + caller + " called before solve().");
+        }
+    }
+
     const double find_temperature(std::function<double(double)> target_function, double tol = 1e-8, boost::uintmax_t max_iter = 100);
 
     const bool valid_lower_bound(std::function<double(double)> target_function, double tol = 1e-8)
@@ -509,18 +483,9 @@ private:
 
     const void fit_friedmann_splines() const;
 
-    alglib::real_1d_array cumulative_simpson(const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial = 0.0) const;
-
     double simpson_integrate(const std::function<double(double)>& integrand, const double& x_min, const double& x_max, const int& steps = 500) const;
 
-    std::vector<double> cumulative_simpson(const std::function<double(double)>& integrand, const std::vector<double>& x, double F_initial = 0.0) const;
-
-    void integrate_and_fit_spline(alglib::spline1dinterpolant& spline, const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial = 0.0) const;
-
-    void integrate_and_fit_spline(alglib::spline1dinterpolant& spline, const std::function<double(double)>& integrand, int steps, double F_initial = 0.0) const;
-
 };
-
 
 } // namespace PhaseTracer
 

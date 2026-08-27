@@ -37,6 +37,7 @@ enum class DaisyMethod { None,
 
 class OneLoopPotential : public Potential {
 public:
+ // virtual ~OneLoopPotential() = default;
   virtual double V0(Eigen::VectorXd phi) const = 0;
   /** Functions for squared field dependent masses, depending on:
       a vector of fields and for scalars a xi gauge parameter.  Note the

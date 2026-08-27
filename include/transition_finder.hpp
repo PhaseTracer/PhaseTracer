@@ -28,6 +28,7 @@
 #include <boost/cstdint.hpp>
 
 #include "phase_finder.hpp"
+#include "scale.hpp"
 #include "overload.hpp"
 #include "potential.hpp"
 #include "action_calculator.hpp"
@@ -109,7 +110,7 @@ struct Transition {
           << " of phase " << a.true_phase.key << " ===" << std::endl;
       }
       o << "changed = " << a.changed << std::endl
-        << "TC = " << a.TC << std::endl
+        << "TC = " << a.TC << " " << PhaseTracer::scale.name() << std::endl
         << "false vacuum (TC) = " << a.false_vacuum << std::endl
         << "true vacuum (TC) = " << a.true_vacuum << std::endl
         << "gamma (TC) = " << a.gamma << std::endl

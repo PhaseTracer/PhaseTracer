@@ -97,7 +97,7 @@ private:
     }; // class EquationOfStateInPhase
 
     Transition transition;
-    double t_min, t_max;
+    double t_min = 0.0, t_max = 0.0;
     alglib::spline1dinterpolant false_potential_spline;
     alglib::spline1dinterpolant true_potential_spline;
     alglib::spline1dinterpolant p_plus_spline;
@@ -108,47 +108,61 @@ private:
     alglib::spline1dinterpolant w_minus_spline;
     alglib::spline1dinterpolant s_plus_spline;
     alglib::spline1dinterpolant s_minus_spline;
-    int n_temp;
-    double background_dof;
+    int n_temp = 200;
+    double background_dof = 0.0;
+    std::optional<double> energy_norm;
+    bool calculated = false;
 
 public:
 
     EquationOfState() = default;
     
-    // Delete copy constructor and copy assignment to prevent shallow copies of ALGLIB splines
     EquationOfState(const EquationOfState&) = delete;
     EquationOfState& operator=(const EquationOfState&) = delete;
     
-    // Allow move semantics
     EquationOfState(EquationOfState&&) = default;
     EquationOfState& operator=(EquationOfState&&) = default;
 
-    EquationOfState(Transition transition_in, int n_temp_in, double background_dof_in) : 
+    explicit EquationOfState(Transition transition_in) :
     transition(transition_in),
     t_min(transition_in.false_phase.T.front()),
-    t_max(transition_in.TC),
-    n_temp(n_temp_in), 
-    background_dof(background_dof_in) 
-    {
-        // Compute energy normalisation: field contribution (v - T*dv/dT) in the
-        // true vacuum at T_min, so that at T_min only the radiation bath
-        // contributes to the energy density (and hence the Hubble rate).
-        double energy_norm = find_normalisation(transition.true_phase);
+    t_max(transition_in.TC)
+    {}
 
-        EquationOfStateInPhase eos_plus(transition.false_phase, n_temp, background_dof, energy_norm);
-        EquationOfStateInPhase eos_minus(transition.true_phase, n_temp, background_dof, energy_norm);
+    /**
+     * @brief Builds the pressure, energy, enthalpy and entropy splines in both
+     *        phases, along with the potential splines.
+     *
+     * Must be called before any accessor methods. Failing to do so will throw
+     * a logic error.
+     *
+     * If no energy normalisation has been set via set_energy_norm(), it is
+     * computed internally from the true vacuum via find_normalisation(). This 
+     * keeps the Hubble rate well defined.
+     */
+    void calculate();
 
-        p_plus_spline = eos_plus.pressure_spline;
-        p_minus_spline = eos_minus.pressure_spline;
-        false_potential_spline = eos_plus.get_potential_spline();
-        true_potential_spline = eos_minus.get_potential_spline();
-        e_plus_spline = eos_plus.energy_spline;
-        e_minus_spline = eos_minus.energy_spline;
-        w_plus_spline = eos_plus.enthalpy_spline;
-        w_minus_spline = eos_minus.enthalpy_spline;
-        s_plus_spline = eos_plus.entropy_spline;
-        s_minus_spline = eos_minus.entropy_spline;
-    }
+    /** @brief Whether calculate() has completed successfully. */
+    bool is_calculated() const { return calculated; }
+
+    /**
+     * @brief Set the energy normalisation explicitly (negative by definition).
+     *
+     * Use when the true phase is not the zero-temperature ground state -- e.g.
+     * an intermediate transition -- so the internally derived normalisation is
+     * not the one you want. Leave unset to derive it from the true vacuum.
+     */
+    void set_energy_norm(double energy_norm_in) { energy_norm = energy_norm_in; }
+
+    /** @brief The explicitly set energy normalisation, if any. */
+    std::optional<double> get_energy_norm() const { return energy_norm; }
+
+    void set_n_temp(int n_temp_in) { n_temp = n_temp_in; }
+
+    void set_background_dof(double background_dof_in) { background_dof = background_dof_in; }
+
+    double get_background_dof() const { return background_dof; }
+
 
     std::array<double, 3> eval_false_potential(double T) const;
     std::array<double, 3> eval_true_potential(double T) const;
@@ -193,12 +207,22 @@ private :
 
     double find_normalisation(Phase true_vacuum);
 
-    void 
-    check_temperature_range(double T, const char* caller) const 
+    void
+    check_temperature_range(double T, const char* caller) const
     {
-        if (T < t_min || T > t_max) 
+        require_calculated(caller);
+        if (T < t_min || T > t_max)
         {
             throw std::out_of_range(std::string("Temperature out of interpolation bounds in ") + caller);
+        }
+    }
+
+    void
+    require_calculated(const char* caller) const
+    {
+        if (!calculated)
+        {
+            throw std::logic_error(std::string("EquationOfState::") + caller + " called before calculate().");
         }
     }
 

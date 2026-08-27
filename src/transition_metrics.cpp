@@ -23,6 +23,54 @@
 
 namespace PhaseTracer {
 
+    void
+    TransitionMetrics::solve()
+    {
+        solved = false;
+
+        if (!decay_rate.is_calculated()){decay_rate.calculate();}
+        if (!eos.is_calculated()){eos.calculate();}
+
+        t_min = decay_rate.get_t_min();
+        t_max = decay_rate.get_t_max();
+        LOG(debug) << "Solving FriedmannSystem with t_min = " << t_min << " and t_max = " << t_max << ".";
+
+        system = FriedmannSystem{};
+        friedmann_splines_computed = false;
+
+        {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            refine_temperature_bounds();
+            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
+            // LOG(debug) << "Refined temperature bounds. Time: " << dt.count() << " ms";
+        }
+
+        {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            evolve_friedmann();
+            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
+            LOG(debug) << "Solved Friedmann equations. Time: " << dt.count() << " ms";
+        }
+
+        if (system.T_f.size() < 2 || system.T_t.size() < 2 || system.time.size() < 2)
+        {
+            throw std::runtime_error("Friedmann solution has insufficient data points.");
+        }
+
+        t_min = system.T_f.back();
+        t_max = system.T_f.front();
+        LOG(debug) << "Updated t_min to " << t_min << " and t_max to " << t_max << " after Friedmann evolution.";
+
+        {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            fit_friedmann_splines();
+            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
+            // LOG(debug) << "Fit splines to Friedmann solution. Time: " << dt.count() << " ms";
+        }
+
+        solved = true;
+    }
+
     const double
     TransitionMetrics::get_hubble_rate(const double& true_vacuum_fraction, const double& e_false, const double& e_true) const
     {
@@ -187,7 +235,7 @@ namespace PhaseTracer {
             const double I_3     = state[6];
             const double nucleation_rate = state[7];
             const double number_density = state[8];
-            const double J = std::max(0.0, state[9]); // J = number_density * mean_bubble_radius
+            const double J = std::max(0.0, state[9]);
 
             const double T_true = match_T_true(e_true);
             const double T_false = match_T_false(e_false);
@@ -199,9 +247,9 @@ namespace PhaseTracer {
             const double false_vacuum_fraction = get_false_vacuum_fraction_from_I3(I_3);
             const double true_vacuum_fraction = 1 - false_vacuum_fraction;
 
-            const double e_average = false_vacuum_fraction * e_false + true_vacuum_fraction * e_true;
-            const double x_f = false_vacuum_fraction * e_false / e_average;
-            const double x_t = true_vacuum_fraction * e_true / e_average;
+            // const double e_average = false_vacuum_fraction * e_false + true_vacuum_fraction * e_true;
+            // const double x_f = false_vacuum_fraction * e_false / e_average;
+            // const double x_t = true_vacuum_fraction * e_true / e_average;
             // LOG(debug) << "Tau = " << tau << ", x_f = " << x_f << ", x_t = " << x_t;
 
             const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
@@ -238,7 +286,7 @@ namespace PhaseTracer {
             const double I_3     = state[6];
             const double nucleation_rate = state[7];
             const double number_density = state[8];
-            const double J = std::max(0.0, state[9]); // J = number_density * mean_bubble_radius
+            const double J = std::max(0.0, state[9]);
             const double mean_bubble_radius = (number_density > 1e-100) ? J / number_density : 0.0;
 
             const double T_false = match_T_false(e_false);
@@ -287,18 +335,6 @@ namespace PhaseTracer {
             system.nucleation_rate.push_back(nucleation_rate);
             system.number_density.push_back(number_density);
             system.mean_bubble_radius.push_back(mean_bubble_radius);
-
-            {
-                double e_av = false_vacuum_fraction * e_false + true_vacuum_fraction * e_true;
-                double p_av = false_vacuum_fraction * p_false + true_vacuum_fraction * p_true;
-                double w = p_av / e_av;
-
-                LOG(debug) << "Friedmann evolution: tau = " << tau << ", T_false = " << T_false << ", T_true = " << T_true
-                       << ", w = " << w 
-                       << ", a = " << a
-                       << ", hubble = " << hubble
-                       << ", h = " << false_vacuum_fraction;
-            }
             
         };
 
@@ -436,11 +472,7 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_scale_factor(const double& T_false) const
     {
-        if(!friedmann_splines_computed)
-        {
-            LOG(warning) << "Friedmann splines not computed. Cannot compute scale factor.";
-            return 1.0;
-        }
+        require_solved("get_scale_factor");
         double scale_factor = alglib::spline1dcalc(scale_factor_spline, T_false);
         return scale_factor;
     }
@@ -450,11 +482,7 @@ namespace PhaseTracer {
     {
         if (use_bag_dtdT) { return Tbottom/Ttop; }
         
-        if (!friedmann_splines_computed)
-        {
-            LOG(warning) << "Friedmann splines not computed. Falling back to bag model approximation for scale factor ratio.";
-            return Tbottom/Ttop;
-        }
+        require_solved("get_scale_factor_ratio");
 
         double a_top = get_scale_factor(Ttop);
         double a_bottom = get_scale_factor(Tbottom);
@@ -477,25 +505,16 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_false_vacuum_fraction(const double& T_false) const
     {
-        if(!friedmann_splines_computed)
-        {
-            LOG(warning) << "Friedmann splines not computed. Cannot compute false vacuum fraction.";
-            return 1.0;
-        }
+        require_solved("get_false_vacuum_fraction");
         double log_I_3 = alglib::spline1dcalc(log_I_3_spline, T_false);
         double I_3 = std::exp(log_I_3);
-        // LOG(debug) << "get_false_vacuum_fraction: T_false = " << T_false << ", h = " << get_false_vacuum_fraction_from_I3(I_3);
         return get_false_vacuum_fraction_from_I3(I_3);
     }
 
     const double
     TransitionMetrics::get_nucleation_rate(const double& T_false) const
     {
-        if(!friedmann_splines_computed)
-        {
-            LOG(warning) << "Friedmann splines not computed. Cannot compute nucleation rate.";
-            return 0.0;
-        }
+        require_solved("get_nucleation_rate");
         double log_N = alglib::spline1dcalc(log_nucleation_rate_spline, T_false);
         return std::exp(log_N);
     }
@@ -503,11 +522,7 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_bubble_density(const double& T_false) const
     {
-        if(!friedmann_splines_computed)
-        {
-            LOG(warning) << "Friedmann splines not computed. Cannot compute bubble number density.";
-            return 0.0;
-        }
+        require_solved("get_bubble_density");
         double log_n = alglib::spline1dcalc(log_bubble_number_density_spline, T_false);
         return std::exp(log_n);
     }
@@ -515,11 +530,7 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_mean_bubble_radius(const double& T_false) const
     {
-        if(!friedmann_splines_computed)
-        {
-            LOG(warning) << "Friedmann splines not computed. Cannot compute mean bubble radius.";
-            return 0.0;
-        }
+        require_solved("get_mean_bubble_radius");
         double log_Rbar = alglib::spline1dcalc(log_mean_bubble_radius_spline, T_false);
         return std::exp(log_Rbar);
     }
@@ -527,11 +538,7 @@ namespace PhaseTracer {
     const std::pair<double, double>
     TransitionMetrics::get_action_expansion(const double& temperature) const
     {
-        if (!friedmann_splines_computed)
-        {
-            LOG(warning) << "Friedmann splines not computed. Cannot compute action expansion.";
-            return {0.0, 0.0};
-        }
+        require_solved("get_action_expansion");
 
         // X = ln(t), Y = ln(S)
         double X, dX, d2X;
@@ -605,11 +612,7 @@ namespace PhaseTracer {
     const double
     TransitionMetrics::get_T_true(const double& T_false) const
     {
-        if(!friedmann_splines_computed)
-        {
-            LOG(warning) << "Friedmann splines not computed. Cannot compute T_true.";
-            return T_false;
-        }
+        require_solved("get_T_true");
         double T_true = alglib::spline1dcalc(reheating_spline, T_false);
         return T_true;
     }
@@ -617,6 +620,7 @@ namespace PhaseTracer {
     const LifetimeDistribution
     TransitionMetrics::get_lifetime_distribution(const double& timescale, const double& lifetime_min_fraction)
     {
+        require_solved("get_lifetime_distribution");
         LifetimeDistribution distribution_out;
         distribution_out.timescale = timescale;
 
@@ -883,6 +887,7 @@ namespace PhaseTracer {
     const TransitionMilestone 
     TransitionMetrics::get_transition_milestone(const MilestoneType type)
     {
+        require_solved("get_transition_milestone");
         auto target_function = get_target_function(type);
 
         TransitionMilestone output(type);
@@ -911,7 +916,8 @@ namespace PhaseTracer {
     void
     TransitionMetrics::compute_nucleation_history(const double& t_min, const double& t_max)
     {
-        if(percolation_milestone.status == PhaseTracer::MilestoneStatus::YES) // && nucleation_milestone.status == PhaseTracer::MilestoneStatus::YES
+        require_solved("compute_nucleation_history");
+        if(percolation_milestone.status == PhaseTracer::MilestoneStatus::YES)
         {
             const double t_guess = percolation_milestone.temperature;
 
@@ -1001,81 +1007,6 @@ namespace PhaseTracer {
             sum += 2.0 * integrand(x_min + i * h);
         }
         return sum * h / 3.0;
-    }
-
-    std::vector<double> 
-    TransitionMetrics::cumulative_simpson(const std::function<double(double)>& integrand, const std::vector<double>& x, double F_initial) const
-    {
-        const int N = x.size();
-        assert(N >= 2);
-
-        auto simpson_step = [&integrand](double x_lo, double x_hi, double f_lo, double f_hi)
-        {
-            double h     = x_hi - x_lo;
-            double f_mid = integrand(x_lo + h * 0.5);
-            return (h / 6.0) * (f_lo + 4.0 * f_mid + f_hi);
-        };
-
-        std::vector<double> F(N);
-        F[0] = F_initial;
-
-        double f_prev = integrand(x[0]);
-        for (int i = 1; i < N; ++i)
-        {
-            double f_hi = integrand(x[i]);
-            F[i] = F[i-1] + simpson_step(x[i-1], x[i], f_prev, f_hi);
-            f_prev = f_hi;
-        }
-
-        return F;
-    }
-
-    alglib::real_1d_array 
-    TransitionMetrics::cumulative_simpson(const std::function<double(double)>& integrand, const alglib::real_1d_array& x, double F_initial) const
-    {
-        const int N = x.length();
-        assert(N >= 2);
-
-        auto simpson_step = [&integrand](double x_lo, double x_hi, double f_lo, double f_hi)
-        {
-            double h     = x_hi - x_lo;
-            double f_mid = integrand(x_lo + h * 0.5);
-            return (h / 6.0) * (f_lo + 4.0 * f_mid + f_hi);
-        };
-
-        alglib::real_1d_array F;
-        F.setlength(N);
-        F[0] = F_initial;
-
-        double f_prev = integrand(x[0]);
-        for (int i = 1; i < N; ++i)
-        {
-            double f_hi = integrand(x[i]);
-            F[i] = F[i-1] + simpson_step(x[i-1], x[i], f_prev, f_hi);
-            f_prev = f_hi;
-        }
-
-        return F;
-    }
-
-    void
-    TransitionMetrics::integrate_and_fit_spline 
-    (
-        alglib::spline1dinterpolant& spline, 
-        const std::function<double(double)>& integrand, 
-        int steps,
-        double F_initial
-    ) const
-    {
-        alglib::real_1d_array temp_grid;
-        temp_grid.setlength(steps);
-        double dt = (t_max - t_min) / (volume_term_integration_steps - 1);
-        for (int i = 0; i < volume_term_integration_steps; ++i)
-            temp_grid[i] = t_min + i * dt;
-
-        alglib::real_1d_array integral_array = cumulative_simpson(integrand, temp_grid);
-
-        alglib::spline1dbuildlinear(temp_grid, integral_array, spline);
     }
 
 } // namespace PhaseTracer

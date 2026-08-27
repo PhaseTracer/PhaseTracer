@@ -55,48 +55,22 @@ public:
     FalseVacuumDecayRate& operator=(FalseVacuumDecayRate&&) = default;
     
     FalseVacuumDecayRate(Transition t_in, const ActionCalculator& ac_in)
-    : t(t_in), ac(ac_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC), spline_evaluations(50),
-      prefactor_function(default_decay_rate_prefactor())
-    {
-        get_splines();
-    }
-
-    FalseVacuumDecayRate(Transition t_in, const ActionCalculator& ac_in, double t_min_in, double t_max_in, int spline_evaluations_in)
-    : t(t_in), ac(ac_in), t_min(t_min_in), t_max(t_max_in), spline_evaluations(spline_evaluations_in),
-      prefactor_function(default_decay_rate_prefactor())
-    {
-        get_splines();
-    }
-
-    FalseVacuumDecayRate(Transition t_in, const ActionCalculator& ac_in,
-                         PrefactorFunction custom_prefactor)
-    : t(t_in), ac(ac_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC), spline_evaluations(50),
-      prefactor_function(custom_prefactor)
-    {
-        get_splines();
-    }
-
-    FalseVacuumDecayRate(Transition t_in, const ActionCalculator& ac_in, double t_min_in, double t_max_in,
-                         int spline_evaluations_in, PrefactorFunction custom_prefactor)
-    : t(t_in), ac(ac_in), t_min(t_min_in), t_max(t_max_in), spline_evaluations(spline_evaluations_in),
-      prefactor_function(custom_prefactor)
-    {
-        get_splines();
-    }
+    : ac(ac_in), t(t_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC) {}
 
     /**
-     * @brief Retrieves the minimum temperature for which the decay rate is computed.
-     * @return The minimum temperature.
+     * @brief Solves the bounce action over [t_min, t_max] and fits the
+     *        log(action), log(prefactor) and log(gamma) splines.
+     *
+     * This is the expensive part of the class. It must be called before any of
+     * the get_action/get_prefactor/get_gamma accessors, which will otherwise 
+     * throw a logic error.
      */
-    const double get_t_min() const {return t_min;}
+    void calculate();
+
+    /** @brief Whether calculate() has completed successfully. */
+    bool is_calculated() const { return calculated; }
 
     /**
-     * @brief Retrieves the maximum temperature for which the decay rate is computed.
-     * @return The maximum temperature.
-     */
-    const double get_t_max() const {return t_max;}
-
-    /** 
      * @brief Computes the action at a given temperature using the precomputed spline.
      * @param temperature The temperature at which to evaluate the action.
      * @return The action at the specified temperature.
@@ -181,23 +155,31 @@ private:
     /** Compute splines for action and log(gamma) */
     void get_splines();
 
-    /** Reference to ActionCalculator class (to avoid expensive copying of PhaseFinder) */
+    /** Throws std::logic_error if calculate() has not been called */
+    void require_calculated(const char* caller) const;
+
+    /** Reference to ActionCalculator class */
     const ActionCalculator& ac;
 
     /** Transition for which the decay rate is computed */
     Transition t;
 
-    /** Number of spline evaluations for building the splines */
-    int spline_evaluations;
-
-    /** Minimum and maximum temperatures for which the decay rate is computed */
-    double t_min, t_max;
-
     /** Splines for log(action), log(prefactor), and log(gamma) */
     alglib::spline1dinterpolant log_action_spline, log_prefactor_spline, log_gamma_spline;
-    
+
     /** Function for computing the decay rate prefactor */
-    PrefactorFunction prefactor_function;
+    PrefactorFunction prefactor_function = default_decay_rate_prefactor();
+
+    /** Set by calculate() once the splines are built */
+    bool calculated = false;
+
+    /** Minimum and maximum temperatures for which the decay rate is computed. */
+    PROPERTY(double, t_min, 0.0)
+
+    PROPERTY(double, t_max, 0.0)
+
+    /** Number of spline evaluations for building the splines */
+    PROPERTY(int, spline_evaluations, 50)
 
 }; // class FalseVacuumDecayRate
 

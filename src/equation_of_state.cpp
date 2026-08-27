@@ -32,8 +32,38 @@ namespace PhaseTracer {
         }
     }
 
-    void 
-    EquationOfState::EquationOfStateInPhase::get_thermodynamic_splines() 
+    void
+    EquationOfState::calculate()
+    {
+        calculated = false;
+
+        // If no normalisation was supplied, take the field contribution
+        // (v - T*dv/dT) in the true vacuum at T_min, so that at T_min only the
+        // radiation bath contributes to the energy density (and hence H).
+        const double norm = energy_norm.value_or(find_normalisation(transition.true_phase));
+        LOG(debug) << "Energy normalization set to " << norm;
+
+        // EquationOfStateInPhase builds its own splines on construction; it is a
+        // private implementation detail, built fresh here on every calculate().
+        EquationOfStateInPhase eos_plus(transition.false_phase, n_temp, background_dof, norm);
+        EquationOfStateInPhase eos_minus(transition.true_phase, n_temp, background_dof, norm);
+
+        p_plus_spline = eos_plus.pressure_spline;
+        p_minus_spline = eos_minus.pressure_spline;
+        false_potential_spline = eos_plus.get_potential_spline();
+        true_potential_spline = eos_minus.get_potential_spline();
+        e_plus_spline = eos_plus.energy_spline;
+        e_minus_spline = eos_minus.energy_spline;
+        w_plus_spline = eos_plus.enthalpy_spline;
+        w_minus_spline = eos_minus.enthalpy_spline;
+        s_plus_spline = eos_plus.entropy_spline;
+        s_minus_spline = eos_minus.entropy_spline;
+
+        calculated = true;
+    }
+
+    void
+    EquationOfState::EquationOfStateInPhase::get_thermodynamic_splines()
     {
         pressure.resize(n_temp);
         energy.resize(n_temp);
@@ -46,7 +76,6 @@ namespace PhaseTracer {
             double v, dvdT, ddvdT;
             try {
                 alglib::spline1ddiff(this->potential_spline, temp, v, dvdT, ddvdT);
-                // LOG(debug) << "Phase key " << phase.key << ": At T = " << temp << ", potential = " << v << ", T * dvdT = " << temp * dvdT;
             } catch (const std::exception& e) {
                 LOG(error) << "Error in spline1ddiff: " << e.what() << "for temperature " << temp << " in phase key " << phase.key;
                 continue;
@@ -61,14 +90,6 @@ namespace PhaseTracer {
             enthalpy[i] = 4.0 * background_pressure - temp * dvdT;
             entropy[i] = (temp != 0.0) ? 4.0 * background_pressure / temp - dvdT : 0.0;
         }
-
-        // write to a debug file
-        // std::ofstream eos_out("example/TestThermalParameters/eos_debug_phase_" + std::to_string(phase.key) + ".csv");
-        // eos_out << "# Temperature,Pressure,Energy,w,Enthalpy,Entropy\n";
-        // for (int i = 0; i < n_temp; ++i) {
-        //     eos_out << temperature[i] << "," << pressure[i] << "," << energy[i] << "," << (energy[i] != 0.0 ? pressure[i]/energy[i] : 0.0) << "," << enthalpy[i] << "," << entropy[i] << "\n";
-        // }
-        // eos_out.close();
 
         alglib::real_1d_array t_array, p_array, e_array, w_array, s_array;
         t_array.setcontent(n_temp, temperature.data());
@@ -107,26 +128,8 @@ namespace PhaseTracer {
 
         double normalisation = 0.0;
         double t_min = true_T.front();
-        double t_max = true_T.back();
-        int n_temp = 500.0;
-        for(double t = t_min; t <= t_max; t += (t_max - t_min) / n_temp) 
-        {
-            double v, dvdT, ddvdT;
-             try {
-                alglib::spline1ddiff(true_pot_norm_spline, t, v, dvdT, ddvdT);
-            } catch (const std::exception& e) {
-                LOG(error) << "Error in spline1ddiff while finding normalization: " << e.what() << "for temperature " << t;
-                continue;
-            }
-            // LOG(debug) << "At T = " << t << ", potential = " << v << ", t * dvdT = " << t * dvdT;
-            double energy = v; //  - t * dvdT;
-            if (energy < normalisation) {
-                normalisation = energy;
-            }
-        }
-        // set normalisation to value of V at T_min if it is positive
-            normalisation = alglib::spline1dcalc(true_pot_norm_spline, t_min);
-        LOG(debug) << "Energy normalization set to " << normalisation;
+        normalisation = alglib::spline1dcalc(true_pot_norm_spline, t_min);
+        
         return normalisation;
     }
 
@@ -378,8 +381,10 @@ namespace PhaseTracer {
     }
 
     void
-    EquationOfState::write(const std::string path) const 
+    EquationOfState::write(const std::string path) const
     {
+        require_calculated("write");
+
         std::ofstream file(path);
 
         if (!file.is_open()) { throw std::runtime_error("Could not open file for writing EoS data"); }

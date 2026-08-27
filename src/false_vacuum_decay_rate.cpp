@@ -25,6 +25,19 @@
 
 namespace PhaseTracer {
 
+    void FalseVacuumDecayRate::calculate() {
+        calculated = false;
+        get_splines();
+        calculated = true;
+    }
+
+    void FalseVacuumDecayRate::require_calculated(const char* caller) const {
+        if (!calculated) {
+            throw std::logic_error(std::string("FalseVacuumDecayRate::") + caller +
+                                   " called before calculate().");
+        }
+    }
+
     void FalseVacuumDecayRate::get_splines() {
 
         if (spline_evaluations < 2) {
@@ -148,6 +161,7 @@ namespace PhaseTracer {
     double
     FalseVacuumDecayRate::get_action(const double& temperature) const
     {
+        require_calculated("get_action");
         double log_action_on_T = alglib::spline1dcalc(log_action_spline, temperature);
         return exp(log_action_on_T) * temperature;
     }
@@ -155,6 +169,7 @@ namespace PhaseTracer {
     double 
     FalseVacuumDecayRate::get_action_deriv(const double& temperature) const
     {
+        require_calculated("get_action_deriv");
         double y, dy, ddy;
         alglib::spline1ddiff(log_action_spline, temperature, y, dy, ddy);
         return dy*exp(y);
@@ -163,6 +178,7 @@ namespace PhaseTracer {
     double 
     FalseVacuumDecayRate::get_action_double_deriv(const double& temperature) const
     {
+        require_calculated("get_action_double_deriv");
         double y, dy, ddy;
         alglib::spline1ddiff(log_action_spline, temperature, y, dy, ddy);
         return (dy*dy + ddy) * exp(y);
@@ -171,6 +187,7 @@ namespace PhaseTracer {
     double
     FalseVacuumDecayRate::get_gamma(const double& temperature) const
     {
+        require_calculated("get_gamma");
         double log_gamma = alglib::spline1dcalc(log_gamma_spline, temperature);
         return exp(log_gamma);
     }
@@ -178,6 +195,7 @@ namespace PhaseTracer {
     double
     FalseVacuumDecayRate::get_prefactor(const double& temperature) const
     {
+        require_calculated("get_prefactor");
         double log_prefactor = alglib::spline1dcalc(log_prefactor_spline, temperature);
         return exp(log_prefactor);
     }
