@@ -200,4 +200,25 @@ namespace PhaseTracer {
         return exp(log_prefactor);
     }
 
+    void
+    FalseVacuumDecayRate::write(const std::string& filename, const int& n_steps)
+    {
+        require_calculated("write");
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            throw std::runtime_error("Failed to open file: " + filename);
+        }
+
+        file << "# Temperature,Action,Prefactor,Gamma\n";
+        double dt = (t_max - t_min) / (n_steps - 1);
+        for (int i = 0; i < n_steps; ++i) {
+            double temperature = t_min + i * dt;
+            double action = get_action(temperature);
+            double prefactor = get_prefactor(temperature);
+            double gamma = get_gamma(temperature);
+            file << temperature << "," << action << "," << prefactor << "," << gamma << "\n";
+        }
+        file.close();
+    }
+
 } // namespace PhaseTracer

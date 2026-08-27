@@ -150,6 +150,13 @@ public:
         return ac.get_action_full(t.true_phase, t.false_phase, temperature).bubble_profile;
     }
 
+    /**
+     * @brief Write the decay rate data to a file.
+     * @param filename The name of the file to write to.
+     * @param n_steps The number of steps to use in the output.
+    */
+    void write(const std::string& filename, const int& n_steps=100);
+
 private:
 
     /** Compute splines for action and log(gamma) */
