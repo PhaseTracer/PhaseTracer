@@ -255,14 +255,6 @@ public :
         FriedmannEvolution& tm
     );
 
-    void add_history_lists(NucleationHistory& history, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm);
-    
-    const double get_gamma_on_H4(const double& temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm);
-
-    const double get_RsH_sim(const double& gammaH4, const double& betaH);
-
-    const double get_RsH_exp(const double& betaH);
-
     const double get_alpha(const double& temperature, const EquationOfState& eos, bool use_munu = false);
 
     const double get_betaH(const double& temperature, const FalseVacuumDecayRate& decay_rate);
@@ -272,8 +264,6 @@ public :
     const double get_betaH_1(const double& temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm);
 
     const double get_betaH_2(const double& temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm);
-
-    const double get_decay_rate_FWHM(const double& target_maximum, const double& target_temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm);
 
     const double get_H(const double& temperature, FriedmannEvolution& tm);
 

@@ -73,18 +73,9 @@ enum NucleationType
 struct NucleationHistory
 {
     NucleationType nucleation_type;
-
-    std::vector<double> temperature;
-    std::vector<double> time;
-    std::vector<double> scale_factor;
-    std::vector<double> conformal_time;
-
-    double betaH; // generic betaH, found from T * d(S/T)dT, unused?
-    double betaH_1; // evaluated from d(S(t))dt
-    double betaH_2; // evaluated from d^2(S(t))/dt^2
-
-    double T_m; // temperature for peak Gamma_m
-
+    double betaH_1;
+    double betaH_2;
+    double T_m;
 }; // struct NucleationHistory
 
 struct TransitionMilestone
@@ -299,7 +290,7 @@ struct FriedmannSystem
     std::vector<double> number_density;
     std::vector<double> mean_bubble_radius;
 
-    void write(std::string filename) const
+    void write(std::string filename, double vw = 1./sqrt(3)) const
     {
         std::ofstream out(filename);
         out << "# time,T_f,T_t,e_f,e_t,p_f,p_t,hubble,a,gamma,h,N,n,Rbar\n";
@@ -315,7 +306,7 @@ struct FriedmannSystem
                 << hubble[i] << ","
                 << a[i]      << ","
                 << gamma[i]  << ","
-                << std::exp( - 4.0 * M_PI * 0.85*0.85*0.85 / 3.0 * I_3[i]) << ","
+                << std::exp( - 4.0 * M_PI * vw*vw*vw / 3.0 * I_3[i]) << ","
                 << nucleation_rate[i] << ","
                 << number_density[i] << ","
                 << mean_bubble_radius[i] <<
