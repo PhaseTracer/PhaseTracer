@@ -25,6 +25,7 @@ fp.csv
 test_profiles.ipynb
 *.csv
 *.png
+*.pdf
 *.ipynb
 *.sh
 *.py
@@ -36,11 +37,8 @@ scan.py
 
 /example/InferenceScripts/
 /example/HydroGravScripts/
-/example/TestThermalParameters/
 /example/BetaProject/
 /example/PythonInterface/
 /example/BubbleDetBridge/
 /example/run_bubbledet_prefactor.cpp
 /example/run_scalar_yukawa_bubbledet.cpp
-
-*.pdf

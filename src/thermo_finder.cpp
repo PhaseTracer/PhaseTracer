@@ -41,8 +41,7 @@ namespace PhaseTracer {
         calculated_thermal_parameters = true;
         auto transitions = tf->get_transitions();
 
-        auto valid_transitions = transition_filter ? transition_filter(transitions)
-                                                   : default_transition_filter(transitions);
+        auto valid_transitions = transition_filter ? transition_filter(transitions) : default_transition_filter(transitions);
 
         LOG(debug) << "Found " << valid_transitions.size() << " valid transitions out of " << transitions.size() << " total transitions.";
 
@@ -141,6 +140,7 @@ namespace PhaseTracer {
         output.completion = output.friedmann_evolution->completion_milestone;
         output.completion.set_print_setting(completion_print_setting);
         add_thermal_parameter_values(output.completion, *output.decay_rate, *output.eos, *output.friedmann_evolution);
+        add_reheating_temperature(output.completion, *output.friedmann_evolution);
 
         output.nucleation = output.friedmann_evolution->nucleation_milestone;
         output.nucleation.set_print_setting(nucleation_print_setting);
@@ -201,7 +201,11 @@ namespace PhaseTracer {
     }
 
     const void
-    ThermoFinder::add_thermal_parameter_values(TransitionMilestone& milestone, const FalseVacuumDecayRate& decay_rate, const EquationOfState& eos, FriedmannEvolution& tm)
+    ThermoFinder::add_thermal_parameter_values(
+        TransitionMilestone& milestone, 
+        const FalseVacuumDecayRate& decay_rate,
+        const EquationOfState& eos, 
+        FriedmannEvolution& tm)
     {
         if(milestone.status == MilestoneStatus::YES) 
         {
@@ -213,6 +217,10 @@ namespace PhaseTracer {
             milestone.alpha_munu = alpha_munu;
             double betaH = get_betaH(temp, decay_rate);
             milestone.betaH = betaH;
+            double beta1H = get_betaH_1(temp, decay_rate, tm);
+            milestone.beta1H = beta1H;
+            double beta2H = get_betaH_2(temp, decay_rate, tm);
+            milestone.beta2H = beta2H;
             double H = get_H(temp, tm);
             milestone.H = H;
             double we = get_we(temp, eos);
@@ -234,6 +242,15 @@ namespace PhaseTracer {
         }
     }
 
+    const void
+    ThermoFinder::add_reheating_temperature(
+        TransitionMilestone& milestone, 
+        FriedmannEvolution& tm)
+    {
+        double T_reh = tm.get_T_true(milestone.temperature);
+        milestone.reheating_temperature = T_reh;
+    }
+
     void
     ThermoFinder::fill_nucleation_history(
         NucleationHistory& history,
@@ -249,9 +266,6 @@ namespace PhaseTracer {
             const double T_m = history.T_m;
             const double betaH_1 = get_betaH_1(Tref, decay_rate, tm);
             const double betaH_2 = get_betaH_2(Tref, decay_rate, tm);
-
-            LOG(debug) << "betaH_1 (Tp) = " << betaH_1 << ", betaH_1 (Tn) = " << get_betaH_1(nucleation.temperature, decay_rate, tm);
-            LOG(debug) << "betaH_2 (Tp) = " << betaH_2 << ", betaH_2 (Tm) = " << get_betaH_2(T_m, decay_rate, tm);
 
             history.betaH_1 = betaH_1;
             history.betaH_2 = betaH_2;
@@ -460,9 +474,9 @@ namespace PhaseTracer {
         }
         o << "\n";
 
-        for (const auto &t : a.thermal_parameters) 
+        for (const auto &tps : a.thermal_parameters) 
         {
-            o << t << "\n";
+            o << tps << "\n";
         }
 
         return o;

@@ -84,10 +84,13 @@ struct TransitionMilestone
     MilestoneStatus status;
     NucleationType nucleation_type = NucleationType::EXPONENTIAL;
     double temperature;
+    double reheating_temperature;
 
     double alpha;
     double alpha_munu;
     double betaH;
+    double beta1H;
+    double beta2H;
     double betaH_eff;
     double H;
     double we;
@@ -137,7 +140,11 @@ public:
     const std::string format_milestone_string() const
     {
         std::string output = "  status = " + format_status_string() + "\n";
-        output += "  temperature = " + std::to_string(temperature) + " GeV\n";
+        output += "  temperature = " + std::to_string(temperature) + " " + scale.name() + "\n";
+        if(type == MilestoneType::COMPLETION && status == MilestoneStatus::YES)
+        {
+            output += "  reheating temperature = " + std::to_string(reheating_temperature) + " " + scale.name() + "\n";
+        }
         if(type == MilestoneType::PERCOLATION && status == MilestoneStatus::YES)
         {
             output += "  nucleation_type = " + std::string(nucleation_type == NucleationType::EXPONENTIAL ? "exponential" : "simultaneous") + "\n";
@@ -156,6 +163,8 @@ public:
         }
 
         if (print_setting == PrintSettings::VERBOSE) {
+            output += "  beta1H = " + std::to_string(beta1H) + "\n"; 
+            output += "  beta2H = " + std::to_string(beta2H) + "\n";
             output += "  we = " + std::to_string(we) + "\n";
             output += "  cs_plus = " + std::to_string(cs_plus) + "\n";
             output += "  cs_minus = " + std::to_string(cs_minus) + "\n";

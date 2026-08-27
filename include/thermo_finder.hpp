@@ -241,7 +241,7 @@ class ThermoFinder {
 
 public :
 
-    /** Pretty-printer for all ThermalTarameterSets in this object */
+    /** Pretty-printer for all ThermalParameterSets in this object */
     friend std::ostream &operator<<(std::ostream &o, const ThermoFinder &a);
 
     ThermoFinder(ActionCalculator ac_in) : ac(ac_in) {};
@@ -273,6 +273,11 @@ public :
         TransitionMilestone& milestone, 
         const FalseVacuumDecayRate& decay_rate, 
         const EquationOfState& eos, 
+        FriedmannEvolution& tm
+    );
+
+    const void add_reheating_temperature(
+        TransitionMilestone& milestone, 
         FriedmannEvolution& tm
     );
 
