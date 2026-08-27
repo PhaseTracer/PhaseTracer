@@ -81,15 +81,7 @@ struct ThermalProfiles
 
 struct ThermalParameterSet
 {
-    /** Own the ActionCalculator: FalseVacuumDecayRate holds it by reference, so
-     *  binding it to a by-value constructor parameter would dangle the moment
-     *  the constructor returned. Declared first so it outlives decay_rate. */
-    ActionCalculator ac;
-
-    /** Held behind unique_ptr so their addresses survive a move of this struct.
-     *  friedmann_evolution holds const references to *decay_rate and *eos; with
-     *  the objects stored by value those references would point into the
-     *  moved-from instance. */
+    std::unique_ptr<ActionCalculator> ac;
     std::unique_ptr<FalseVacuumDecayRate> decay_rate;
     std::unique_ptr<EquationOfState> eos;
     std::unique_ptr<FriedmannEvolution> friedmann_evolution;
@@ -105,7 +97,8 @@ struct ThermalParameterSet
 
     ThermalProfiles profiles;
 
-    ThermalParameterSet(
+    ThermalParameterSet
+    (
         Transition t_in, 
         ActionCalculator ac_in,
         double n_temp_action = 50,
@@ -122,9 +115,9 @@ struct ThermalParameterSet
         double temperature_abs_tol = 1e-8,
         FalseVacuumDecayRate::PrefactorFunction prefactor = {}
     ) :
-    ac(ac_in)
+    ac(std::make_unique<ActionCalculator>(ac_in))
     {
-        decay_rate = std::make_unique<FalseVacuumDecayRate>(t_in, ac);
+        decay_rate = std::make_unique<FalseVacuumDecayRate>(t_in, *ac);
         decay_rate->set_t_min(t_in.false_phase.T.front());
         decay_rate->set_t_max(t_in.TC);
         decay_rate->set_spline_evaluations(n_temp_action);
@@ -144,17 +137,16 @@ struct ThermalParameterSet
         friedmann_evolution->set_onset_target(onset_target);
         friedmann_evolution->set_nucleation_target(nucleation_target);
         friedmann_evolution->set_temperature_abs_tol(temperature_abs_tol);
-
-        // Solve only after every property is in place: vw, newtonG,
-        // temperature_abs_tol and use_bag_dtdT are all read inside
-        // refine_temperature_bounds() and evolve_friedmann().
         friedmann_evolution->solve();
 
         TC = decay_rate->get_t_max();
 
         friedmann_evolution->compute_milestones();
-
-        friedmann_evolution->compute_nucleation_history(t_in.false_phase.T.front(), t_in.TC);
+        friedmann_evolution->compute_nucleation_history
+        (
+            friedmann_evolution->get_t_min(), 
+            friedmann_evolution->get_t_max()
+        );
     }
 
     friend std::ostream &operator<<(std::ostream& o, const ThermalParameterSet &tps) 
@@ -172,7 +164,21 @@ struct ThermalParameterSet
     }
 };
 
+enum ValidateMethod
+{
+    TEMP,
+    VEV
+};
+
 class ThermoFinder {
+
+    /**
+     * This is optional because in theory, users can just initialise with 
+     * transitions already in hand, in which case they can just call 
+     * get_thermal_parameter_set with individual transitions, circumventing the
+     * need for tf.
+     */
+    std::optional<TransitionFinder> tf;
 
     ActionCalculator ac;
 
@@ -216,13 +222,31 @@ class ThermoFinder {
 
     PROPERTY(double, temperature_abs_tol, 1e-6);
 
+    PROPERTY(double, temperature_threshold, 1);
+
+    PROPERTY(double, vev_threshold, 1);
+
+    PROPERTY(ValidateMethod, default_validation_method, TEMP);
+
+    PROPERTY(
+        std::function<std::vector<Transition>(const std::vector<Transition>&)>,
+        transition_filter, {}
+    );
+
+    std::vector<Transition> default_transition_filter(const std::vector<Transition>& transitions);
+
     /** Optional custom decay-rate prefactor (e.g. a BubbleDetPrefactor). When
      *  empty the FalseVacuumDecayRate uses its default analytic prefactor. */
     FalseVacuumDecayRate::PrefactorFunction prefactor_function;
 
 public :
 
+    /** Pretty-printer for all ThermalTarameterSets in this object */
+    friend std::ostream &operator<<(std::ostream &o, const ThermoFinder &a);
+
     ThermoFinder(ActionCalculator ac_in) : ac(ac_in) {};
+
+    ThermoFinder(TransitionFinder tf_in, ActionCalculator ac_in) : tf(tf_in), ac(ac_in) {};
 
     /** Install a custom decay-rate prefactor used for all subsequent
      *  get_thermal_parameter_set calls. */
@@ -233,8 +257,14 @@ public :
 
     /** Container for all transitions between any two phases */
     std::vector<ThermalParameterSet> thermal_parameters;
-    
-    std::vector<ThermalParameterSet> find_thermal_parameters;
+
+    /** Calculates (once) and returns every transition's thermal parameters.
+     *  Returned by reference: ThermalParameterSet is move-only, so the vector
+     *  cannot be copied out. */
+    const std::vector<ThermalParameterSet>& get_thermal_parameters();
+
+    /** Finds all */
+    void find_thermal_parameters();
 
     ThermalParameterSet get_thermal_parameter_set(Transition t);
 

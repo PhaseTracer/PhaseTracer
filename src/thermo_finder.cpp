@@ -21,6 +21,81 @@
 
 namespace PhaseTracer {
 
+    const std::vector<ThermalParameterSet>&
+    ThermoFinder::get_thermal_parameters()
+    {
+        find_thermal_parameters();
+        return thermal_parameters;
+    }
+
+    void
+    ThermoFinder::find_thermal_parameters()
+    {
+        if(calculated_thermal_parameters) { return; }
+
+        if(!tf)
+        {
+            throw std::logic_error("find_thermal_parameters requires a ThermoFinder constructed with a TransitionFinder");
+        }
+
+        calculated_thermal_parameters = true;
+        auto transitions = tf->get_transitions();
+
+        auto valid_transitions = transition_filter ? transition_filter(transitions)
+                                                   : default_transition_filter(transitions);
+
+        LOG(debug) << "Found " << valid_transitions.size() << " valid transitions out of " << transitions.size() << " total transitions.";
+
+        thermal_parameters.reserve(valid_transitions.size());
+
+        for(const auto& t : valid_transitions)
+        {
+            try {
+                thermal_parameters.push_back(get_thermal_parameter_set(t));
+            } catch (const std::exception& e) {
+                LOG(debug) << "Error computing thermal parameters for transition @ TC = " << t.TC << ": " << e.what();
+            } catch (...) {
+                LOG(debug) << "Unknown error computing thermal parameters for transition @ TC = " << t.TC;
+            }
+        }
+
+        LOG(debug) << "Ran find_thermal_parameters.";
+    }
+
+    std::vector<Transition>
+    ThermoFinder::default_transition_filter(const std::vector<Transition>& transitions)
+    {
+        std::vector<Transition> valid_transitions;
+        
+        if(default_validation_method==PhaseTracer::ValidateMethod::TEMP)
+        {
+            for(const auto& t : transitions)
+            {
+                const double t_max = t.TC;
+                const double t_min = t.false_phase.T.front();
+
+                if(t_max - t_min > temperature_threshold)
+                {
+                    valid_transitions.push_back(t);
+                }
+            }
+        }
+
+        else if(default_validation_method==PhaseTracer::ValidateMethod::VEV)
+        {
+            for(const auto& t : transitions)
+            {
+                const auto vev = t.true_vacuum - t.false_vacuum;
+                if(vev.norm() > vev_threshold)
+                {
+                    valid_transitions.push_back(t);
+                }
+            }
+        }
+
+        return valid_transitions;
+    }
+
     ThermalParameterSet 
     ThermoFinder::get_thermal_parameter_set(Transition t) 
     {
@@ -361,6 +436,36 @@ namespace PhaseTracer {
 
         percolation.temperature = percolation_temp_updated;
         set_vw(vw_updated);
+    }
+
+    std::ostream &operator<<(std::ostream &o, const ThermoFinder &a)
+    {
+        if(!a.calculated_thermal_parameters)
+        {
+            o << "no thermal parameters calculated yet\n"
+            << "\n";
+            return o; 
+        }
+
+        if(a.thermal_parameters.empty())
+        {
+            o << "found no thermal parameters"
+            << "\n";
+            return o; 
+        }
+
+        o << "found " << a.thermal_parameters.size() << " thermal parameter set";
+        if (a.thermal_parameters.size() > 1) {
+            o << "s";
+        }
+        o << "\n";
+
+        for (const auto &t : a.thermal_parameters) 
+        {
+            o << t << "\n";
+        }
+
+        return o;
     }
 
 } // namespace PhaseTracer
