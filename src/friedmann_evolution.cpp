@@ -19,12 +19,12 @@
 #include <cmath>
 #include <limits>
 #include "logger.hpp"
-#include "transition_metrics.hpp"
+#include "friedmann_evolution.hpp"
 
 namespace PhaseTracer {
 
     void
-    TransitionMetrics::solve()
+    FriedmannEvolution::solve()
     {
         solved = false;
 
@@ -72,7 +72,7 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_hubble_rate(const double& true_vacuum_fraction, const double& e_false, const double& e_true) const
+    FriedmannEvolution::get_hubble_rate(const double& true_vacuum_fraction, const double& e_false, const double& e_true) const
     {
         const double e_averaged = (1-true_vacuum_fraction)*e_false + true_vacuum_fraction*e_true;
         const double hubble_sq = 8. * M_PI * newtonG/3. * e_averaged;
@@ -80,7 +80,7 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_time_temperature_false(const double& T_false) const
+    FriedmannEvolution::get_time_temperature_false(const double& T_false) const
     {
         const double prefac = - 3. * T_false * get_hubble_rate(T_false);
         const double cs_false = eos.get_sound_speed_plus(T_false);
@@ -89,7 +89,7 @@ namespace PhaseTracer {
         return 1. / dT_dt;
     }
 
-     void TransitionMetrics::refine_temperature_bounds()
+     void FriedmannEvolution::refine_temperature_bounds()
     {
         const int N = 1000;
         const double dT = (t_max - t_min) / (N - 1);
@@ -130,21 +130,21 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_false_vacuum_fraction_from_I3(const double& I3) const
+    FriedmannEvolution::get_false_vacuum_fraction_from_I3(const double& I3) const
     {
         double Veff = 4.0 * M_PI * vw*vw*vw / 3.0 * I3;
         return exp(-Veff);
     }
 
     const double
-    TransitionMetrics::get_d_false_vacuum_fraction_from_I3(const double& I3, const double& I3_dot) const
+    FriedmannEvolution::get_d_false_vacuum_fraction_from_I3(const double& I3, const double& I3_dot) const
     {
         double pf = get_false_vacuum_fraction_from_I3(I3);
         return - 4.0 * M_PI * vw*vw*vw / 3.0 * pf * I3_dot;
     }
 
     double 
-    TransitionMetrics::match_T_true(const double& e_true, double tol, boost::uintmax_t max_iter)
+    FriedmannEvolution::match_T_true(const double& e_true, double tol, boost::uintmax_t max_iter)
     {
         // LOG(debug) << "get_T_true called for e_true = " << e_true;
         std::pair<double, double> bracket = {t_min, t_max};
@@ -180,7 +180,7 @@ namespace PhaseTracer {
     }
 
     double 
-    TransitionMetrics::match_T_false(const double& e_false, double tol, boost::uintmax_t max_iter)
+    FriedmannEvolution::match_T_false(const double& e_false, double tol, boost::uintmax_t max_iter)
     {
         // LOG(debug) << "get_T_false called for e_false = " << e_false;
         std::pair<double, double> bracket = {t_min, t_max};
@@ -216,7 +216,7 @@ namespace PhaseTracer {
     }
 
     void
-    TransitionMetrics::evolve_friedmann()
+    FriedmannEvolution::evolve_friedmann()
     {
         const double e_false_min = eos.get_energy_plus(t_min);
         const double e_true_min = eos.get_energy_minus(t_min);
@@ -412,7 +412,7 @@ namespace PhaseTracer {
     }
 
     const void
-    TransitionMetrics::fit_friedmann_splines() const
+    FriedmannEvolution::fit_friedmann_splines() const
     {
         if (system.time.empty())
         {
@@ -470,7 +470,7 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_scale_factor(const double& T_false) const
+    FriedmannEvolution::get_scale_factor(const double& T_false) const
     {
         require_solved("get_scale_factor");
         double scale_factor = alglib::spline1dcalc(scale_factor_spline, T_false);
@@ -478,7 +478,7 @@ namespace PhaseTracer {
     }
 
     const double 
-    TransitionMetrics::get_scale_factor_ratio(const double& Ttop, const double& Tbottom) const
+    FriedmannEvolution::get_scale_factor_ratio(const double& Ttop, const double& Tbottom) const
     {
         if (use_bag_dtdT) { return Tbottom/Ttop; }
         
@@ -490,7 +490,7 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_hubble_rate(const double& T_false) const
+    FriedmannEvolution::get_hubble_rate(const double& T_false) const
     {
         if(friedmann_splines_computed)
         {
@@ -503,7 +503,7 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_false_vacuum_fraction(const double& T_false) const
+    FriedmannEvolution::get_false_vacuum_fraction(const double& T_false) const
     {
         require_solved("get_false_vacuum_fraction");
         double log_I_3 = alglib::spline1dcalc(log_I_3_spline, T_false);
@@ -512,7 +512,7 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_nucleation_rate(const double& T_false) const
+    FriedmannEvolution::get_nucleation_rate(const double& T_false) const
     {
         require_solved("get_nucleation_rate");
         double log_N = alglib::spline1dcalc(log_nucleation_rate_spline, T_false);
@@ -520,7 +520,7 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_bubble_density(const double& T_false) const
+    FriedmannEvolution::get_bubble_density(const double& T_false) const
     {
         require_solved("get_bubble_density");
         double log_n = alglib::spline1dcalc(log_bubble_number_density_spline, T_false);
@@ -528,7 +528,7 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_mean_bubble_radius(const double& T_false) const
+    FriedmannEvolution::get_mean_bubble_radius(const double& T_false) const
     {
         require_solved("get_mean_bubble_radius");
         double log_Rbar = alglib::spline1dcalc(log_mean_bubble_radius_spline, T_false);
@@ -536,7 +536,7 @@ namespace PhaseTracer {
     }
 
     const std::pair<double, double>
-    TransitionMetrics::get_action_expansion(const double& temperature) const
+    FriedmannEvolution::get_action_expansion(const double& temperature) const
     {
         require_solved("get_action_expansion");
 
@@ -584,7 +584,7 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_t(const double& T_false) const
+    FriedmannEvolution::get_t(const double& T_false) const
     {
         if(friedmann_splines_computed)
         {
@@ -610,7 +610,7 @@ namespace PhaseTracer {
     }
 
     const double
-    TransitionMetrics::get_T_true(const double& T_false) const
+    FriedmannEvolution::get_T_true(const double& T_false) const
     {
         require_solved("get_T_true");
         double T_true = alglib::spline1dcalc(reheating_spline, T_false);
@@ -618,7 +618,7 @@ namespace PhaseTracer {
     }
 
     const LifetimeDistribution
-    TransitionMetrics::get_lifetime_distribution(const double& timescale, const double& lifetime_min_fraction)
+    FriedmannEvolution::get_lifetime_distribution(const double& timescale, const double& lifetime_min_fraction)
     {
         require_solved("get_lifetime_distribution");
         LifetimeDistribution distribution_out;
@@ -849,7 +849,7 @@ namespace PhaseTracer {
     }
 
     const double 
-    TransitionMetrics::find_temperature(std::function<double(double)> target_function, double tol, boost::uintmax_t max_iter)
+    FriedmannEvolution::find_temperature(std::function<double(double)> target_function, double tol, boost::uintmax_t max_iter)
     {
         std::pair<double, double> bracket = {t_min, t_max};
 
@@ -866,7 +866,7 @@ namespace PhaseTracer {
     }
 
     std::function<double(double)> 
-    TransitionMetrics::get_target_function(const MilestoneType type)
+    FriedmannEvolution::get_target_function(const MilestoneType type)
     {
         switch (type) 
         {
@@ -885,7 +885,7 @@ namespace PhaseTracer {
     }
 
     const TransitionMilestone 
-    TransitionMetrics::get_transition_milestone(const MilestoneType type)
+    FriedmannEvolution::get_transition_milestone(const MilestoneType type)
     {
         require_solved("get_transition_milestone");
         auto target_function = get_target_function(type);
@@ -914,7 +914,7 @@ namespace PhaseTracer {
     }
 
     void
-    TransitionMetrics::compute_nucleation_history(const double& t_min, const double& t_max)
+    FriedmannEvolution::compute_nucleation_history(const double& t_min, const double& t_max)
     {
         require_solved("compute_nucleation_history");
         if(percolation_milestone.status == PhaseTracer::MilestoneStatus::YES)
@@ -994,7 +994,7 @@ namespace PhaseTracer {
     }
 
     double
-    TransitionMetrics::simpson_integrate(const std::function<double(double)>& integrand, const double& x_min, const double& x_max, const int& steps) const
+    FriedmannEvolution::simpson_integrate(const std::function<double(double)>& integrand, const double& x_min, const double& x_max, const int& steps) const
     {
         double h = (x_max - x_min) / steps;
         double sum = integrand(x_min) + integrand(x_max);

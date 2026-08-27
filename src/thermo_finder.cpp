@@ -42,43 +42,44 @@ namespace PhaseTracer {
             prefactor_function
         );
 
-        output.onset = output.transition_metrics->onset_milestone;
+        output.onset = output.friedmann_evolution->onset_milestone;
         output.onset.set_print_setting(onset_print_setting);
-        add_thermal_parameter_values(output.onset, *output.decay_rate, *output.eos, *output.transition_metrics);
+        add_thermal_parameter_values(output.onset, *output.decay_rate, *output.eos, *output.friedmann_evolution);
 
-        output.percolation = output.transition_metrics->percolation_milestone;
+        output.percolation = output.friedmann_evolution->percolation_milestone;
         output.percolation.set_print_setting(percolation_print_setting);
 
         // update the percolation temperature 
         if(update_percolation_temperature)
         {
             try{
-                revise_percolation_temperature(output.percolation, *output.eos, *output.transition_metrics);
+                revise_percolation_temperature(output.percolation, *output.eos, *output.friedmann_evolution);
             } catch (const std::exception& e) {
                 LOG(debug) << "Error updating percolation temperature: " << e.what();
             } catch (...) {
                 LOG(debug) << "Unknown error updating percolation temperature.";
             }
         }
-        add_thermal_parameter_values(output.percolation, *output.decay_rate, *output.eos, *output.transition_metrics);
+        
+        add_thermal_parameter_values(output.percolation, *output.decay_rate, *output.eos, *output.friedmann_evolution);
 
-        output.completion = output.transition_metrics->completion_milestone;
+        output.completion = output.friedmann_evolution->completion_milestone;
         output.completion.set_print_setting(completion_print_setting);
-        add_thermal_parameter_values(output.completion, *output.decay_rate, *output.eos, *output.transition_metrics);
+        add_thermal_parameter_values(output.completion, *output.decay_rate, *output.eos, *output.friedmann_evolution);
 
-        output.nucleation = output.transition_metrics->nucleation_milestone;
+        output.nucleation = output.friedmann_evolution->nucleation_milestone;
         output.nucleation.set_print_setting(nucleation_print_setting);
-        add_thermal_parameter_values(output.nucleation, *output.decay_rate, *output.eos, *output.transition_metrics);
+        add_thermal_parameter_values(output.nucleation, *output.decay_rate, *output.eos, *output.friedmann_evolution);
 
-        output.nucleation_history = output.transition_metrics->nucleation_history;
+        output.nucleation_history = output.friedmann_evolution->nucleation_history;
         // output.nucleation_history.set_print_setting(nucleation_history_print_setting);
-        fill_nucleation_history(output.nucleation_history, output.percolation, output.nucleation, *output.decay_rate, *output.transition_metrics);
+        fill_nucleation_history(output.nucleation_history, output.percolation, output.nucleation, *output.decay_rate, *output.friedmann_evolution);
 
         if(compute_profiles)
         {
             ThermalProfiles profile_out;
-            double t_min = output.transition_metrics->get_t_min();
-            double t_max = output.transition_metrics->get_t_max();
+            double t_min = output.friedmann_evolution->get_t_min();
+            double t_max = output.friedmann_evolution->get_t_max();
             double dt = (t_max - t_min)/(n_temp_profiles-1);
 
             for(double tt = t_min; tt < t_max; tt += dt)
@@ -86,18 +87,18 @@ namespace PhaseTracer {
                 double dtdT, dt, H, action, gamma, vext, pf, d_pf, nt, n, Rs, Rbar;
 
                 try {
-                    dtdT = output.transition_metrics->get_time_temperature_false(tt);
-                    dt = get_dt(tt, *output.transition_metrics);
-                    H = get_H(tt, *output.transition_metrics);
+                    dtdT = output.friedmann_evolution->get_time_temperature_false(tt);
+                    dt = get_dt(tt, *output.friedmann_evolution);
+                    H = get_H(tt, *output.friedmann_evolution);
                     action = output.decay_rate->get_action(tt)/tt;
                     gamma = output.decay_rate->get_gamma(tt);
-                    pf = output.transition_metrics->get_false_vacuum_fraction(tt);
+                    pf = output.friedmann_evolution->get_false_vacuum_fraction(tt);
                     vext = -log(pf);
-                    // d_pf = output.transition_metrics->get_d_false_vacuum_fraction_dT(tt);
-                    nt =  output.transition_metrics->get_nucleation_rate(tt);
-                    n = get_n(tt, *output.transition_metrics);
+                    // d_pf = output.friedmann_evolution->get_d_false_vacuum_fraction_dT(tt);
+                    nt =  output.friedmann_evolution->get_nucleation_rate(tt);
+                    n = get_n(tt, *output.friedmann_evolution);
                     Rs = std::pow(n, -1./3.) * H;
-                    Rbar = get_Rbar(tt, *output.transition_metrics) * H; 
+                    Rbar = get_Rbar(tt, *output.friedmann_evolution) * H; 
                 } catch (const std::exception& e) {
                     LOG(debug) << "Error computing thermal profile values at T = " << tt << ": " << e.what();
                     continue;
@@ -126,7 +127,7 @@ namespace PhaseTracer {
     }
 
     const void
-    ThermoFinder::add_thermal_parameter_values(TransitionMilestone& milestone, const FalseVacuumDecayRate& decay_rate, const EquationOfState& eos, TransitionMetrics& tm)
+    ThermoFinder::add_thermal_parameter_values(TransitionMilestone& milestone, const FalseVacuumDecayRate& decay_rate, const EquationOfState& eos, FriedmannEvolution& tm)
     {
         if(milestone.status == MilestoneStatus::YES) 
         {
@@ -163,7 +164,7 @@ namespace PhaseTracer {
     ThermoFinder::add_history_lists(
         NucleationHistory& history,
         const FalseVacuumDecayRate& decay_rate, 
-        TransitionMetrics& tm
+        FriedmannEvolution& tm
     )
     {
         const int n = 100;
@@ -177,7 +178,6 @@ namespace PhaseTracer {
         for(double TT = T_max; TT > T_min; TT -= dt)
         {
             double t = get_dt(TT, tm);
-            // double a = tm.get_atop_abottom(T_max, TT);
             double a = tm.get_scale_factor_ratio(T_max, TT);
 
             if(first_iter)
@@ -206,7 +206,7 @@ namespace PhaseTracer {
         TransitionMilestone& percolation, 
         TransitionMilestone& nucleation, 
         const FalseVacuumDecayRate& decay_rate, 
-        TransitionMetrics& tm)
+        FriedmannEvolution& tm)
     {
         add_history_lists(history, decay_rate, tm);
         
@@ -227,7 +227,7 @@ namespace PhaseTracer {
     }
 
     const double
-    ThermoFinder::get_gamma_on_H4(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm)
+    ThermoFinder::get_gamma_on_H4(const double& temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm)
     {
         const double gamma_m = decay_rate.get_gamma(temperature);
         const double h_m = tm.get_hubble_rate(temperature);
@@ -270,7 +270,7 @@ namespace PhaseTracer {
     }
 
     const double
-    ThermoFinder::get_betaH_1(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm)
+    ThermoFinder::get_betaH_1(const double& temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm)
     {
         // const double dy = decay_rate.get_action_deriv(temperature);
         // const double dtdT = tm.get_time_temperature_false(temperature);
@@ -283,7 +283,7 @@ namespace PhaseTracer {
     }
 
     const double
-    ThermoFinder::get_betaH_2(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm)
+    ThermoFinder::get_betaH_2(const double& temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm)
     {
         // const double dtdT = tm.get_time_temperature_false(temperature);
         // const double ddSdTT2 = decay_rate.get_action_double_deriv(temperature);
@@ -296,7 +296,7 @@ namespace PhaseTracer {
     }
 
     const double
-    ThermoFinder::get_decay_rate_FWHM(const double& target_maximum, const double& target_temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm)
+    ThermoFinder::get_decay_rate_FWHM(const double& target_maximum, const double& target_temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm)
     {
         int bits = std::numeric_limits<double>::digits;
         boost::uintmax_t max_iter = 100;
@@ -324,7 +324,7 @@ namespace PhaseTracer {
     }
 
     const double
-    ThermoFinder::get_H(const double& temperature, TransitionMetrics& tm)
+    ThermoFinder::get_H(const double& temperature, FriedmannEvolution& tm)
     {
         return tm.get_hubble_rate(temperature);
     }
@@ -344,25 +344,25 @@ namespace PhaseTracer {
     }
 
     const double 
-    ThermoFinder::get_n(const double& temperature, TransitionMetrics& tm)
+    ThermoFinder::get_n(const double& temperature, FriedmannEvolution& tm)
     {
         return tm.get_bubble_density(temperature);
     }
 
     const double 
-    ThermoFinder::get_Rbar(const double& temperature, TransitionMetrics& tm)
+    ThermoFinder::get_Rbar(const double& temperature, FriedmannEvolution& tm)
     {
         return tm.get_mean_bubble_radius(temperature);
     }
 
     const double
-    ThermoFinder::get_dt(const double& temperature, TransitionMetrics& tm)
+    ThermoFinder::get_dt(const double& temperature, FriedmannEvolution& tm)
     {
         return tm.get_t(temperature);
     }
 
     const double
-    ThermoFinder::get_percolation_temperature_wrapper(const double& vw, const double& percolation_target, const TransitionMetrics& tm)
+    ThermoFinder::get_percolation_temperature_wrapper(const double& vw, const double& percolation_target, const FriedmannEvolution& tm)
     {
         auto tm_copy = tm;
         tm_copy.set_vw(vw);
@@ -381,7 +381,7 @@ namespace PhaseTracer {
     }
 
     const double
-    ThermoFinder::get_vw_wrapper(const double& temperature, const TransitionMetrics& tm, const EquationOfState& eos)
+    ThermoFinder::get_vw_wrapper(const double& temperature, const FriedmannEvolution& tm, const EquationOfState& eos)
     {
         // 2303.10171
         
@@ -420,7 +420,7 @@ namespace PhaseTracer {
     }
 
     const void
-    ThermoFinder::revise_percolation_temperature(TransitionMilestone& percolation, const EquationOfState& eos, const TransitionMetrics& tm)
+    ThermoFinder::revise_percolation_temperature(TransitionMilestone& percolation, const EquationOfState& eos, const FriedmannEvolution& tm)
     {
         const double vw_initial = vw;
         const double percolation_temp_initial = percolation.temperature;

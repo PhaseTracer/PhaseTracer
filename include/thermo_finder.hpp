@@ -28,12 +28,13 @@
 #include <interpolation.h>
 
 #include "property.hpp"
+#include "scale.hpp"
 #include "phase_finder.hpp"
 #include "transition_finder.hpp"
 #include "action_calculator.hpp"
 #include "false_vacuum_decay_rate.hpp"
 #include "equation_of_state.hpp"
-#include "transition_metrics.hpp"
+#include "friedmann_evolution.hpp"
 
 namespace PhaseTracer {
 
@@ -86,12 +87,12 @@ struct ThermalParameterSet
     ActionCalculator ac;
 
     /** Held behind unique_ptr so their addresses survive a move of this struct.
-     *  transition_metrics holds const references to *decay_rate and *eos; with
+     *  friedmann_evolution holds const references to *decay_rate and *eos; with
      *  the objects stored by value those references would point into the
      *  moved-from instance. */
     std::unique_ptr<FalseVacuumDecayRate> decay_rate;
     std::unique_ptr<EquationOfState> eos;
-    std::unique_ptr<TransitionMetrics> transition_metrics;
+    std::unique_ptr<FriedmannEvolution> friedmann_evolution;
 
     double TC;
 
@@ -135,25 +136,25 @@ struct ThermalParameterSet
         eos->set_background_dof(background_dof);
         eos->calculate();
 
-        transition_metrics = std::make_unique<TransitionMetrics>(*decay_rate, *eos);
-        transition_metrics->set_vw(vw);
-        transition_metrics->set_use_bag_dtdT(use_bag_dtdT);
-        transition_metrics->set_percolation_target(percolation_target);
-        transition_metrics->set_completion_target(completion_target);
-        transition_metrics->set_onset_target(onset_target);
-        transition_metrics->set_nucleation_target(nucleation_target);
-        transition_metrics->set_temperature_abs_tol(temperature_abs_tol);
+        friedmann_evolution = std::make_unique<FriedmannEvolution>(*decay_rate, *eos);
+        friedmann_evolution->set_vw(vw);
+        friedmann_evolution->set_use_bag_dtdT(use_bag_dtdT);
+        friedmann_evolution->set_percolation_target(percolation_target);
+        friedmann_evolution->set_completion_target(completion_target);
+        friedmann_evolution->set_onset_target(onset_target);
+        friedmann_evolution->set_nucleation_target(nucleation_target);
+        friedmann_evolution->set_temperature_abs_tol(temperature_abs_tol);
 
         // Solve only after every property is in place: vw, newtonG,
         // temperature_abs_tol and use_bag_dtdT are all read inside
         // refine_temperature_bounds() and evolve_friedmann().
-        transition_metrics->solve();
+        friedmann_evolution->solve();
 
         TC = decay_rate->get_t_max();
 
-        transition_metrics->compute_milestones();
+        friedmann_evolution->compute_milestones();
 
-        transition_metrics->compute_nucleation_history(t_in.false_phase.T.front(), t_in.TC);
+        friedmann_evolution->compute_nucleation_history(t_in.false_phase.T.front(), t_in.TC);
     }
 
     friend std::ostream &operator<<(std::ostream& o, const ThermalParameterSet &tps) 
@@ -227,17 +228,36 @@ public :
      *  get_thermal_parameter_set calls. */
     void set_prefactor_function(FalseVacuumDecayRate::PrefactorFunction f) { prefactor_function = f; }
 
-    // std::vector<ThermalParameterSet> find_thermal_parameters;
+    /** Whether already calculated all transitions */
+    bool calculated_thermal_parameters = false;
+
+    /** Container for all transitions between any two phases */
+    std::vector<ThermalParameterSet> thermal_parameters;
+    
+    std::vector<ThermalParameterSet> find_thermal_parameters;
 
     ThermalParameterSet get_thermal_parameter_set(Transition t);
 
-    const void add_thermal_parameter_values(TransitionMilestone& milestone, const FalseVacuumDecayRate& decay_rate, const EquationOfState& eos, TransitionMetrics& tm);
+    const void add_thermal_parameter_values
+    (
+        TransitionMilestone& milestone, 
+        const FalseVacuumDecayRate& decay_rate, 
+        const EquationOfState& eos, 
+        FriedmannEvolution& tm
+    );
 
-    void fill_nucleation_history(NucleationHistory& history, TransitionMilestone& percolation, TransitionMilestone& nucleation, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+    void fill_nucleation_history
+    (
+        NucleationHistory& history, 
+        TransitionMilestone& percolation, 
+        TransitionMilestone& nucleation, 
+        const FalseVacuumDecayRate& decay_rate, 
+        FriedmannEvolution& tm
+    );
 
-    void add_history_lists(NucleationHistory& history, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+    void add_history_lists(NucleationHistory& history, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm);
     
-    const double get_gamma_on_H4(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+    const double get_gamma_on_H4(const double& temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm);
 
     const double get_RsH_sim(const double& gammaH4, const double& betaH);
 
@@ -249,29 +269,29 @@ public :
 
     const double get_betaH_eff(const double& vw, const double& RsH);
 
-    const double get_betaH_1(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+    const double get_betaH_1(const double& temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm);
 
-    const double get_betaH_2(const double& temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+    const double get_betaH_2(const double& temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm);
 
-    const double get_decay_rate_FWHM(const double& target_maximum, const double& target_temperature, const FalseVacuumDecayRate& decay_rate, TransitionMetrics& tm);
+    const double get_decay_rate_FWHM(const double& target_maximum, const double& target_temperature, const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& tm);
 
-    const double get_H(const double& temperature, TransitionMetrics& tm);
+    const double get_H(const double& temperature, FriedmannEvolution& tm);
 
     const double get_we(const double& temperature, const EquationOfState& eos);
 
     const std::pair<double, double> get_cs(const double& temperature, const EquationOfState& eos);
 
-    const double get_n(const double& temperature, TransitionMetrics& tm);
+    const double get_n(const double& temperature, FriedmannEvolution& tm);
 
-    const double get_Rbar(const double& temperature, TransitionMetrics& tm);
+    const double get_Rbar(const double& temperature, FriedmannEvolution& tm);
 
-    const double get_dt(const double& temperature, TransitionMetrics& tm);
+    const double get_dt(const double& temperature, FriedmannEvolution& tm);
 
-    const double get_percolation_temperature_wrapper(const double& vw, const double& percolation_target, const TransitionMetrics& tm);
+    const double get_percolation_temperature_wrapper(const double& vw, const double& percolation_target, const FriedmannEvolution& tm);
 
-    const double get_vw_wrapper(const double& temperature, const TransitionMetrics& tm, const EquationOfState& eos);
+    const double get_vw_wrapper(const double& temperature, const FriedmannEvolution& tm, const EquationOfState& eos);
 
-    const void revise_percolation_temperature(TransitionMilestone& percolation, const EquationOfState& eos, const TransitionMetrics& tm);
+    const void revise_percolation_temperature(TransitionMilestone& percolation, const EquationOfState& eos, const FriedmannEvolution& tm);
 
 };
 

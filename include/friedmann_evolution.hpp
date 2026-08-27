@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_TRANSITION_METRICS_HPP_
-#define PHASETRACER_TRANSITION_METRICS_HPP_
+#ifndef PHASETRACER_FRIEDMANN_EVOLUTION_HPP_
+#define PHASETRACER_FRIEDMANN_EVOLUTION_HPP_
 
 #include <cmath>
 #include <chrono>
@@ -325,7 +325,7 @@ struct FriedmannSystem
     }
 };
 
-class TransitionMetrics 
+class FriedmannEvolution
 {
 
     FalseVacuumDecayRate& decay_rate;
@@ -385,7 +385,7 @@ public :
      *
      * Both arguments must outlive this object.
      */
-    TransitionMetrics(FalseVacuumDecayRate& decay_rate_in, EquationOfState& eos_in) :
+    FriedmannEvolution(FalseVacuumDecayRate& decay_rate_in, EquationOfState& eos_in) :
     decay_rate(decay_rate_in), eos(eos_in)
     {}
 
@@ -454,7 +454,7 @@ private:
     {
         if (!solved)
         {
-            throw std::logic_error(std::string("TransitionMetrics::") + caller + " called before solve().");
+            throw std::logic_error(std::string("FriedmannEvolution::") + caller + " called before solve().");
         }
     }
 
@@ -489,4 +489,4 @@ private:
 
 } // namespace PhaseTracer
 
-#endif // PHASETRACER_TRANSITION_METRICS_HPP_
+#endif // PHASETRACER_FRIEDMANN_EVOLUTION_HPP_
