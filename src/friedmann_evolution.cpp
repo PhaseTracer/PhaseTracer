@@ -65,7 +65,7 @@ namespace PhaseTracer {
             auto t0 = std::chrono::high_resolution_clock::now();
             fit_friedmann_splines();
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
-            // LOG(debug) << "Fit splines to Friedmann solution. Time: " << dt.count() << " ms";
+            LOG(debug) << "Fit splines to Friedmann solution. Time: " << dt.count() << " ms";
         }
 
         solved = true;
@@ -247,11 +247,6 @@ namespace PhaseTracer {
             const double false_vacuum_fraction = get_false_vacuum_fraction_from_I3(I_3);
             const double true_vacuum_fraction = 1 - false_vacuum_fraction;
 
-            // const double e_average = false_vacuum_fraction * e_false + true_vacuum_fraction * e_true;
-            // const double x_f = false_vacuum_fraction * e_false / e_average;
-            // const double x_t = true_vacuum_fraction * e_true / e_average;
-            // LOG(debug) << "Tau = " << tau << ", x_f = " << x_f << ", x_t = " << x_t;
-
             const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
             const double gamma = decay_rate.get_gamma(T_false);
 
@@ -311,6 +306,11 @@ namespace PhaseTracer {
             const double gamma  = decay_rate.get_gamma(T_false);
 
             const double t = std::exp(tau);
+
+            // LOG(debug) << "Friedmann evolution: tau = " << tau << ", t = " << t << ", T_false = " << T_false << ", T_true = " << T_true
+            //            << ", log(I_3) = " << std::log(I_3)
+            //            << ", true vacuum fraction = " << true_vacuum_fraction
+            //            << ", scale factor a = " << a << "\n";
 
             system.log_time.push_back(tau);
             system.time.push_back(t);
@@ -416,6 +416,7 @@ namespace PhaseTracer {
     {
         if (system.time.empty())
         {
+            LOG(warning) << "Friedmann system is empty. Cannot fit splines.";
             friedmann_splines_computed = false;
             return;
         }
@@ -442,6 +443,13 @@ namespace PhaseTracer {
         log_bubble_number_density_array.setlength(system.time.size());
         log_mean_bubble_radius_array.setlength(system.time.size());
 
+        auto log_safe = [](double x) {
+            if (x <= 0.0 || std::isnan(x) || std::isinf(x)) {
+                return -700.0;
+            }
+            return std::log(x);
+        };
+
         for (std::size_t i = 0; i < system.time.size(); ++i)
         {
             T_false_array[i] = system.T_f[i];
@@ -449,22 +457,22 @@ namespace PhaseTracer {
             log_time_array[i] = system.log_time[i];
             scale_factor_array[i] = system.a[i];
             hubble_rate_array[i] = system.hubble[i];
-            log_action_array[i] = (i==0) ? -700 : std::log(system.action[i]);
-            log_I_3_array[i] = (i==0) ? -700 : std::log(system.I_3[i]);
-            log_nucleation_rate_array[i] = (i==0) ? -700 : std::log(system.nucleation_rate[i]);
-            log_bubble_number_density_array[i] = (i==0) ? -700 : std::log(system.number_density[i]);
-            log_mean_bubble_radius_array[i] = (system.mean_bubble_radius[i]>0) ? std::log(system.mean_bubble_radius[i]) : -700;
+            log_action_array[i] = (i==0) ? -700 : log_safe(system.action[i]);
+            log_I_3_array[i] = (i==0) ? -700 : log_safe(system.I_3[i]);
+            log_nucleation_rate_array[i] = (i==0) ? -700 : log_safe(system.nucleation_rate[i]);
+            log_bubble_number_density_array[i] = (i==0) ? -700 : log_safe(system.number_density[i]);
+            log_mean_bubble_radius_array[i] = (i==0) ? -700 : log_safe(system.mean_bubble_radius[i]);
         }
 
-        alglib::spline1dbuildcubic(T_false_array, T_true_array, reheating_spline);
-        alglib::spline1dbuildcubic(T_false_array, log_time_array, log_time_spline);
-        alglib::spline1dbuildcubic(T_false_array, scale_factor_array, scale_factor_spline);
-        alglib::spline1dbuildcubic(T_false_array, hubble_rate_array, hubble_rate_spline);
-        alglib::spline1dbuildcubic(T_false_array, log_action_array, log_action_spline);
-        alglib::spline1dbuildmonotone(T_false_array, log_I_3_array, log_I_3_spline);
-        alglib::spline1dbuildmonotone(T_false_array, log_nucleation_rate_array, log_nucleation_rate_spline);
-        alglib::spline1dbuildmonotone(T_false_array, log_bubble_number_density_array, log_bubble_number_density_spline);
-        alglib::spline1dbuildmonotone(T_false_array, log_mean_bubble_radius_array, log_mean_bubble_radius_spline);
+        alglib::spline1dbuildcubic(T_false_array, T_true_array, reheating_spline); LOG(trace) << "Fitted reheating spline.";
+        alglib::spline1dbuildcubic(T_false_array, log_time_array, log_time_spline); LOG(trace) << "Fitted log(time) spline.";
+        alglib::spline1dbuildcubic(T_false_array, scale_factor_array, scale_factor_spline); LOG(trace) << "Fitted scale factor spline.";
+        alglib::spline1dbuildcubic(T_false_array, hubble_rate_array, hubble_rate_spline); LOG(trace) << "Fitted Hubble rate spline.";
+        alglib::spline1dbuildcubic(T_false_array, log_action_array, log_action_spline); LOG(trace) << "Fitted log(action) spline.";
+        alglib::spline1dbuildmonotone(T_false_array, log_I_3_array, log_I_3_spline); LOG(trace) << "Fitted log(I_3) spline.";
+        alglib::spline1dbuildmonotone(T_false_array, log_nucleation_rate_array, log_nucleation_rate_spline); LOG(trace) << "Fitted log(nucleation rate) spline.";
+        alglib::spline1dbuildmonotone(T_false_array, log_bubble_number_density_array, log_bubble_number_density_spline); LOG(trace) << "Fitted log(bubble number density) spline.";
+        alglib::spline1dbuildmonotone(T_false_array, log_mean_bubble_radius_array, log_mean_bubble_radius_spline); LOG(trace) << "Fitted log(mean bubble radius) spline.";
 
         friedmann_splines_computed = true;
     }

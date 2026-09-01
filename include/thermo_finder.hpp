@@ -167,7 +167,8 @@ struct ThermalParameterSet
 enum ValidateMethod
 {
     TEMP,
-    VEV
+    VEV,
+    NONE
 };
 
 class ThermoFinder {

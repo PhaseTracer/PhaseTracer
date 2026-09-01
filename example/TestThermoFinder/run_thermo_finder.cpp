@@ -48,6 +48,11 @@ int main(int argc, char* argv[]) {
     */
     double ms, lambda_s, lambda_hs, Q, xi;
 
+    if (argc > 1 && std::string(argv[1]) == "-d")
+    {
+        LOGGER(debug);
+    }
+
     try 
     {
         std::string json_filename = "example/TestThermoFinder/model_params.json";
@@ -98,7 +103,13 @@ int main(int argc, char* argv[]) {
     action_calculator.set_PD_phitol(1e-4);
 
     PhaseTracer::ThermoFinder thermo_finder(transition_finder, action_calculator);
-    thermo_finder.set_default_validation_method(PhaseTracer::ValidateMethod::VEV);
+
+    /*
+        ThermoFinder constructs internal copies of FalseVacuumDecayRate,
+        EquationOfState, and FriedmannEvolution, and as such the settings for 
+        each of these classes are modified using getter/setter methods on 
+        ThermoFinder. Additionally, it comes equipped with its own settings.
+    */
 
     /*
         The calculation of thermal parameters is computationally expensive. As 
@@ -123,30 +134,23 @@ int main(int argc, char* argv[]) {
         Conversely, users wishing to maintain full control can pass their own
         filter. This has to be a function with the signature
         std::vector<PhaseTracer::Transition>(const std::vector<PhaseTracer::Transition>&),
-        and can be set using set_transition_filter. We provide an example below
-        selecting the (0, s) -> (h, 0) transition.
+        and can be installed using set_transition_filter. We provide an example 
+        below selecting the (0, s) -> (h, 0) transition.
+
+        Validation can be skipped entirely by using ValidateMethod::NONE, but 
+        this may result in silent errors.
     */
-    auto custom_validation = [](const std::vector<PhaseTracer::Transition>& input) 
+    auto custom_validation = [](const std::vector<PhaseTracer::Transition>& input)
     {
         std::vector<PhaseTracer::Transition> output;
-        for (auto t : input) 
-        {
-            auto true_vac = t.true_vacuum;
-            auto false_vac = t.false_vacuum;
-            auto changed = t.changed;
-
-            if(changed[0] && changed[1])
-            {
-            double h_true = true_vac[0];
-            double h_false = false_vac[0];
-            double s_true = true_vac[1];
-            double s_false = false_vac[1];
-            if( (abs(h_true) > 5. && abs(s_true) < 1e-3) && (abs(s_false) > 5. && abs(h_false) < 1e-3) )
-            {
-                output.push_back(t);
-            }     
-            }
-        }
+        std::copy_if(input.begin(), input.end(), std::back_inserter(output),
+            [](const PhaseTracer::Transition& t) {
+                const auto& tv = t.true_vacuum;
+                const auto& fv = t.false_vacuum;
+                return t.changed[0] && t.changed[1] &&
+                    std::abs(tv[0]) > 5.  && std::abs(tv[1]) < 1e-3 &&
+                    std::abs(fv[1]) > 5.  && std::abs(fv[0]) < 1e-3;
+            });
         return output;
     };
     thermo_finder.set_transition_filter(custom_validation);
@@ -175,6 +179,69 @@ int main(int argc, char* argv[]) {
     thermo_finder.find_thermal_parameters();
 
     std::cout << thermo_finder << std::endl;
+
+    /*
+        Note the reference: get_thermal_parameters hands back a const reference
+        to the internal vector, and a ThermalParameterSet owns its helper
+        classes through unique_ptrs, so it cannot be copied. Binding with a
+        plain 'auto' would try to copy the vector and fail to compile.
+    */
+    const auto& thermal_parameter_sets = thermo_finder.get_thermal_parameters();
+    if(thermal_parameter_sets.size() == 0)
+    {
+        LOG(fatal) << "No thermal parameters found.";
+        return 1;
+    }
+
+    /*
+        Each set carries the ActionCalculator, EquationOfState,
+        FalseVacuumDecayRate and FriedmannEvolution that were used for that
+        transition. They are held as unique_ptrs, so dereference the pointer to
+        get at the object itself. Taking the address of the member instead
+        (&tps.eos) would only give a pointer to the unique_ptr, which is not
+        what you want to call methods on.
+    */
+    const auto& tps = thermal_parameter_sets[0];
+
+    auto& ac         = *tps.ac;                  // ActionCalculator class
+    auto& eos        = *tps.eos;                 // EquationOfState class
+    auto& decay_rate = *tps.decay_rate;          // FalseVacuumDecayRate class
+    auto& friedmann  = *tps.friedmann_evolution; // FriedmannEvolution class
+
+    /*
+        For information on these, consult their respective examples. We can also
+        access each of the milestones. These do not need to be passed by ref,
+        as they are small and trivially copyable.
+    */
+    auto& percolation = tps.percolation;
+    auto& nucleation = tps.nucleation;
+    auto& onset = tps.onset;
+    auto& completion = tps.completion;
+
+    /*
+        Lastly, each milestone has a status, which can be YES, NO, FAST, or ERR,
+        as well as the value of all the thermal parameters at that milestone.
+    */
+    auto& status = percolation.status;
+    auto& temperature = percolation.temperature;
+    auto& alpha = percolation.alpha;
+    auto& betaH = percolation.betaH;
+    auto& H = percolation.H;
+    auto& we = percolation.we;
+    auto& cs_plus = percolation.cs_plus;
+    auto& cs_minus = percolation.cs_minus;
+
+    /*
+        In PhaseTracer2, GravWaveCalculator was constructed with an instance
+        of TransitionFinder, and then manually calculated thermal parameters 
+        using simple approximations. As we have refined the calculation in 
+        PhaseTracer3, we now construct GravWaveCalculator with an instance of
+        ThermoFinder, and it will automatically use these thermal parameters to
+        calculate the power spectrum.
+    */
+    PhaseTracer::GravWaveCalculator gw_calculator(thermo_finder);
+    gw_calculator.calc_spectrums();
+    std::cout << gw_calculator;
 
     return 0;
 }

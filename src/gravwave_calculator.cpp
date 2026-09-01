@@ -257,7 +257,8 @@ GravWaveSpectrum GravWaveCalculator::sum_spectrums(const std::vector<GravWaveSpe
 }
 
 std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
-  // if (!tf) { throw std::runtime_error("TransitionFinder is not set for GravWaveCalculator");}
+  if (tf) 
+  {
   for (const auto &ti : trans) {
     double Tref = ti.TN;
     if (Tref < 1.5 * h_dSdT) {
@@ -271,15 +272,29 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
   }
   total_spectrum = sum_spectrums(spectrums);
   return spectrums;
+  } 
+  else if (tm) 
+  {
+    for (const auto &tps : transition_milestones) {
+      double Tref = tps.temperature;
+      double alpha = tps.alpha;
+      double beta_H = tps.betaH;
+      GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
+      spectrums.push_back(spi);
+    }
+    total_spectrum = sum_spectrums(spectrums);
+    return spectrums;
+  }
+  else
+  {
+    throw std::runtime_error("No TransitionFinder or ThermoFinder provided to GravWaveCalculator");
+  }
 }
 
 void GravWaveCalculator::write_spectrum_to_text(const GravWaveSpectrum &sp, const std::string &filename) const {
   std::ofstream file(filename);
   for (int ii = 0; ii < sp.frequency.size(); ii++) {
     file << sp.frequency[ii] << ", " << sp.total_amplitude[ii] << ", " << sp.sound_wave[ii] << ", " << sp.turbulence[ii] << ", " << sp.bubble_collision[ii];
-    // #ifdef BUILD_WITH_DP
-    // file << ", " <<  sp.freq_ssm[ii] << ", " << sp.amplitude_ssm[ii];
-    // #endif
     file << std::endl;
   }
 

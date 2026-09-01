@@ -65,31 +65,24 @@ namespace PhaseTracer {
     ThermoFinder::default_transition_filter(const std::vector<Transition>& transitions)
     {
         std::vector<Transition> valid_transitions;
-        
-        if(default_validation_method==PhaseTracer::ValidateMethod::TEMP)
-        {
-            for(const auto& t : transitions)
-            {
-                const double t_max = t.TC;
-                const double t_min = t.false_phase.T.front();
 
-                if(t_max - t_min > temperature_threshold)
-                {
-                    valid_transitions.push_back(t);
-                }
-            }
+        if ( default_validation_method == PhaseTracer::ValidateMethod::NONE )
+        {
+            valid_transitions = transitions;
         }
-
-        else if(default_validation_method==PhaseTracer::ValidateMethod::VEV)
+        else if (default_validation_method == PhaseTracer::ValidateMethod::TEMP)
         {
-            for(const auto& t : transitions)
-            {
-                const auto vev = t.true_vacuum - t.false_vacuum;
-                if(vev.norm() > vev_threshold)
-                {
-                    valid_transitions.push_back(t);
-                }
-            }
+            std::copy_if(transitions.begin(), transitions.end(), std::back_inserter(valid_transitions),
+                [this](const Transition& t) {
+                    return t.TC - t.false_phase.T.front() > temperature_threshold;
+                });
+        }
+        else if (default_validation_method == PhaseTracer::ValidateMethod::VEV)
+        {
+            std::copy_if(transitions.begin(), transitions.end(), std::back_inserter(valid_transitions),
+                [this](const Transition& t) {
+                    return (t.true_vacuum - t.false_vacuum).norm() > vev_threshold;
+                });
         }
 
         return valid_transitions;
@@ -123,7 +116,6 @@ namespace PhaseTracer {
         output.percolation = output.friedmann_evolution->percolation_milestone;
         output.percolation.set_print_setting(percolation_print_setting);
 
-        // update the percolation temperature 
         if(update_percolation_temperature)
         {
             try{
@@ -472,11 +464,11 @@ namespace PhaseTracer {
         if (a.thermal_parameters.size() > 1) {
             o << "s";
         }
-        o << "\n";
+        o << "\n\n";
 
         for (const auto &tps : a.thermal_parameters) 
         {
-            o << tps << "\n";
+            o << tps << "\n\n";
         }
 
         return o;

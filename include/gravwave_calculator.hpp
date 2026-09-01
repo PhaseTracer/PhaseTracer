@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "transition_finder.hpp"
+#include "thermo_finder.hpp"
 #ifdef BUILD_WITH_DP
 #include "deep_phase.hpp"
 #endif
@@ -63,12 +64,47 @@ struct GravWaveSpectrum {
 class GravWaveCalculator {
 
 public:
-  explicit GravWaveCalculator(const TransitionFinder &tf_) : tf(std::make_unique<TransitionFinder>(tf_)) {
+  /* Backwards compatible version, will do nothing */
+  explicit GravWaveCalculator(const TransitionFinder &tf_) : tf(tf_) {
+    LOG(debug) << "GravWaveCalculator constructed with TransitionFinder";
     for (const auto &t : tf->get_transitions()) {
       if (std::isnan(t.TN))
         LOG(debug) << "Nucleation temperature dose not exist. GW will not be calculated !";
       else
         trans.push_back(t);
+    }
+  }
+
+  explicit GravWaveCalculator(ThermoFinder &tm_) : tm(&tm_)
+  {
+    LOG(debug) << "GravWaveCalculator constructed with ThermoFinder";
+
+    for (const auto &tps : tm->get_thermal_parameters()) {
+      TransitionMilestone milestone;
+      switch (default_milestone) {
+        case MilestoneType::ONSET:
+          milestone = tps.onset;
+          break;
+        case MilestoneType::PERCOLATION:
+          milestone = tps.percolation;
+          break;
+        case MilestoneType::COMPLETION:
+          milestone = tps.completion;
+          break;
+        case MilestoneType::NUCLEATION:
+          milestone = tps.nucleation;
+          break;
+        default:
+          LOG(debug) << "Invalid milestone type. GW will not be calculated !";
+          continue;
+      }
+      if (milestone.status == MilestoneStatus::YES)
+      {
+        LOG(debug) << "Found " << static_cast<int>(milestone.type) << " milestone with T = " << milestone.temperature;
+        transition_milestones.push_back(milestone);
+      } else {
+        LOG(debug) << "No " << static_cast<int>(milestone.type) << " milestone found for transition with TC = " << tps.TC;
+      }
     }
   }
 
@@ -113,7 +149,12 @@ public:
   std::vector<double> get_SNR(double f_min, double f_max, double T_obs_LISA, double T_obs_Taiji, double alpha, double beta_H, double T_ref) const;
 
 private:
-  std::unique_ptr<TransitionFinder> tf;
+  std::optional<TransitionFinder> tf;
+  /** Non-owning; the ThermoFinder must outlive this calculator. */
+  ThermoFinder *tm = nullptr;
+
+  /** ThermoFinder Milestone */
+  PROPERTY(PhaseTracer::MilestoneType, default_milestone, PhaseTracer::MilestoneType::PERCOLATION);
 
   /** Degree of freedom */
   PROPERTY(double, dof, 106.75);
@@ -141,11 +182,11 @@ private:
   /** Summed GW spectrum*/
   GravWaveSpectrum total_spectrum;
 
-  /** All transitions with valid TN*/
+  /** All transitions with valid TN */
   std::vector<Transition> trans;
 
-  /** All thermal params with valid temp*/
-  // std::vector<ThermalLegacy> thermal_params;
+  /** All thermal params with valid temp */
+  std::vector<TransitionMilestone> transition_milestones;
 
   /** Lower bound on the frequency of the GW spectrum */
   PROPERTY(double, min_frequency, 1e-4);
