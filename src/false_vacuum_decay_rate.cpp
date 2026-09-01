@@ -25,21 +25,26 @@
 
 namespace PhaseTracer {
 
-    void FalseVacuumDecayRate::calculate() {
+    void 
+    FalseVacuumDecayRate::calculate() 
+    {
         calculated = false;
         get_splines();
         calculated = true;
     }
 
-    void FalseVacuumDecayRate::require_calculated(const char* caller) const {
-        if (!calculated) {
-            throw std::logic_error(std::string("FalseVacuumDecayRate::") + caller +
-                                   " called before calculate().");
+    void 
+    FalseVacuumDecayRate::require_calculated(const char* caller) const 
+    {
+        if (!calculated) 
+        {
+            throw std::logic_error(std::string("FalseVacuumDecayRate::") + caller + " called before calculate().");
         }
     }
 
-    void FalseVacuumDecayRate::get_splines() {
-
+    void 
+    FalseVacuumDecayRate::get_splines() 
+    {
         if (spline_evaluations < 2) {
             throw std::runtime_error("Spline evaluations must be at least 2.");
         }
@@ -62,14 +67,11 @@ namespace PhaseTracer {
         {
             double tt = t_min + i * dt;
 
-            // Compute the full bounce (action + profile + path) once: the action
-            // builds the spline and the profile is forwarded to the prefactor,
-            // which a one-loop determinant prefactor (e.g. BubbleDet) needs.
             ActionResult bounce;
             double action;
             try {
                 bounce = ac.get_action_full(t.true_phase, t.false_phase, tt);
-                action = bounce.action / tt;
+                action = bounce.action / tt; // NB action is S_3(T)/T
             } catch ( ... )
             {
                 action = 1.;
@@ -108,7 +110,7 @@ namespace PhaseTracer {
         
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-        LOG(info) << "Action calculation loop completed in " << duration.count() << " ms";
+        LOG(debug) << "Action calculation loop completed in " << duration.count() << " ms";
         
         std::vector<double> valid_temps, valid_log_actions, valid_log_prefactors, valid_log_gammas;
         for (int i = 0; i < spline_evaluations; i++) 
@@ -137,7 +139,7 @@ namespace PhaseTracer {
         alglib::spline1dbuildcubic(temp_array, log_prefactor_array, this->log_prefactor_spline);
         alglib::spline1dbuildcubic(temp_array, log_gamma_array, this->log_gamma_spline);
         
-        LOG(debug) << "Built splines with " << valid_temps.size() << " valid points";
+        LOG(debug) << "Built action splines with " << valid_temps.size() << " valid points";
     }
 
     double
@@ -149,8 +151,6 @@ namespace PhaseTracer {
     FalseVacuumDecayRate::PrefactorFunction
     FalseVacuumDecayRate::default_decay_rate_prefactor()
     {
-        // Standard analytic thermal prefactor T^4 (S/2pi)^{3/2}. It needs only
-        // the temperature and S/T, so the full bounce solution is ignored.
         return [](double temperature, double action_on_T, const ActionResult&) -> double {
             double t4 = temperature * temperature * temperature * temperature;
             double ratio = std::pow(action_on_T / (2. * M_PI), 1.5);

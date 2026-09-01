@@ -39,12 +39,9 @@ public:
     /**
      * Signature of a decay-rate prefactor A(T). It receives the temperature,
      * the action-on-temperature S/T, and the full ActionResult (bounce action,
-     * profile and tunneling path) so that a prefactor needing the bounce
-     * solution -- e.g. a one-loop functional determinant via BubbleDet -- can
-     * access it. The default analytic prefactor ignores the ActionResult.
+     * profile and tunneling path). It returns the prefactor A(T).
      */
     using PrefactorFunction = std::function<double(double temperature, double action_on_T, const ActionResult& bounce)>;
-
     
     // Delete copy constructor and copy assignment to prevent shallow copies of ALGLIB splines
     FalseVacuumDecayRate(const FalseVacuumDecayRate&) = delete;
@@ -60,10 +57,6 @@ public:
     /**
      * @brief Solves the bounce action over [t_min, t_max] and fits the
      *        log(action), log(prefactor) and log(gamma) splines.
-     *
-     * This is the expensive part of the class. It must be called before any of
-     * the get_action/get_prefactor/get_gamma accessors, which will otherwise 
-     * throw a logic error.
      */
     void calculate();
 
@@ -71,7 +64,7 @@ public:
     bool is_calculated() const { return calculated; }
 
     /**
-     * @brief Computes the action at a given temperature using the precomputed spline.
+     * @brief Computes the action, S3(T), at a given temperature using the precomputed spline.
      * @param temperature The temperature at which to evaluate the action.
      * @return The action at the specified temperature.
     */
