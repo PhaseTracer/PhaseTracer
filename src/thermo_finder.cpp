@@ -116,7 +116,7 @@ namespace PhaseTracer {
         output.percolation = output.friedmann_evolution->percolation_milestone;
         output.percolation.set_print_setting(percolation_print_setting);
 
-        if(update_percolation_temperature)
+        if(update_percolation_temperature && output.percolation.status == MilestoneStatus::YES)
         {
             try{
                 revise_percolation_temperature(output.percolation, *output.eos, *output.friedmann_evolution);
@@ -239,8 +239,11 @@ namespace PhaseTracer {
         TransitionMilestone& milestone, 
         FriedmannEvolution& tm)
     {
-        double T_reh = tm.get_T_true(milestone.temperature);
-        milestone.reheating_temperature = T_reh;
+        if(milestone.status == MilestoneStatus::YES) 
+        {
+            double T_reh = tm.get_T_true(milestone.temperature);
+            milestone.reheating_temperature = T_reh;
+        }
     }
 
     void

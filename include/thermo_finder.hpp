@@ -142,11 +142,14 @@ struct ThermalParameterSet
         TC = decay_rate->get_t_max();
 
         friedmann_evolution->compute_milestones();
-        friedmann_evolution->compute_nucleation_history
-        (
-            friedmann_evolution->get_t_min(), 
-            friedmann_evolution->get_t_max()
-        );
+        if(!friedmann_evolution->early_exit)
+        {
+            friedmann_evolution->compute_nucleation_history
+            (
+                friedmann_evolution->get_t_min(), 
+                friedmann_evolution->get_t_max()
+            );
+        }
     }
 
     friend std::ostream &operator<<(std::ostream& o, const ThermalParameterSet &tps) 
@@ -245,7 +248,9 @@ public :
     /** Pretty-printer for all ThermalParameterSets in this object */
     friend std::ostream &operator<<(std::ostream &o, const ThermoFinder &a);
 
-    ThermoFinder(ActionCalculator ac_in) : ac(ac_in) {};
+    ThermoFinder(ActionCalculator ac_in) : ac(ac_in) {
+        LOG(warning) << "ThermoFinder initialised without TransitionFinder.";
+    };
 
     ThermoFinder(TransitionFinder tf_in, ActionCalculator ac_in) : tf(tf_in), ac(ac_in) {};
 

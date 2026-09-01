@@ -42,7 +42,7 @@ namespace PhaseTracer {
             auto t0 = std::chrono::high_resolution_clock::now();
             refine_temperature_bounds();
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0);
-            // LOG(debug) << "Refined temperature bounds. Time: " << dt.count() << " ms";
+            LOG(debug) << "Refined temperature bounds. Time: " << dt.count() << " ms";
         }
 
         {
@@ -60,6 +60,15 @@ namespace PhaseTracer {
         t_min = system.T_f.back();
         t_max = system.T_f.front();
         LOG(debug) << "Updated t_min to " << t_min << " and t_max to " << t_max << " after Friedmann evolution.";
+        
+        const double I3_min = system.I_3.back();
+        const double false_vacuum_fraction_min = get_false_vacuum_fraction_from_I3(I3_min);
+        if (false_vacuum_fraction_min >= 0.999)
+        {
+            LOG(debug) << "False vacuum fraction at t_min is " << false_vacuum_fraction_min << ", indicating that the transition did not start. Exiting solve() early.";
+            early_exit = true;
+            return;
+        }
 
         {
             auto t0 = std::chrono::high_resolution_clock::now();
@@ -421,6 +430,8 @@ namespace PhaseTracer {
             return;
         }
 
+        LOG(trace) << "Fitting splines to Friedmann system with " << system.time.size() << " data points.";
+
         alglib::real_1d_array T_false_array;
         alglib::real_1d_array T_true_array; 
         alglib::real_1d_array log_time_array;
@@ -443,12 +454,15 @@ namespace PhaseTracer {
         log_bubble_number_density_array.setlength(system.time.size());
         log_mean_bubble_radius_array.setlength(system.time.size());
 
-        auto log_safe = [](double x) {
+        auto log_safe = [](double x, std::string caller = "") {
+            LOG(trace) << "Computing log_safe for " << caller << " with value: " << x;
             if (x <= 0.0 || std::isnan(x) || std::isinf(x)) {
                 return -700.0;
             }
             return std::log(x);
         };
+
+        LOG(trace) << "Populating arrays for spline fitting.";
 
         for (std::size_t i = 0; i < system.time.size(); ++i)
         {
@@ -457,12 +471,14 @@ namespace PhaseTracer {
             log_time_array[i] = system.log_time[i];
             scale_factor_array[i] = system.a[i];
             hubble_rate_array[i] = system.hubble[i];
-            log_action_array[i] = (i==0) ? -700 : log_safe(system.action[i]);
-            log_I_3_array[i] = (i==0) ? -700 : log_safe(system.I_3[i]);
-            log_nucleation_rate_array[i] = (i==0) ? -700 : log_safe(system.nucleation_rate[i]);
-            log_bubble_number_density_array[i] = (i==0) ? -700 : log_safe(system.number_density[i]);
-            log_mean_bubble_radius_array[i] = (i==0) ? -700 : log_safe(system.mean_bubble_radius[i]);
+            log_action_array[i] = (i==0) ? -700 : log_safe(system.action[i], "log_action");
+            log_I_3_array[i] = (i==0) ? -700 : log_safe(system.I_3[i], "log_I_3");
+            log_nucleation_rate_array[i] = (i==0) ? -700 : log_safe(system.nucleation_rate[i], "log_nucleation_rate");
+            log_bubble_number_density_array[i] = (i==0) ? -700 : log_safe(system.number_density[i], "log_bubble_number_density");
+            log_mean_bubble_radius_array[i] = (i==0) ? -700 : log_safe(system.mean_bubble_radius[i], "log_mean_bubble_radius");
         }
+
+        LOG(trace) << "Fitting splines to Friedmann system data.";
 
         alglib::spline1dbuildcubic(T_false_array, T_true_array, reheating_spline); LOG(trace) << "Fitted reheating spline.";
         alglib::spline1dbuildcubic(T_false_array, log_time_array, log_time_spline); LOG(trace) << "Fitted log(time) spline.";
@@ -895,10 +911,17 @@ namespace PhaseTracer {
     const TransitionMilestone 
     FriedmannEvolution::get_transition_milestone(const MilestoneType type)
     {
-        require_solved("get_transition_milestone");
         auto target_function = get_target_function(type);
 
         TransitionMilestone output(type);
+
+        if(early_exit)
+        {
+            output.status = MilestoneStatus::NO;
+            return output;
+        }
+
+        require_solved("get_transition_milestone");
 
         const auto valid = valid_lower_bound(target_function);
         if(valid)

@@ -371,6 +371,9 @@ class FriedmannEvolution
 
 public :
 
+    /** Set by solve() if the h(t_min) = 1. */
+    bool early_exit = false;
+
     FriedmannSystem system;
 
     TransitionMilestone onset_milestone;
@@ -400,7 +403,7 @@ public :
 
     void compute_milestones()
     {
-        require_solved("compute_milestones");
+        // require_solved("compute_milestones"); // already check inside get_transition_milestone
         onset_milestone = get_transition_milestone(MilestoneType::ONSET);
         percolation_milestone = get_transition_milestone(MilestoneType::PERCOLATION);
         completion_milestone = get_transition_milestone(MilestoneType::COMPLETION);
