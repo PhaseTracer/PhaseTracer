@@ -38,7 +38,12 @@ json readFile(std::string fileName){
 */
 int main(int argc, char* argv[]) {
 
-    LOGGER(debug);
+    LOGGER(fatal);
+
+    if (argc > 1 && std::string(argv[1]) == "-d")
+    {
+        LOGGER(debug);
+    }
 
     /*
         This is a test of the EquationOfState class. First, we read off the 
@@ -98,7 +103,7 @@ int main(int argc, char* argv[]) {
     */
     equation_of_state.calculate();
 
-    equation_of_state.write("example/TestThermalParameters/data/eos.csv");
+    equation_of_state.write("example/TestThermoFinder/data/eos.csv");
 
     /*
         By default, the EoS is normalised by subtracting the energy density of
@@ -112,7 +117,7 @@ int main(int argc, char* argv[]) {
     equation_of_state.set_energy_norm(normalisation);
 
     equation_of_state.calculate();
-    equation_of_state.write("example/TestThermalParameters/data/eos_w_norm.csv");
+    equation_of_state.write("example/TestThermoFinder/data/eos_w_norm.csv");
 
     return 0;
 }

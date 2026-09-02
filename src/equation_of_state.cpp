@@ -37,14 +37,9 @@ namespace PhaseTracer {
     {
         calculated = false;
 
-        // If no normalisation was supplied, take the field contribution
-        // (v - T*dv/dT) in the true vacuum at T_min, so that at T_min only the
-        // radiation bath contributes to the energy density (and hence H).
         const double norm = energy_norm.value_or(find_normalisation(transition.true_phase));
         LOG(debug) << "Energy normalization set to " << norm;
 
-        // EquationOfStateInPhase builds its own splines on construction; it is a
-        // private implementation detail, built fresh here on every calculate().
         EquationOfStateInPhase eos_plus(transition.false_phase, n_temp, background_dof, norm);
         EquationOfStateInPhase eos_minus(transition.true_phase, n_temp, background_dof, norm);
 
@@ -126,9 +121,8 @@ namespace PhaseTracer {
         alglib::spline1dinterpolant true_pot_norm_spline;
         alglib::spline1dbuildcubic(t_norm_arr, v_norm_arr, true_pot_norm_spline);
 
-        double normalisation = 0.0;
         double t_min = true_T.front();
-        normalisation = alglib::spline1dcalc(true_pot_norm_spline, t_min);
+        double normalisation = alglib::spline1dcalc(true_pot_norm_spline, t_min);
         
         return normalisation;
     }
@@ -363,18 +357,37 @@ namespace PhaseTracer {
     }
 
     double
-    EquationOfState::get_theta_plus(double T) const
+    EquationOfState::get_theta_plus(double T, bool use_munu) const
     {
         check_temperature_range(T, "get_theta_plus");
+
+        if(use_munu)
+        {
+            double cs_plus = get_sound_speed_plus(T);
+            double nu = 1 + 1/(cs_plus*cs_plus);
+            double e = alglib::spline1dcalc(this->e_plus_spline, T);
+            double p = alglib::spline1dcalc(this->p_plus_spline, T);
+            return (e - (nu - 1) * p) / 4.0;
+        }
         double e = alglib::spline1dcalc(this->e_plus_spline, T);
         double p = alglib::spline1dcalc(this->p_plus_spline, T);
         return (e - 3.0 * p) / 4.0;
     }
 
     double
-    EquationOfState::get_theta_minus(double T) const
+    EquationOfState::get_theta_minus(double T, bool use_munu) const
     {
         check_temperature_range(T, "get_theta_minus");
+
+        if(use_munu)
+        {
+            double cs_minus = get_sound_speed_minus(T);
+            double nu = 1 + 1/(cs_minus*cs_minus);
+            double e = alglib::spline1dcalc(this->e_minus_spline, T);
+            double p = alglib::spline1dcalc(this->p_minus_spline, T);
+            return (e - (nu - 1) * p) / 4.0;
+        }
+
         double e = alglib::spline1dcalc(this->e_minus_spline, T);
         double p = alglib::spline1dcalc(this->p_minus_spline, T);
         return (e - 3.0 * p) / 4.0;

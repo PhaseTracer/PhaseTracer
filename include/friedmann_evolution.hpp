@@ -328,47 +328,6 @@ struct FriedmannSystem
 class FriedmannEvolution
 {
 
-    FalseVacuumDecayRate& decay_rate;
-    EquationOfState& eos;
-
-    double t_min = 0.0;
-    double t_max = 0.0;
-
-    /** Set by solve() once the Friedmann system has been solved and splined */
-    bool solved = false;
-
-    /* Friedmann splines */
-    mutable alglib::spline1dinterpolant reheating_spline; // T_true(T_false)
-    mutable alglib::spline1dinterpolant log_time_spline; // log(t)(T_false)
-    mutable alglib::spline1dinterpolant scale_factor_spline; // a(T_false)
-    mutable alglib::spline1dinterpolant hubble_rate_spline; // H(T_false)
-    mutable alglib::spline1dinterpolant log_action_spline; // Action(T_false)
-    mutable alglib::spline1dinterpolant log_I_3_spline; // log_I_3(T_false)
-    mutable alglib::spline1dinterpolant log_nucleation_rate_spline; // log_N(T_false)
-    mutable alglib::spline1dinterpolant log_bubble_number_density_spline; // log_n(T_false)
-    mutable alglib::spline1dinterpolant log_mean_bubble_radius_spline; // log_Rbar(T_false)
-    mutable bool friedmann_splines_computed = false;
-
-    PROPERTY(double, volume_term_integration_steps, 1000);
-
-    PROPERTY(bool, use_bag_dtdT, false);
-
-    PROPERTY(double, vw, 0.577);
-
-    PROPERTY(double, M_planck, PhaseTracer::scale() * 1.22e19)
-
-    PROPERTY(double, newtonG, 1/(M_planck*M_planck));
-
-    PROPERTY(double, percolation_target, 0.71);
-
-    PROPERTY(double, completion_target, 1e-6);
-
-    PROPERTY(double, onset_target, 1 - 1e-6);
-
-    PROPERTY(double, nucleation_target, 1.00);
-
-    PROPERTY(double, temperature_abs_tol, 1e-8);
-
 public :
 
     /** Set by solve() if the h(t_min) = 1. */
@@ -445,6 +404,50 @@ public :
     const LifetimeDistribution get_lifetime_distribution(const double& timescale, const double& lifetime_min_fraction = 1e-6);
 
 private:
+
+    /** Reference to the false vacuum decay rate class */
+    FalseVacuumDecayRate& decay_rate;
+
+    /** Reference to equation of state class */
+    EquationOfState& eos;
+
+    double t_min = 0.0;
+    double t_max = 0.0;
+
+    /** Set by solve() once the Friedmann system has been solved and splined */
+    bool solved = false;
+
+    /* Friedmann splines */
+    mutable alglib::spline1dinterpolant reheating_spline; // T_true(T_false)
+    mutable alglib::spline1dinterpolant log_time_spline; // log(t)(T_false)
+    mutable alglib::spline1dinterpolant scale_factor_spline; // a(T_false)
+    mutable alglib::spline1dinterpolant hubble_rate_spline; // H(T_false)
+    mutable alglib::spline1dinterpolant log_action_spline; // Action(T_false)
+    mutable alglib::spline1dinterpolant log_I_3_spline; // log_I_3(T_false)
+    mutable alglib::spline1dinterpolant log_nucleation_rate_spline; // log_N(T_false)
+    mutable alglib::spline1dinterpolant log_bubble_number_density_spline; // log_n(T_false)
+    mutable alglib::spline1dinterpolant log_mean_bubble_radius_spline; // log_Rbar(T_false)
+    mutable bool friedmann_splines_computed = false;
+
+    PROPERTY(double, volume_term_integration_steps, 1000);
+
+    PROPERTY(bool, use_bag_dtdT, false);
+
+    PROPERTY(double, vw, 0.577);
+
+    PROPERTY(double, M_planck, PhaseTracer::scale() * 1.22e19)
+
+    PROPERTY(double, newtonG, 1/(M_planck*M_planck));
+
+    PROPERTY(double, percolation_target, 0.71);
+
+    PROPERTY(double, completion_target, 1e-6);
+
+    PROPERTY(double, onset_target, 1 - 1e-6);
+
+    PROPERTY(double, nucleation_target, 1.00);
+
+    PROPERTY(double, temperature_abs_tol, 1e-8);
 
     struct TransitionCompleteException {};
 

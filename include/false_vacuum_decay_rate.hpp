@@ -51,12 +51,11 @@ public:
     FalseVacuumDecayRate(FalseVacuumDecayRate&&) = default;
     FalseVacuumDecayRate& operator=(FalseVacuumDecayRate&&) = default;
     
-    FalseVacuumDecayRate(Transition t_in, const ActionCalculator& ac_in)
+    FalseVacuumDecayRate(const Transition& t_in, const ActionCalculator& ac_in)
     : ac(ac_in), t(t_in), t_min(t_in.false_phase.T.front()), t_max(t_in.TC) {}
 
     /**
-     * @brief Solves the bounce action over [t_min, t_max] and fits the
-     *        log(action), log(prefactor) and log(gamma) splines.
+     * @brief Solves the bounce action over [t_min, t_max] and fits the log(action), log(prefactor) and log(gamma) splines.
      */
     void calculate();
 
@@ -161,8 +160,8 @@ private:
     /** Reference to ActionCalculator class */
     const ActionCalculator& ac;
 
-    /** Transition for which the decay rate is computed */
-    Transition t;
+    /** Reference to transition for which the decay rate is computed */
+    const Transition& t;
 
     /** Splines for log(action), log(prefactor), and log(gamma) */
     alglib::spline1dinterpolant log_action_spline, log_prefactor_spline, log_gamma_spline;
@@ -170,16 +169,15 @@ private:
     /** Function for computing the decay rate prefactor */
     PrefactorFunction prefactor_function = default_decay_rate_prefactor();
 
-    /** Set by calculate() once the splines are built */
-    bool calculated = false;
-
     /** Minimum and maximum temperatures for which the decay rate is computed. */
     PROPERTY(double, t_min, 0.0)
-
     PROPERTY(double, t_max, 0.0)
 
     /** Number of spline evaluations for building the splines */
     PROPERTY(int, spline_evaluations, 50)
+
+    /** Set by calculate() once the splines are built */
+    bool calculated = false;
 
 }; // class FalseVacuumDecayRate
 

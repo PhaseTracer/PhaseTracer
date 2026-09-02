@@ -44,6 +44,11 @@ json readFile(std::string fileName){
 int main(int argc, char* argv[]) {
 
     LOGGER(fatal);
+    
+    if (argc > 1 && std::string(argv[1]) == "-d")
+    {
+        LOGGER(debug);
+    }
 
     /*
         This is a test of the FalseVacuumDecayRate class. First, we read off the 
@@ -178,7 +183,7 @@ int main(int argc, char* argv[]) {
         splines as a function of the false vacuum temperature. We use the write
         method to store these in a file.
     */
-    decay_rate.write("example/TestThermalParameters/data/decay_rate.csv");
+    decay_rate.write("example/TestThermoFinder/data/decay_rate.csv");
 
     /*
         The FalseVacuumDecayRate class also supports using a custom prefactor
@@ -207,7 +212,7 @@ int main(int argc, char* argv[]) {
     */
     decay_rate.set_prefactor_function(custom_prefactor);
     decay_rate.calculate();
-    decay_rate.write("example/TestThermalParameters/data/decay_rate_w_prefactor.csv");
+    decay_rate.write("example/TestThermoFinder/data/decay_rate_w_prefactor.csv");
 
     return 0;
 }

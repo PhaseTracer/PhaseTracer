@@ -40,6 +40,11 @@ int main(int argc, char* argv[]) {
 
     LOGGER(fatal);
 
+    if (argc > 1 && std::string(argv[1]) == "-d")
+    {
+        LOGGER(debug);
+    }
+
     /*
         This is a test of the FriedmannEvolution class. First, we read off the 
         model parameters.
