@@ -30,6 +30,8 @@
 #include "spectrum_plotter.hpp"
 #include "false_vacuum_decay_rate.hpp"
 #include "equation_of_state.hpp"
+#include "transition_milestones.hpp"
+#include "bubble_statistics.hpp"
 #include "friedmann_evolution.hpp"
 #include "thermo_finder.hpp"
 #include "scale.hpp"

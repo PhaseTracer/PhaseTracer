@@ -33,6 +33,7 @@ inputFiles/
 .gitignore
 scan.py
 *.json
+Doxyfile
 
 
 /example/InferenceScripts/
