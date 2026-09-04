@@ -31,7 +31,14 @@
 #include <variant>
 #include <memory>
 
-namespace PhaseTracer::DeepPhaseInterface {
+namespace HydroGrav {
+namespace config = ::config;
+namespace PhaseTransition = ::PhaseTransition;
+namespace Hydrodynamics = ::Hydrodynamics;
+namespace Spectrum = ::Spectrum;
+}  // namespace HydroGrav
+
+namespace PhaseTracer::HydroGravInterface {
 
 enum class EoSModel {
     BAG,
@@ -100,7 +107,7 @@ refine_lower_bound(const PhaseTracer::EquationOfState& eos, double step_size = 0
 }
 
 inline PhaseTransition::EquationOfState
-phasetracer_EoS_to_deepphase_EoS(const PhaseTracer::EquationOfState& eos)
+get_hydrograv_eos_from_phasetracer_eos(const PhaseTracer::EquationOfState& eos)
 {
 	double t_min = eos.get_t_min();
 	double t_max = eos.get_t_max();
@@ -124,8 +131,6 @@ phasetracer_EoS_to_deepphase_EoS(const PhaseTracer::EquationOfState& eos)
 		e_minus_vals.push_back(e_minus);
 	}
 
-	/* T, ps = p_minus, pb = p_plus, es = e_minus, eb = e_plus, but the order
-	   below is switched from the DeepPhase ctor... */
 	PhaseTransition::EquationOfState output(t_vals, p_plus_vals, p_minus_vals, e_plus_vals, e_minus_vals);
 	return output;
 }
@@ -230,7 +235,7 @@ get_pt_params_from_transition_milestone(
 	const PhaseTransition::Universe un = get_universe_from_transition_milestone(milestone, dof);
 	
 	if (model == EoSModel::VEFF) {
-		const PhaseTransition::EquationOfState eos_dp = phasetracer_EoS_to_deepphase_EoS(eos);
+		const PhaseTransition::EquationOfState eos_dp = get_hydrograv_eos_from_phasetracer_eos(eos);
 		return get_pt_params_from_transition_milestone(milestone, un, vw, dtauRs, model, &eos_dp);
 	}
 	
