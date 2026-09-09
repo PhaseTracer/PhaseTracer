@@ -19,11 +19,13 @@
 
 using json = nlohmann::json;
 
-json readFile(std::string fileName){
+json readFile(std::string fileName)
+{
     std::ifstream file;
     file.open(fileName);
 
-    if(file.fail()){
+    if(file.fail())
+    {
         throw std::runtime_error("error loading model parameters file!");
     }
 
@@ -38,6 +40,12 @@ json readFile(std::string fileName){
   Main
 */
 int main(int argc, char* argv[]) {
+
+    /*
+        Adding a timer to benchmark the full execution time for the self consistent
+        pipeline.
+    */
+    auto start = std::chrono::high_resolution_clock::now();
 
     LOGGER(fatal);
 
@@ -177,6 +185,12 @@ int main(int argc, char* argv[]) {
     spectrum.write("example/TestHydroGrav/data/spectrum.csv");
     profile.write("example/TestHydroGrav/data/profiles.csv");
     
+    /*
+        Printing the elapsed time for the full execution of the pipeline.
+    */
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
 
     return 0;
 }

@@ -97,6 +97,7 @@ configure_action_calculator(PhaseTracer::ActionCalculator& action_calculator)
     action_calculator.set_action_calculator(PhaseTracer::ActionMethod::PathDeformation);
     action_calculator.set_PD_xtol(1e-4);
     action_calculator.set_PD_phitol(1e-4);
+    action_calculator.set_PD_deformation_npoints(150);
 }
 
 void 

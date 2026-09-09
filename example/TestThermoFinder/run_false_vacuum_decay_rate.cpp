@@ -127,6 +127,7 @@ int main(int argc, char* argv[]) {
     );
     action_calculator.set_PD_xtol(1e-4);
     action_calculator.set_PD_phitol(1e-4);
+    action_calculator.set_PD_deformation_npoints(150);
 
     PhaseTracer::FalseVacuumDecayRate decay_rate(transition, action_calculator);
 
@@ -164,6 +165,7 @@ int main(int argc, char* argv[]) {
         We then set the number of threads to 1 and rerun the calculation
         again.
     */
+    const int max_threads = omp_get_max_threads();
     omp_set_num_threads(1);
     start = std::chrono::high_resolution_clock::now();
 
@@ -173,6 +175,8 @@ int main(int argc, char* argv[]) {
     elapsed = end - start;
     std::cout << "Action calculation on 1 thread took " << elapsed.count()
         << " seconds.\n";
+
+    omp_set_num_threads(max_threads);
 #else
     std::cout << "Action calculation (serial build) took " << elapsed.count()
         << " seconds.\n";
