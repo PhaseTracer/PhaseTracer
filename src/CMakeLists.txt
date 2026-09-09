@@ -16,6 +16,14 @@ target_link_libraries(phasetracer PRIVATE
   effectivepotential
 )
 
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(phasetracer PUBLIC OpenMP::OpenMP_CXX)
+else()
+  message(WARNING
+    "OpenMP not found: the bounce-action loop will run serially.")
+endif()
+
 if(BUILD_WITH_BP)
   target_link_libraries(phasetracer PRIVATE
     ${BubbleProfiler_LIB}
@@ -25,10 +33,8 @@ if(BUILD_WITH_BP)
 endif(BUILD_WITH_BP)
 
 if(BUILD_WITH_HG)
-  find_package(OpenMP REQUIRED) # this line might not be needed
   target_link_libraries(phasetracer PRIVATE
     ${HydroGrav_LIBRARIES}
-    OpenMP::OpenMP_CXX
     GSL::gsl
     GSL::gslcblas
   )

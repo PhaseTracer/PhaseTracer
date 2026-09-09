@@ -56,56 +56,89 @@ namespace PhaseTracer {
         std::vector<double> log_action_results(spline_evaluations);
         std::vector<double> log_prefactor_results(spline_evaluations);
         std::vector<double> log_gamma_results(spline_evaluations);
-        std::vector<bool> valid_flags(spline_evaluations, false);
-        
+        std::vector<char> valid_flags(spline_evaluations, 0);
+
         auto start_time = std::chrono::high_resolution_clock::now();
+
+        // The bounce is solved on contiguous blocks of temperatures rather than
+        // one temperature at a time, so that the converged tunneling path at
+        // one temperature can seed the next. The path varies smoothly with T,
+        // so this removes most of the deformation iterations that would
+        // otherwise be spent rediscovering it from a straight line.
+        //
+        // Blocks are kept short and scheduled dynamically: the work per
+        // temperature is uneven, and on hybrid CPUs the cores are too, so long
+        // static blocks would leave fast cores idle. A chunk of 1 disables
+        // warm starting entirely.
+        int n_threads = 1;
+        #ifdef _OPENMP
+        n_threads = omp_get_max_threads();
+        #endif
+        int chunk = warm_start_chunk;
+        if (chunk <= 0)
+        {
+            chunk = std::max(1, static_cast<int>(
+                std::ceil(static_cast<double>(spline_evaluations) / n_threads)));
+        }
+        const int n_chunks = (spline_evaluations + chunk - 1) / chunk;
 
         #ifdef _OPENMP
         #pragma omp parallel for schedule(dynamic)
         #endif
-        for (int i = 1; i < spline_evaluations; i++)
+        for (int c = 0; c < n_chunks; c++)
         {
-            double tt = t_min + i * dt;
-
-            ActionResult bounce;
-            double action;
-            try {
-                bounce = ac.get_action_full(t.true_phase, t.false_phase, tt);
-                action = bounce.action / tt; // NB action is S_3(T)/T
-            } catch ( ... )
-            {
-                action = 1.;
-                valid_flags[i] = false;
-                continue;
-            }
-
-            if (std::isnan(action) || std::isinf(action) || action > 1e150 || action < 0)
-            {
-                valid_flags[i] = false;
-                continue;
-            }
-
-            double prefactor = decay_rate_prefactor(tt, action, bounce);
-            if (!std::isfinite(prefactor) || prefactor <= 0.0)
-            {
-                valid_flags[i] = false;
-                continue;
-            }
-            double log_prefactor = std::log(prefactor);
-            double log_gamma = log_prefactor - action;
+            const int begin = c * chunk;
+            const int end = std::min(spline_evaluations, begin + chunk);
             
-            if (log_gamma < -700) 
+            std::vector<Eigen::VectorXd> path_guess;
+            for (int i = end - 1; i >= begin; i--)
             {
-                log_gamma = log_gamma_min;
-            } else {
-                log_gamma = std::max(log_gamma, log_gamma_min);
+                double tt = t_min + i * dt;
+
+                ActionResult bounce;
+                double action;
+                try {
+                    bounce = ac.get_action_full(t.true_phase, t.false_phase, tt, 0, path_guess);
+                    action = bounce.action / tt; // NB action is S_3(T)/T
+                } catch (const std::exception& e)
+                {
+                    LOG(warning) << "Action evaluation failed at T = " << tt << ": " << e.what();
+                    path_guess.clear();
+                    continue;
+                } catch (...)
+                {
+                    LOG(warning) << "Action evaluation failed at T = " << tt << ": unknown error";
+                    path_guess.clear();
+                    continue;
+                }
+
+                if (std::isnan(action) || std::isinf(action) || action > 1e150 || action < 0)
+                {
+                    LOG(debug) << "Rejected non-physical action " << action
+                               << " at T = " << tt;
+                    path_guess.clear();
+                    continue;
+                }
+
+                // Only carry a path forward once it has produced a usable action.
+                path_guess = bounce.tunneling_path;
+
+                double prefactor = decay_rate_prefactor(tt, action, bounce);
+                if (!std::isfinite(prefactor) || prefactor <= 0.0)
+                {
+                    LOG(debug) << "Rejected non-physical prefactor " << prefactor
+                               << " at T = " << tt;
+                    continue;
+                }
+                double log_prefactor = std::log(prefactor);
+                double log_gamma = std::max(log_prefactor - action, log_gamma_min);
+
+                temp_results[i] = tt;
+                log_action_results[i] = std::log(action);
+                log_prefactor_results[i] = log_prefactor;
+                log_gamma_results[i] = log_gamma;
+                valid_flags[i] = 1;
             }
-            
-            temp_results[i] = tt;
-            log_action_results[i] = std::log(action);
-            log_prefactor_results[i] = log_prefactor;
-            log_gamma_results[i] = log_gamma;
-            valid_flags[i] = true;
         }
         
         auto end_time = std::chrono::high_resolution_clock::now();

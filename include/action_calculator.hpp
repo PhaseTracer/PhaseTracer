@@ -93,11 +93,16 @@ private:
   PROPERTY(size_t, PD_step_maxiter, 500);
   /** Maximum number of allowed deformation iterations */
   PROPERTY(size_t, PD_path_maxiter, 20);
-  /** Number of samples to take along the path to create the spline
-   interpolation functions */
-  PROPERTY(size_t, PD_V_spline_samples, 100);
+  /** Number of samples to take along the path to create the spline interpolation functions. */
+  PROPERTY(size_t, PD_V_spline_samples, 140);
   /** Flag to extend the path to minimums*/
   PROPERTY(bool, PD_extend_to_minima, true);
+  /** Number of nodes carried through the path deformation. */
+  PROPERTY(size_t, PD_deformation_npoints, 300);
+  /** Convergence threshold on the perpendicular force during deformation. */
+  PROPERTY(double, PD_fRatioConv, .02);
+  /** Convergence threshold used when the solve is seeded with a path from a nearby temperature.  */
+  PROPERTY(double, PD_warm_start_fRatioConv, .002);
 
 public:
   // explicit ActionCalculator(EffectivePotential::Potential &potential_) : potential(potential_) {
@@ -119,6 +124,46 @@ public:
 
   ActionMethod get_action_calculator() const { return action_method; }
 
+  /**
+   * Shift a tunneling path found at a nearby temperature to keep its endpoints
+   * consistent with the current vacua. Returns an empty vector when the guess 
+   * cannot be used, so the caller can fall back to the straightline guess.
+   */
+  std::vector<Eigen::VectorXd> reanchored_path(const std::vector<Eigen::VectorXd> &guess,
+                                               const Eigen::VectorXd &true_vacuum,
+                                               const Eigen::VectorXd &false_vacuum) const {
+    if (guess.size() < 2) {
+      return {};
+    }
+    const size_t n = guess.size();
+    for (const auto &p : guess) {
+      if (p.size() != true_vacuum.size() || !p.allFinite()) {
+        return {};
+      }
+    }
+    // Reject a guess whose endpoints have drifted comparably to the separation
+    // of the vacua: at that point it is no longer a better starting guess than
+    // the straight line, and it may sit on the wrong side of the barrier.
+    const double separation = (true_vacuum - false_vacuum).norm();
+    if (!(separation > 0.)) {
+      return {};
+    }
+    const Eigen::VectorXd shift_start = true_vacuum - guess.front();
+    const Eigen::VectorXd shift_end = false_vacuum - guess.back();
+    if (shift_start.norm() > 0.5 * separation || shift_end.norm() > 0.5 * separation) {
+      return {};
+    }
+
+    std::vector<Eigen::VectorXd> path(n);
+    for (size_t i = 0; i < n; ++i) {
+      const double s = static_cast<double>(i) / static_cast<double>(n - 1);
+      path[i] = guess[i] + (1. - s) * shift_start + s * shift_end;
+    }
+    path.front() = true_vacuum;
+    path.back() = false_vacuum;
+    return path;
+  }
+
   std::vector<Eigen::VectorXd> get_vacua_at_T(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const {
     const auto phase1_at_T = pf.phase_at_T(phase1, T);
     const auto phase2_at_T = pf.phase_at_T(phase2, T);
@@ -131,7 +176,19 @@ public:
     return get_action_full(vacua[0], vacua[1], T);
   }
 
-  ActionResult get_action_full(Eigen::VectorXd true_vacuum, Eigen::VectorXd false_vacuum, double T) const {
+  /**
+   * Allows seeding the action calculation with a tunneling path from a nearby temperature.
+   * This can improve convergence and reduce the number of deformation iterations needed.
+   */
+  ActionResult get_action_full(const Phase &phase1, const Phase &phase2, double T,
+                               size_t i_unique,
+                               const std::vector<Eigen::VectorXd> &path_guess) const {
+    const auto vacua = get_vacua_at_T(phase1, phase2, T, i_unique);
+    return get_action_full(vacua[0], vacua[1], T, path_guess);
+  }
+
+  ActionResult get_action_full(Eigen::VectorXd true_vacuum, Eigen::VectorXd false_vacuum, double T,
+                               const std::vector<Eigen::VectorXd> &path_guess = {}) const {
     ActionResult result;
 
     if (potential.V(true_vacuum, T) > potential.V(false_vacuum, T))
@@ -200,6 +257,7 @@ public:
         st.set_xtol(PD_xtol);
         st.set_phitol(PD_phitol);
         st.set_thin_cutoff(PD_thin_cutoff);
+        st.set_npoints(PD_npoints);
         st.set_rmin(PD_rmin);
         st.set_rmax(PD_rmax);
         st.set_max_iter(PD_max_iter);
@@ -221,19 +279,32 @@ public:
         pd.set_path_maxiter(PD_path_maxiter);
         pd.set_V_spline_samples(PD_V_spline_samples);
         pd.set_extend_to_minima(PD_extend_to_minima);
+        pd.set_deformation_npoints(PD_deformation_npoints);
+        pd.set_fRatioConv(PD_fRatioConv);
+        pd.set_num_dims(num_dims);
 
         /** Pass through the shooting settings */
         pd.set_xtol(PD_xtol);
         pd.set_phitol(PD_phitol);
         pd.set_thin_cutoff(PD_thin_cutoff);
+        pd.set_npoints(PD_npoints);
         pd.set_rmin(PD_rmin);
         pd.set_rmax(PD_rmax);
         pd.set_max_iter(PD_max_iter);
 
         pd.set_T(T);
-        std::vector<Eigen::VectorXd> path_pts;
-        path_pts.push_back(true_vacuum);
-        path_pts.push_back(false_vacuum);
+        std::vector<Eigen::VectorXd> path_pts = reanchored_path(path_guess, true_vacuum, false_vacuum);
+        if (path_pts.empty()) {
+          path_pts.push_back(true_vacuum);
+          path_pts.push_back(false_vacuum);
+        } else {
+          // A warm-started path can pass the convergence test immediately, so
+          // insist on one deform-and-reshoot cycle to confirm it, and tighten
+          // the convergence band so the answer does not depend on which
+          // temperature seeded it.
+          pd.set_path_miniter(2);
+          pd.set_fRatioConv(PD_warm_start_fRatioConv);
+        }
         try {
           FullTunneling full_tunneling = pd.full_tunneling(path_pts);
           result.bubble_profile = full_tunneling.profile1D;

@@ -31,8 +31,10 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
                        double T_,
                        std::vector<Eigen::VectorXd> pts_,
                        bool extend_to_minima_,
-                       bool reeval_distances_) : P(potential), T(T_), pts(pts_), nphi(potential.get_n_scalars()), num_nodes(pts_.size()),
-                                                 extend_to_minima(extend_to_minima_), reeval_distances(reeval_distances_) {
+                       bool reeval_distances_,
+                       int V_spline_samples_) : P(potential), T(T_), pts(pts_), nphi(potential.get_n_scalars()), num_nodes(pts_.size()),
+                                                extend_to_minima(extend_to_minima_), reeval_distances(reeval_distances_),
+                                                V_spline_samples(V_spline_samples_) {
 
   // 1. Find derivs
   std::vector<Eigen::VectorXd> dpts = _pathDeriv(pts);
@@ -207,6 +209,24 @@ double SplinePath::d2V(double x) const {
   return d2s;
 }
 
+/* Least-squares fit of the basis-spline coefficients to points that have
+   already had the linear part subtracted. All nphi field components share the
+   same design matrix, so they are solved as one multi-column right-hand side
+   against the factorisation computed once in deformPath. */
+void PathDeformation::fitBasis(const std::vector<Eigen::VectorXd> &phi_centred) {
+  Eigen::MatrixXd rhs(num_nodes, nphi);
+  for (size_t i = 0; i < num_nodes; ++i) {
+    for (size_t j = 0; j < nphi; ++j) {
+      rhs(i, j) = phi_centred[i][j];
+    }
+  }
+  const Eigen::MatrixXd beta = X_node_solver.solve(rhs);
+  beta_node.resize(nphi);
+  for (size_t j = 0; j < nphi; ++j) {
+    beta_node[j] = beta.col(j);
+  }
+}
+
 bool PathDeformation::deformPath(std::vector<double> dphidr) {
   num_steps = 0;
   phi_list.clear();
@@ -244,28 +264,34 @@ bool PathDeformation::deformPath(std::vector<double> dphidr) {
   dX_node = std::get<1>(result);
   d2X_node = std::get<2>(result);
 
+  // X_node is fixed for the whole deformation, so factorise it once here and
+  // reuse the factorisation for every basis fit below and in step().
+  X_node_solver.compute(X_node);
+
   Eigen::VectorXd phi0 = phi_node[0];
   Eigen::VectorXd phi1 = phi_node.back();
-  beta_node.clear();
-  for (int j = 0; j < nphi; ++j) {
-    Eigen::VectorXd phi_delta(num_nodes);
-    for (int i = 0; i < num_nodes; ++i) {
-      Eigen::VectorXd phii = phi_node[i];
-      double phi_lin = phi0[j] + (phi1[j] - phi0[j]) * t_node[i];
-      phi_delta[i] = phii[j] - phi_lin;
-    }
-    beta_node.push_back(X_node.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(phi_delta));
-  }
-
-  double max_v2 = 0;
+  std::vector<Eigen::VectorXd> phi_centred(num_nodes);
   for (int i = 0; i < num_nodes; ++i) {
-    max_v2 = std::max(max_v2, P.dV_dx(phi_node[i], T).norm());
+    phi_centred[i] = phi_node[i] - (phi0 + (phi1 - phi0) * t_node[i]);
   }
-  v2min *= max_v2 * totalLength_node / nb;
+  fitBasis(phi_centred);
+
+  // v2min is a floor on dphidr^2, expressed as a fraction of the typical
+  // gradient scale along the path. Establishing that scale costs a dV_dx sweep
+  // over every node, which is as expensive as a whole deformation step, so
+  // skip it when the floor is disabled - which is the default.
+  double v2min_scaled = 0.;
+  if (v2min > 0.) {
+    double max_v2 = 0;
+    for (int i = 0; i < num_nodes; ++i) {
+      max_v2 = std::max(max_v2, P.dV_dx(phi_node[i], T).norm());
+    }
+    v2min_scaled = v2min * max_v2 * totalLength_node / nb;
+  }
 
   v2_node.clear();
   for (int i = 0; i < num_nodes; ++i) {
-    v2_node.push_back(std::max(v2min, dphidr[i] * dphidr[i]));
+    v2_node.push_back(std::max(v2min_scaled, dphidr[i] * dphidr[i]));
   }
 
   // Deform the path
@@ -367,14 +393,9 @@ void PathDeformation::step(double &lastStep, bool &step_reversed, double &fRatio
     _phi[ii] -= phi_lin[ii];
   }
 
-  //    std::cout << "betas:" << beta << std::endl;
-  for (size_t ii = 0; ii < nphi; ++ii) {
-    Eigen::VectorXd ii_phi(num_nodes);
-    for (size_t jj = 0; jj < num_nodes; ++jj) {
-      ii_phi(jj) = _phi[jj](ii);
-    }
-    beta_node[ii] = X_node.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(ii_phi);
-  }
+  // _phi has had the linear part subtracted in place just above, so it is
+  // already in the form fitBasis expects.
+  fitBasis(_phi);
 
   double fRatio2 = 0.;
   for (int ii = 0; ii < dX_node.rows(); ++ii) {
@@ -485,11 +506,12 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
   std::vector<double> phi_1d, dphi_1d;
   for (int num_iter = 1; num_iter <= path_maxiter; num_iter++) {
     LOG(debug) << "Starting tunneling step " << num_iter;
-    SplinePath path(P, T, path_pts);
+    SplinePath path(P, T, path_pts, extend_to_minima, true, V_spline_samples);
     PhaseTracer::Shooting tobj(path, num_dims - 1);
     tobj.set_xtol(xtol);
     tobj.set_phitol(phitol);
     tobj.set_thin_cutoff(thin_cutoff);
+    tobj.set_npoints(npoints);
     tobj.set_rmin(rmin);
     tobj.set_rmax(rmax);
     tobj.set_max_iter(max_iter);
@@ -508,7 +530,7 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
         return ft;
       }
     }
-    num_nodes = profile.Phi.size();
+    num_nodes = std::min<size_t>(deformation_npoints, profile.Phi.size());
     tobj.evenlySpacedPhi(profile, &phi_1d, &dphi_1d, num_nodes, false);
     dphi_1d[0] = 0.;
     dphi_1d.back() = 0.;
@@ -530,7 +552,7 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
 
     ft.saved_steps.push_back(phi_list);
 
-    if (converged and num_steps < 2) {
+    if (converged and num_steps < 2 and num_iter >= static_cast<int>(path_miniter)) {
       breakLoop = true;
       break;
     }
@@ -540,19 +562,19 @@ FullTunneling PathDeformation::full_tunneling(std::vector<Eigen::VectorXd> path_
     LOG(warning) << "Reached maxiter in full_tunneling. No convergence.";
   }
 
-  // Calculate the ratio of max perpendicular force to max gradient.
-  // Make sure that we go back a step and use the forces on the path, not the
-  // most recently deformed path.
-  // bool converged = deformPath(dphi_1d);
   path_pts = phi_node;
 
-  std::vector<Eigen::VectorXd> F, dV;
-  forces(F, dV);
-  double F_max = max_norm(F);
-  double dV_max = max_norm(dV);
-  double fRatio = F_max / dV_max;
+  // Calculate the ratio of max perpendicular force to max gradient. This is a
+  // diagnostic only - no caller of full_tunneling reads it - and it costs a
+  // dV_dx evaluation at every node, so it is off by default.
+  double fRatio = std::numeric_limits<double>::quiet_NaN();
+  if (compute_fRatio) {
+    std::vector<Eigen::VectorXd> F, dV;
+    forces(F, dV);
+    fRatio = max_norm(F) / max_norm(dV);
+  }
 
-  SplinePath path(P, T, path_pts);
+  SplinePath path(P, T, path_pts, extend_to_minima, true, V_spline_samples);
   PhaseTracer::Shooting tobj(path, num_dims - 1);
   tobj.set_xtol(xtol);
   tobj.set_phitol(phitol);

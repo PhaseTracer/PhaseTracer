@@ -54,7 +54,8 @@ public:
                       double T_,
                       std::vector<Eigen::VectorXd> pts_,
                       bool extend_to_minima_ = true,
-                      bool reeval_distances_ = true);
+                      bool reeval_distances_ = true,
+                      int V_spline_samples_ = 140);
 
   virtual ~SplinePath() = default;
 
@@ -96,7 +97,7 @@ private:
 
   //  TransitionFinder& tf;
   std::vector<Eigen::VectorXd> pts;
-  int V_spline_samples = 140; // larger than 5
+  int V_spline_samples; // larger than 5
   bool extend_to_minima;
   bool reeval_distances;
 
@@ -129,6 +130,10 @@ public:
 
   bool deformPath(std::vector<double> dphidr);
   void step(double &lastStep, bool &step_reversed, double &fRatio);
+
+  /* Fit the basis-spline coefficients to points with the linear part already
+     removed, reusing the factorisation of X_node built in deformPath. */
+  void fitBasis(const std::vector<Eigen::VectorXd> &phi_centred);
 
   // Calculate the normal force and potential gradient on the path
   void forces(std::vector<Eigen::VectorXd> &F_norm, std::vector<Eigen::VectorXd> &dV);
@@ -163,11 +168,24 @@ private:
   PROPERTY(size_t, step_maxiter, 500);
   /* Maximum number of allowed deformation iterations */
   PROPERTY(size_t, path_maxiter, 20);
+  /* Minimum number of deformation iterations before convergence is accepted.
+     Prevents immediately accepting a warm start as converged. */
+  PROPERTY(size_t, path_miniter, 1);
+  /* Convergence threshold on the ratio of perpendicular force to potential gradient. 
+     Tightening this threshold increases reproducibility between runs. */
+  PROPERTY(double, fRatioConv, .02);
   /* Number of samples to take along the path to create the spline
-   interpolation functions */
-  PROPERTY(size_t, V_spline_samples, 100);
+   interpolation functions. */
+  PROPERTY(size_t, V_spline_samples, 140);
+  /* Number of nodes carried through the path deformation. Capped by the
+     resolution of the 1D profile.*/
+  PROPERTY(size_t, deformation_npoints, 100);
   /* Flag to extend the path to minimums*/
   PROPERTY(bool, extend_to_minima, true);
+  /* Compute the final perpendicular-force diagnostic (FullTunneling::fRatio).
+     Costs a dV_dx evaluation at every node and is not used by the action, so
+     it is disabled unless explicitly requested. */
+  PROPERTY(bool, compute_fRatio, false);
 
   /** Pass through the shooting settings **/
   /* The precision of field values after taking the logarithm */
@@ -190,7 +208,6 @@ private:
   size_t num_steps = 0;
 
   double startstep = 2e-3;
-  double fRatioConv = .02;
   double converge_0 = 5.;
   double fRatioIncrease = 5.;
 
@@ -204,6 +221,7 @@ private:
   Eigen::MatrixXd X_node;
   Eigen::MatrixXd dX_node;
   Eigen::MatrixXd d2X_node;
+  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> X_node_solver;
   std::vector<double> t_node;
   std::vector<Eigen::VectorXd> beta_node;
   std::vector<Eigen::VectorXd> phi_node;

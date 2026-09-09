@@ -18,7 +18,7 @@ paper/paper\.blg
 paper/paper\.spl
 paper/paper\.toc
 *__pycache__*
-build
+build*
 /deepvenv/
 ekin.csv
 fp.csv

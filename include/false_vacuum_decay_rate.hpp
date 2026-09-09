@@ -32,8 +32,8 @@
 
 namespace PhaseTracer {
 
-class FalseVacuumDecayRate {
-
+class FalseVacuumDecayRate 
+{
 public:
 
     /**
@@ -130,8 +130,6 @@ public:
 
     /** 
      * @brief Computes the bubble profile at a given temperature.
-     *        Triggers an action evaluation at the specified temperature,
-     *        which populates the bubble profile cache in ActionCalculator.
      * @param temperature The temperature at which to compute the bubble profile.
      * @return The bubble profile at the specified temperature.
     */
@@ -175,6 +173,13 @@ private:
 
     /** Number of spline evaluations for building the splines */
     PROPERTY(int, spline_evaluations, 50)
+
+    /**
+     * Number of consecutive temperatures solved as one block, so that the
+     * converged tunneling path at one temperature seeds the next. 0 selects a
+     * block size automatically from the thread count; 1 disables warm starting.
+     */
+    PROPERTY(int, warm_start_chunk, 0)
 
     /** Set by calculate() once the splines are built */
     bool calculated = false;

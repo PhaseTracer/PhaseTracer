@@ -20,6 +20,13 @@ option(BUILD_WITH_BP "Build example programs including BubbleProfiler" OFF)
 # option for including HydroGrav
 option(BUILD_WITH_HG "Build example programs including HydroGrav" ON)
 
+# tunes build to users CPU. Makes binaries non-portable
+option(PHASETRACER_NATIVE_ARCH "Build with -march=native" OFF)
+
+if(PHASETRACER_NATIVE_ARCH)
+  add_compile_options(-march=native)
+endif()
+
 # packages
 
 if(POLICY CMP0167)
@@ -55,7 +62,25 @@ endif(BUILD_WITH_HG)
 
 # flags
 
-set(CMAKE_CXX_FLAGS "-O3")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    Debug Release RelWithDebInfo MinSizeRel)
+endif()
+
+# Keep Debug builds optimised. 
+set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g" CACHE STRING
+  "Flags used by the CXX compiler during DEBUG builds." FORCE)
+
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+  message(WARNING
+    "Build type is '${CMAKE_BUILD_TYPE}'. Output goes to the shared "
+    "${PROJECT_SOURCE_DIR}/lib and ${PROJECT_SOURCE_DIR}/bin, so this build "
+    "will overwrite the library used by every other build tree of this "
+    "source. Use Release for timing runs, and rebuild lib/ after switching "
+    "between build directories.")
+endif()
+
 set(CMAKE_CXX_STANDARD 17) # must be 17 for HydroGrav
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
