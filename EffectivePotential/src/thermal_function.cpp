@@ -20,42 +20,65 @@
 
 namespace EffectivePotential {
 
-alglib::spline1dinterpolant make_cubic_spline(alglib::real_1d_array x, alglib::real_1d_array y) {
+namespace {
+
+class ThermalSpline {
+public:
+  ThermalSpline(const alglib::real_1d_array &x, const alglib::real_1d_array &y,
+                double min_x_, double max_x_)
+      : min_x(min_x_), max_x(max_x_) {
+    alglib::spline1dbuildcubic(x, y, spline);
+    value_at_min_x = alglib::spline1dcalc(spline, min_x);
+  }
+
+  double value(double x) const 
+  {
+    if (x < min_x) 
+    {
+      return value_at_min_x;
+    } else if (x > max_x) 
+    {
+      return 0.;
+    }
+    return alglib::spline1dcalc(spline, x);
+  }
+
+  double deriv(double x) const 
+  {
+    if (x < min_x || x > max_x) 
+    {
+      return 0.;
+    }
+    double s, ds, d2s;
+    alglib::spline1ddiff(spline, x, s, ds, d2s);
+    return ds;
+  }
+
+private:
   alglib::spline1dinterpolant spline;
-  alglib::spline1dbuildcubic(x, y, spline);
-  return spline;
+  double min_x;
+  double max_x;
+  double value_at_min_x;
+};
+
+const ThermalSpline &boson_spline() {
+  static const ThermalSpline s(J_B_X_DATA, J_B_Y_DATA, -3.72402637, 1.41e3);
+  return s;
 }
 
-double J_B(double x) {
-  constexpr double min_x = -3.72402637;
-  constexpr double max_x = 1.41e3;
-
-  static const auto spline = make_cubic_spline(J_B_X_DATA, J_B_Y_DATA);
-  static const double spline_at_min_x = alglib::spline1dcalc(spline, min_x);
-
-  if (x < min_x) {
-    return spline_at_min_x;
-  } else if (x > max_x) {
-    return 0.;
-  } else {
-    return alglib::spline1dcalc(spline, x);
-  }
+const ThermalSpline &fermion_spline() {
+  static const ThermalSpline s(J_F_X_DATA, J_F_Y_DATA, -6.82200203, 1.35e3);
+  return s;
 }
 
-double J_F(double x) {
-  constexpr double min_x = -6.82200203;
-  constexpr double max_x = 1.35e3;
+} // namespace
 
-  static const auto spline = make_cubic_spline(J_F_X_DATA, J_F_Y_DATA);
-  static const double spline_at_min_x = alglib::spline1dcalc(spline, min_x);
+double J_B(double x) { return boson_spline().value(x); }
 
-  if (x < min_x) {
-    return spline_at_min_x;
-  } else if (x > max_x) {
-    return 0.;
-  } else {
-    return alglib::spline1dcalc(spline, x);
-  }
-}
+double J_F(double x) { return fermion_spline().value(x); }
+
+double J_B_diff(double x) { return boson_spline().deriv(x); }
+
+double J_F_diff(double x) { return fermion_spline().deriv(x); }
 
 } // namespace EffectivePotential

@@ -20,8 +20,21 @@
 
 namespace EffectivePotential {
 
+/**
+ * @brief functions J_B(x) and J_F(x), with x = m^2 / T^2.
+ * @param x The argument of the thermal function, x = m^2 / T^2.
+ * @return The value of the thermal function at the given x.
+ */
 double J_B(double x);
 double J_F(double x);
+
+/**
+ * @brief First derivatives dJ_B/dx and dJ_F/dx.
+ * @param x The argument of the thermal function, x = m^2 / T^2.
+ * @return The value of the derivative of the thermal function at the given x.
+ */
+double J_B_diff(double x);
+double J_F_diff(double x);
 
 } // namespace EffectivePotential
 
