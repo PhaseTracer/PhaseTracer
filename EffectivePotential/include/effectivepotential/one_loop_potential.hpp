@@ -92,6 +92,40 @@ public:
   /** Counter-term to potential */
   virtual double counter_term(Eigen::VectorXd phi, double T) const { return 0; }
 
+  /**
+   * Contribution to dV1/dphi from one species group.
+   * @param sign +1 for scalars and vectors, -1 for fermions and ghosts.
+   * @param c    3/2 for scalars, fermions and ghosts; 5/6 for vectors.
+   */
+  Eigen::VectorXd dV1_term(const std::vector<double> &masses_sq,
+                           const std::vector<double> &dofs,
+                           const std::vector<Eigen::VectorXd> &d_masses_sq,
+                           double sign, double c) const;
+
+  /**
+   * Contribution to dV1T/dphi from one species group.
+   * @param sign  +1 for scalars, fermions and vectors, -1 for ghosts. Note the
+   *              fermionic minus sign is already carried by the tabulated J_F,
+   *              which is why fermions take +1 here but -1 in dV1_term.
+   * @param fermionic select J_F rather than J_B.
+   */
+  Eigen::VectorXd dV1T_term(const std::vector<double> &masses_sq,
+                            const std::vector<double> &dofs,
+                            const std::vector<Eigen::VectorXd> &d_masses_sq,
+                            double sign, double T, bool fermionic) const;
+
+  /**
+   * Contribution to d(daisy)/dphi from one species group (Arnold-Espinosa).
+   * Both the ordinary and the Debye masses, and both their derivatives, are
+   * needed because the term is a difference of the two.
+   */
+  Eigen::VectorXd ddaisy_term(const std::vector<double> &masses_sq,
+                              const std::vector<double> &debye_sq,
+                              const std::vector<double> &dofs,
+                              const std::vector<Eigen::VectorXd> &d_masses_sq,
+                              const std::vector<Eigen::VectorXd> &d_debye_sq,
+                              double T) const;
+
   /** High-temperature expansion of potential */
   double VHT(Eigen::VectorXd phi, double T) const;
 

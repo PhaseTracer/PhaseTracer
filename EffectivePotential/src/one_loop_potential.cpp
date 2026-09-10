@@ -153,6 +153,89 @@ std::vector<ParticleSpec> OneLoopPotential::get_fluctuation_spectrum(double T) c
   return spectrum;
 }
 
+namespace {
+
+/** Number of fields a species-gradient list refers to, or 0 if it is empty. */
+int gradient_dim(const std::vector<Eigen::VectorXd> &d_masses_sq) {
+  return d_masses_sq.empty() ? 0 : static_cast<int>(d_masses_sq.front().size());
+}
+
+void check_gradient_sizes(const std::vector<double> &masses_sq,
+                          const std::vector<double> &dofs,
+                          const std::vector<Eigen::VectorXd> &d_masses_sq,
+                          const char *what) {
+  if (dofs.size() != masses_sq.size() || d_masses_sq.size() != masses_sq.size()) {
+    throw std::runtime_error(std::string(what) +
+                             " masses, dofs and mass gradients do not match");
+  }
+}
+
+} // namespace
+
+Eigen::VectorXd OneLoopPotential::dV1_term(
+    const std::vector<double> &masses_sq, const std::vector<double> &dofs,
+    const std::vector<Eigen::VectorXd> &d_masses_sq, double sign, double c) const {
+  check_gradient_sizes(masses_sq, dofs, d_masses_sq, "dV1_term");
+  Eigen::VectorXd grad = Eigen::VectorXd::Zero(gradient_dim(d_masses_sq));
+
+  const double q_sq = square(renormalization_scale);
+  for (size_t i = 0; i < masses_sq.size(); ++i) {
+    const double m_sq = masses_sq[i];
+    // d/dm^2 [ m^4 (log|m^2/Q^2| - c) ] = m^2 (2 log|m^2/Q^2| + 1 - 2c).
+    // The log diverges as m^2 -> 0 but is multiplied by m^2, so the product
+    // vanishes; cut off at the same point xlogx does, to match V1 exactly.
+    if (std::abs(m_sq) <= std::numeric_limits<double>::min()) {
+      continue;
+    }
+    const double factor = m_sq * (2. * std::log(std::abs(m_sq / q_sq)) + 1. - 2. * c);
+    grad += (sign * dofs[i] * factor) * d_masses_sq[i];
+  }
+  return grad / (64. * M_PI * M_PI);
+}
+
+Eigen::VectorXd OneLoopPotential::dV1T_term(
+    const std::vector<double> &masses_sq, const std::vector<double> &dofs,
+    const std::vector<Eigen::VectorXd> &d_masses_sq, double sign, double T,
+    bool fermionic) const {
+  check_gradient_sizes(masses_sq, dofs, d_masses_sq, "dV1T_term");
+  Eigen::VectorXd grad = Eigen::VectorXd::Zero(gradient_dim(d_masses_sq));
+
+  if (T == 0.) {
+    return grad;
+  }
+
+  const double T_sq = square(T);
+  for (size_t i = 0; i < masses_sq.size(); ++i) {
+    const double x = masses_sq[i] / T_sq;
+    const double dJ = fermionic ? J_F_diff(x) : J_B_diff(x);
+    grad += (sign * dofs[i] * dJ) * d_masses_sq[i];
+  }
+  // V1T = T^4/(2 pi^2) sum n J(m^2/T^2); the 1/T^2 from the argument leaves T^2.
+  return grad * T_sq / (2. * square(M_PI));
+}
+
+Eigen::VectorXd OneLoopPotential::ddaisy_term(
+    const std::vector<double> &masses_sq, const std::vector<double> &debye_sq,
+    const std::vector<double> &dofs,
+    const std::vector<Eigen::VectorXd> &d_masses_sq,
+    const std::vector<Eigen::VectorXd> &d_debye_sq, double T) const {
+  check_gradient_sizes(masses_sq, dofs, d_masses_sq, "ddaisy_term (ordinary)");
+  check_gradient_sizes(debye_sq, dofs, d_debye_sq, "ddaisy_term (Debye)");
+  Eigen::VectorXd grad = Eigen::VectorXd::Zero(gradient_dim(d_masses_sq));
+
+  // d/dm^2 [ max(0, m^2)^{3/2} ] = 1.5 sqrt(m^2) for m^2 > 0, else 0. Continuous
+  // at the clamp, but with an infinite second derivative there.
+  for (size_t i = 0; i < masses_sq.size(); ++i) {
+    if (debye_sq[i] > 0.) {
+      grad += (1.5 * dofs[i] * std::sqrt(debye_sq[i])) * d_debye_sq[i];
+    }
+    if (masses_sq[i] > 0.) {
+      grad -= (1.5 * dofs[i] * std::sqrt(masses_sq[i])) * d_masses_sq[i];
+    }
+  }
+  return grad * -T / (12. * M_PI);
+}
+
 double OneLoopPotential::V1(std::vector<double> scalar_masses_sq,
                             std::vector<double> fermion_masses_sq,
                             std::vector<double> vector_masses_sq,
@@ -363,28 +446,36 @@ double OneLoopPotential::daisy(Eigen::VectorXd phi, double T) const {
 }
 
 double OneLoopPotential::V(Eigen::VectorXd phi, double T) const {
-  const auto scalar_masses_sq = get_scalar_masses_sq(phi, xi);
+
   const auto fermion_masses_sq = get_fermion_masses_sq(phi);
-  const auto vector_masses_sq = get_vector_masses_sq(phi);
-  const auto ghost_masses_sq = get_ghost_masses_sq(phi, xi);
+
+  const auto ghost_masses_sq = (xi != 0.) ? get_ghost_masses_sq(phi, xi) : std::vector<double>{};
 
   if (T > 0) {
-    const auto scalar_debye_sq = get_scalar_debye_sq(phi, xi, T);
-    const auto vector_debye_sq = get_vector_debye_sq(phi, T);
     switch (daisy_method) {
-    case DaisyMethod::None:
+    case DaisyMethod::None: {
+      const auto scalar_masses_sq = get_scalar_masses_sq(phi, xi);
+      const auto vector_masses_sq = get_vector_masses_sq(phi);
       return V0(phi) + V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq) + V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq, T) + counter_term(phi, T);
-    case DaisyMethod::ArnoldEspinosa:
+    }
+    case DaisyMethod::ArnoldEspinosa: {
+      const auto scalar_masses_sq = get_scalar_masses_sq(phi, xi);
+      const auto vector_masses_sq = get_vector_masses_sq(phi);
+      const auto scalar_debye_sq = get_scalar_debye_sq(phi, xi, T);
+      const auto vector_debye_sq = get_vector_debye_sq(phi, T);
       return V0(phi) + daisy(scalar_masses_sq, scalar_debye_sq, vector_masses_sq, vector_debye_sq, T) + V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq) + V1T(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq, T) + counter_term(phi, T);
-    case DaisyMethod::Parwani:
-      if ((scalar_debye_sq.size() != scalar_masses_sq.size()) or (vector_debye_sq.size() != vector_debye_sq.size())) {
-        throw std::runtime_error("The sizes of scalar_debye_sq and scalar_masses_sq, vector_debye_sq and vector_debye_sq must be equal in Parwani method");
-      }
+    }
+    case DaisyMethod::Parwani: {
+      const auto scalar_debye_sq = get_scalar_debye_sq(phi, xi, T);
+      const auto vector_debye_sq = get_vector_debye_sq(phi, T);
       return V0(phi) + V1(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, ghost_masses_sq) + V1T(scalar_debye_sq, fermion_masses_sq, vector_debye_sq, ghost_masses_sq, T) + counter_term(phi, T);
+    }
     default:
       throw std::runtime_error("unknown daisy method");
     }
   } else {
+    const auto scalar_masses_sq = get_scalar_masses_sq(phi, xi);
+    const auto vector_masses_sq = get_vector_masses_sq(phi);
     return V0(phi) + V1(scalar_masses_sq, fermion_masses_sq, vector_masses_sq, ghost_masses_sq) + counter_term(phi, T);
   }
 }

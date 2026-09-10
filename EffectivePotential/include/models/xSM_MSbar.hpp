@@ -278,9 +278,35 @@ public:
     return get_scalar_debye_sq(phi, xi, 0.);
   }
 
+  /**
+   * @brief Use the analytic gradient (default) or the finite-difference one.
+   */
+  void set_use_analytic_gradient(bool use_analytic_gradient_) {
+    use_analytic_gradient = use_analytic_gradient_;
+  }
+  bool get_use_analytic_gradient() const { return use_analytic_gradient; }
+
   /** @brief Real part of square root */
   double real_sqrt(double x) const {
     return (x > 0.) ? std::sqrt(x) : 0.;
+  }
+
+  /**
+   * @brief Resummed Goldstone self-energy entering the Goldstone mass.
+   */
+  double goldstone_resum_sum(Eigen::VectorXd phi) const {
+    const double h = phi[0];
+    const double s = phi[1];
+    const double chosen_muh_sq = use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB;
+
+    const double m11_sq = chosen_muh_sq + 0.5 * lambda_hs * square(s) + 3. * lambda_h * square(h);
+    const double m22_sq = mus_sq + 0.5 * lambda_hs * square(h) + 3. * lambda_s * square(s);
+
+    const auto fm_sq = get_fermion_masses_sq(phi);
+    const auto vm_sq = get_vector_masses_sq(phi);
+    const double q_sq = square(get_renormalization_scale());
+
+    return 1. / (16. * M_PI * M_PI) * (+3. * lambda_h * (q_sq * xlogx(m11_sq / q_sq) - m11_sq) + 0.5 * lambda_hs * (q_sq * xlogx(m22_sq / q_sq) - m22_sq) - 6. * SM_yt_sq * (q_sq * xlogx(fm_sq[0] / q_sq) - fm_sq[0]) - 6. * SM_yb_sq * (q_sq * xlogx(fm_sq[1] / q_sq) - fm_sq[1]) - 2. * SM_ytau_sq * (q_sq * xlogx(fm_sq[2] / q_sq) - fm_sq[2]) + 1.5 * square(SM_g) * (q_sq * xlogx(vm_sq[0] / q_sq) - 1. / 3. * vm_sq[0]) + 0.75 * (square(SM_g) + square(SM_gp)) * (q_sq * xlogx(vm_sq[1] / q_sq) - 1. / 3. * vm_sq[1]));
   }
 
   /** @brief Scalar Debye masses careful treatment of covariant gauge etc */
@@ -297,10 +323,7 @@ public:
     const double m12_sq = lambda_hs * s * h;
 
     // Resummed Goldstone contributions
-    const auto fm_sq = get_fermion_masses_sq(phi);
-    const auto vm_sq = get_vector_masses_sq(phi);
-    const double q_sq = square(get_renormalization_scale());
-    const double sum = 1. / (16. * M_PI * M_PI) * (+3. * lambda_h * (q_sq * xlogx(m11_sq / q_sq) - m11_sq) + 0.5 * lambda_hs * (q_sq * xlogx(m22_sq / q_sq) - m22_sq) - 6. * SM_yt_sq * (q_sq * xlogx(fm_sq[0] / q_sq) - fm_sq[0]) - 6. * SM_yb_sq * (q_sq * xlogx(fm_sq[1] / q_sq) - fm_sq[1]) - 2. * SM_ytau_sq * (q_sq * xlogx(fm_sq[2] / q_sq) - fm_sq[2]) + 1.5 * square(SM_g) * (q_sq * xlogx(vm_sq[0] / q_sq) - 1. / 3. * vm_sq[0]) + 0.75 * (square(SM_g) + square(SM_gp)) * (q_sq * xlogx(vm_sq[1] / q_sq) - 1. / 3. * vm_sq[1]));
+    const double sum = goldstone_resum_sum(phi);
 
     // Goldstone mass
     double mg_sq = chosen_muh_sq + lambda_h * square(h) + 0.5 * lambda_hs * square(s) + (use_Goldstone_resum ? sum : 0.);
@@ -449,6 +472,263 @@ public:
             Mgluon_L_sq, Mgluon_T_sq};
   }
 
+  /** log|m^2/Q^2|, or 0 where the mass is below the cutoff xlogx uses. */
+  double log_mass_ratio(double m_sq, double q_sq) const {
+    if (std::abs(m_sq) <= std::numeric_limits<double>::min()) {
+      return 0.;
+    }
+    return std::log(std::abs(m_sq / q_sq));
+  }
+
+  /** Gradient of the tree-level potential. */
+  Eigen::VectorXd grad_V0(Eigen::VectorXd phi) const {
+    const double h = phi[0];
+    const double s = phi[1];
+    Eigen::VectorXd d(2);
+    d << muh_sq * h + lambda_h * h * square(h) + 0.5 * lambda_hs * h * square(s),
+         mus_sq * s + lambda_s * s * square(s) + 0.5 * lambda_hs * square(h) * s;
+    return d;
+  }
+
+  /** Gradients matching get_fermion_masses_sq: m^2 = y^2 h^2 / 2, so d/dh = y^2 h. */
+  std::vector<Eigen::VectorXd> grad_fermion_masses_sq(Eigen::VectorXd phi) const {
+    const double h = phi[0];
+    const double y_sq[12] = {SM_yt_sq, SM_yb_sq, SM_ytau_sq, SM_yc_sq, SM_ys_sq,
+                             SM_yu_sq, SM_yd_sq, SM_ymu_sq, SM_ye_sq, 0., 0., 0.};
+    std::vector<Eigen::VectorXd> d;
+    d.reserve(12);
+    for (int i = 0; i < 12; ++i) {
+      Eigen::VectorXd v(2);
+      v << y_sq[i] * h, 0.;
+      d.push_back(v);
+    }
+    return d;
+  }
+
+  /** Gradients matching get_vector_debye_sq. Only h enters. */
+  std::vector<Eigen::VectorXd> grad_vector_debye_sq(Eigen::VectorXd phi, double T) const {
+    const double h = phi[0];
+    const double T_sq = square(T);
+    const double g_sq = square(SM_g);
+    const double gp_sq = square(SM_gp);
+    const double sum_sq = g_sq + gp_sq;
+    const double dif_sq = g_sq - gp_sq;
+
+    const double d_MW_T = 0.5 * g_sq * h;
+    const double d_MZ_T = 0.5 * sum_sq * h;
+    const double d_MW_L = 0.5 * g_sq * h;
+    const double d_a_L = 6. * sum_sq * h;
+
+    // b_L = sqrt(inside); inside is quartic in h.
+    const double inside = 9. * square(sum_sq) * pow_4(h) +
+                          132. * square(dif_sq) * square(h) * T_sq +
+                          484. * square(dif_sq) * pow_4(T);
+    const double b_L = std::sqrt(inside);
+    const double d_inside = 36. * square(sum_sq) * h * square(h) +
+                            264. * square(dif_sq) * h * T_sq;
+    // b_L vanishes only at h = T = 0, where the photon and Z longitudinal modes
+    // become degenerate and the square root is not differentiable.
+    const double d_b_L = (b_L > 0.) ? d_inside / (2. * b_L) : 0.;
+
+    const auto along_h = [](double dh) {
+      Eigen::VectorXd v(2);
+      v << dh, 0.;
+      return v;
+    };
+
+    return {along_h(d_MW_L),
+            along_h((d_a_L + d_b_L) / 24.),
+            along_h((d_a_L - d_b_L) / 24.),
+            along_h(d_MW_T),
+            along_h(d_MZ_T),
+            along_h(0.),
+            along_h(0.),   // gluon Debye mass is field independent
+            along_h(0.)};
+  }
+
+  /** Gradients matching get_ghost_masses_sq: xi times the T=0 vector masses. */
+  std::vector<Eigen::VectorXd> grad_ghost_masses_sq(Eigen::VectorXd phi, double xi_) const {
+    const auto dv = grad_vector_debye_sq(phi, 0.);
+    return {xi_ * dv[0], xi_ * dv[1], xi_ * dv[2]};
+  }
+
+  /**
+   * Scalar masses and their gradients together, in the ordinary R_xi gauge.
+   */
+  void scalar_debye_sq_with_grad(Eigen::VectorXd phi, double xi_, double T,
+                                 std::vector<double> &masses_sq,
+                                 std::vector<Eigen::VectorXd> &grads) const {
+    const double h = phi[0];
+    const double s = phi[1];
+    const double chosen_muh_sq = use_1L_EWSB_in_0L_mass ? muh_sq : muh_sq_use_0L_EWSB;
+    const auto thermal_sq = get_scalar_thermal_sq(T);  // field independent
+
+    const double m11_sq = chosen_muh_sq + 0.5 * lambda_hs * square(s) + 3. * lambda_h * square(h);
+    const double m22_sq = mus_sq + 0.5 * lambda_hs * square(h) + 3. * lambda_s * square(s);
+    const double m12_sq = lambda_hs * s * h;
+
+    Eigen::VectorXd d_m11(2), d_m22(2), d_m12(2);
+    d_m11 << 6. * lambda_h * h, lambda_hs * s;
+    d_m22 << lambda_hs * h, 6. * lambda_s * s;
+    d_m12 << lambda_hs * s, lambda_hs * h;
+
+    // Goldstone resummation. With L(m) = m log|m/Q^2| - m the derivative is
+    // L'(m) = log|m/Q^2|, and for the vector terms, which carry -m/3 instead of
+    // -m, it is log|m/Q^2| + 2/3. Unlike in V1 the log is not multiplied by m^2,
+    // so it diverges as a mass goes to zero; for the fermion and vector terms
+    // d(m^2)/dh vanishes proportionally to h and tames it.
+    Eigen::VectorXd d_sum = Eigen::VectorXd::Zero(2);
+    if (use_Goldstone_resum) {
+      const auto fm_sq = get_fermion_masses_sq(phi);
+      const auto vm_sq = get_vector_masses_sq(phi);
+      const auto d_fm = grad_fermion_masses_sq(phi);
+      const auto d_vm = grad_vector_debye_sq(phi, 0.);
+      const double q_sq = square(get_renormalization_scale());
+
+      d_sum += (3. * lambda_h * log_mass_ratio(m11_sq, q_sq)) * d_m11;
+      d_sum += (0.5 * lambda_hs * log_mass_ratio(m22_sq, q_sq)) * d_m22;
+      d_sum -= (6. * SM_yt_sq * log_mass_ratio(fm_sq[0], q_sq)) * d_fm[0];
+      d_sum -= (6. * SM_yb_sq * log_mass_ratio(fm_sq[1], q_sq)) * d_fm[1];
+      d_sum -= (2. * SM_ytau_sq * log_mass_ratio(fm_sq[2], q_sq)) * d_fm[2];
+      d_sum += (1.5 * square(SM_g) * (log_mass_ratio(vm_sq[0], q_sq) + 2. / 3.)) * d_vm[0];
+      d_sum += (0.75 * (square(SM_g) + square(SM_gp)) *
+                (log_mass_ratio(vm_sq[1], q_sq) + 2. / 3.)) * d_vm[1];
+      d_sum /= (16. * M_PI * M_PI);
+    }
+
+    const double mg_sq = chosen_muh_sq + lambda_h * square(h) + 0.5 * lambda_hs * square(s) +
+                         (use_Goldstone_resum ? goldstone_resum_sum(phi) : 0.);
+    Eigen::VectorXd d_mg(2);
+    d_mg << 2. * lambda_h * h, lambda_hs * s;
+    d_mg += d_sum;
+
+    // CP-even sector, closed form.
+    const double A = m11_sq + thermal_sq[0];
+    const double B = m22_sq + thermal_sq[1];
+    const double C = m12_sq;
+    const double D = std::sqrt(square(A - B) + 4. * square(C));
+
+    const Eigen::VectorXd d_half_sum = 0.5 * (d_m11 + d_m22);
+    Eigen::VectorXd d_half_D = Eigen::VectorXd::Zero(2);
+    if (D > 0.) {
+      d_half_D = ((A - B) * (d_m11 - d_m22) + 4. * C * d_m12) / (2. * D);
+    }
+
+    const double mHp_sq = 0.5 * (A + B) + 0.5 * D;
+    const double mHm_sq = 0.5 * (A + B) - 0.5 * D;
+
+    const double mg0_sq = mg_sq + thermal_sq[0] +
+                          0.25 * xi_ * (square(SM_g * h) + square(SM_gp * h));
+    const double mgpm_sq = mg_sq + thermal_sq[0] + 0.25 * xi_ * square(SM_g * h);
+
+    Eigen::VectorXd d_mg0 = d_mg;
+    d_mg0(0) += 0.5 * xi_ * (square(SM_g) + square(SM_gp)) * h;
+    Eigen::VectorXd d_mgpm = d_mg;
+    d_mgpm(0) += 0.5 * xi_ * square(SM_g) * h;
+
+    masses_sq = {mHp_sq, mHm_sq, mg0_sq, mgpm_sq, mgpm_sq};
+    grads = {d_half_sum + d_half_D, d_half_sum - d_half_D, d_mg0, d_mgpm, d_mgpm};
+  }
+
+  /**
+   * @brief Analytic gradient of the full effective potential.
+   */
+  Eigen::VectorXd dV_dx(Eigen::VectorXd phi, double T) const override {
+
+    if (use_covariant_gauge || !use_analytic_gradient) {
+      return EffectivePotential::Potential::dV_dx(phi, T);
+    }
+
+    const double xi_ = get_xi();
+
+    const auto fermion_masses_sq = get_fermion_masses_sq(phi);
+    const auto d_fermion = grad_fermion_masses_sq(phi);
+    const auto fermion_dofs = get_fermion_dofs();
+
+    const auto ghost_masses_sq = (xi_ != 0.) ? get_ghost_masses_sq(phi, xi_) : std::vector<double>{};
+    const auto d_ghost = (xi_ != 0.) ? grad_ghost_masses_sq(phi, xi_) : std::vector<Eigen::VectorXd>{};
+    const auto ghost_dofs = (xi_ != 0.) ? get_ghost_dofs() : std::vector<double>{};
+
+    const auto scalar_dofs = get_scalar_dofs();
+    const auto vector_dofs = get_vector_dofs();
+
+    // Scalar masses come back paired with their own derivatives; see
+    // scalar_debye_sq_with_grad for why they are not read from
+    // get_scalar_debye_sq.
+    std::vector<double> scalar_sq, scalar_debye_sq;
+    std::vector<Eigen::VectorXd> d_scalar, d_scalar_debye;
+
+    Eigen::VectorXd grad = grad_V0(phi);
+
+    // Fermions and ghosts always use the ordinary masses, in every branch.
+    const auto add_fermions_and_ghosts = [&](bool thermal) {
+      grad += dV1_term(fermion_masses_sq, fermion_dofs, d_fermion, -1., 1.5);
+      if (xi_ != 0.) {
+        grad += dV1_term(ghost_masses_sq, ghost_dofs, d_ghost, -1., 1.5);
+      }
+      if (thermal) {
+        grad += dV1T_term(fermion_masses_sq, fermion_dofs, d_fermion, +1., T, true);
+        if (xi_ != 0.) {
+          grad += dV1T_term(ghost_masses_sq, ghost_dofs, d_ghost, -1., T, false);
+        }
+      }
+    };
+
+    if (T > 0) {
+      switch (get_daisy_method()) {
+      case DaisyMethod::None: {
+        scalar_debye_sq_with_grad(phi, xi_, 0., scalar_sq, d_scalar);
+        const auto vector_sq = get_vector_masses_sq(phi);
+        const auto d_vector = grad_vector_debye_sq(phi, 0.);
+        grad += dV1_term(scalar_sq, scalar_dofs, d_scalar, +1., 1.5);
+        grad += dV1_term(vector_sq, vector_dofs, d_vector, +1., 5. / 6.);
+        grad += dV1T_term(scalar_sq, scalar_dofs, d_scalar, +1., T, false);
+        grad += dV1T_term(vector_sq, vector_dofs, d_vector, +1., T, false);
+        add_fermions_and_ghosts(true);
+        break;
+      }
+      case DaisyMethod::ArnoldEspinosa: {
+        scalar_debye_sq_with_grad(phi, xi_, 0., scalar_sq, d_scalar);
+        scalar_debye_sq_with_grad(phi, xi_, T, scalar_debye_sq, d_scalar_debye);
+        const auto vector_sq = get_vector_masses_sq(phi);
+        const auto d_vector = grad_vector_debye_sq(phi, 0.);
+        const auto vector_debye_sq = get_vector_debye_sq(phi, T);
+        const auto d_vector_debye = grad_vector_debye_sq(phi, T);
+        grad += ddaisy_term(scalar_sq, scalar_debye_sq, scalar_dofs, d_scalar, d_scalar_debye, T);
+        grad += ddaisy_term(vector_sq, vector_debye_sq, vector_dofs, d_vector, d_vector_debye, T);
+        grad += dV1_term(scalar_sq, scalar_dofs, d_scalar, +1., 1.5);
+        grad += dV1_term(vector_sq, vector_dofs, d_vector, +1., 5. / 6.);
+        grad += dV1T_term(scalar_sq, scalar_dofs, d_scalar, +1., T, false);
+        grad += dV1T_term(vector_sq, vector_dofs, d_vector, +1., T, false);
+        add_fermions_and_ghosts(true);
+        break;
+      }
+      case DaisyMethod::Parwani: {
+        scalar_debye_sq_with_grad(phi, xi_, T, scalar_debye_sq, d_scalar_debye);
+        const auto vector_debye_sq = get_vector_debye_sq(phi, T);
+        const auto d_vector_debye = grad_vector_debye_sq(phi, T);
+        grad += dV1_term(scalar_debye_sq, scalar_dofs, d_scalar_debye, +1., 1.5);
+        grad += dV1_term(vector_debye_sq, vector_dofs, d_vector_debye, +1., 5. / 6.);
+        grad += dV1T_term(scalar_debye_sq, scalar_dofs, d_scalar_debye, +1., T, false);
+        grad += dV1T_term(vector_debye_sq, vector_dofs, d_vector_debye, +1., T, false);
+        add_fermions_and_ghosts(true);
+        break;
+      }
+      default:
+        throw std::runtime_error("unknown daisy method");
+      }
+    } else {
+      scalar_debye_sq_with_grad(phi, xi_, 0., scalar_sq, d_scalar);
+      const auto vector_sq = get_vector_masses_sq(phi);
+      const auto d_vector = grad_vector_debye_sq(phi, 0.);
+      grad += dV1_term(scalar_sq, scalar_dofs, d_scalar, +1., 1.5);
+      grad += dV1_term(vector_sq, vector_dofs, d_vector, +1., 5. / 6.);
+      add_fermions_and_ghosts(false);
+    }
+
+    return grad;
+  }
+
   // std::vector<double> get_4d_params() const {
   //   return {g_sq, gp_sq, v, m_s, muh_sq, lambda_h, lambda_hs, lambda_s, yt_sq};
   // }
@@ -489,6 +769,7 @@ protected:
   bool use_1L_EWSB_in_0L_mass{false};
   bool use_Goldstone_resum{true};
   bool use_covariant_gauge{false};
+  bool use_analytic_gradient{true};
 
   // hack for covariant gauge
   double xi_covariant_internal{0.};
