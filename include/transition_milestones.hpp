@@ -112,52 +112,36 @@ struct TransitionMilestone
 
     /** @brief Type of nucleation. */
     NucleationType nucleation_type = NucleationType::EXPONENTIAL;
-
     /** @brief Temperature of the milestone. */
     double temperature;
-
     /** @brief Reheating temperature, if applicable. */
     double reheating_temperature;
-
     /** @brief Transition strength. */
     double alpha;
-
     /** @brief Transition strength (mu nu prescription). */
     double alpha_munu;
-
     /** @brief Beta/H in the usual approximation. */
     double betaH;
-
     /** @brief Full Beta/H from the first time derivative */
     double beta1H;
-
     /** @brief Full Beta_2/H from the second time derivative */
     double beta2H;
-
     /** @brief Effective timescale defined from mean bubble separation. */
     double betaH_eff;
-
     /** @brief Hubble rate */
     double H;
-
     /** @brief Enthalpy to energy density ratio. */
     double we;
-
     /** @brief Sound speed in the plus phase. */
     double cs_plus;
-
     /** @brief Sound speed in the minus phase. */
     double cs_minus;
-
     /** @brief Average bubble number density. */
     double n;
-
     /** @brief Average bubble separation. */
     double Rs;
-
     /** @brief Average bubble radius. */
     double Rbar;
-
     /** @brief Duration between T_C and the milestone temperature. */
     double dt;
 

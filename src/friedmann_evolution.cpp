@@ -80,12 +80,80 @@ namespace PhaseTracer {
         solved = true;
     }
 
-    const double
-    FriedmannEvolution::get_hubble_rate(const double& true_vacuum_fraction, const double& e_false, const double& e_true) const
+    void
+    FriedmannEvolution::compute_nucleation_history(const double& t_min, const double& t_max)
     {
-        const double e_averaged = (1-true_vacuum_fraction)*e_false + true_vacuum_fraction*e_true;
-        const double hubble_sq = 8. * M_PI * newtonG/3. * e_averaged;
-        return std::sqrt(hubble_sq);
+        require_solved("compute_nucleation_history");
+        if(percolation_milestone.status == PhaseTracer::MilestoneStatus::YES)
+        {
+            const double t_guess = percolation_milestone.temperature;
+
+            double lower_bound = t_min; // + 0.05 * (t_guess - t_min);
+            double upper_bound = t_max; // - 0.05 * (t_max - t_guess);
+
+            auto action_func = [this](double T){
+                return this->decay_rate.get_action(T) / T;
+            };
+
+            int bits = std::numeric_limits<double>::digits;
+            boost::uintmax_t max_iter = 100;
+
+            NucleationType type_out;
+            double T_m;
+            try 
+            {
+                LOG(debug) << "Finding minimum T_m between lower bound " << lower_bound << " and upper bound " << upper_bound;
+
+                auto result = boost::math::tools::brent_find_minima(action_func, lower_bound, upper_bound, bits, max_iter);
+                T_m = result.first;
+                LOG(debug) << "Found minimum T_m = " << T_m;
+
+                if (abs(lower_bound - T_m) < 1e-4)
+                {
+                    LOG(debug) << "TM is at lower bound, indicating exponential nucleation. Computing beta.";
+                    type_out = NucleationType::EXPONENTIAL;
+                } else 
+                {
+                    LOG(debug) << "TM is not at lower bound, indicating simultaneous nucleation. Computing beta2.";
+                    type_out = NucleationType::SIMULTANEOUS;
+                }
+                
+            } catch (...) 
+            {
+                LOG(error) << "Error during minima finding.";
+                T_m = 0.0;
+                bool action_gradient_negative_at_t_min = decay_rate.get_action_deriv(t_min) > 0.0;
+                if (action_gradient_negative_at_t_min)
+                {
+                    type_out = NucleationType::EXPONENTIAL;
+                } else 
+                {
+                    type_out = NucleationType::SIMULTANEOUS;
+                }
+            }
+
+            nucleation_history.nucleation_type = type_out;
+            percolation_milestone.nucleation_type = type_out;
+            nucleation_milestone.nucleation_type = type_out;
+            nucleation_history.T_m = T_m;
+        } else {
+            nucleation_history.nucleation_type = NucleationType::EXPONENTIAL;
+            percolation_milestone.nucleation_type = NucleationType::EXPONENTIAL;
+            nucleation_milestone.nucleation_type = NucleationType::EXPONENTIAL;
+        }
+    }
+
+    const double
+    FriedmannEvolution::get_hubble_rate(const double& T_false) const
+    {
+        if(friedmann_splines_computed)
+        {
+            double H = alglib::spline1dcalc(hubble_rate_spline, T_false);
+            return H;
+        }
+        const double e_false = abs(eos.get_energy_plus(T_false));
+        const double H_sq = 8. * M_PI * newtonG/3. * e_false;
+        return std::sqrt(H_sq);
     }
 
     const double
@@ -96,401 +164,6 @@ namespace PhaseTracer {
         const double cs_sq = cs_false*cs_false;
         const double dT_dt = prefac * cs_sq;
         return 1. / dT_dt;
-    }
-
-     void FriedmannEvolution::refine_temperature_bounds()
-    {
-        const int N = 1000;
-        const double dT = (t_max - t_min) / (N - 1);
-        const double monotonicity_tol = 10.0 * temperature_abs_tol;
-
-        double e_false_prev = eos.get_energy_plus(t_max);
-        double e_true_prev  = eos.get_energy_minus(t_max);
-        double p_false_prev = eos.get_pressure_plus(t_max);
-        double p_true_prev  = eos.get_pressure_minus(t_max);
-
-        for(int i = 1; i < N; ++i)
-        {
-            const double T = t_max - i * dT;
-
-            const double e_false = eos.get_energy_plus(T);
-            const double e_true  = eos.get_energy_minus(T);
-            const double p_false = eos.get_pressure_plus(T);
-            const double p_true  = eos.get_pressure_minus(T);
-
-            const bool monotonic_decreasing_broken =
-                e_false > e_false_prev + monotonicity_tol ||
-                e_true  > e_true_prev  + monotonicity_tol ||
-                p_false > p_false_prev + monotonicity_tol ||
-                p_true  > p_true_prev  + monotonicity_tol;
-
-            if(monotonic_decreasing_broken)
-            {
-                t_min = T + dT;
-                LOG(debug) << "Refining temperature bounds: setting t_min to " << t_min << " GeV to keep e(T) and p(T) monotonically decreasing";
-                break;
-            }
-
-            e_false_prev = e_false;
-            e_true_prev  = e_true;
-            p_false_prev = p_false;
-            p_true_prev  = p_true;
-        }
-    }
-
-    const double
-    FriedmannEvolution::get_false_vacuum_fraction_from_I3(const double& I3) const
-    {
-        double Veff = 4.0 * M_PI * vw*vw*vw / 3.0 * I3;
-        return exp(-Veff);
-    }
-
-    const double
-    FriedmannEvolution::get_d_false_vacuum_fraction_from_I3(const double& I3, const double& I3_dot) const
-    {
-        double pf = get_false_vacuum_fraction_from_I3(I3);
-        return - 4.0 * M_PI * vw*vw*vw / 3.0 * pf * I3_dot;
-    }
-
-    double 
-    FriedmannEvolution::match_T_true(const double& e_true, double tol, boost::uintmax_t max_iter)
-    {
-        // LOG(debug) << "get_T_true called for e_true = " << e_true;
-        std::pair<double, double> bracket = {t_min, t_max};
-
-        const double e_true_max = eos.get_energy_minus(t_max);
-        if (e_true > e_true_max)
-        {
-            return t_max;
-        }
-
-        auto target_function = [this, e_true](double T_true)
-        {
-            double e_true_eos = eos.get_energy_minus(T_true);
-            return e_true_eos - e_true;
-        };
-
-        double f_low = target_function(bracket.first);
-        double f_high = target_function(bracket.second);
-        if (f_low * f_high > 0.0)        
-        {
-            return t_max;
-        }
-
-        auto root_pair = boost::math::tools::toms748_solve(
-            target_function,
-            bracket.first, bracket.second,
-            [=](double l, double u){ return std::abs(u - l) < tol; },
-            max_iter
-        );
-
-        double root = (root_pair.first + root_pair.second) / 2.0;
-        return root;
-    }
-
-    double 
-    FriedmannEvolution::match_T_false(const double& e_false, double tol, boost::uintmax_t max_iter)
-    {
-        // LOG(debug) << "get_T_false called for e_false = " << e_false;
-        std::pair<double, double> bracket = {t_min, t_max};
-
-        const double e_false_min = eos.get_energy_plus(t_min);
-        if (e_false < e_false_min)
-        {
-            return t_min;
-        }
-
-        auto target_function = [this, e_false](double T_false)
-        {
-            double e_false_eos = eos.get_energy_plus(T_false);
-            return e_false_eos - e_false;
-        };
-
-        double f_low = target_function(bracket.first);
-        double f_high = target_function(bracket.second);
-        if (f_low * f_high > 0.0)        
-        {
-            return t_max;
-        }
-
-        auto root_pair = boost::math::tools::toms748_solve(
-            target_function,
-            bracket.first, bracket.second,
-            [=](double l, double u){ return std::abs(u - l) < tol; },
-            max_iter
-        );
-
-        double root = (root_pair.first + root_pair.second) / 2.0;
-        return root;
-    }
-
-    void
-    FriedmannEvolution::evolve_friedmann()
-    {
-        const double e_false_min = eos.get_energy_plus(t_min);
-        const double e_true_min = eos.get_energy_minus(t_min);
-
-        namespace odeint = boost::numeric::odeint;
-        using state_type = std::array<double, 10>;
-
-        auto rhs = [&](const state_type& state, state_type& dstate, double tau)
-        {
-            const double e_false = state[0];
-            const double e_true  = state[1];
-            const double a       = state[2];
-            const double I_0     = state[3];
-            const double I_1     = state[4];
-            const double I_2     = state[5];
-            const double I_3     = state[6];
-            const double nucleation_rate = state[7];
-            const double number_density = state[8];
-            const double J = std::max(0.0, state[9]);
-
-            const double T_true = match_T_true(e_true);
-            const double T_false = match_T_false(e_false);
-
-            const double p_false = eos.get_pressure_plus(T_false);
-            const double p_true = eos.get_pressure_minus(T_true);
-            const double latent_heat = e_false - e_true;
-
-            const double false_vacuum_fraction = get_false_vacuum_fraction_from_I3(I_3);
-            const double true_vacuum_fraction = 1 - false_vacuum_fraction;
-
-            const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
-            const double gamma = decay_rate.get_gamma(T_false);
-
-            const double time = std::exp(tau);
-
-            dstate[2] = time * a * hubble;
-
-            dstate[3] = time * (gamma       - 3.0 * hubble * I_0); // d(I_0)/d(ln t)
-            dstate[4] = time * (      I_0   - 2.0 * hubble * I_1); // d(I_1)/d(ln t)
-            dstate[5] = time * (2.0 * I_1   - 1.0 * hubble * I_2); // d(I_2)/d(ln t)
-            dstate[6] = time * (3.0 * I_2);                        // d(I_3)/d(ln t)
-
-            const double deriv_true_vacuum_fraction = 4.0/3.0*M_PI*vw*vw*vw * false_vacuum_fraction * dstate[6];
-            const double reheating = (true_vacuum_fraction < 1e-30) ? 0.0 : deriv_true_vacuum_fraction/true_vacuum_fraction * latent_heat;
-
-            dstate[0] = time * (- 3.0 * hubble * (e_false + p_false));           // d(e_false)/d(ln t)
-            dstate[1] = time * (- 3.0 * hubble * (e_true + p_true)) + reheating; // d(e_true)/d(ln t)
-
-            dstate[7] = time * (4.0/3.0 * M_PI * gamma * false_vacuum_fraction / (hubble*hubble*hubble));
-            dstate[8] = time * (- 3.0 * hubble * number_density + gamma * false_vacuum_fraction);
-            dstate[9] = (number_density < 1e-100) ? 0.0 : time * (number_density - 2.0 * hubble * J);
-        };
-
-        auto observer = [&](const state_type& state, double tau)
-        {
-            const double e_false = state[0];
-            const double e_true  = state[1];
-            const double a       = state[2];
-            const double I_0     = state[3];
-            const double I_1     = state[4];
-            const double I_2     = state[5];
-            const double I_3     = state[6];
-            const double nucleation_rate = state[7];
-            const double number_density = state[8];
-            const double J = std::max(0.0, state[9]);
-            const double mean_bubble_radius = (number_density > 1e-100) ? J / number_density : 0.0;
-
-            const double T_false = match_T_false(e_false);
-            const double T_true  = match_T_true(e_true);
-
-            // Stop if either temperature has reached (or gone below) t_min
-            if (T_false <= t_min || T_true <= t_min || e_false <= e_false_min || e_true <= e_true_min)
-            {
-                throw TransitionCompleteException{};
-            }
-
-            const double p_false = eos.get_pressure_plus(T_false);
-            const double p_true  = eos.get_pressure_minus(T_true);
-            const double s_false = eos.get_entropy_plus(T_false);
-            const double s_true  = eos.get_entropy_minus(T_true);
-
-            const double false_vacuum_fraction = get_false_vacuum_fraction_from_I3(I_3);
-            const double true_vacuum_fraction = 1 - false_vacuum_fraction;
-
-            const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
-            const double action = decay_rate.get_action(T_false) / T_false;
-            const double gamma  = decay_rate.get_gamma(T_false);
-
-            const double t = std::exp(tau);
-
-            // LOG(debug) << "Friedmann evolution: tau = " << tau << ", t = " << t << ", T_false = " << T_false << ", T_true = " << T_true
-            //            << ", log(I_3) = " << std::log(I_3)
-            //            << ", true vacuum fraction = " << true_vacuum_fraction
-            //            << ", scale factor a = " << a << "\n";
-
-            system.log_time.push_back(tau);
-            system.time.push_back(t);
-            system.e_f.push_back(e_false);
-            system.e_t.push_back(e_true);
-            system.p_f.push_back(p_false);
-            system.p_t.push_back(p_true);
-            system.w_f.push_back(e_false + p_false);
-            system.w_t.push_back(e_true  + p_true);
-            system.s_f.push_back(s_false);
-            system.s_t.push_back(s_true);
-            system.T_f.push_back(T_false);
-            system.T_t.push_back(T_true);
-            system.hubble.push_back(hubble);
-            system.a.push_back(a);
-            system.action.push_back(action);
-            system.gamma.push_back(gamma);
-            system.I_0.push_back(I_0);
-            system.I_1.push_back(I_1);
-            system.I_2.push_back(I_2);
-            system.I_3.push_back(I_3);
-            system.nucleation_rate.push_back(nucleation_rate);
-            system.number_density.push_back(number_density);
-            system.mean_bubble_radius.push_back(mean_bubble_radius);
-            
-        };
-
-        state_type initial_state = {eos.get_energy_plus(t_max), eos.get_energy_plus(t_max), 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-
-        // set initial time to be just below critical temp.
-        LOG(debug) << "Friedmann evolution temperature bounds: t_min = " << t_min << ", t_max = " << t_max;
-        double d_temp = 1e-3*(t_max - t_min);
-        double T_initial = t_max - d_temp;
-        double initial_time = std::log(0 - d_temp*get_time_temperature_false(T_initial));
-
-        // estimate final time to be at t_min, but add a buffer to ensure we capture the full transition
-        double final_time = std::log(get_t(t_min)) + 1.0;
-
-        double dt = (final_time - initial_time)/(1000.0-1.0);
-
-        LOG(debug) << "Starting Friedmann evolution from T_initial = " << T_initial << " Unit at time " << exp(initial_time) << " Unit^-1, with estimated final time " << exp(final_time) << " Unit^-1";
-
-        auto stepper = odeint::make_controlled<odeint::runge_kutta_dopri5<state_type>>(1e-6, 1e-6);
-
-        state_type x = initial_state;
-        double t = initial_time;
-        double dt_step = dt;
-
-        const double min_dt = 1e-9 * std::abs(final_time - initial_time);
-        const int max_stalled_attempts = 1000;
-        int stalled_attempts = 0;
-
-        try
-        {
-            observer(x, t);
-
-            while (t < final_time)
-            {
-                if (t + dt_step > final_time)
-                {
-                    dt_step = final_time - t;
-                }
-
-                auto result = stepper.try_step(rhs, x, t, dt_step);
-
-                if (result == odeint::success)
-                {
-                    observer(x, t);
-                }
-
-                if (std::abs(dt_step) < min_dt)
-                {
-                    ++stalled_attempts;
-                    if (stalled_attempts > max_stalled_attempts)
-                    {
-                        throw IntegrationStalledException{};
-                    }
-                } else
-                {
-                    stalled_attempts = 0;
-                }
-            }
-        }
-        catch (const TransitionCompleteException&) 
-        {
-            LOG(debug) << "Transition complete: reached bounds on temperature.";
-        } catch (const FalseVacuumTrappingException&) 
-        {
-            LOG(fatal) << "False Vacuum becomes trapped.";
-            throw std::runtime_error("False Vacuum becomes trapped.");
-        } catch (const IntegrationStalledException&)
-        {
-            LOG(warning) << "Friedmann evolution stalled: step size collapsed near tau = " << t
-                         << " (T_false = " << match_T_false(x[0]) << ") without reaching the target temperature bound. "
-                         << "Terminating integration early with the results accumulated so far.";
-        } catch (const std::domain_error& e) {
-            LOG(debug) << "Boost rootfinder error: integration stopped.";
-        }
-    }
-
-    const void
-    FriedmannEvolution::fit_friedmann_splines() const
-    {
-        if (system.time.empty())
-        {
-            LOG(warning) << "Friedmann system is empty. Cannot fit splines.";
-            friedmann_splines_computed = false;
-            return;
-        }
-
-        LOG(trace) << "Fitting splines to Friedmann system with " << system.time.size() << " data points.";
-
-        alglib::real_1d_array T_false_array;
-        alglib::real_1d_array T_true_array; 
-        alglib::real_1d_array log_time_array;
-        alglib::real_1d_array scale_factor_array;
-        alglib::real_1d_array hubble_rate_array;
-        alglib::real_1d_array log_action_array;
-        alglib::real_1d_array log_I_3_array;
-        alglib::real_1d_array log_nucleation_rate_array;
-        alglib::real_1d_array log_bubble_number_density_array;
-        alglib::real_1d_array log_mean_bubble_radius_array;
-
-        T_false_array.setlength(system.time.size());
-        T_true_array.setlength(system.time.size());
-        log_time_array.setlength(system.time.size());
-        scale_factor_array.setlength(system.time.size());
-        hubble_rate_array.setlength(system.time.size());
-        log_action_array.setlength(system.time.size());
-        log_I_3_array.setlength(system.time.size());
-        log_nucleation_rate_array.setlength(system.time.size());
-        log_bubble_number_density_array.setlength(system.time.size());
-        log_mean_bubble_radius_array.setlength(system.time.size());
-
-        auto log_safe = [](double x, std::string caller = "") {
-            LOG(trace) << "Computing log_safe for " << caller << " with value: " << x;
-            if (x <= 0.0 || std::isnan(x) || std::isinf(x)) {
-                return -700.0;
-            }
-            return std::log(x);
-        };
-
-        LOG(trace) << "Populating arrays for spline fitting.";
-
-        for (std::size_t i = 0; i < system.time.size(); ++i)
-        {
-            T_false_array[i] = system.T_f[i];
-            T_true_array[i] = system.T_t[i];
-            log_time_array[i] = system.log_time[i];
-            scale_factor_array[i] = system.a[i];
-            hubble_rate_array[i] = system.hubble[i];
-            log_action_array[i] = (i==0) ? -700 : log_safe(system.action[i], "log_action");
-            log_I_3_array[i] = (i==0) ? -700 : log_safe(system.I_3[i], "log_I_3");
-            log_nucleation_rate_array[i] = (i==0) ? -700 : log_safe(system.nucleation_rate[i], "log_nucleation_rate");
-            log_bubble_number_density_array[i] = (i==0) ? -700 : log_safe(system.number_density[i], "log_bubble_number_density");
-            log_mean_bubble_radius_array[i] = (i==0) ? -700 : log_safe(system.mean_bubble_radius[i], "log_mean_bubble_radius");
-        }
-
-        LOG(trace) << "Fitting splines to Friedmann system data.";
-
-        alglib::spline1dbuildcubic(T_false_array, T_true_array, reheating_spline); LOG(trace) << "Fitted reheating spline.";
-        alglib::spline1dbuildcubic(T_false_array, log_time_array, log_time_spline); LOG(trace) << "Fitted log(time) spline.";
-        alglib::spline1dbuildcubic(T_false_array, scale_factor_array, scale_factor_spline); LOG(trace) << "Fitted scale factor spline.";
-        alglib::spline1dbuildcubic(T_false_array, hubble_rate_array, hubble_rate_spline); LOG(trace) << "Fitted Hubble rate spline.";
-        alglib::spline1dbuildcubic(T_false_array, log_action_array, log_action_spline); LOG(trace) << "Fitted log(action) spline.";
-        alglib::spline1dbuildmonotone(T_false_array, log_I_3_array, log_I_3_spline); LOG(trace) << "Fitted log(I_3) spline.";
-        alglib::spline1dbuildmonotone(T_false_array, log_nucleation_rate_array, log_nucleation_rate_spline); LOG(trace) << "Fitted log(nucleation rate) spline.";
-        alglib::spline1dbuildmonotone(T_false_array, log_bubble_number_density_array, log_bubble_number_density_spline); LOG(trace) << "Fitted log(bubble number density) spline.";
-        alglib::spline1dbuildmonotone(T_false_array, log_mean_bubble_radius_array, log_mean_bubble_radius_spline); LOG(trace) << "Fitted log(mean bubble radius) spline.";
-
-        friedmann_splines_computed = true;
     }
 
     const double
@@ -511,19 +184,6 @@ namespace PhaseTracer {
         double a_top = get_scale_factor(Ttop);
         double a_bottom = get_scale_factor(Tbottom);
         return a_bottom/a_top;
-    }
-
-    const double
-    FriedmannEvolution::get_hubble_rate(const double& T_false) const
-    {
-        if(friedmann_splines_computed)
-        {
-            double H = alglib::spline1dcalc(hubble_rate_spline, T_false);
-            return H;
-        }
-        const double e_false = abs(eos.get_energy_plus(T_false));
-        const double H_sq = 8. * M_PI * newtonG/3. * e_false;
-        return std::sqrt(H_sq);
     }
 
     const double
@@ -557,54 +217,6 @@ namespace PhaseTracer {
         require_solved("get_mean_bubble_radius");
         double log_Rbar = alglib::spline1dcalc(log_mean_bubble_radius_spline, T_false);
         return std::exp(log_Rbar);
-    }
-
-    const std::pair<double, double>
-    FriedmannEvolution::get_action_expansion(const double& temperature) const
-    {
-        require_solved("get_action_expansion");
-
-        // X = ln(t), Y = ln(S)
-        double X, dX, d2X;
-        double Y, dY, d2Y;
-
-        alglib::spline1ddiff(log_time_spline,   temperature, X, dX, d2X);
-        alglib::spline1ddiff(log_action_spline, temperature, Y, dY, d2Y);
-
-        const double S = std::exp(Y);
-        const double t = std::exp(X);
-
-        // dS/dT, dt/dT
-        const double g  = S * dY;
-        const double h  = t * dX;
-
-        // d^2S/dT^2, d^2t/dT^2
-        const double gp = S * (dY * dY + d2Y);
-        const double hp = t * (dX * dX + d2X);
-
-        if (std::abs(h) < 1e-300)
-        {
-            LOG(warning) << "dt/dT ~ 0 at T = " << temperature
-                        << "; cannot compute action expansion (degenerate chain rule).";
-            return {0.0, 0.0};
-        }
-
-        // dS/dt and d^2S/dt^2 via chain rule
-        const double dS_dt   = (S/t) * (dY/dX);
-        const double d2S_dt2 = (gp * h - g * hp) / (h * h * h);
-
-        const double beta_1 = -dS_dt;
-
-        if (d2S_dt2 < 0.0)
-        {
-            LOG(warning) << "d^2S/dt^2 < 0 at T = " << temperature
-                        << "; beta_2 would be imaginary. Returning beta_2 = 0.";
-            return {beta_1, 0.0};
-        }
-
-        const double beta_2 = std::sqrt(d2S_dt2);
-
-        return {beta_1, beta_2};
     }
 
     const double
@@ -641,6 +253,89 @@ namespace PhaseTracer {
         return T_true;
     }
 
+    const std::pair<double, double>
+    FriedmannEvolution::get_action_expansion(const double& T_false) const
+    {
+        require_solved("get_action_expansion");
+
+        double X, dX, d2X;
+        double Y, dY, d2Y;
+
+        alglib::spline1ddiff(log_time_spline, T_false, X, dX, d2X);
+        alglib::spline1ddiff(log_action_spline, T_false, Y, dY, d2Y);
+
+        const double S = std::exp(Y);
+        const double t = std::exp(X);
+
+        const double g  = S * dY;
+        const double h  = t * dX;
+
+        const double gp = S * (dY * dY + d2Y);
+        const double hp = t * (dX * dX + d2X);
+
+        if (std::abs(h) < 1e-300)
+        {
+            LOG(warning) << "dt/dT ~ 0 at T = " << T_false
+                        << "; cannot compute action expansion (degenerate chain rule).";
+            return {0.0, 0.0};
+        }
+
+        const double dS_dt   = (S/t) * (dY/dX);
+        const double d2S_dt2 = (gp * h - g * hp) / (h * h * h);
+
+        const double beta_1 = -dS_dt;
+
+        if (d2S_dt2 < 0.0)
+        {
+            LOG(warning) << "d^2S/dt^2 < 0 at T = " << T_false
+                        << "; beta_2 would be imaginary. Returning beta_2 = 0.";
+            return {beta_1, 0.0};
+        }
+
+        const double beta_2 = std::sqrt(d2S_dt2);
+
+        return {beta_1, beta_2};
+    }
+
+    const TransitionMilestone 
+    FriedmannEvolution::get_transition_milestone(const MilestoneType type)
+    {
+        auto target_function = get_target_function(type);
+
+        TransitionMilestone output(type);
+
+        if(early_exit)
+        {
+            output.status = MilestoneStatus::NO;
+            return output;
+        }
+
+        require_solved("get_transition_milestone");
+
+        const auto valid = valid_lower_bound(target_function);
+        if(valid)
+        {
+            double t = find_temperature(target_function);
+            if (t_max - t < 1e-8)
+            {
+                output.status = MilestoneStatus::FAST;
+                output.temperature = t;
+            } else
+            {
+                output.status = MilestoneStatus::YES;
+                output.temperature = t;
+            }
+        } else 
+        {
+            output.status = MilestoneStatus::NO;
+        }
+
+        return output;
+    }
+
+    /*
+        The below function is WIP and made with assistance from Claude Code.
+    */
     const LifetimeDistribution
     FriedmannEvolution::get_lifetime_distribution(const double& timescale, const double& lifetime_min_fraction)
     {
@@ -872,6 +567,401 @@ namespace PhaseTracer {
         return distribution_out;
     }
 
+    void 
+    FriedmannEvolution::refine_temperature_bounds()
+    {
+        const int N = 1000;
+        const double dT = (t_max - t_min) / (N - 1);
+        const double monotonicity_tol = 10.0 * temperature_abs_tol;
+
+        double e_false_prev = eos.get_energy_plus(t_max);
+        double e_true_prev  = eos.get_energy_minus(t_max);
+        double p_false_prev = eos.get_pressure_plus(t_max);
+        double p_true_prev  = eos.get_pressure_minus(t_max);
+
+        for(int i = 1; i < N; ++i)
+        {
+            const double T = t_max - i * dT;
+
+            const double e_false = eos.get_energy_plus(T);
+            const double e_true  = eos.get_energy_minus(T);
+            const double p_false = eos.get_pressure_plus(T);
+            const double p_true  = eos.get_pressure_minus(T);
+
+            const bool monotonic_decreasing_broken =
+                e_false > e_false_prev + monotonicity_tol ||
+                e_true  > e_true_prev  + monotonicity_tol ||
+                p_false > p_false_prev + monotonicity_tol ||
+                p_true  > p_true_prev  + monotonicity_tol;
+
+            if(monotonic_decreasing_broken)
+            {
+                t_min = T + dT;
+                LOG(debug) << "Refining temperature bounds: setting t_min to " << t_min << " GeV to keep e(T) and p(T) monotonically decreasing";
+                break;
+            }
+
+            e_false_prev = e_false;
+            e_true_prev  = e_true;
+            p_false_prev = p_false;
+            p_true_prev  = p_true;
+        }
+    }
+
+    const double
+    FriedmannEvolution::get_hubble_rate(const double& true_vacuum_fraction, const double& e_false, const double& e_true) const
+    {
+        const double e_averaged = (1-true_vacuum_fraction)*e_false + true_vacuum_fraction*e_true;
+        const double hubble_sq = 8. * M_PI * newtonG/3. * e_averaged;
+        return std::sqrt(hubble_sq);
+    }
+
+    const double
+    FriedmannEvolution::get_false_vacuum_fraction_from_I3(const double& I3) const
+    {
+        double Veff = 4.0 * M_PI * vw*vw*vw / 3.0 * I3;
+        return exp(-Veff);
+    }
+
+    const double
+    FriedmannEvolution::get_d_false_vacuum_fraction_from_I3(const double& I3, const double& I3_dot) const
+    {
+        double pf = get_false_vacuum_fraction_from_I3(I3);
+        return - 4.0 * M_PI * vw*vw*vw / 3.0 * pf * I3_dot;
+    }
+
+    double 
+    FriedmannEvolution::match_T_true(const double& e_true, double tol, boost::uintmax_t max_iter)
+    {
+        std::pair<double, double> bracket = {t_min, t_max};
+
+        const double e_true_max = eos.get_energy_minus(t_max);
+        if (e_true > e_true_max)
+        {
+            return t_max;
+        }
+
+        auto target_function = [this, e_true](double T_true)
+        {
+            double e_true_eos = eos.get_energy_minus(T_true);
+            return e_true_eos - e_true;
+        };
+
+        double f_low = target_function(bracket.first);
+        double f_high = target_function(bracket.second);
+        if (f_low * f_high > 0.0)        
+        {
+            return t_max;
+        }
+
+        auto root_pair = boost::math::tools::toms748_solve(
+            target_function,
+            bracket.first, bracket.second,
+            [=](double l, double u){ return std::abs(u - l) < tol; },
+            max_iter
+        );
+
+        double root = (root_pair.first + root_pair.second) / 2.0;
+        return root;
+    }
+
+    double 
+    FriedmannEvolution::match_T_false(const double& e_false, double tol, boost::uintmax_t max_iter)
+    {
+        std::pair<double, double> bracket = {t_min, t_max};
+
+        const double e_false_min = eos.get_energy_plus(t_min);
+        if (e_false < e_false_min)
+        {
+            return t_min;
+        }
+
+        auto target_function = [this, e_false](double T_false)
+        {
+            double e_false_eos = eos.get_energy_plus(T_false);
+            return e_false_eos - e_false;
+        };
+
+        double f_low = target_function(bracket.first);
+        double f_high = target_function(bracket.second);
+        if (f_low * f_high > 0.0)        
+        {
+            return t_max;
+        }
+
+        auto root_pair = boost::math::tools::toms748_solve(
+            target_function,
+            bracket.first, bracket.second,
+            [=](double l, double u){ return std::abs(u - l) < tol; },
+            max_iter
+        );
+
+        double root = (root_pair.first + root_pair.second) / 2.0;
+        return root;
+    }
+
+    void
+    FriedmannEvolution::evolve_friedmann()
+    {
+        const double e_false_min = eos.get_energy_plus(t_min);
+        const double e_true_min = eos.get_energy_minus(t_min);
+
+        namespace odeint = boost::numeric::odeint;
+        using state_type = std::array<double, 10>;
+
+        auto rhs = [&](const state_type& state, state_type& dstate, double tau)
+        {
+            const double e_false = state[0];
+            const double e_true  = state[1];
+            const double a       = state[2];
+            const double I_0     = state[3];
+            const double I_1     = state[4];
+            const double I_2     = state[5];
+            const double I_3     = state[6];
+            const double nucleation_rate = state[7];
+            const double number_density = state[8];
+            const double J = std::max(0.0, state[9]);
+
+            const double T_true = match_T_true(e_true);
+            const double T_false = match_T_false(e_false);
+
+            const double p_false = eos.get_pressure_plus(T_false);
+            const double p_true = eos.get_pressure_minus(T_true);
+            const double latent_heat = e_false - e_true;
+
+            const double false_vacuum_fraction = get_false_vacuum_fraction_from_I3(I_3);
+            const double true_vacuum_fraction = 1 - false_vacuum_fraction;
+
+            const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
+            const double gamma = decay_rate.get_gamma(T_false);
+
+            const double time = std::exp(tau);
+
+            dstate[2] = time * a * hubble;
+
+            dstate[3] = time * (gamma       - 3.0 * hubble * I_0); // d(I_0)/d(ln t)
+            dstate[4] = time * (      I_0   - 2.0 * hubble * I_1); // d(I_1)/d(ln t)
+            dstate[5] = time * (2.0 * I_1   - 1.0 * hubble * I_2); // d(I_2)/d(ln t)
+            dstate[6] = time * (3.0 * I_2);                        // d(I_3)/d(ln t)
+
+            const double deriv_true_vacuum_fraction = 4.0/3.0*M_PI*vw*vw*vw * false_vacuum_fraction * dstate[6];
+            const double reheating = (true_vacuum_fraction < 1e-30) ? 0.0 : deriv_true_vacuum_fraction/true_vacuum_fraction * latent_heat;
+
+            dstate[0] = time * (- 3.0 * hubble * (e_false + p_false));           // d(e_false)/d(ln t)
+            dstate[1] = time * (- 3.0 * hubble * (e_true + p_true)) + reheating; // d(e_true)/d(ln t)
+
+            dstate[7] = time * (4.0/3.0 * M_PI * gamma * false_vacuum_fraction / (hubble*hubble*hubble));
+            dstate[8] = time * (- 3.0 * hubble * number_density + gamma * false_vacuum_fraction);
+            dstate[9] = (number_density < 1e-100) ? 0.0 : time * (number_density - 2.0 * hubble * J);
+        };
+
+        auto observer = [&](const state_type& state, double tau)
+        {
+            const double e_false = state[0];
+            const double e_true  = state[1];
+            const double a       = state[2];
+            const double I_0     = state[3];
+            const double I_1     = state[4];
+            const double I_2     = state[5];
+            const double I_3     = state[6];
+            const double nucleation_rate = state[7];
+            const double number_density = state[8];
+            const double J = std::max(0.0, state[9]);
+            const double mean_bubble_radius = (number_density > 1e-100) ? J / number_density : 0.0;
+
+            const double T_false = match_T_false(e_false);
+            const double T_true  = match_T_true(e_true);
+
+            // Stop if either temperature has reached (or gone below) t_min
+            if (T_false <= t_min || T_true <= t_min || e_false <= e_false_min || e_true <= e_true_min)
+            {
+                throw TransitionCompleteException{};
+            }
+
+            const double p_false = eos.get_pressure_plus(T_false);
+            const double p_true  = eos.get_pressure_minus(T_true);
+            const double s_false = eos.get_entropy_plus(T_false);
+            const double s_true  = eos.get_entropy_minus(T_true);
+
+            const double false_vacuum_fraction = get_false_vacuum_fraction_from_I3(I_3);
+            const double true_vacuum_fraction = 1 - false_vacuum_fraction;
+
+            const double hubble = get_hubble_rate(true_vacuum_fraction, e_false, e_true);
+            const double action = decay_rate.get_action(T_false) / T_false;
+            const double gamma  = decay_rate.get_gamma(T_false);
+
+            const double t = std::exp(tau);
+
+            // LOG(debug) << "Friedmann evolution: tau = " << tau << ", t = " << t << ", T_false = " << T_false << ", T_true = " << T_true
+            //            << ", log(I_3) = " << std::log(I_3)
+            //            << ", true vacuum fraction = " << true_vacuum_fraction
+            //            << ", scale factor a = " << a << "\n";
+
+            system.log_time.push_back(tau);
+            system.time.push_back(t);
+            system.e_f.push_back(e_false);
+            system.e_t.push_back(e_true);
+            system.p_f.push_back(p_false);
+            system.p_t.push_back(p_true);
+            system.w_f.push_back(e_false + p_false);
+            system.w_t.push_back(e_true  + p_true);
+            system.s_f.push_back(s_false);
+            system.s_t.push_back(s_true);
+            system.T_f.push_back(T_false);
+            system.T_t.push_back(T_true);
+            system.hubble.push_back(hubble);
+            system.a.push_back(a);
+            system.action.push_back(action);
+            system.gamma.push_back(gamma);
+            system.I_0.push_back(I_0);
+            system.I_1.push_back(I_1);
+            system.I_2.push_back(I_2);
+            system.I_3.push_back(I_3);
+            system.nucleation_rate.push_back(nucleation_rate);
+            system.number_density.push_back(number_density);
+            system.mean_bubble_radius.push_back(mean_bubble_radius);
+            
+        };
+
+        state_type initial_state = {eos.get_energy_plus(t_max), eos.get_energy_plus(t_max), 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+        // set initial time to be just below critical temp.
+        LOG(debug) << "Friedmann evolution temperature bounds: t_min = " << t_min << ", t_max = " << t_max;
+        double d_temp = 1e-3*(t_max - t_min);
+        double T_initial = t_max - d_temp;
+        double initial_time = std::log(0 - d_temp*get_time_temperature_false(T_initial));
+
+        // estimate final time to be at t_min, but add a buffer to ensure we capture the full transition
+        double final_time = std::log(get_t(t_min)) + 1.0;
+
+        double dt = (final_time - initial_time)/(1000.0-1.0);
+
+        LOG(debug) << "Starting Friedmann evolution from T_initial = " << T_initial << " Unit at time " << exp(initial_time) << " Unit^-1, with estimated final time " << exp(final_time) << " Unit^-1";
+
+        auto stepper = odeint::make_controlled<odeint::runge_kutta_dopri5<state_type>>(1e-6, 1e-6);
+
+        state_type x = initial_state;
+        double t = initial_time;
+        double dt_step = dt;
+
+        const double min_dt = 1e-9 * std::abs(final_time - initial_time);
+        const int max_stalled_attempts = 1000;
+        int stalled_attempts = 0;
+
+        try
+        {
+            observer(x, t);
+
+            while (t < final_time)
+            {
+                if (t + dt_step > final_time) { dt_step = final_time - t; }
+
+                auto result = stepper.try_step(rhs, x, t, dt_step);
+
+                if (result == odeint::success) { observer(x, t); }
+
+                if (std::abs(dt_step) < min_dt)
+                {
+                    ++stalled_attempts;
+                    if (stalled_attempts > max_stalled_attempts)
+                    {
+                        throw IntegrationStalledException{};
+                    }
+                } else
+                {
+                    stalled_attempts = 0;
+                }
+            }
+        }
+        catch (const TransitionCompleteException&) 
+        {
+            LOG(debug) << "Transition complete: reached bounds on temperature.";
+        } catch (const FalseVacuumTrappingException&) 
+        {
+            LOG(fatal) << "False Vacuum becomes trapped.";
+            throw std::runtime_error("False Vacuum becomes trapped.");
+        } catch (const IntegrationStalledException&)
+        {
+            LOG(warning) << "Friedmann evolution stalled: step size collapsed near tau = " << t
+                         << " (T_false = " << match_T_false(x[0]) << ") without reaching the target temperature bound. "
+                         << "Terminating integration early with the results accumulated so far.";
+        } catch (const std::domain_error& e) {
+            LOG(debug) << "Boost rootfinder error: integration stopped.";
+        }
+    }
+
+    const void
+    FriedmannEvolution::fit_friedmann_splines() const
+    {
+        if (system.time.empty())
+        {
+            LOG(warning) << "Friedmann system is empty. Cannot fit splines.";
+            friedmann_splines_computed = false;
+            return;
+        }
+
+        LOG(trace) << "Fitting splines to Friedmann system with " << system.time.size() << " data points.";
+
+        alglib::real_1d_array T_false_array;
+        alglib::real_1d_array T_true_array; 
+        alglib::real_1d_array log_time_array;
+        alglib::real_1d_array scale_factor_array;
+        alglib::real_1d_array hubble_rate_array;
+        alglib::real_1d_array log_action_array;
+        alglib::real_1d_array log_I_3_array;
+        alglib::real_1d_array log_nucleation_rate_array;
+        alglib::real_1d_array log_bubble_number_density_array;
+        alglib::real_1d_array log_mean_bubble_radius_array;
+
+        T_false_array.setlength(system.time.size());
+        T_true_array.setlength(system.time.size());
+        log_time_array.setlength(system.time.size());
+        scale_factor_array.setlength(system.time.size());
+        hubble_rate_array.setlength(system.time.size());
+        log_action_array.setlength(system.time.size());
+        log_I_3_array.setlength(system.time.size());
+        log_nucleation_rate_array.setlength(system.time.size());
+        log_bubble_number_density_array.setlength(system.time.size());
+        log_mean_bubble_radius_array.setlength(system.time.size());
+
+        auto log_safe = [](double x, std::string caller = "") 
+        {
+            LOG(trace) << "Computing log_safe for " << caller << " with value: " << x;
+            if (x <= 0.0 || std::isnan(x) || std::isinf(x)) { return -700.0; }
+            return std::log(x);
+        };
+
+        LOG(trace) << "Populating arrays for spline fitting.";
+
+        for (std::size_t i = 0; i < system.time.size(); ++i)
+        {
+            T_false_array[i] = system.T_f[i];
+            T_true_array[i] = system.T_t[i];
+            log_time_array[i] = system.log_time[i];
+            scale_factor_array[i] = system.a[i];
+            hubble_rate_array[i] = system.hubble[i];
+            log_action_array[i] = (i==0) ? -700 : log_safe(system.action[i], "log_action");
+            log_I_3_array[i] = (i==0) ? -700 : log_safe(system.I_3[i], "log_I_3");
+            log_nucleation_rate_array[i] = (i==0) ? -700 : log_safe(system.nucleation_rate[i], "log_nucleation_rate");
+            log_bubble_number_density_array[i] = (i==0) ? -700 : log_safe(system.number_density[i], "log_bubble_number_density");
+            log_mean_bubble_radius_array[i] = (i==0) ? -700 : log_safe(system.mean_bubble_radius[i], "log_mean_bubble_radius");
+        }
+
+        LOG(trace) << "Fitting splines to Friedmann system data.";
+
+        alglib::spline1dbuildcubic(T_false_array, T_true_array, reheating_spline); LOG(trace) << "Fitted reheating spline.";
+        alglib::spline1dbuildcubic(T_false_array, log_time_array, log_time_spline); LOG(trace) << "Fitted log(time) spline.";
+        alglib::spline1dbuildcubic(T_false_array, scale_factor_array, scale_factor_spline); LOG(trace) << "Fitted scale factor spline.";
+        alglib::spline1dbuildcubic(T_false_array, hubble_rate_array, hubble_rate_spline); LOG(trace) << "Fitted Hubble rate spline.";
+        alglib::spline1dbuildcubic(T_false_array, log_action_array, log_action_spline); LOG(trace) << "Fitted log(action) spline.";
+        alglib::spline1dbuildmonotone(T_false_array, log_I_3_array, log_I_3_spline); LOG(trace) << "Fitted log(I_3) spline.";
+        alglib::spline1dbuildmonotone(T_false_array, log_nucleation_rate_array, log_nucleation_rate_spline); LOG(trace) << "Fitted log(nucleation rate) spline.";
+        alglib::spline1dbuildmonotone(T_false_array, log_bubble_number_density_array, log_bubble_number_density_spline); LOG(trace) << "Fitted log(bubble number density) spline.";
+        alglib::spline1dbuildmonotone(T_false_array, log_mean_bubble_radius_array, log_mean_bubble_radius_spline); LOG(trace) << "Fitted log(mean bubble radius) spline.";
+
+        friedmann_splines_computed = true;
+    }
+
     const double 
     FriedmannEvolution::find_temperature(std::function<double(double)> target_function, double tol, boost::uintmax_t max_iter)
     {
@@ -907,123 +997,7 @@ namespace PhaseTracer {
                 throw std::invalid_argument("Invalid MilestoneType provided.");
         }
     }
-
-    const TransitionMilestone 
-    FriedmannEvolution::get_transition_milestone(const MilestoneType type)
-    {
-        auto target_function = get_target_function(type);
-
-        TransitionMilestone output(type);
-
-        if(early_exit)
-        {
-            output.status = MilestoneStatus::NO;
-            return output;
-        }
-
-        require_solved("get_transition_milestone");
-
-        const auto valid = valid_lower_bound(target_function);
-        if(valid)
-        {
-            double t = find_temperature(target_function);
-            if (t_max - t < 1e-8)
-            {
-                output.status = MilestoneStatus::FAST;
-                output.temperature = t;
-            } else
-            {
-                output.status = MilestoneStatus::YES;
-                output.temperature = t;
-            }
-        } else 
-        {
-            output.status = MilestoneStatus::NO;
-        }
-
-        return output;
-    }
-
-    void
-    FriedmannEvolution::compute_nucleation_history(const double& t_min, const double& t_max)
-    {
-        require_solved("compute_nucleation_history");
-        if(percolation_milestone.status == PhaseTracer::MilestoneStatus::YES)
-        {
-            const double t_guess = percolation_milestone.temperature;
-
-            // TODO this chops off edge effects, can be removed once a better action calc is ready.
-            double lower_bound = t_min + 0.05 * (t_guess - t_min);
-            double upper_bound = t_max - 0.05 * (t_max - t_guess);
-
-            auto action_func = [this](double T){
-                return this->decay_rate.get_action(T) / T;
-            };
-
-            int bits = std::numeric_limits<double>::digits;
-            boost::uintmax_t max_iter = 100;
-
-            NucleationType type_out;
-
-            /*
-                The algorithm below searches for a minimum in the action curve, between the 'safe' temperature
-                bounds defined above (these just try to limit edge effects, but should be refined in future).
-
-                If a minimum is found, but it is at the lower bound (indicating monotonic decrease), it 
-                is assumed to be exponential. Otherwise, we assume it is simultaneous. This is a 
-                simplification.
-            */
-            
-            try 
-            {
-                LOG(debug) << "Finding minimum T_m between lower bound " << lower_bound << " and upper bound " << upper_bound;
-
-                auto result = boost::math::tools::brent_find_minima(action_func, lower_bound, upper_bound, bits, max_iter);
-                
-                double T_m = result.first;
-                LOG(debug) << "Found minimum T_m = " << T_m;
-
-                if (abs(lower_bound - T_m) < 1e-4)
-                {
-                    LOG(debug) << "TM is at lower bound, indicating exponential nucleation. Computing beta.";
-                    type_out = NucleationType::EXPONENTIAL;
-                    nucleation_history.T_m = T_m;
-                } else 
-                {
-                    LOG(debug) << "TM is not at lower bound, indicating simultaneous nucleation. Computing beta2.";
-                    type_out = NucleationType::SIMULTANEOUS;
-                    nucleation_history.T_m = T_m;
-                }
-            } catch (const std::exception& e) 
-            {
-                LOG(error) << "Error during minima finding: " << e.what();
-
-                /*
-                    If the above fails, we simply check the gradient at t_min.
-                    This is succeptible to outliers.
-                */
-
-                bool action_gradient_negative_at_t_min = decay_rate.get_action_deriv(t_min) > 0.0;
-                if (action_gradient_negative_at_t_min)
-                {
-                    type_out = NucleationType::EXPONENTIAL;
-                } else 
-                {
-                    type_out = NucleationType::SIMULTANEOUS;
-                    nucleation_history.T_m = 0.0;
-                }
-            }
-
-            nucleation_history.nucleation_type = type_out;
-            percolation_milestone.nucleation_type = type_out;
-            nucleation_milestone.nucleation_type = type_out;
-        } else {
-            nucleation_history.nucleation_type = NucleationType::EXPONENTIAL;
-            percolation_milestone.nucleation_type = NucleationType::EXPONENTIAL;
-            nucleation_milestone.nucleation_type = NucleationType::EXPONENTIAL;
-        }
-    }
-
+    
     double
     FriedmannEvolution::simpson_integrate(const std::function<double(double)>& integrand, const double& x_min, const double& x_max, const int& steps) const
     {
