@@ -44,6 +44,7 @@ std::string FluidProfile::mode_str() const {
 
 void FluidProfile::write_profile_to_text(const std::string &filename) const {
   std::ofstream file(filename);
+  file << "xi,v,w,lambda,T" << std::endl;
   for (int ii = 0; ii < xi.size(); ii++) {
     file << xi[ii] << "," << v[ii] << "," << w[ii] << "," << lambda[ii] << "," << T[ii];
     file << std::endl;
@@ -378,8 +379,9 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
 
 void GravWaveCalculator::write_spectrum_to_text(const GravWaveSpectrum &sp, const std::string &filename) const {
   std::ofstream file(filename);
+  file << "frequency,total_amplitude,sound_wave,turbulence,bubble_collision" << std::endl;
   for (int ii = 0; ii < sp.frequency.size(); ii++) {
-    file << sp.frequency[ii] << ", " << sp.total_amplitude[ii] << ", " << sp.sound_wave[ii] << ", " << sp.turbulence[ii] << ", " << sp.bubble_collision[ii];
+    file << sp.frequency[ii] << "," << sp.total_amplitude[ii] << "," << sp.sound_wave[ii] << "," << sp.turbulence[ii] << "," << sp.bubble_collision[ii];
     file << std::endl;
   }
 
