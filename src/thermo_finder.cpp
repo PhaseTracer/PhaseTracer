@@ -21,6 +21,58 @@
 
 namespace PhaseTracer {
 
+    ThermalParameterSet::ThermalParameterSet
+    (
+        const Transition& t_in, 
+        const ActionCalculator& ac_in,
+        int action_spline_evaluations_in,
+        int warm_start_chunk_size_in,
+        int eos_spline_evaluations_in,
+        double eos_background_dof_in,
+        double percolation_target_in,
+        double completion_target_in,
+        double onset_target_in,
+        double nucleation_target_in,
+        bool use_bag_dtdT_in,
+        double temperature_abs_tol_in,
+        FalseVacuumDecayRate::PrefactorFunction prefactor_in
+    ) : ac(ac_in), transition(std::make_unique<Transition>(t_in))
+    {
+        decay_rate = std::make_unique<FalseVacuumDecayRate>(*transition, ac);
+        decay_rate->set_t_min(transition->false_phase.T.front());
+        decay_rate->set_t_max(transition->TC);
+        decay_rate->set_spline_evaluations(action_spline_evaluations_in);
+        decay_rate->set_warm_start_chunk_size(warm_start_chunk_size_in);
+        if (prefactor_in) { decay_rate->set_prefactor_function(prefactor_in); }
+        decay_rate->calculate();
+
+        eos = std::make_unique<EquationOfState>(*transition);
+        eos->set_n_temp(eos_spline_evaluations_in);
+        eos->set_background_dof(eos_background_dof_in);
+        eos->calculate();
+
+        friedmann_evolution = std::make_unique<FriedmannEvolution>(*decay_rate, *eos);
+        friedmann_evolution->set_percolation_target(percolation_target_in);
+        friedmann_evolution->set_completion_target(completion_target_in);
+        friedmann_evolution->set_onset_target(onset_target_in);
+        friedmann_evolution->set_nucleation_target(nucleation_target_in);
+        friedmann_evolution->set_use_bag_dtdT(use_bag_dtdT_in);
+        friedmann_evolution->set_temperature_abs_tol(temperature_abs_tol_in);
+        friedmann_evolution->solve();
+
+        TC = decay_rate->get_t_max();
+
+        friedmann_evolution->compute_milestones();
+        if(!friedmann_evolution->early_exit)
+        {
+            friedmann_evolution->compute_nucleation_history
+            (
+                friedmann_evolution->get_t_min(), 
+                friedmann_evolution->get_t_max()
+            );
+        }
+    }
+
     const std::vector<ThermalParameterSet>&
     ThermoFinder::get_thermal_parameters()
     {
@@ -94,102 +146,115 @@ namespace PhaseTracer {
         ThermalParameterSet output(
             t, 
             ac,
-            n_temp_action,
-            n_temp_eos,
-            vw,
-            background_dof,
-            dof,
-            use_pf_in_nt_integrand,
-            use_bag_dtdT,
+            action_spline_evaluations,
+            warm_start_chunk_size,
+            eos_spline_evaluations,
+            eos_background_dof,
             percolation_target,
             completion_target,
             onset_target,
             nucleation_target,
+            use_bag_dtdT,
             temperature_abs_tol,
             prefactor_function
         );
 
-        output.onset = output.friedmann_evolution->onset_milestone;
-        output.onset.set_print_setting(onset_print_setting);
-        add_thermal_parameter_values(output.onset, *output.decay_rate, *output.eos, *output.friedmann_evolution);
+        auto& decay_rate = output.get_decay_rate();
+        auto& eos = output.get_equation_of_state();
+        auto& fe = output.get_friedmann_evolution();
 
-        output.percolation = output.friedmann_evolution->percolation_milestone;
+        auto record = [&](TransitionMilestone& dest, const TransitionMilestone& src, PrintSettings print_setting)
+        {
+            dest = src;
+            dest.set_print_setting(print_setting);
+            add_thermal_parameter_values(dest, decay_rate, eos, fe);
+        };
+
+        record(output.onset, fe.onset_milestone, onset_print_setting);
+        record(output.completion, fe.completion_milestone, completion_print_setting);
+        record(output.nucleation, fe.nucleation_milestone, nucleation_print_setting);
+
+        output.percolation = fe.percolation_milestone;
         output.percolation.set_print_setting(percolation_print_setting);
 
         if(update_percolation_temperature && output.percolation.status == MilestoneStatus::YES)
         {
-            try{
-                revise_percolation_temperature(output.percolation, *output.eos, *output.friedmann_evolution);
-            } catch (const std::exception& e) {
+            try
+            {
+                revise_percolation_temperature(output.percolation, eos, fe);
+            } catch (const std::exception& e) 
+            {
                 LOG(debug) << "Error updating percolation temperature: " << e.what();
-            } catch (...) {
+            } catch (...) 
+            {
                 LOG(debug) << "Unknown error updating percolation temperature.";
             }
         }
-        
-        add_thermal_parameter_values(output.percolation, *output.decay_rate, *output.eos, *output.friedmann_evolution);
 
-        output.completion = output.friedmann_evolution->completion_milestone;
-        output.completion.set_print_setting(completion_print_setting);
-        add_thermal_parameter_values(output.completion, *output.decay_rate, *output.eos, *output.friedmann_evolution);
-        add_reheating_temperature(output.completion, *output.friedmann_evolution);
+        add_thermal_parameter_values(output.percolation, decay_rate, eos, fe);
 
-        output.nucleation = output.friedmann_evolution->nucleation_milestone;
-        output.nucleation.set_print_setting(nucleation_print_setting);
-        add_thermal_parameter_values(output.nucleation, *output.decay_rate, *output.eos, *output.friedmann_evolution);
-
-        output.nucleation_history = output.friedmann_evolution->nucleation_history;
-        fill_nucleation_history(output.nucleation_history, output.percolation, output.nucleation, *output.decay_rate, *output.friedmann_evolution);
-
-        if(compute_profiles)
+        if(output.completion.status == PhaseTracer::MilestoneStatus::YES)
         {
-            ThermalProfiles profile_out;
-            double t_min = output.friedmann_evolution->get_t_min();
-            double t_max = output.friedmann_evolution->get_t_max();
-            double dt = (t_max - t_min)/(n_temp_profiles-1);
-
-            for(double tt = t_min; tt < t_max; tt += dt)
-            {
-                double dtdT, dt, H, action, gamma, vext, pf, d_pf, nt, n, Rs, Rbar;
-
-                try {
-                    dtdT = output.friedmann_evolution->get_time_temperature_false(tt);
-                    dt = get_dt(tt, *output.friedmann_evolution);
-                    H = get_H(tt, *output.friedmann_evolution);
-                    action = output.decay_rate->get_action(tt)/tt;
-                    gamma = output.decay_rate->get_gamma(tt);
-                    pf = output.friedmann_evolution->get_false_vacuum_fraction(tt);
-                    vext = -log(pf);
-                    // d_pf = output.friedmann_evolution->get_d_false_vacuum_fraction_dT(tt);
-                    nt =  output.friedmann_evolution->get_nucleation_rate(tt);
-                    n = get_n(tt, *output.friedmann_evolution);
-                    Rs = std::pow(n, -1./3.) * H;
-                    Rbar = get_Rbar(tt, *output.friedmann_evolution) * H; 
-                } catch (const std::exception& e) {
-                    LOG(debug) << "Error computing thermal profile values at T = " << tt << ": " << e.what();
-                    continue;
-                } catch (...) {
-                    LOG(debug) << "Unknown error computing thermal profile values at T = " << tt;
-                    continue;
-                }
-
-                profile_out.temperature.push_back(tt);
-                profile_out.dtdT.push_back(dtdT);
-                profile_out.time.push_back(dt);
-                profile_out.hubble_rate.push_back(H);
-                profile_out.bounce_action.push_back(action);
-                profile_out.false_vacuum_decay_rate.push_back(gamma);
-                profile_out.extended_volume.push_back(vext);
-                profile_out.false_vacuum_fraction.push_back(pf);
-                profile_out.d_false_vacuum_fraction.push_back(d_pf);
-                profile_out.nucleation_rate.push_back(nt);
-                profile_out.mean_bubble_separation.push_back(Rs);
-                profile_out.mean_bubble_radius.push_back(Rbar);
-            }
-            output.profiles = profile_out;
+            add_reheating_temperature(output.onset, fe);
+            add_reheating_temperature(output.nucleation, fe);
+            add_reheating_temperature(output.completion, fe);
+            add_reheating_temperature(output.percolation, fe);
         }
 
+        output.nucleation_history = fe.nucleation_history;
+        fill_nucleation_history(output.nucleation_history, output.percolation, output.nucleation, decay_rate, fe);
+
+        if(compute_profiles) { output.profiles = compute_thermal_profiles(decay_rate, fe); }
+
         return output;
+    }
+
+    ThermalProfiles
+    ThermoFinder::compute_thermal_profiles(const FalseVacuumDecayRate& decay_rate, FriedmannEvolution& fe)
+    {
+        ThermalProfiles profile_out;
+        double t_min = fe.get_t_min();
+        double t_max = fe.get_t_max();
+        double dt = (t_max - t_min)/(n_temp_profiles-1);
+
+        for(double tt = t_min; tt < t_max; tt += dt)
+        {
+            double dtdT, dt, H, action, gamma, vext, pf, nt, n, Rs, Rbar;
+
+            try {
+                dtdT = fe.get_time_temperature_false(tt);
+                dt = get_dt(tt, fe);
+                H = get_H(tt, fe);
+                action = decay_rate.get_action(tt)/tt;
+                gamma = decay_rate.get_gamma(tt);
+                pf = fe.get_false_vacuum_fraction(tt);
+                vext = -log(pf);
+                nt =  fe.get_nucleation_rate(tt);
+                n = get_n(tt, fe);
+                Rs = std::pow(n, -1./3.) * H;
+                Rbar = get_Rbar(tt, fe) * H;
+            } catch (const std::exception& e) {
+                LOG(debug) << "Error computing thermal profile values at T = " << tt << ": " << e.what();
+                continue;
+            } catch (...) {
+                LOG(debug) << "Unknown error computing thermal profile values at T = " << tt;
+                continue;
+            }
+
+            profile_out.temperature.push_back(tt);
+            profile_out.dtdT.push_back(dtdT);
+            profile_out.time.push_back(dt);
+            profile_out.hubble_rate.push_back(H);
+            profile_out.bounce_action.push_back(action);
+            profile_out.false_vacuum_decay_rate.push_back(gamma);
+            profile_out.extended_volume.push_back(vext);
+            profile_out.false_vacuum_fraction.push_back(pf);
+            profile_out.nucleation_rate.push_back(nt);
+            profile_out.mean_bubble_separation.push_back(Rs);
+            profile_out.mean_bubble_radius.push_back(Rbar);
+        }
+
+        return profile_out;
     }
 
     const void
@@ -199,38 +264,42 @@ namespace PhaseTracer {
         const EquationOfState& eos, 
         FriedmannEvolution& tm)
     {
-        if(milestone.status == MilestoneStatus::YES) 
+        if(milestone.status == MilestoneStatus::YES)
         {
-            // TODO try catch with default values
             const auto temp = milestone.temperature;
-            double alpha = get_alpha(temp, eos);
-            milestone.alpha = alpha;
-            double alpha_munu = get_alpha(temp, eos, true);
-            milestone.alpha_munu = alpha_munu;
-            double betaH = get_betaH(temp, decay_rate);
-            milestone.betaH = betaH;
-            double beta1H = get_betaH_1(temp, decay_rate, tm);
-            milestone.beta1H = beta1H;
-            double beta2H = get_betaH_2(temp, decay_rate, tm);
-            milestone.beta2H = beta2H;
-            double H = get_H(temp, tm);
-            milestone.H = H;
-            double we = get_we(temp, eos);
-            milestone.we = we;
-            std::pair<double, double> cs = get_cs(temp, eos);
-            milestone.cs_plus = cs.first;
-            milestone.cs_minus = cs.second;
-            double n = get_n(temp, tm);
-            milestone.n = n;
-            milestone.Rs = std::pow(n, -1./3.) * H;
-            milestone.Rbar = get_Rbar(temp, tm) * H;
 
-            double betaH_eff = get_betaH_eff(vw, milestone.Rs);
-            milestone.betaH_eff = betaH_eff;
+            auto try_set = [&](const std::string& name, auto&& action) 
+            {
+                try {
+                    action();
+                } catch (...) {
+                    LOG(debug) << "Error computing " << name << " at T = " << temp;
+                }
+            };
 
-            double dt;
-            dt = get_dt(temp, tm);
-            milestone.dt = dt * H;
+            try_set("alpha", [&]{ milestone.alpha = get_alpha(temp, eos); });
+            try_set("alpha_munu", [&]{ milestone.alpha_munu = get_alpha(temp, eos, true); });
+            try_set("betaH", [&]{ milestone.betaH = get_betaH(temp, decay_rate); });
+            try_set("beta1H", [&]{ milestone.beta1H = get_betaH_1(temp, decay_rate, tm); });
+            try_set("beta2H", [&]{ milestone.beta2H = get_betaH_2(temp, decay_rate, tm); });
+            try_set("H", [&]{ milestone.H = get_H(temp, tm); });
+            try_set("we", [&]{ milestone.we = get_we(temp, eos); });
+
+            try_set("cs", [&]{
+                std::pair<double, double> cs = get_cs(temp, eos);
+                milestone.cs_plus = cs.first;
+                milestone.cs_minus = cs.second;
+            });
+
+            try_set("n, Rs, or Rbar", [&]{
+                double n = get_n(temp, tm);
+                milestone.n = n;
+                milestone.Rs = std::pow(n, -1./3.) * milestone.H;
+                milestone.Rbar = get_Rbar(temp, tm) * milestone.H;
+            });
+
+            try_set("betaH_eff", [&]{ milestone.betaH_eff = get_betaH_eff(vw, milestone.Rs); });
+            try_set("dt", [&]{ milestone.dt = get_dt(temp, tm) * milestone.H; });
         }
     }
 
@@ -239,11 +308,8 @@ namespace PhaseTracer {
         TransitionMilestone& milestone, 
         FriedmannEvolution& tm)
     {
-        if(milestone.status == MilestoneStatus::YES) 
-        {
-            double T_reh = tm.get_T_true(milestone.temperature);
-            milestone.reheating_temperature = T_reh;
-        }
+        double T_reh = tm.get_T_true(milestone.temperature);
+        milestone.reheating_temperature = T_reh;
     }
 
     void

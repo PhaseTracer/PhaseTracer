@@ -19,6 +19,7 @@
 #define PHASETRACER_TRANSITION_MILESTONES_HPP_
 
 #include <cmath>
+#include <limits>
 #include <string>
 #include <sstream>
 #include <iomanip>
@@ -76,25 +77,6 @@ enum NucleationType
 }; // enum NucleationType
 
 /**
- * @struct NucleationHistory
- * @brief Structure representing the nucleation history.
- */
-struct NucleationHistory
-{
-    /** @brief Type of nucleation. */
-    NucleationType nucleation_type;
-
-    /** @brief First beta parameter. */
-    double betaH_1;
-
-    /** @brief Second beta parameter. */
-    double betaH_2;
-
-    /** @brief Nucleation temperature. */
-    double T_m;
-}; // struct NucleationHistory
-
-/**
  * @struct TransitionMilestone
  * @brief Structure representing a transition milestone.
  * 
@@ -117,33 +99,33 @@ struct TransitionMilestone
     /** @brief Reheating temperature, if applicable. */
     double reheating_temperature;
     /** @brief Transition strength. */
-    double alpha;
+    double alpha = std::numeric_limits<double>::quiet_NaN();
     /** @brief Transition strength (mu nu prescription). */
-    double alpha_munu;
+    double alpha_munu = std::numeric_limits<double>::quiet_NaN();
     /** @brief Beta/H in the usual approximation. */
-    double betaH;
+    double betaH = std::numeric_limits<double>::quiet_NaN();
     /** @brief Full Beta/H from the first time derivative */
-    double beta1H;
+    double beta1H = std::numeric_limits<double>::quiet_NaN();
     /** @brief Full Beta_2/H from the second time derivative */
-    double beta2H;
+    double beta2H = std::numeric_limits<double>::quiet_NaN();
     /** @brief Effective timescale defined from mean bubble separation. */
-    double betaH_eff;
+    double betaH_eff = std::numeric_limits<double>::quiet_NaN();
     /** @brief Hubble rate */
-    double H;
+    double H = std::numeric_limits<double>::quiet_NaN();
     /** @brief Enthalpy to energy density ratio. */
-    double we;
+    double we = std::numeric_limits<double>::quiet_NaN();
     /** @brief Sound speed in the plus phase. */
-    double cs_plus;
+    double cs_plus = std::numeric_limits<double>::quiet_NaN();
     /** @brief Sound speed in the minus phase. */
-    double cs_minus;
+    double cs_minus = std::numeric_limits<double>::quiet_NaN();
     /** @brief Average bubble number density. */
-    double n;
+    double n = std::numeric_limits<double>::quiet_NaN();
     /** @brief Average bubble separation. */
-    double Rs;
+    double Rs = std::numeric_limits<double>::quiet_NaN();
     /** @brief Average bubble radius. */
-    double Rbar;
+    double Rbar = std::numeric_limits<double>::quiet_NaN();
     /** @brief Duration between T_C and the milestone temperature. */
-    double dt;
+    double dt = std::numeric_limits<double>::quiet_NaN();
 
 private:
 

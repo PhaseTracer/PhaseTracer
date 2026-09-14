@@ -175,11 +175,11 @@ private:
     PROPERTY(int, spline_evaluations, 50)
 
     /**
-     * Number of consecutive temperatures solved as one block, so that the
-     * converged tunneling path at one temperature seeds the next. 0 selects a
+     * Number of consecutive temperatures solved as one block. The bounce solution
+     * for one temperature seeds the next within a given block. 0 selects a
      * block size automatically from the thread count; 1 disables warm starting.
      */
-    PROPERTY(int, warm_start_chunk, 0)
+    PROPERTY(int, warm_start_chunk_size, 0)
 
     /** Set by calculate() once the splines are built */
     bool calculated = false;

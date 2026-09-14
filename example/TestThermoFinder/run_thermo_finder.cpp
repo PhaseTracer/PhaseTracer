@@ -105,16 +105,28 @@ int main(int argc, char* argv[]) {
     PhaseTracer::ThermoFinder thermo_finder(transition_finder, action_calculator);
 
     /*
-        ThermoFinder constructs internal copies of FalseVacuumDecayRate,
-        EquationOfState, and FriedmannEvolution, and as such the settings for 
+        ThermoFinder constructs internal copies of the FalseVacuumDecayRate,
+        EquationOfState, and FriedmannEvolution clasess. As such, settings for 
         each of these classes are modified using getter/setter methods on 
-        ThermoFinder. Additionally, it comes equipped with its own settings.
+        ThermoFinder itself, which are then passed down once find_thermal_parameters
+        is run.
     */
 
+    // For passing FalseVacuumDecayRate settings...
+    thermo_finder.set_action_spline_evaluations(50.);
+    thermo_finder.set_warm_start_chunk_size(0);
+
+    // For passing EquationOfState settings...
+    thermo_finder.set_eos_spline_evaluations(250.);
+    thermo_finder.set_eos_background_dof(0.0);
+
+    // For passing FriedmannEvolution settings...
+    thermo_finder.set_percolation_target(0.71); // etc. for other milestones
+
     /*
-        The calculation of thermal parameters is computationally expensive. As 
-        such, we recommend screening transitions before running. We provide two 
-        default validation methods. 
+        The calculation of thermal parameters is computationally expensive. We 
+        recommend screening transitions before running. We provide two default 
+        validation methods. 
 
         The user can choose to validate using the temperature interval for the 
         transition:
@@ -137,8 +149,9 @@ int main(int argc, char* argv[]) {
         and can be installed using set_transition_filter. We provide an example 
         below selecting the (0, s) -> (h, 0) transition.
 
-        Validation can be skipped entirely by using ValidateMethod::NONE, but 
-        this may result in silent errors.
+        Validation can be skipped entirely by using ValidateMethod::NONE. Errors
+        may occur during the calculation of pathological transitions, and only
+        successful transitions will be returned by get_thermal_parameters.
     */
     auto custom_validation = [](const std::vector<PhaseTracer::Transition>& input)
     {
@@ -163,7 +176,7 @@ int main(int argc, char* argv[]) {
         can suppress printing the extra information by adjusting the print 
         settings. MINIMAL only prints the milestone temperature and status (ie 
         whether it occurs), whereas STANDARD includes alpha, beta, Rs, and vw.
-        VERBSOE extends this to the full set of ThermalParameters the class 
+        VERBOSE extends this to the full set of ThermalParameters the class 
         calculates.
     */
     thermo_finder.set_onset_print_setting(PhaseTracer::PrintSettings::MINIMAL);
@@ -172,7 +185,7 @@ int main(int argc, char* argv[]) {
     thermo_finder.set_completion_print_setting(PhaseTracer::PrintSettings::MINIMAL);
 
     /*
-        Then ThermoFinder works similar to PhaseFinder and TransitionFinder, 
+        Then ThermoFinder works similarly to PhaseFinder and TransitionFinder, 
         with find_thermal_parameters() and get_thermal_parameters() being
         the main methods and work analogously to the other classes.
     */
@@ -181,10 +194,18 @@ int main(int argc, char* argv[]) {
     std::cout << thermo_finder << std::endl;
 
     /*
-        Note the reference: get_thermal_parameters hands back a const reference
-        to the internal vector, and a ThermalParameterSet owns its helper
-        classes through unique_ptrs, so it cannot be copied. Binding with a
-        plain 'auto' would try to copy the vector and fail to compile.
+        When using get_thermal_parameters, each ThermalParameterSet is move-only,
+        so we must store the return value by reference (using auto& instead of
+        auto).
+        
+        On a technical level, this is because each ThermalParameterSet contains 
+        unique_ptrs to the EquationOfState, FalseVacuumDecayRate, and 
+        FriedmannEvolution classes, which themselves are move-only. As such, the 
+        ThermalParameterSet is also move-only.
+
+        The ThermalParameterSets are stored in ThermoFinder, so this class must 
+        outlive any references to the ThermalParameterSets. We recommend
+        keeping ThermoFinder defined in the main function scope.
     */
     const auto& thermal_parameter_sets = thermo_finder.get_thermal_parameters();
     if(thermal_parameter_sets.size() == 0)
@@ -194,52 +215,63 @@ int main(int argc, char* argv[]) {
     }
 
     /*
-        Each set carries the ActionCalculator, EquationOfState,
-        FalseVacuumDecayRate and FriedmannEvolution that were used for that
-        transition. They are held as unique_ptrs, so dereference the pointer to
-        get at the object itself. Taking the address of the member instead
-        (&tps.eos) would only give a pointer to the unique_ptr, which is not
-        what you want to call methods on.
+        We can then retrieve individual ThermalParameterSets from the above 
+        output.
     */
     const auto& tps = thermal_parameter_sets[0];
 
-    auto& ac         = *tps.ac;                  // ActionCalculator class
-    auto& eos        = *tps.eos;                 // EquationOfState class
-    auto& decay_rate = *tps.decay_rate;          // FalseVacuumDecayRate class
-    auto& friedmann  = *tps.friedmann_evolution; // FriedmannEvolution class
-
     /*
-        For information on these, consult their respective examples. We can also
-        access each of the milestones. These do not need to be passed by ref,
-        as they are small and trivially copyable.
+        We provide getter methods for accessing the underlying EquationOfState,
+        FalseVacuumDecayRate, and FriedmannEvolution objects used in the thermal
+        parameter calculations. These must be accessed via reference.
     */
-    auto& percolation = tps.percolation;
-    auto& nucleation = tps.nucleation;
-    auto& onset = tps.onset;
-    auto& completion = tps.completion;
+    auto& eos = tps.get_equation_of_state();
+    auto& decay_rate = tps.get_decay_rate();
+    auto& friedmann = tps.get_friedmann_evolution();
 
     /*
-        Lastly, each milestone has a status, which can be YES, NO, FAST, or ERR,
-        as well as the value of all the thermal parameters at that milestone.
+        For information on these classes, consult their respective examples. 
+        They are accessible primarily for debugging purposes, as ThermoFinder is
+        intended to be a high-level interface for calculating thermal parameters
+        without using these lower-level classes directly.
+        
+        We can also access each of the milestones. Unlike the larger classes
+        above, these can be stored by value.
     */
-    auto& status = percolation.status;
-    auto& temperature = percolation.temperature;
-    auto& alpha = percolation.alpha;
-    auto& betaH = percolation.betaH;
-    auto& H = percolation.H;
-    auto& we = percolation.we;
-    auto& cs_plus = percolation.cs_plus;
-    auto& cs_minus = percolation.cs_minus;
+    auto percolation = tps.percolation;
+    auto nucleation = tps.nucleation;
+    auto onset = tps.onset;
+    auto completion = tps.completion;
 
     /*
-        In PhaseTracer2, GravWaveCalculator was constructed with an instance
-        of TransitionFinder, and then manually calculated thermal parameters 
-        using simple approximations. As we have refined the calculation in 
+        Each transition milestone contains a wealth of information, including 
+        the milestone temperature, status, and a full set of thermal parameters. 
+        These can be accessed by reference or by value.
+    */
+    auto status = percolation.status;
+    auto temperature = percolation.temperature;
+    auto alpha = percolation.alpha;
+    auto betaH = percolation.betaH;
+    auto H = percolation.H;
+    auto we = percolation.we;
+    auto cs_plus = percolation.cs_plus;
+    auto cs_minus = percolation.cs_minus;
+
+    /*
+        Ultimately, any interest in the thermal parameters is because they can
+        be used to calculate the gravitational wave power spectrum. In 
+        PhaseTracer2, GravWaveCalculator was constructed with an instance of 
+        TransitionFinder, and then manually calculated thermal parameters using 
+        simple approximations. As we have refined the calculation in 
         PhaseTracer3, we now construct GravWaveCalculator with an instance of
         ThermoFinder, and it will automatically use these thermal parameters to
         calculate the power spectrum.
     */
     PhaseTracer::GravWaveCalculator gw_calculator(thermo_finder);
+    gw_calculator.set_min_frequency(1e-4);
+    gw_calculator.set_max_frequency(1e0);
+    gw_calculator.set_num_frequency(500);
+    
     gw_calculator.calc_spectrums();
     std::cout << gw_calculator;
 

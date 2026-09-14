@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef PHASETRACER_BUBBLE_STATISTICS_HPP_
-#define PHASETRACER_BUBBLE_STATISTICS_HPP_
+#ifndef PHASETRACER_NUCLEATION_HISTORY_HPP_
+#define PHASETRACER_NUCLEATION_HISTORY_HPP_
 
 #include <cmath>
 #include <string>
@@ -26,6 +26,7 @@
 #include <interpolation.h>
 
 #include "scale.hpp"
+#include "transition_milestones.hpp"
 
 namespace PhaseTracer {
 
@@ -34,7 +35,7 @@ namespace PhaseTracer {
  * @namespace PhaseTracer
  * @brief Represents the distribution of bubble radii at different temperatures.
  * 
- * @note This class is currently under development.
+ * @note WIP: This class is currently under development.
  */
 struct RadiiDistribution 
 {
@@ -98,7 +99,7 @@ private:
  * @namespace PhaseTracer
  * @brief Represents the lifetime distribution of bubbles in a phase transition.
  * 
- * @note This class is currently under development.
+ * @note WIP: This class is currently under development.
  */
 struct LifetimeDistribution
 {
@@ -131,6 +132,32 @@ struct LifetimeDistribution
 
 }; // struct LifetimeDistribution
 
+/**
+ * @struct NucleationHistory
+ * @brief Structure representing the nucleation history.
+ */
+struct NucleationHistory
+{
+    /** @brief Type of nucleation. */
+    NucleationType nucleation_type;
+
+    /** @brief First beta parameter. */
+    double betaH_1;
+
+    /** @brief Second beta parameter. */
+    double betaH_2;
+
+    /** @brief Nucleation temperature. */
+    double T_m;
+
+    /** @brief Lifetime distribution of bubbles. */
+    LifetimeDistribution lifetime_distribution;
+
+    /** @brief Radii distribution of bubbles. */
+    // RadiiDistribution radii_distribution;
+
+}; // struct NucleationHistory
+
 } // namespace PhaseTracer
 
-#endif // PHASETRACER_BUBBLE_STATISTICS_HPP_
+#endif // PHASETRACER_NUCLEATION_HISTORY_HPP_

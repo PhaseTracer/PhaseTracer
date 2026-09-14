@@ -74,7 +74,7 @@ namespace PhaseTracer {
         #ifdef _OPENMP
         n_threads = omp_get_max_threads();
         #endif
-        int chunk = warm_start_chunk;
+        int chunk = warm_start_chunk_size;
         if (chunk <= 0)
         {
             chunk = std::max(1, static_cast<int>(

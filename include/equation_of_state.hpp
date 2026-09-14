@@ -341,15 +341,6 @@ private :
     alglib::spline1dinterpolant s_plus_spline;
     alglib::spline1dinterpolant s_minus_spline;
 
-    /** Number of spline evaluations for building the splines */
-    PROPERTY(int, n_temp, 200);
-
-    /** Background degrees of freedom */
-    PROPERTY(double, background_dof, 0.0);
-
-    /** Energy normalisation for the EoS */
-    PROPERTY(std::optional<double>, energy_norm, {});
-
     /** Set by calculate() once the splines are built */
     bool calculated = false;
 
@@ -376,6 +367,15 @@ private :
             throw std::logic_error(std::string("EquationOfState::") + caller + " called before calculate().");
         }
     }
+
+    /** Number of spline evaluations for building the splines */
+    PROPERTY(int, n_temp, 200);
+
+    /** Background degrees of freedom */
+    PROPERTY(double, background_dof, 0.0);
+
+    /** Energy normalisation for the EoS */
+    PROPERTY(std::optional<double>, energy_norm, {});
 
 }; // class EquationOfState
 
