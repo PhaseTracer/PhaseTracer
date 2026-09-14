@@ -2,9 +2,10 @@
 #define HELPER_FUNCTIONS_HPP_INCLUDED
 
 #include "phasetracer.hpp"
+#include "hydrograv_interface.hpp"
 #include "models/xSM_MSbar.hpp"
 
-std::vector<PhaseTracer::Transition>
+inline std::vector<PhaseTracer::Transition>
 get_scalar_to_higgs_transition(std::vector<PhaseTracer::Transition> input)
 {
     std::vector<PhaseTracer::Transition> output;
@@ -30,7 +31,7 @@ get_scalar_to_higgs_transition(std::vector<PhaseTracer::Transition> input)
     return output;
 }
 
-EffectivePotential::xSM_MSbar 
+inline EffectivePotential::xSM_MSbar 
 get_xSM_model_from_parameters(const double lambda_hs, const double lambda_s, const double ms, const double Q, const double xi)
 {
     bool use_1L_EWSB_in_0L_mass = false;
@@ -53,7 +54,7 @@ get_xSM_model_from_parameters(const double lambda_hs, const double lambda_s, con
     return model;
 }
 
-PhaseTracer::Transition
+inline PhaseTracer::Transition
 get_transition_from_parameters(const double lambda_hs, const double lambda_s, const double ms, const double Q, const double xi)
 {
     auto model = get_xSM_model_from_parameters(lambda_hs, lambda_s, ms, Q, xi);
@@ -76,7 +77,7 @@ get_transition_from_parameters(const double lambda_hs, const double lambda_s, co
     return transition;
 }
 
-void
+inline void
 configure_phase_finder(PhaseTracer::PhaseFinder& phase_finder)
 {
     phase_finder.set_seed(0);
@@ -85,13 +86,13 @@ configure_phase_finder(PhaseTracer::PhaseFinder& phase_finder)
     phase_finder.find_phases();
 }
 
-void
+inline void
 configure_transition_finder(PhaseTracer::TransitionFinder& transition_finder)
 {
     transition_finder.find_transitions();
 }
 
-void
+inline void
 configure_action_calculator(PhaseTracer::ActionCalculator& action_calculator)
 {
     action_calculator.set_action_calculator(PhaseTracer::ActionMethod::PathDeformation);
@@ -100,7 +101,7 @@ configure_action_calculator(PhaseTracer::ActionCalculator& action_calculator)
     action_calculator.set_PD_deformation_npoints(150);
 }
 
-void 
+inline void 
 configure_thermo_finder(PhaseTracer::ThermoFinder& thermo_finder)
 {
     auto custom_validation = [](const std::vector<PhaseTracer::Transition>& input)

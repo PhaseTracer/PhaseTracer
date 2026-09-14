@@ -49,9 +49,10 @@ int main(int argc, char* argv[]) {
         hydrodynamics and a calculation of the acoustic spectrum using the sound 
         shell model.
 
-        In this file, we demonstrate how to use HydroGrav very explicitly. In a
-        separate example, we demonstrate how this process is streamlined by
-        hiding the HydroGrav calculation away as a backend for GravWaveCalculator.
+        In this file, we demonstrate how HydroGrav is seemlessly incorporated as
+        a backend for the GravWaveCalculator class. This allows users to utilise
+        this much more powerful calculation, without needing to depertment from
+        the familiar PhaseTracer UI.
 
         As we demonstrate using the new ThermoFinder functionality elsewhere, we
         quickly perform the calculation of themal parameters below.
@@ -62,7 +63,6 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
 
     LOGGER(fatal);
-
     double ms, lambda_s, lambda_hs, Q, xi;
 
     if (argc > 1 && std::string(argv[1]) == "-d")
@@ -70,8 +70,7 @@ int main(int argc, char* argv[]) {
         LOGGER(debug);
     }
 
-    try 
-    {
+    try {
         std::string json_filename = "example/TestHydroGrav/model_params.json";
         json modelParams = readFile(json_filename);
 
@@ -88,6 +87,11 @@ int main(int argc, char* argv[]) {
         Q = 100;
         xi = 1;
     }
+
+    /*
+        The 'configure_' methods below are defined in the helper_functions 
+        header. Refer to this file for the settings we use below.
+    */
 
     auto model = get_xSM_model_from_parameters(lambda_hs, lambda_s, ms, Q, xi);
 
@@ -113,66 +117,54 @@ int main(int argc, char* argv[]) {
     const auto& thermal_parameters = thermal_parameter_sets[0];
     std::cout << thermal_parameters;
 
-    /*
-        To proceed, we first need extract usable inputs for HydroGrav from our 
-        ThermalParameterSet. First, we can extract our equation of state and 
-        milestone. We will use the percolation milestone.
-    */
-    auto& percolation = thermal_parameters.percolation;
-    auto& eos = thermal_parameters.get_equation_of_state();
 
     /*
-        PhaseTracer and HydroGrav each have their own representation of the 
-        equation of state and transition parameters objects, and HydroGrav has 
-        an additional parameter in the form of the Universe object. The
-        PhaseTracer::HydroGravBridge namespace provides methods for translating
-        between them.
-
-        We start with the Universe and EquationOfState objects.
+        With this established, we can now calculate the SSM spectrum using
+        HydroGrav. We have implemented this within the GravWaveCalculator class,
+        which we build below.
     */
-    namespace bridge = PhaseTracer::HydroGravBridge;
-
-    auto dof = 107.75;
-    HydroGrav::PhaseTransition::Universe universe
-        = bridge::to_hydrograv_universe(percolation, dof);
-
-    HydroGrav::PhaseTransition::EquationOfState
-    hydrograv_eos = bridge::to_hydrograv_eos(eos);
+    PhaseTracer::GravWaveCalculator gravwave_calculator(thermo_finder);
 
     /*
-        Then, we can create the PTParams_Veff object. We could build this from
-        the pieces above, but we also provide another translation method for 
-        this job.
+        To select HydroGrav, we change gw_method using the setter below. This 
+        can be either 'FitFormulae' or 'SoundShell', where the former is the 
+        default. The SSM calculation evaluates the spectrum on a grid of 
+        dimensionless k * R_s values, which are then converted to values of f_0.
+        As such, these should be checked. 
     */
-    auto vw = 0.577;
-    auto pt_params = bridge::to_hydrograv_pt_params(
-        thermal_parameters,
-        percolation,
-        vw, 
-        dof
-    );
+    gravwave_calculator.set_gw_method(PhaseTracer::GravWaveMethod::SoundShell);
+    gravwave_calculator.set_n_kRs_value(100);
+    gravwave_calculator.set_min_kRs_value(1e-3);
+    gravwave_calculator.set_max_kRs_value(1e3);
 
     /*
-        With this, we can use HydroGrav to solve for both the fluid profiles
-        and the GW spectrum.
-
-        Note that pt_params must stay in scope for as long as the spectrum does:
-        PowerSpec and the FluidProfile it carries keep a non-owning pointer back
-        to it, and write() below dereferences that pointer.
+        We then call calc_spectrums as usual. Note that this won't evaluate the
+        collision or turbulence spectra.
     */
-    auto kRs_values = logspace(-3, 3, 200);
-    HydroGrav::Spectrum::PowerSpec spectrum = HydroGrav::Spectrum::GWSpec(kRs_values, pt_params);
+    gravwave_calculator.calc_spectrums();
 
     /*
-        Then, we can access the kRs, frequency, and amplitude vectors, as well
-        as the fluid profiles as follows. For more information on the output, 
-        see the following reference 2606.27775.
+        Everything GravWaveCalculator offers then works as usual - the summed
+        spectrum, the pretty-printer, and writing to text.
     */
-    auto& profile = spectrum.profile();
+    std::cout << gravwave_calculator;
 
-    spectrum.write("example/TestHydroGrav/data/spectrum.csv");
-    profile.write("example/TestHydroGrav/data/profiles.csv");
-    
+    /*
+        The fluid profiles used in the HydroGrav calculation are also stored in 
+        the spectrum object, and will be empty for the FitFormulae calculation.
+        These are accessed using spectrum.profile, which returns the new 
+        FluidProfile object. This is a direct PhaseTracer translation of the 
+        equivalent fluid profile object in HydroGrav, so we refer readers to 
+        2606.27775 for more information.
+    */
+    const auto& spectrums = gravwave_calculator.get_spectrums();
+    for (int ii = 0; ii < spectrums.size(); ii++) {
+        gravwave_calculator.write_spectrum_to_text(
+            spectrums[ii], "example/TestHydroGrav/data/spectrum_" + std::to_string(ii) + ".csv");
+        spectrums[ii].profile.write_profile_to_text(
+            "example/TestHydroGrav/data/profiles_" + std::to_string(ii) + ".csv");
+    }
+
     /*
         Printing the elapsed time for the full execution of the pipeline.
     */

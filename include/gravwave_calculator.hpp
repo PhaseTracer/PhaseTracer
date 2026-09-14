@@ -20,6 +20,7 @@
 
 #include <cmath>
 #include <fstream>
+#include <limits>
 #include <random>
 #include <string>
 #include <tuple>
@@ -27,36 +28,141 @@
 
 #include "transition_finder.hpp"
 #include "thermo_finder.hpp"
-#ifdef BUILD_WITH_DP
-#include "deep_phase.hpp"
-#endif
 
 namespace PhaseTracer {
 
-struct GravWaveSpectrum {
-  double Tref;
-  double alpha;
-  double beta_H;
-  double peak_frequency;
-  double peak_amplitude;
+/**
+ * @brief Enumeration of the backends used to compute a GW spectrum.
+ *
+ * FitFormulae uses the default fitting formulae originally shipped with PhaseTracer2.
+ * SoundShell uses the full HydroGrav pipeline, including a calculation of the 
+ * associated fluid profiles. Because HydroGrav uses the SSM, only the acoustic
+ * contribution is included.
+ */
+enum class GravWaveMethod 
+{
+  FitFormulae,
+  SoundShell
+};
+
+inline std::string to_string(GravWaveMethod m) 
+{
+  return m == GravWaveMethod::SoundShell ? "sound shell model" : "fit formulae";
+}
+
+/**
+ * @struct FluidProfile
+ * @brief Self-similar fluid profile across the bubble wall.
+ */
+struct FluidProfile 
+{
+  /** @brief Self-similar coordinate xi = r/t. */
+  std::vector<double> xi;
+
+  /** @brief Fluid velocity v(xi). */
+  std::vector<double> v;
+
+  /** @brief Enthalpy density w(xi), normalised to its value at nucleation. */
+  std::vector<double> w;
+
+  /** @brief Lambda profile. */
+  std::vector<double> lambda;
+
+  /** @brief Temperature T(xi)/T_N. */
+  std::vector<double> T;
+
+  /** @brief Inner boundary of the integration domain: vw for deflagrations, c_- otherwise. */
+  double xi_min = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Outer boundary of the integration domain, i.e. the shock position. */
+  double xi_max = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Sound speed squared in the symmetric phase. */
+  double cs_plus_sq = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Sound speed squared in the broken phase. */
+  double cs_minus_sq = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Hydrodynamic mode: 0 = deflagration, 1 = hybrid, 2 = detonation, -1 = none. */
+  int mode = -1;
+
+  /** @brief Whether the shock front converged; if false a mu-nu fallback was used. */
+  bool shock_converged = false;
+
+  bool empty() const { return xi.empty(); }
+
+  /** @brief Name of the hydrodynamic mode. */
+  std::string mode_str() const;
+
+  /** @brief Write the profile to a text file as xi, v, w, lambda, T */
+  void write_profile_to_text(const std::string &filename) const;
+
+  /** @brief Pretty-printer for FluidProfile */
+  friend std::ostream &operator<<(std::ostream &o, const FluidProfile &a);
+};
+
+struct GravWaveSpectrum 
+{
+  /** @brief Reference temperature at which the spectrum is generated. */
+  double Tref = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Transition strength parameter alpha. */
+  double alpha = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Inverse duration of the phase transition normalized to the Hubble rate. */
+  double beta_H = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Peak frequency of the gravitational wave spectrum. */
+  double peak_frequency = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Peak amplitude of the gravitational wave spectrum. */
+  double peak_amplitude = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Frequency grid for the spectrum. */
   std::vector<double> frequency;
+
+  /** @brief Sound wave contribution to the spectrum. */
   std::vector<double> sound_wave;
+
+  /** @brief Turbulence contribution to the spectrum. */
   std::vector<double> turbulence;
+
+  /** @brief Bubble collision contribution to the spectrum. */
   std::vector<double> bubble_collision;
+
+  /** @brief Total amplitude of the spectrum. */
   std::vector<double> total_amplitude;
+
+  /** @brief Signal-to-noise ratio for the spectrum. */
   std::vector<double> SNR;
 
-  std::vector<double> freq_ssm;
-  std::vector<double> amplitude_ssm;
-  
-  /** Pretty-printer for GravWaveSpectrum */
+  /** @brief Backend that produced the spectrum. */
+  GravWaveMethod method = GravWaveMethod::FitFormulae;
+
+  /** @brief Dimensionless momentum grid kRs. SoundShell only. */
+  std::vector<double> kRs;
+
+  /** @brief Fluid profile behind the spectrum. SoundShell only. */
+  FluidProfile profile;
+
+  /** @brief Sound wave lifetime. SoundShell only; NaN otherwise. */
+  double dtau = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Pretty-printer for GravWaveSpectrum */
   friend std::ostream &operator<<(std::ostream &o, const GravWaveSpectrum &a) {
     o << "=== gravitational wave spectrum generated at T = " << a.Tref << " ===" << "\n"
+      << "method = " << to_string(a.method) << "\n"
       << "alpha = " << a.alpha << "\n"
       << "beta over H = " << a.beta_H << "\n"
       << "peak frequency = " << a.peak_frequency << "\n"
-      << "peak amplitude = " << a.peak_amplitude << "\n"
-      << "signal to noise ratio for LISA = " << a.SNR[0] << std::endl;
+      << "peak amplitude = " << a.peak_amplitude << "\n";
+    if (!a.SNR.empty()) {
+      o << "signal to noise ratio for LISA = " << a.SNR[0] << "\n";
+    }
+    if (!a.profile.empty()) {
+      o << a.profile;
+    }
+    o << std::flush;
     return o;
   }
 };
@@ -75,41 +181,24 @@ public:
     }
   }
 
-  explicit GravWaveCalculator(ThermoFinder &tm_) : tm(&tm_)
-  {
+  explicit GravWaveCalculator(ThermoFinder &tm_) : tm(&tm_) {
     LOG(debug) << "GravWaveCalculator constructed with ThermoFinder";
-
-    for (const auto &tps : tm->get_thermal_parameters()) {
-      TransitionMilestone milestone;
-      switch (default_milestone) {
-        case MilestoneType::ONSET:
-          milestone = tps.onset;
-          break;
-        case MilestoneType::PERCOLATION:
-          milestone = tps.percolation;
-          break;
-        case MilestoneType::COMPLETION:
-          milestone = tps.completion;
-          break;
-        case MilestoneType::NUCLEATION:
-          milestone = tps.nucleation;
-          break;
-        default:
-          LOG(debug) << "Invalid milestone type. GW will not be calculated !";
-          continue;
-      }
-      if (milestone.status == MilestoneStatus::YES)
-      {
-        LOG(debug) << "Found " << static_cast<int>(milestone.type) << " milestone with T = " << milestone.temperature;
-        transition_milestones.push_back(milestone);
-      } else {
-        LOG(debug) << "No " << static_cast<int>(milestone.type) << " milestone found for transition with TC = " << tps.TC;
-      }
-    }
   }
 
   /** Pretty-printer for set of transitions in this object */
   friend std::ostream &operator<<(std::ostream &o, const GravWaveCalculator &a);
+
+  /** @brief Select the backend used to compute the spectrum. */
+  void set_gw_method(GravWaveMethod m) {
+#ifndef BUILD_WITH_HG
+    if (m == GravWaveMethod::SoundShell) 
+    {
+      LOG(fatal) << "Enable HydroGrav in CMake configuration before using it.";
+      throw std::runtime_error("HydroGrav is not installed.");
+    }
+#endif
+    gw_method = m;
+  }
 
   /** Functions to calculate amplitude at a fixed frequency */
   double Kappa_sound_wave(double alpha) const;
@@ -156,6 +245,9 @@ private:
   /** ThermoFinder Milestone */
   PROPERTY(PhaseTracer::MilestoneType, default_milestone, PhaseTracer::MilestoneType::PERCOLATION);
 
+  /** Backend used by calc_spectrums; set through set_gw_method */
+  PROPERTY_CUSTOM_SETTER(GravWaveMethod, gw_method, GravWaveMethod::FitFormulae);
+
   /** Degree of freedom */
   PROPERTY(double, dof, 106.75);
   /** Velocity of the bubble wall */
@@ -185,8 +277,20 @@ private:
   /** All transitions with valid TN */
   std::vector<Transition> trans;
 
-  /** All thermal params with valid temp */
-  std::vector<TransitionMilestone> transition_milestones;
+  /** The milestone of a thermal parameter set selected by default_milestone.*/
+  const TransitionMilestone *milestone_of(const ThermalParameterSet &tps) const;
+
+#ifdef BUILD_WITH_HG
+  /** Calculate a GW spectrum for one transition with HydroGrav's sound shell model */
+  GravWaveSpectrum calc_spectrum_ssm(const ThermalParameterSet &tps, const TransitionMilestone &milestone) const;
+#endif
+
+  /** Lower bound on the kRs values of the SSM spectrum */
+  PROPERTY(double, min_kRs_value, 1e-3);
+  /** Upper bound on the kRs values of the SSM spectrum */
+  PROPERTY(double, max_kRs_value, 1e3);
+  /** Number of points in the kRs grid */
+  PROPERTY(int, n_kRs_value, 200);
 
   /** Lower bound on the frequency of the GW spectrum */
   PROPERTY(double, min_frequency, 1e-4);

@@ -29,6 +29,41 @@
 
 namespace PhaseTracer {
 
+std::string FluidProfile::mode_str() const {
+  switch (mode) {
+  case 0:
+    return "deflagration";
+  case 1:
+    return "hybrid";
+  case 2:
+    return "detonation";
+  default:
+    return "none";
+  }
+}
+
+void FluidProfile::write_profile_to_text(const std::string &filename) const {
+  std::ofstream file(filename);
+  for (int ii = 0; ii < xi.size(); ii++) {
+    file << xi[ii] << "," << v[ii] << "," << w[ii] << "," << lambda[ii] << "," << T[ii];
+    file << std::endl;
+  }
+
+  LOG(debug) << "Fluid profile has been written to " << filename;
+}
+
+std::ostream &operator<<(std::ostream &o, const FluidProfile &a) {
+  if (a.empty()) {
+    o << "no fluid profile" << std::endl;
+    return o;
+  }
+
+  o << "hydrodynamic mode = " << a.mode_str() << "\n"
+    << "xi range = [" << a.xi_min << ", " << a.xi_max << "]" << "\n"
+    << "shock converged = " << (a.shock_converged ? "yes" : "no") << std::endl;
+  return o;
+}
+
 std::ostream &operator<<(std::ostream &o, const GravWaveCalculator &a) {
   if (a.spectrums.empty()) {
     o << "found no spectrums" << std::endl;
@@ -227,6 +262,14 @@ GravWaveSpectrum GravWaveCalculator::sum_spectrums(const std::vector<GravWaveSpe
     throw std::runtime_error("No GW spectrums were given - cannot sum them");
   }
 
+  for (const auto &sp : sps) {
+    if (sp.frequency != sps[0].frequency) {
+      throw std::runtime_error("GW spectrums are on different frequency grids - cannot sum them");
+    }
+  }
+
+  summed_sp.method = sps[0].method;
+
   double peak_frequency = 0;
   double peak_amplitude = 0;
 
@@ -240,7 +283,6 @@ GravWaveSpectrum GravWaveCalculator::sum_spectrums(const std::vector<GravWaveSpe
       sound_wave += sps[jj].sound_wave[ii];
       turbulence += sps[jj].turbulence[ii];
       bubble_collision += sps[jj].bubble_collision[ii];
-      sound_wave += sps[jj].sound_wave[ii];
       total_amplitude += sps[jj].total_amplitude[ii];
     }
     if (total_amplitude > peak_amplitude) {
@@ -253,12 +295,47 @@ GravWaveSpectrum GravWaveCalculator::sum_spectrums(const std::vector<GravWaveSpe
     summed_sp.total_amplitude.push_back(total_amplitude);
   }
 
+  summed_sp.peak_frequency = peak_frequency;
+  summed_sp.peak_amplitude = peak_amplitude;
+
   return summed_sp;
 }
 
+const TransitionMilestone *GravWaveCalculator::milestone_of(const ThermalParameterSet &tps) const {
+  const TransitionMilestone *milestone = nullptr;
+  switch (default_milestone) {
+  case MilestoneType::ONSET:
+    milestone = &tps.onset;
+    break;
+  case MilestoneType::PERCOLATION:
+    milestone = &tps.percolation;
+    break;
+  case MilestoneType::COMPLETION:
+    milestone = &tps.completion;
+    break;
+  case MilestoneType::NUCLEATION:
+    milestone = &tps.nucleation;
+    break;
+  default:
+    LOG(debug) << "Invalid milestone type. GW will not be calculated !";
+    return nullptr;
+  }
+
+  if (milestone->status != MilestoneStatus::YES) {
+    LOG(debug) << "No " << static_cast<int>(milestone->type) << " milestone found for transition with TC = " << tps.TC;
+    return nullptr;
+  }
+
+  LOG(debug) << "Found " << static_cast<int>(milestone->type) << " milestone with T = " << milestone->temperature;
+  return milestone;
+}
+
 std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
-  if (tf) 
+  if (tf)
   {
+  if (gw_method == GravWaveMethod::SoundShell) {
+    throw std::runtime_error("The sound shell model needs an equation of state - construct GravWaveCalculator with a ThermoFinder");
+  }
   for (const auto &ti : trans) {
     double Tref = ti.TN;
     if (Tref < 1.5 * h_dSdT) {
@@ -272,15 +349,23 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
   }
   total_spectrum = sum_spectrums(spectrums);
   return spectrums;
-  } 
-  else if (tm) 
+  }
+  else if (tm)
   {
-    for (const auto &tps : transition_milestones) {
-      double Tref = tps.temperature;
-      double alpha = tps.alpha;
-      double beta_H = tps.betaH;
-      GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
-      spectrums.push_back(spi);
+    for (const auto &tps : tm->get_thermal_parameters()) {
+      const TransitionMilestone *milestone = milestone_of(tps);
+      if (milestone == nullptr) {
+        continue;
+      }
+      if (gw_method == GravWaveMethod::SoundShell) {
+#ifdef BUILD_WITH_HG
+        spectrums.push_back(calc_spectrum_ssm(tps, *milestone));
+#else
+        throw std::runtime_error("HydroGrav is not installed.");
+#endif
+      } else {
+        spectrums.push_back(calc_spectrum(milestone->alpha, milestone->betaH, milestone->temperature));
+      }
     }
     total_spectrum = sum_spectrums(spectrums);
     return spectrums;
