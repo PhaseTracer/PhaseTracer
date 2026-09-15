@@ -89,8 +89,8 @@ int main(int argc, char* argv[]) {
     }
 
     /*
-        The 'configure_' methods below are defined in the helper_functions 
-        header. Refer to this file for the settings we use below.
+        These 'configure_' methods are defined in the helper_functions header. 
+        Refer to this file for the settings we use below.
     */
 
     auto model = get_xSM_model_from_parameters(lambda_hs, lambda_s, ms, Q, xi);
@@ -128,14 +128,24 @@ int main(int argc, char* argv[]) {
     /*
         To select HydroGrav, we change gw_method using the setter below. This 
         can be either 'FitFormulae' or 'SoundShell', where the former is the 
-        default. The SSM calculation evaluates the spectrum on a grid of 
-        dimensionless k * R_s values, which are then converted to values of f_0.
-        As such, these should be checked. 
+        default. 
+        
+        The SSM calculation evaluates the spectrum on a grid of dimensionless 
+        k * R_s values, which are then converted to values of f_0. As such, 
+        these should be checked. The default values are shown below.
     */
     gravwave_calculator.set_gw_method(PhaseTracer::GravWaveMethod::SoundShell);
     gravwave_calculator.set_n_kRs_value(100);
     gravwave_calculator.set_min_kRs_value(1e-3);
     gravwave_calculator.set_max_kRs_value(1e3);
+
+    /*
+        The SSM calculation only returns the acoustic spectrum by default, with
+        all entries in the collision and turbulence spectra set to zero. 
+        However, they can still be included using the fitting formulas as a fall
+        back for this case using the following setting. 
+    */
+    gravwave_calculator.set_include_col_and_turb_in_ssm(true);
 
     /*
         We then call calc_spectrums as usual. Note that this won't evaluate the

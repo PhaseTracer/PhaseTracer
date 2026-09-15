@@ -156,20 +156,12 @@ fill_spectrum(GravWaveSpectrum &sp, const HydroGrav::Spectrum::PowerSpec &spec_i
     sp.frequency = spec_in.freq();
     sp.kRs = spec_in.K();
     sp.sound_wave = spec_in.P();
-    sp.total_amplitude = spec_in.P();
     sp.dtau = spec_in.dtau();
 
     sp.turbulence = std::vector<double>(sp.frequency.size(), 0.0);
     sp.bubble_collision = std::vector<double>(sp.frequency.size(), 0.0);
 
-    const auto &peaks = spec_in.peak_vals();
-    sp.peak_frequency = peaks.first;
-    sp.peak_amplitude = peaks.second;
-
     sp.profile = to_phasetracer_profile(spec_in.profile());
-
-    sp.SNR.push_back(LISA_snr(sp.frequency, sp.total_amplitude));
-    sp.SNR.push_back(std::numeric_limits<double>::quiet_NaN());
 }
 
 } // namespace HydroGravBridge

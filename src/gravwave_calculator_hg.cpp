@@ -28,32 +28,42 @@
 
 namespace PhaseTracer {
 
-GravWaveSpectrum GravWaveCalculator::calc_spectrum_ssm(const ThermalParameterSet &tps,
-                                                       const TransitionMilestone &milestone) const {
-  if (n_kRs_value < 2) {
-    throw std::runtime_error("Number of kRs points must be greater than 1");
-  }
-  if (max_kRs_value < min_kRs_value) {
-    throw std::runtime_error("max_kRs_value < min_kRs_value");
-  }
+GravWaveSpectrum GravWaveCalculator::calc_spectrum_ssm(const ThermalParameterSet &tps, const TransitionMilestone &milestone) const 
+{
+    if (n_kRs_value < 2) 
+    {
+        throw std::runtime_error("Number of kRs points must be greater than 1");
+    }
+    if (max_kRs_value < min_kRs_value) 
+    {
+        throw std::runtime_error("max_kRs_value < min_kRs_value");
+    }
 
-  HydroGravBridge::install_logger();
+    HydroGravBridge::install_logger();
 
-  const auto pt_params = HydroGravBridge::to_hydrograv_pt_params(tps, milestone, vw, dof);
+    const auto pt_params = HydroGravBridge::to_hydrograv_pt_params(tps, milestone, vw, dof);
 
-  LOG(debug) << "Calculating sound shell spectrum at T = " << milestone.temperature
-             << ", alpha_munu = " << milestone.alpha_munu << ", vw = " << vw;
+    LOG(debug) << "Calculating sound shell spectrum at T = " << milestone.temperature
+              << ", alpha_munu = " << milestone.alpha_munu << ", vw = " << vw;
 
-  const auto kRs_values = logspace(std::log10(min_kRs_value), std::log10(max_kRs_value), n_kRs_value);
-  const auto spectrum = HydroGrav::Spectrum::GWSpec(kRs_values, pt_params);
+    const auto kRs_values = logspace(std::log10(min_kRs_value), std::log10(max_kRs_value), n_kRs_value);
+    const auto spectrum = HydroGrav::Spectrum::GWSpec(kRs_values, pt_params);
 
-  GravWaveSpectrum sp;
-  sp.Tref = milestone.temperature;
-  sp.alpha = milestone.alpha_munu;
-  sp.beta_H = milestone.betaH;
-  HydroGravBridge::fill_spectrum(sp, spectrum);
+    GravWaveSpectrum sp;
+    sp.Tref = milestone.temperature;
+    sp.alpha = milestone.alpha_munu;
+    sp.beta_H = milestone.betaH;
 
-  return sp;
+    HydroGravBridge::fill_spectrum(sp, spectrum);
+
+    if (include_col_and_turb_in_ssm)
+    {
+        add_fit_contributions(sp, milestone.alpha);
+    }
+
+    finalise_spectrum(sp);
+
+    return sp;
 }
 
 } // namespace PhaseTracer

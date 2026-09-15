@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -227,6 +228,7 @@ GravWaveSpectrum GravWaveCalculator::calc_spectrum(double alpha, double beta_H, 
   GravWaveSpectrum sp;
   sp.Tref = Tref;
   sp.alpha = alpha;
+  sp.alpha_fit = alpha;
   sp.beta_H = beta_H;
   double logMin = std::log10(max_frequency);
   double logMax = std::log10(min_frequency);
@@ -334,22 +336,22 @@ const TransitionMilestone *GravWaveCalculator::milestone_of(const ThermalParamet
 std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
   if (tf)
   {
-  if (gw_method == GravWaveMethod::SoundShell) {
-    throw std::runtime_error("The sound shell model needs an equation of state - construct GravWaveCalculator with a ThermoFinder");
-  }
-  for (const auto &ti : trans) {
-    double Tref = ti.TN;
-    if (Tref < 1.5 * h_dSdT) {
-      continue;
+    if (gw_method == GravWaveMethod::SoundShell) {
+      throw std::runtime_error("The sound shell model needs an equation of state - construct GravWaveCalculator with a ThermoFinder");
     }
-    std::vector<Eigen::VectorXd> vacua = tf->get_vacua_at_T(ti.true_phase, ti.false_phase, Tref, ti.key);
-    double alpha = get_alpha(vacua[0], vacua[1], Tref);
-    double beta_H = get_beta_H(ti.true_phase, ti.false_phase, Tref, ti.key);
-    GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
-    spectrums.push_back(spi);
-  }
-  total_spectrum = sum_spectrums(spectrums);
-  return spectrums;
+    for (const auto &ti : trans) {
+      double Tref = ti.TN;
+      if (Tref < 1.5 * h_dSdT) {
+        continue;
+      }
+      std::vector<Eigen::VectorXd> vacua = tf->get_vacua_at_T(ti.true_phase, ti.false_phase, Tref, ti.key);
+      double alpha = get_alpha(vacua[0], vacua[1], Tref);
+      double beta_H = get_beta_H(ti.true_phase, ti.false_phase, Tref, ti.key);
+      GravWaveSpectrum spi = calc_spectrum(alpha, beta_H, Tref);
+      spectrums.push_back(spi);
+    }
+    total_spectrum = sum_spectrums(spectrums);
+    return spectrums;
   }
   else if (tm)
   {
@@ -399,20 +401,15 @@ void GravWaveCalculator::write_spectrum_to_text(const std::string &filename) con
   }
 }
 
-double GravWaveCalculator::intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref) const {
+double GravWaveCalculator::noise_omega_LISA(double f) const {
   double P_oms = 3.6e-41;
   double P_acc = 1.44e-48 / pow(2 * M_PI * f, 4) * (1 + pow(0.4e-3 / f, 2));
   double S_A = sqrt(2) * 20. / 3 * (P_oms + 4 * P_acc) * (1 + pow(f / (2.54e-2), 2));
   double H_0 = 67.4 / (3.086e19);
-  double omegahsq_lisa = 4 * M_PI * M_PI / (3 * H_0 * H_0) * pow(f, 3) * S_A * 0.674 * 0.674;
-  double sound_wave = GW_sound_wave(f, alpha, beta_H, T_ref);
-  double turbulence = GW_turbulence(f, alpha, beta_H, T_ref);
-  double bubble_collision = T_ref < T_threshold_bubble_collision ? GW_bubble_collision(f, alpha, beta_H, T_ref) : 0;
-  double omegahsq = sound_wave + turbulence + bubble_collision;
-  return omegahsq * omegahsq / (omegahsq_lisa * omegahsq_lisa);
+  return 4 * M_PI * M_PI / (3 * H_0 * H_0) * pow(f, 3) * S_A * 0.674 * 0.674;
 }
 
-double GravWaveCalculator::intergrand_SNR_Taiji(double f, double alpha, double beta_H, double T_ref) const {
+double GravWaveCalculator::noise_omega_Taiji(double f) const {
   double P_oms = 64e-24 * (1 + pow(2e-3 / f, 4)) * (2 * M_PI * f / 3e8);
   double P_acc = 9e-30 * (1 + pow(0.4e-3 / f, 2)) * (1 + pow(f / 8e-3, 4)) * (1 / (2 * M_PI * f * 3e8));
   double f_star = 3e8 / (2 * M_PI * 3e9);
@@ -421,12 +418,137 @@ double GravWaveCalculator::intergrand_SNR_Taiji(double f, double alpha, double b
   /*inverse-noise weighted sensitivity, 1/sqrt(2) accounts for the S_E contribution */
   double S_A = N_A / R_A * 1 / sqrt(2);
   double H_0 = 67.4 / (3.086e19);
-  double omegahsq_taiji = 4 * M_PI * M_PI / (3 * H_0 * H_0) * pow(f, 3) * S_A * 0.674 * 0.674;
+  return 4 * M_PI * M_PI / (3 * H_0 * H_0) * pow(f, 3) * S_A * 0.674 * 0.674;
+}
+
+/** Total fit-formula amplitude at one frequency, as the SNR integrands see it. */
+double GravWaveCalculator::fit_omega(double f, double alpha, double beta_H, double T_ref) const {
   double sound_wave = GW_sound_wave(f, alpha, beta_H, T_ref);
   double turbulence = GW_turbulence(f, alpha, beta_H, T_ref);
   double bubble_collision = T_ref < T_threshold_bubble_collision ? GW_bubble_collision(f, alpha, beta_H, T_ref) : 0;
-  double omegahsq = sound_wave + turbulence + bubble_collision;
+  return sound_wave + turbulence + bubble_collision;
+}
+
+double GravWaveCalculator::intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref) const {
+  double omegahsq = fit_omega(f, alpha, beta_H, T_ref);
+  double omegahsq_lisa = noise_omega_LISA(f);
+  return omegahsq * omegahsq / (omegahsq_lisa * omegahsq_lisa);
+}
+
+double GravWaveCalculator::intergrand_SNR_Taiji(double f, double alpha, double beta_H, double T_ref) const {
+  double omegahsq = fit_omega(f, alpha, beta_H, T_ref);
+  double omegahsq_taiji = noise_omega_Taiji(f);
   return omegahsq * omegahsq / (omegahsq_taiji * omegahsq_taiji);
+}
+
+std::vector<double> GravWaveCalculator::get_SNR_tabulated(const std::vector<double> &frequency,
+                                                          const std::vector<double> &omega) const {
+  if (frequency.size() != omega.size()) {
+    throw std::runtime_error("Frequency and amplitude grids differ in length - cannot compute SNR");
+  }
+  if (frequency.size() < 2) {
+    throw std::runtime_error("Need at least two frequency points to compute SNR");
+  }
+
+  std::vector<double> f_asc(frequency);
+  std::vector<double> o_asc(omega);
+  if (f_asc.front() > f_asc.back()) {
+    std::reverse(f_asc.begin(), f_asc.end());
+    std::reverse(o_asc.begin(), o_asc.end());
+  }
+
+  if (f_asc.front() > SNR_f_min || f_asc.back() < SNR_f_max) {
+    LOG(warning) << "Spectrum covers [" << f_asc.front() << ", " << f_asc.back()
+                 << "] Hz but the SNR band is [" << SNR_f_min << ", " << SNR_f_max
+                 << "] Hz. The SNR is integrated over the overlap only, so it is a lower bound.";
+  }
+
+  double snr_sq_LISA = 0.;
+  double snr_sq_Taiji = 0.;
+
+  for (size_t ii = 0; ii + 1 < f_asc.size(); ii++) {
+    const double f_lo = std::max(f_asc[ii], SNR_f_min);
+    const double f_hi = std::min(f_asc[ii + 1], SNR_f_max);
+    if (!(f_hi > f_lo) || f_lo <= 0.) {
+      continue;
+    }
+
+    const auto omega_at = [&](double f) {
+      if (f == f_asc[ii]) return o_asc[ii];
+      if (f == f_asc[ii + 1]) return o_asc[ii + 1];
+      if (o_asc[ii] <= 0. || o_asc[ii + 1] <= 0.) return o_asc[ii];
+      const double t = std::log(f / f_asc[ii]) / std::log(f_asc[ii + 1] / f_asc[ii]);
+      return std::exp(std::log(o_asc[ii]) + t * (std::log(o_asc[ii + 1]) - std::log(o_asc[ii])));
+    };
+
+    const double f_star_Taiji = 3e8 / (2 * M_PI * 3e9);
+    const size_t n_sub = std::min<size_t>(
+        4096, std::max<size_t>(1, static_cast<size_t>(std::ceil((f_hi - f_lo) / (f_star_Taiji / 16.)))));
+
+    const double du = std::log(f_hi / f_lo) / n_sub;
+
+    for (size_t jj = 0; jj < n_sub; jj++) {
+      const double fa = f_lo * std::exp(du * jj);
+      const double fb = (jj + 1 == n_sub) ? f_hi : f_lo * std::exp(du * (jj + 1));
+      const double oa = omega_at(fa), ob = omega_at(fb);
+
+      const double na_L = noise_omega_LISA(fa), nb_L = noise_omega_LISA(fb);
+      const double na_T = noise_omega_Taiji(fa), nb_T = noise_omega_Taiji(fb);
+      const double duj = std::log(fb / fa);
+
+      snr_sq_LISA += 0.5 * duj * (fa * oa * oa / (na_L * na_L) + fb * ob * ob / (nb_L * nb_L));
+      snr_sq_Taiji += 0.5 * duj * (fa * oa * oa / (na_T * na_T) + fb * ob * ob / (nb_T * nb_T));
+    }
+  }
+
+  const double T_obs_LISA_s = run_time_LISA * 365.25 * 86400;
+  const double T_obs_Taiji_s = run_time_Taiji * 365.25 * 86400;
+
+  return {std::sqrt(snr_sq_LISA * T_obs_LISA_s), std::sqrt(snr_sq_Taiji * T_obs_Taiji_s)};
+}
+
+void GravWaveCalculator::add_fit_contributions(GravWaveSpectrum &sp, double alpha_fit) const {
+  const bool use_collision = sp.Tref < T_threshold_bubble_collision;
+
+  sp.alpha_fit = alpha_fit;
+  sp.turbulence.assign(sp.frequency.size(), 0.);
+  sp.bubble_collision.assign(sp.frequency.size(), 0.);
+
+  for (size_t ii = 0; ii < sp.frequency.size(); ii++) {
+    const double f = sp.frequency[ii];
+    sp.turbulence[ii] = GW_turbulence(f, alpha_fit, sp.beta_H, sp.Tref);
+    if (use_collision) {
+      sp.bubble_collision[ii] = GW_bubble_collision(f, alpha_fit, sp.beta_H, sp.Tref);
+    }
+  }
+
+  if (!use_collision) {
+    LOG(debug) << "Tref = " << sp.Tref << " is above T_threshold_bubble_collision = "
+               << T_threshold_bubble_collision << ", so only turbulence was added.";
+  }
+}
+
+void GravWaveCalculator::finalise_spectrum(GravWaveSpectrum &sp) const {
+  const size_t n = sp.frequency.size();
+  if (sp.turbulence.size() != n) sp.turbulence.assign(n, 0.);
+  if (sp.bubble_collision.size() != n) sp.bubble_collision.assign(n, 0.);
+
+  sp.total_amplitude.assign(n, 0.);
+
+  double peak_frequency = 0.;
+  double peak_amplitude = 0.;
+
+  for (size_t ii = 0; ii < n; ii++) {
+    sp.total_amplitude[ii] = sp.sound_wave[ii] + sp.turbulence[ii] + sp.bubble_collision[ii];
+    if (sp.total_amplitude[ii] > peak_amplitude) {
+      peak_amplitude = sp.total_amplitude[ii];
+      peak_frequency = sp.frequency[ii];
+    }
+  }
+
+  sp.peak_frequency = peak_frequency;
+  sp.peak_amplitude = peak_amplitude;
+  sp.SNR = get_SNR_tabulated(sp.frequency, sp.total_amplitude);
 }
 
 std::vector<double> GravWaveCalculator::get_SNR(double f_min, double f_max, double run_time_LISA, double run_time_Taiji, double alpha, double beta_H, double T_ref) const {

@@ -106,8 +106,20 @@ struct GravWaveSpectrum
   /** @brief Reference temperature at which the spectrum is generated. */
   double Tref = std::numeric_limits<double>::quiet_NaN();
 
-  /** @brief Transition strength parameter alpha. */
+  /** @brief Transition strength parameter alpha.
+   *
+   * For the SoundShell backend this is alpha_munu, the prescription HydroGrav's
+   * hydrodynamics uses.
+   */
   double alpha = std::numeric_limits<double>::quiet_NaN();
+
+  /** @brief Transition strength used for any fit-formula contributions.
+   *
+   * If fitting formula contributions are added to the SSM spectra, the alpha in
+   * these contributions is different from alpha_munu. This stores the different
+   * value whenever the fitting formula contributions are added.
+   */
+  double alpha_fit = std::numeric_limits<double>::quiet_NaN();
 
   /** @brief Inverse duration of the phase transition normalized to the Hubble rate. */
   double beta_H = std::numeric_limits<double>::quiet_NaN();
@@ -152,11 +164,17 @@ struct GravWaveSpectrum
   friend std::ostream &operator<<(std::ostream &o, const GravWaveSpectrum &a) {
     o << "=== gravitational wave spectrum generated at T = " << a.Tref << " ===" << "\n"
       << "method = " << to_string(a.method) << "\n"
-      << "alpha = " << a.alpha << "\n"
-      << "beta over H = " << a.beta_H << "\n"
+      << "alpha = " << a.alpha << "\n";
+    if (a.method == GravWaveMethod::SoundShell && !std::isnan(a.alpha_fit)) {
+      o << "alpha for fit-formula contributions = " << a.alpha_fit << "\n";
+    }
+    o << "beta over H = " << a.beta_H << "\n"
       << "peak frequency = " << a.peak_frequency << "\n"
       << "peak amplitude = " << a.peak_amplitude << "\n";
-    if (!a.SNR.empty()) {
+    if (a.SNR.size() > 1) {
+      o << "signal to noise ratio for LISA = " << a.SNR[0] << "\n"
+        << "signal to noise ratio for Taiji = " << a.SNR[1] << "\n";
+    } else if (!a.SNR.empty()) {
       o << "signal to noise ratio for LISA = " << a.SNR[0] << "\n";
     }
     if (!a.profile.empty()) {
@@ -231,6 +249,25 @@ public:
 
   /** Calcualte beta/H (Inverse phase transition duration) */
   double get_beta_H(const Phase &phase1, const Phase &phase2, double T, size_t i_unique) const;
+  /** Total fit-formula amplitude at one frequency: sound wave + turbulence + collision */
+  double fit_omega(double f, double alpha, double beta_H, double T_ref) const;
+
+  /** Noise energy density Omega h^2 of the LISA sensitivity curve at frequency f */
+  double noise_omega_LISA(double f) const;
+  /** Noise energy density Omega h^2 of the Taiji sensitivity curve at frequency f */
+  double noise_omega_Taiji(double f) const;
+
+  /**
+   * SNR for a tabulated spectrum, as {LISA, Taiji}.
+   *
+   * Integrates the given amplitudes against the detector noise curves, so it
+   * works for any backend (fitting formulas vs HydroGrav). The integral is taken
+   * over the part of the grid lying inside [SNR_f_min, SNR_f_max]; a warning is
+   * logged if the grid does not cover that band.
+   */
+  std::vector<double> get_SNR_tabulated(const std::vector<double> &frequency,
+                                        const std::vector<double> &omega) const;
+
   /** Sensitivity for LISA */
   double intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref) const;
   /** Sensitivity for Taiji */
@@ -247,6 +284,9 @@ private:
 
   /** Backend used by calc_spectrums; set through set_gw_method */
   PROPERTY_CUSTOM_SETTER(GravWaveMethod, gw_method, GravWaveMethod::FitFormulae);
+
+  /** Include collisions and turbulence in SSM spectrum */
+  PROPERTY(bool, include_col_and_turb_in_ssm, false);
 
   /** Degree of freedom */
   PROPERTY(double, dof, 106.75);
@@ -284,6 +324,18 @@ private:
   /** Calculate a GW spectrum for one transition with HydroGrav's sound shell model */
   GravWaveSpectrum calc_spectrum_ssm(const ThermalParameterSet &tps, const TransitionMilestone &milestone) const;
 #endif
+
+  /**
+   * Evaluate the turbulence and bubble collision fits on a spectrum's own
+   * frequency grid and store them in its turbulence and bubble_collision.
+   */
+  void add_fit_contributions(GravWaveSpectrum &sp, double alpha_fit) const;
+
+  /**
+   * Sum the three contributions into total_amplitude, then set the peak and SNR
+   * from it. Call after every contribution is in place.
+   */
+  void finalise_spectrum(GravWaveSpectrum &sp) const;
 
   /** Lower bound on the kRs values of the SSM spectrum */
   PROPERTY(double, min_kRs_value, 1e-3);

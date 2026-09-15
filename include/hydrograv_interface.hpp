@@ -71,7 +71,9 @@ HydroGrav::PhaseTransition::PTParams_Veff to_hydrograv_pt_params(
 /** @brief Translates fluid profiles. */
 FluidProfile to_phasetracer_profile(const HydroGrav::Hydrodynamics::FluidProfile &fp);
 
-/** @brief Translates the GW power spectrum. */
+/**
+ * @brief Translates the GW power spectrum.
+ */
 void fill_spectrum(GravWaveSpectrum &sp, const HydroGrav::Spectrum::PowerSpec &spec_in);
 
 /** @brief Route HydroGrav's log records into PhaseTracer's logger. */
