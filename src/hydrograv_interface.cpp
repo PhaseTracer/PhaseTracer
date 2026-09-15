@@ -20,12 +20,40 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <mutex>
 #include <stdexcept>
+#include <string>
 #include "logger.hpp"
 #include "hydrograv_interface.hpp"
 
 namespace PhaseTracer {
 namespace HydroGravBridge {
+
+void
+install_logger()
+{
+    static std::once_flag installed;
+    std::call_once(installed, [] {
+        logging::set_sink([](logging::Level level, const std::string &msg) {
+            switch (level) {
+                case logging::Level::Error:
+                    LOG(error) << msg;
+                    break;
+                case logging::Level::Warn:
+                    LOG(warning) << msg;
+                    break;
+                case logging::Level::Info:
+                    LOG(debug) << msg;
+                    break;
+                default:
+                    LOG(trace) << msg;
+                    break;
+            }
+        });
+
+        logging::set_level(logging::Level::Info);
+    });
+}
 
 HydroGrav::PhaseTransition::EquationOfState
 to_hydrograv_eos(const PhaseTracer::EquationOfState &eos)

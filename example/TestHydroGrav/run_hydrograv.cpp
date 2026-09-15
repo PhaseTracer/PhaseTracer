@@ -132,6 +132,12 @@ int main(int argc, char* argv[]) {
     */
     namespace bridge = PhaseTracer::HydroGravBridge;
 
+    /*
+        HydroGrav reports its progress through its own logger. This line maps 
+        the HydroGrav logger to the default PhaseTracer LOGGER above.
+    */
+    bridge::install_logger();
+
     auto dof = 107.75;
     HydroGrav::PhaseTransition::Universe universe
         = bridge::to_hydrograv_universe(percolation, dof);

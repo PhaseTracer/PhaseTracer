@@ -37,6 +37,8 @@ GravWaveSpectrum GravWaveCalculator::calc_spectrum_ssm(const ThermalParameterSet
     throw std::runtime_error("max_kRs_value < min_kRs_value");
   }
 
+  HydroGravBridge::install_logger();
+
   const auto pt_params = HydroGravBridge::to_hydrograv_pt_params(tps, milestone, vw, dof);
 
   LOG(debug) << "Calculating sound shell spectrum at T = " << milestone.temperature
