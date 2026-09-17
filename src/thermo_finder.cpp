@@ -349,9 +349,9 @@ namespace PhaseTracer {
         const double T_true = fe.get_T_true(T_false);
 
         const double& theta_f = eos.get_theta_plus(T_false, true);
-        const double& theta_t = eos.get_theta_minus(T_false, true);
-        const double& den = 3 * (eos.get_energy_plus(T_false) - eos.get_pressure_plus(T_false));
-        return (theta_f - theta_t)/den;
+        const double& theta_t = eos.get_theta_minus(T_true, true);
+        const double& w = eos.get_enthalpy_plus(T_false);
+        return (theta_f - theta_t)/w * 4./3.;
     }
 
     const double
