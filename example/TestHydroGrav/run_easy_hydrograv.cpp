@@ -146,6 +146,7 @@ int main(int argc, char* argv[]) {
         back for this case using the following setting. 
     */
     gravwave_calculator.set_include_col_and_turb_in_ssm(true);
+    gravwave_calculator.set_T_threshold_bubble_collision(1e10);
 
     /*
         We then call calc_spectrums as usual. Note that this won't evaluate the
