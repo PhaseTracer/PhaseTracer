@@ -40,7 +40,7 @@ SplinePath::SplinePath(EffectivePotential::Potential &potential,
   std::vector<Eigen::VectorXd> dpts = _pathDeriv(pts);
   // 2. Extend the path
   if (extend_to_minima) {
-    double xmin = find_loc_min_w_guess(pts[0], dpts[0]); // TODO: This may return global mim instead of local minimum
+    double xmin = find_loc_min_w_guess(pts[0], dpts[0]);
     xmin = std::min(xmin, 0.0);
     int nx = static_cast<int>(std::ceil(std::abs(xmin) - .5)) + 1;
     if (nx > 1) {
@@ -148,13 +148,28 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
     return (*(*v_lin))(x);
   };
 
+
   nlopt::opt optimizer(nlopt::LN_SBPLX, 1);
   optimizer.set_min_objective(V_lin_func, &V_lin);
   optimizer.set_xtol_abs(1e-6);
+  optimizer.set_initial_step(std::vector<double>(1, 1e-3));
 
   std::vector<double> xmin(1, guess);
   double fmin;
   optimizer.optimize(xmin, fmin);
+
+  const double V0 = P.V(p0, T);
+  const int n_scan = 32;
+  for (int i = 1; i <= n_scan; ++i) {
+    const double x = xmin[0] * i / n_scan;
+    if (P.V(p0 + x * dp0, T) > V0) {
+      optimizer.set_lower_bounds(std::vector<double>(1, std::min(0., x)));
+      optimizer.set_upper_bounds(std::vector<double>(1, std::max(0., x)));
+      xmin[0] = guess;
+      optimizer.optimize(xmin, fmin);
+      break;
+    }
+  }
   return xmin[0];
 }
 
