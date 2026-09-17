@@ -62,7 +62,7 @@ private:
 };
 
 const ThermalSpline &boson_spline() {
-  static const ThermalSpline s(J_B_X_DATA, J_B_Y_DATA, -3.72402637, 1.41e3);
+  static const ThermalSpline s(J_B_X_DATA, J_B_Y_DATA, -2999.9999999999995, 1.41e3);
   return s;
 }
 
