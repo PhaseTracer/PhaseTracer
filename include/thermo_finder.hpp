@@ -311,6 +311,18 @@ public :
     const double get_alpha(const double& temperature, const EquationOfState& eos, bool use_munu = false);
 
     /** 
+     * @brief Computes the alpha parameter at a given temperature using T_true.
+     *  @param temperature The temperature at which to compute alpha_bar.
+     *  @param eos The equation of state object.
+     *  @param fe The Friedmann evolution object.
+     *  @return The computed alpha_bar value.
+     * 
+     * This function properly accounts for the true vacuum temperature being different to the false
+     *  vacuum temperature, passing T_true into the equation of state for e_t and p_t.
+     */
+    const double get_alpha_bar(const double& temperature, const EquationOfState& eos, const FriedmannEvolution& fe);
+
+    /** 
      * @brief Computes the beta/H parameter at a given temperature.
      *  @param temperature The temperature at which to compute beta/H.
      *  @param decay_rate The false vacuum decay rate object.

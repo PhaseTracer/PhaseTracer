@@ -100,13 +100,15 @@ struct TransitionMilestone
     double reheating_temperature;
     /** @brief Transition strength. */
     double alpha = std::numeric_limits<double>::quiet_NaN();
+    /** @brief Transition strength with consistent true and false vacuum temps */
+    double alpha_bar = std::numeric_limits<double>::quiet_NaN();
     /** @brief Transition strength (mu nu prescription). */
     double alpha_munu = std::numeric_limits<double>::quiet_NaN();
     /** @brief Beta/H in the usual approximation. */
     double betaH = std::numeric_limits<double>::quiet_NaN();
-    /** @brief Full Beta/H from the first time derivative */
+    /** @brief Full Beta/H from the first time derivative of the action */
     double beta1H = std::numeric_limits<double>::quiet_NaN();
-    /** @brief Full Beta_2/H from the second time derivative */
+    /** @brief Full Beta_2/H from the second time derivative of the action */
     double beta2H = std::numeric_limits<double>::quiet_NaN();
     /** @brief Effective timescale defined from mean bubble separation. */
     double betaH_eff = std::numeric_limits<double>::quiet_NaN();
@@ -168,7 +170,7 @@ private:
     {
         std::string output = "  status = " + format_status_string() + "\n";
         output += "  temperature = " + std::to_string(temperature) + " " + scale.name() + "\n";
-        if(type == MilestoneType::COMPLETION && status == MilestoneStatus::YES)
+        if(status == MilestoneStatus::YES)
         {
             output += "  reheating temperature = " + std::to_string(reheating_temperature) + " " + scale.name() + "\n";
         }
@@ -183,6 +185,7 @@ private:
 
         if (print_setting == PrintSettings::STANDARD || print_setting == PrintSettings::VERBOSE) {
             output += "  alpha = " + std::to_string(alpha) + "\n";
+            output += "  alpha_bar = " + std::to_string(alpha_bar) + "\n";
             output += "  alpha_munu = " + std::to_string(alpha_munu) + "\n";
             output += "  betaH = " + std::to_string(betaH) + "\n";
             output += "  betaH_eff = " + std::to_string(betaH_eff) + "\n";

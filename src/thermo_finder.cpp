@@ -277,8 +277,9 @@ namespace PhaseTracer {
                 }
             };
 
-            try_set("alpha", [&]{ milestone.alpha = get_alpha(temp, eos); });
+            try_set("alpha", [&]{ milestone.alpha = get_alpha(temp, eos, false); });
             try_set("alpha_munu", [&]{ milestone.alpha_munu = get_alpha(temp, eos, true); });
+            try_set("alpha_bar", [&]{ milestone.alpha_bar = get_alpha_bar(temp, eos, tm); });
             try_set("betaH", [&]{ milestone.betaH = get_betaH(temp, decay_rate); });
             try_set("beta1H", [&]{ milestone.beta1H = get_betaH_1(temp, decay_rate, tm); });
             try_set("beta2H", [&]{ milestone.beta2H = get_betaH_2(temp, decay_rate, tm); });
@@ -341,6 +342,18 @@ namespace PhaseTracer {
         return abs(theta.first - theta.second)/w * 4./3.;
     }
 
+    const double 
+    ThermoFinder::get_alpha_bar(const double& temperature, const EquationOfState& eos, const FriedmannEvolution& fe)
+    {
+        const double& T_false = temperature;
+        const double T_true = fe.get_T_true(T_false);
+
+        const double& theta_f = eos.get_theta_plus(T_false, true);
+        const double& theta_t = eos.get_theta_minus(T_false, true);
+        const double& den = 3 * (eos.get_energy_plus(T_false) - eos.get_pressure_plus(T_false));
+        return (theta_f - theta_t)/den;
+    }
+
     const double
     ThermoFinder::get_betaH(const double& temperature, const FalseVacuumDecayRate& decay_rate)
     {
@@ -351,7 +364,7 @@ namespace PhaseTracer {
     const double
     ThermoFinder::get_betaH_eff(const double& vw, const double& RsH)
     {
-        return std::pow(8.*M_PI, 1./3.) * vw/RsH;
+        return std::pow(8.*M_PI/0.28957, 1./3.) * vw/RsH;
     }
 
     const double
