@@ -709,6 +709,12 @@ namespace PhaseTracer {
         namespace odeint = boost::numeric::odeint;
         using state_type = std::array<double, 10>;
 
+        // Normalise dimensional quantities by a constant Href
+        const double H_ref = get_hubble_rate(t_max);
+        const double H_ref2 = H_ref * H_ref;
+        const double H_ref3 = H_ref2 * H_ref;
+        const double H_ref4 = H_ref3 * H_ref;
+
         auto rhs = [&](const state_type& state, state_type& dstate, double tau)
         {
             const double e_false = state[0];
@@ -736,13 +742,15 @@ namespace PhaseTracer {
             const double gamma = decay_rate.get_gamma(T_false);
 
             const double time = std::exp(tau);
+            const double time_H = time * H_ref;         // dimensionless time
+            const double hubble_ratio = hubble / H_ref;
 
             dstate[2] = time * a * hubble;
 
-            dstate[3] = time * (gamma       - 3.0 * hubble * I_0); // d(I_0)/d(ln t)
-            dstate[4] = time * (      I_0   - 2.0 * hubble * I_1); // d(I_1)/d(ln t)
-            dstate[5] = time * (2.0 * I_1   - 1.0 * hubble * I_2); // d(I_2)/d(ln t)
-            dstate[6] = time * (3.0 * I_2);                        // d(I_3)/d(ln t)
+            dstate[3] = time_H * (gamma / H_ref4 - 3.0 * hubble_ratio * I_0); // d(I_0/H_ref^3)/d(ln t)
+            dstate[4] = time_H * (      I_0      - 2.0 * hubble_ratio * I_1); // d(I_1/H_ref^2)/d(ln t)
+            dstate[5] = time_H * (2.0 * I_1      - 1.0 * hubble_ratio * I_2); // d(I_2/H_ref)/d(ln t)
+            dstate[6] = time_H * (3.0 * I_2);                                 // d(I_3)/d(ln t)
 
             const double deriv_true_vacuum_fraction = 4.0/3.0*M_PI*vw*vw*vw * false_vacuum_fraction * dstate[6];
             const double reheating = (true_vacuum_fraction < 1e-30) ? 0.0 : deriv_true_vacuum_fraction/true_vacuum_fraction * latent_heat;
@@ -751,22 +759,23 @@ namespace PhaseTracer {
             dstate[1] = time * (- 3.0 * hubble * (e_true + p_true)) + reheating; // d(e_true)/d(ln t)
 
             dstate[7] = time * (4.0/3.0 * M_PI * gamma * false_vacuum_fraction / (hubble*hubble*hubble));
-            dstate[8] = time * (- 3.0 * hubble * number_density + gamma * false_vacuum_fraction);
-            dstate[9] = (number_density < 1e-100) ? 0.0 : time * (number_density - 2.0 * hubble * J);
+            dstate[8] = time_H * (- 3.0 * hubble_ratio * number_density + gamma * false_vacuum_fraction / H_ref4);// d(n/H_ref^3)/d(ln t)
+            dstate[9] = (number_density < 1e-100) ? 0.0 : time_H * (number_density - 2.0 * hubble_ratio * J);     // d(J/H_ref^2)/d(ln t)
         };
 
         auto observer = [&](const state_type& state, double tau)
         {
+            // undo the H_ref scaling so that the stored system is dimensionful
             const double e_false = state[0];
             const double e_true  = state[1];
             const double a       = state[2];
-            const double I_0     = state[3];
-            const double I_1     = state[4];
-            const double I_2     = state[5];
+            const double I_0     = state[3] * H_ref3;
+            const double I_1     = state[4] * H_ref2;
+            const double I_2     = state[5] * H_ref;
             const double I_3     = state[6];
             const double nucleation_rate = state[7];
-            const double number_density = state[8];
-            const double J = std::max(0.0, state[9]);
+            const double number_density = state[8] * H_ref3;
+            const double J = std::max(0.0, state[9]) * H_ref2;
             const double mean_bubble_radius = (number_density > 1e-100) ? J / number_density : 0.0;
 
             const double T_false = match_T_false(e_false);

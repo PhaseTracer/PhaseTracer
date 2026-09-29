@@ -99,9 +99,10 @@ namespace PhaseTracer {
             alglib::spline1dbuildmonotone(t_array, e_array, this->energy_spline);
             alglib::spline1dbuildmonotone(t_array, w_array, this->enthalpy_spline);
             alglib::spline1dbuildmonotone(t_array, s_array, this->entropy_spline);
-            LOG(debug) << "EquationOfStateInPhase splines built for phase key " << phase.key;
+            LOG(debug) << "EquationOfStateInPhase splines built for phase key " << phase.key
+                       << " with T range [" << temperature.front() << ", " << temperature.back() << "]";
         } catch (const std::exception& e) {
-            LOG(error) << "Error in spline1dbuildcubic: " << e.what() << " for phase key " << phase.key;
+            LOG(error) << "Error in spline1dbuildmonotone: " << e.what() << " for phase key " << phase.key;
             throw std::runtime_error("Failed to build thermodynamic splines");
         } catch (...) {
             LOG(error) << "Unknown error in get_thermodynamic_splines for phase key " << phase.key;

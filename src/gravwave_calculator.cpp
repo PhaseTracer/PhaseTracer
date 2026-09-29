@@ -367,7 +367,7 @@ std::vector<GravWaveSpectrum> GravWaveCalculator::calc_spectrums() {
         throw std::runtime_error("HydroGrav is not installed.");
 #endif
       } else {
-        spectrums.push_back(calc_spectrum(milestone->alpha_bar, milestone->betaH_eff, milestone->temperature));
+        spectrums.push_back(calc_spectrum(milestone->alpha, milestone->betaH_eff, milestone->temperature));
       }
     }
     total_spectrum = sum_spectrums(spectrums);

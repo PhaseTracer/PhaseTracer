@@ -29,6 +29,7 @@ test_profiles.ipynb
 *.ipynb
 *.sh
 *.py
+*.log
 inputFiles/
 .gitignore
 scan.py
