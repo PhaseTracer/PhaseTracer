@@ -29,6 +29,7 @@ namespace PhaseTracer {
         int warm_start_chunk_size_in,
         int action_smoothing_window_in,
         int action_smoothing_order_in,
+        bool action_laurent_tail_in,
         int eos_spline_evaluations_in,
         double eos_background_dof_in,
         double percolation_target_in,
@@ -47,6 +48,7 @@ namespace PhaseTracer {
         decay_rate->set_warm_start_chunk_size(warm_start_chunk_size_in);
         decay_rate->set_smoothing_window(action_smoothing_window_in);
         decay_rate->set_smoothing_order(action_smoothing_order_in);
+        decay_rate->set_laurent_tail(action_laurent_tail_in);
         if (prefactor_in) { decay_rate->set_prefactor_function(prefactor_in); }
         decay_rate->calculate();
 
@@ -154,6 +156,7 @@ namespace PhaseTracer {
             warm_start_chunk_size,
             action_smoothing_window,
             action_smoothing_order,
+            action_laurent_tail,
             eos_spline_evaluations,
             eos_background_dof,
             percolation_target,

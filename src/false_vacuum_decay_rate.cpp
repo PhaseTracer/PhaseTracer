@@ -84,7 +84,6 @@ namespace PhaseTracer {
             throw std::runtime_error("Spline evaluations must be at least 2.");
         }
 
-        const double log_gamma_min = -700;
         double dt = (t_max - t_min) / (spline_evaluations - 1);
 
         std::vector<double> temp_results(spline_evaluations);
@@ -194,6 +193,18 @@ namespace PhaseTracer {
             throw std::runtime_error("Not enough valid action points to build spline.");
         }
 
+        // write out the raw action, prefactor, and decay rate data for debugging
+        // std::ofstream debug_file("example/Benchmarks/data/THDM_debug_action_raw.csv");
+        // debug_file << "Temperature,Action,Prefactor,DecayRate\n";
+        // for (int i = 0; i < valid_temps.size(); i++) 
+        // {
+        //     debug_file << valid_temps[i] << "," 
+        //                << valid_log_actions[i] << "," 
+        //                << valid_log_prefactors[i] << "," 
+        //                << valid_log_gammas[i] << "\n";
+        // }
+        // debug_file.close();
+
         if (smoothing_window > 1)
         {
             LOG(debug) << "Smoothing action with window size " << smoothing_window << " and order " << smoothing_order;
@@ -206,11 +217,97 @@ namespace PhaseTracer {
         log_prefactor_array.setcontent(valid_log_prefactors.size(), valid_log_prefactors.data());
         log_gamma_array.setcontent(valid_log_gammas.size(), valid_log_gammas.data());
 
-        alglib::spline1dbuildcubic(temp_array, log_action_array, this->log_action_spline);
+        use_laurent = false;
+        t_join = t_max;
+        if (laurent_tail && !fit_laurent_tail(valid_temps, valid_log_actions))
+        {
+            LOG(warning) << "Laurent tail fit near Tc failed; using the action spline up to t_max.";
+        }
+        if (!use_laurent)
+        {
+            alglib::spline1dbuildcubic(temp_array, log_action_array, this->log_action_spline);
+        }
         alglib::spline1dbuildakima(temp_array, log_prefactor_array, this->log_prefactor_spline);
         alglib::spline1dbuildakima(temp_array, log_gamma_array, this->log_gamma_spline);
         
         LOG(debug) << "Built action splines with " << valid_temps.size() << " valid points";
+    }
+
+    bool
+    FalseVacuumDecayRate::fit_laurent_tail(const std::vector<double>& temps, const std::vector<double>& log_actions)
+    {
+        const int n = static_cast<int>(temps.size());
+        if (n < 5 || temps.back() >= t_max)
+        {
+            LOG(warning) << "Need at least 5 valid action points below Tc for the Laurent tail; found " << n << ".";
+            return false;
+        }
+
+        // Spline below the join, including the join point itself
+        const int j = n - 3;
+        alglib::real_1d_array temp_array, log_action_array;
+        temp_array.setcontent(j + 1, temps.data());
+        log_action_array.setcontent(j + 1, log_actions.data());
+        alglib::spline1dbuildcubic(temp_array, log_action_array, this->log_action_spline);
+
+        double y, dy, ddy;
+        alglib::spline1ddiff(log_action_spline, temps[j], y, dy, ddy);
+
+        // Three value conditions plus matching d(S/T)/dT at the join; dS/dT = -dS/dx
+        Eigen::Matrix4d A;
+        Eigen::Vector4d b;
+        for (int k = 0; k < 3; k++)
+        {
+            const double x = t_max - temps[j + k];
+            A.row(k) << 1. / (x * x), 1. / x, 1., x;
+            b(k) = std::exp(log_actions[j + k]);
+        }
+        const double x_join = t_max - temps[j];
+        A.row(3) << 2. / (x_join * x_join * x_join), 1. / (x_join * x_join), 0., -1.;
+        b(3) = std::exp(log_actions[j]) * dy;
+
+        const auto lu = A.fullPivLu();
+        if (!lu.isInvertible())
+        {
+            return false;
+        }
+        const Eigen::Vector4d coeffs = lu.solve(b);
+        if (!coeffs.allFinite())
+        {
+            return false;
+        }
+        for (int k = 0; k < 4; k++) { laurent_coeffs[k] = coeffs(k); }
+
+        // The tail must stay positive all the way up to Tc
+        const int n_check = 100;
+        for (int k = 0; k < n_check; k++)
+        {
+            const double tt = temps[j] + (t_max - temps[j]) * k / n_check;
+            double s, ds, d2s;
+            laurent_eval(tt, s, ds, d2s);
+            if (!(s > 0.))
+            {
+                return false;
+            }
+        }
+
+        t_join = temps[j];
+        use_laurent = true;
+        LOG(debug) << "Laurent tail above T = " << t_join << " with coefficients ("
+                   << laurent_coeffs[0] << ", " << laurent_coeffs[1] << ", "
+                   << laurent_coeffs[2] << ", " << laurent_coeffs[3] << ")";
+        return true;
+    }
+
+    void
+    FalseVacuumDecayRate::laurent_eval(double temperature, double& s, double& ds, double& d2s) const
+    {
+        // Keep x positive so evaluations at or above Tc stay large but finite
+        const double x = std::max(t_max - temperature, 1e-8 * t_max);
+        const auto& [a, b, c, d] = laurent_coeffs;
+        s = a / (x * x) + b / x + c + d * x;
+        ds = 2. * a / (x * x * x) + b / (x * x) - d;
+        d2s = 6. * a / (x * x * x * x) + 2. * b / (x * x * x);
     }
 
     void
@@ -273,6 +370,12 @@ namespace PhaseTracer {
     FalseVacuumDecayRate::get_action(const double& temperature) const
     {
         require_calculated("get_action");
+        if (use_laurent && temperature > t_join)
+        {
+            double s, ds, d2s;
+            laurent_eval(temperature, s, ds, d2s);
+            return s * temperature;
+        }
         double log_action_on_T = alglib::spline1dcalc(log_action_spline, temperature);
         return exp(log_action_on_T) * temperature;
     }
@@ -281,6 +384,12 @@ namespace PhaseTracer {
     FalseVacuumDecayRate::get_action_deriv(const double& temperature) const
     {
         require_calculated("get_action_deriv");
+        if (use_laurent && temperature > t_join)
+        {
+            double s, ds, d2s;
+            laurent_eval(temperature, s, ds, d2s);
+            return ds*exp(s);
+        }
         double y, dy, ddy;
         alglib::spline1ddiff(log_action_spline, temperature, y, dy, ddy);
         return dy*exp(y);
@@ -290,6 +399,12 @@ namespace PhaseTracer {
     FalseVacuumDecayRate::get_action_double_deriv(const double& temperature) const
     {
         require_calculated("get_action_double_deriv");
+        if (use_laurent && temperature > t_join)
+        {
+            double s, ds, d2s;
+            laurent_eval(temperature, s, ds, d2s);
+            return (ds*ds + d2s) * exp(s);
+        }
         double y, dy, ddy;
         alglib::spline1ddiff(log_action_spline, temperature, y, dy, ddy);
         return (dy*dy + ddy) * exp(y);
@@ -299,6 +414,13 @@ namespace PhaseTracer {
     FalseVacuumDecayRate::get_gamma(const double& temperature) const
     {
         require_calculated("get_gamma");
+        if (use_laurent && temperature > t_join)
+        {
+            double s, ds, d2s;
+            laurent_eval(temperature, s, ds, d2s);
+            double log_prefactor = alglib::spline1dcalc(log_prefactor_spline, temperature);
+            return exp(std::max(log_prefactor - s, log_gamma_min));
+        }
         double log_gamma = alglib::spline1dcalc(log_gamma_spline, temperature);
         return exp(log_gamma);
     }

@@ -137,6 +137,7 @@ struct ThermalParameterSet
         int warm_start_chunk_size_in = 0,
         int action_smoothing_window_in = 0,
         int action_smoothing_order_in = 3,
+        bool action_laurent_tail_in = false,
         // EquationOfState settings
         int eos_spline_evaluations_in = 100,
         double eos_background_dof_in = 0.0,
@@ -504,6 +505,9 @@ private :
 
     /** @brief Polynomial order of the Savitzky-Golay smoothing. */
     PROPERTY(int, action_smoothing_order, 3)
+
+    /** @brief Fit a Laurent polynomial in (Tc - T) to the action near Tc instead of the spline. */
+    PROPERTY(bool, action_laurent_tail, false)
 
     // unused: t_min, t_max
 

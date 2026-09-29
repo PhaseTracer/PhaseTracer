@@ -18,6 +18,7 @@
 #ifndef PHASETRACER_FALSE_VACUUM_DECAY_RATE_HPP_
 #define PHASETRACER_FALSE_VACUUM_DECAY_RATE_HPP_
 
+#include <array>
 #include <cmath>
 #include <vector>
 #include <optional>
@@ -165,6 +166,16 @@ private:
         std::vector<double>& log_gammas, 
         double log_gamma_min) const;
 
+    /**
+     * Fits S/T = a/x^2 + b/x + c + d x, with x = T_c - T, through the three
+     * highest-temperature points, matching d(S/T)/dT to log_action_spline at
+     * the lowest of them. Sets use_laurent and t_join on success.
+     */
+    bool fit_laurent_tail(const std::vector<double>& temps, const std::vector<double>& log_actions);
+
+    /** Evaluates the Laurent tail S/T and its first two temperature derivatives (of S/T) */
+    void laurent_eval(double temperature, double& s, double& ds, double& d2s) const;
+
     /** Throws std::logic_error if calculate() has not been called */
     void require_calculated(const char* caller) const;
 
@@ -176,6 +187,14 @@ private:
 
     /** Splines for log(action), log(prefactor), and log(gamma) */
     alglib::spline1dinterpolant log_action_spline, log_prefactor_spline, log_gamma_spline;
+
+    /** Floor on log(gamma), below which the decay rate is treated as zero */
+    static constexpr double log_gamma_min = -700;
+
+    /** Laurent tail coefficients (a, b, c, d) and the temperature above which it replaces the spline */
+    std::array<double, 4> laurent_coeffs{};
+    double t_join = 0.0;
+    bool use_laurent = false;
 
     /** Function for computing the decay rate prefactor */
     PrefactorFunction prefactor_function = default_decay_rate_prefactor();
@@ -201,6 +220,9 @@ private:
 
     /** Polynomial order of the Savitzky-Golay smoothing. Must be less than smoothing_window. */
     PROPERTY(int, smoothing_order, 3)
+
+    /** Whether to use the Laurent tail for the action at high temperatures */
+    PROPERTY(bool, laurent_tail, false)
 
     /** Set by calculate() once the splines are built */
     bool calculated = false;
