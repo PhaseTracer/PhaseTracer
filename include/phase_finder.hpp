@@ -20,6 +20,7 @@
 
 #include <ctime>
 #include <ostream>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
@@ -271,6 +272,12 @@ protected:
   /** @overload Precomputed Hessian matrix */
   bool hessian_positive_definite(const Eigen::MatrixXd &hessian, const Eigen::VectorXd &X, double T) const;
 
+  /** Smallest eigenvalue of the (symmetrised) Hessian and its eigenvector */
+  std::pair<double, Eigen::VectorXd> lowest_hessian_mode(const Eigen::MatrixXd &hessian) const;
+
+  /** Minima to continue tracing from once a phase has ended at x_end. */
+  std::vector<Point> minima_beyond_phase_end(const Eigen::VectorXd &x_end, double T) const;
+
   /** Default bound on fields */
 protected:
   const double bound = 1600.;
@@ -353,6 +360,13 @@ protected:
   PROPERTY_CUSTOM_SETTER(int, seed, -1)
   /** Whether to check singularity of the Hessian matrix */
   PROPERTY(bool, check_hessian_singular, true)
+  /**
+   * Maximum relative change in the smallest Hessian eigenvalue over one step
+   * in temperature; larger changes reduce the step.
+   */
+  PROPERTY(double, hessian_eig_max_rel_change, 0.5)
+  /** Whether to also require a positive definite Hessian at the midpoint of each step */
+  PROPERTY(bool, check_midpoint_hessian, true)
   /** Maximum number of iterations when tracing a minimum */
   PROPERTY(unsigned int, trace_max_iter, 100000)
   /** Minimum length of a phase in temperature */

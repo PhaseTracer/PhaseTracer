@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
+#include <Eigen/Eigenvalues>
 #include "logger.hpp"
 #include "phase_finder.hpp"
 #include "pow.hpp"
@@ -332,27 +333,25 @@ void PhaseFinder::find_phases() {
     //      LOG(warning) << "Did not add short phase";
     //    }
 
-    if (end_high == JUMP_INDICATED_END || end_high == HESSIAN_SINGULAR || end_high == HESSIAN_NOT_POSITIVE_DEFINITE) {
-      Point top;
-      if (end_high == JUMP_INDICATED_END) {
-        top = jumped_up;
-      } else {
-        top = find_min(X.back(), T.back() + t_jump_rel * (t_high - t_low));
+    if (end_high == JUMP_INDICATED_END) {
+      if (hessian_positive_definite(jumped_up.x, jumped_up.t)) {
+        LOG(debug) << "Where does end nearest t_high go? Appending " << jumped_up;
+        points.push_back(jumped_up);
       }
-      if (hessian_positive_definite(top.x, top.t)) {
+    } else if (end_high == HESSIAN_SINGULAR || end_high == HESSIAN_NOT_POSITIVE_DEFINITE) {
+      for (const auto &top : minima_beyond_phase_end(X.back(), T.back() + t_jump_rel * (t_high - t_low))) {
         LOG(debug) << "Where does end nearest t_high go? Appending " << top;
         points.push_back(top);
       }
     }
 
-    if (end_low == JUMP_INDICATED_END || end_low == HESSIAN_SINGULAR || end_low == HESSIAN_NOT_POSITIVE_DEFINITE) {
-      Point bottom;
-      if (end_low == JUMP_INDICATED_END) {
-        bottom = jumped_down;
-      } else {
-        bottom = find_min(X.front(), T.front() - t_jump_rel * (t_high - t_low));
+    if (end_low == JUMP_INDICATED_END) {
+      if (hessian_positive_definite(jumped_down.x, jumped_down.t)) {
+        LOG(debug) << "Where does end nearest t_low go? Appending " << jumped_down;
+        points.push_back(jumped_down);
       }
-      if (hessian_positive_definite(bottom.x, bottom.t)) {
+    } else if (end_low == HESSIAN_SINGULAR || end_low == HESSIAN_NOT_POSITIVE_DEFINITE) {
+      for (const auto &bottom : minima_beyond_phase_end(X.front(), T.front() - t_jump_rel * (t_high - t_low))) {
         LOG(debug) << "Where does end nearest t_low go? Appending " << bottom;
         points.push_back(bottom);
       }
@@ -487,6 +486,33 @@ phase_end_descriptor PhaseFinder::trace_minimum(Point start, double tstop,
       continue;
     }
 
+    // The Hessian is only tested at the ends of a step, so a step can jump over
+    // a region in which the minimum turns into a saddle. At a point that is
+    // stationary by symmetry the field never moves, so nothing else would
+    // notice. Keep the smallest eigenvalue from changing too much per step and
+    // check the midpoint, unless the step cannot be reduced any further.
+    if (std::abs(dt) > dt_min) {
+      const double eig0 = lowest_hessian_mode(h0).first;
+      const double eig1 = lowest_hessian_mode(h1).first;
+      if (hessian_eig_max_rel_change > 0. &&
+          std::abs(eig1 - eig0) > hessian_eig_max_rel_change * std::max(std::abs(eig0), std::abs(eig1))) {
+        dt *= 0.5;
+        LOG(trace) << "Smallest Hessian eigenvalue changed from " << eig0 << " to " << eig1
+                   << " between T = " << t0 << " and " << t1 << ". Reducing step-size to dT = " << dt;
+        continue;
+      }
+      if (check_midpoint_hessian) {
+        const Eigen::VectorXd x_mid = 0.5 * (x0 + x1);
+        const double t_mid = 0.5 * (t0 + t1);
+        if (!hessian_positive_definite(x_mid, t_mid)) {
+          dt *= 0.5;
+          LOG(trace) << "Hessian is not positive definite at midpoint T = " << t_mid
+                     << ". Reducing step-size to dT = " << dt;
+          continue;
+        }
+      }
+    }
+
     // Check the change in minimum field values when we changed temperature by dt
     // to that expected from derivatives
     significant_dx = (jump(x0 + dx0, x1) || jump(x1 - dxdt1 * dt, x0)) && jump(x0, x1);
@@ -535,6 +561,7 @@ phase_end_descriptor PhaseFinder::trace_minimum(Point start, double tstop,
 
     x0 = x1;
     t0 = t1;
+    h0 = h1;
     dxdt0 = dxdt1;
   }
 
@@ -563,6 +590,35 @@ bool PhaseFinder::hessian_positive_definite(const Eigen::MatrixXd &hessian, cons
     }
   }
   return true;
+}
+
+std::pair<double, Eigen::VectorXd> PhaseFinder::lowest_hessian_mode(const Eigen::MatrixXd &hessian) const {
+  const Eigen::MatrixXd symmetric = 0.5 * (hessian + hessian.transpose());
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(symmetric);
+  return {solver.eigenvalues()(0), solver.eigenvectors().col(0)};
+}
+
+std::vector<Point> PhaseFinder::minima_beyond_phase_end(const Eigen::VectorXd &x_end, double T) const {
+  const Point direct = find_min(x_end, T);
+  if (hessian_positive_definite(direct.x, direct.t)) {
+    return {direct};
+  }
+
+  // Minimizer stalled on a saddle - displace along the unstable direction
+  const Eigen::VectorXd unstable = lowest_hessian_mode(P.d2V_dx2(direct.x, T)).second;
+  std::vector<Point> minima;
+  for (const double sign : {1., -1.}) {
+    const Eigen::VectorXd guess = direct.x + sign * find_min_trace_abs_step * unstable;
+    if (out_of_bounds(guess) || P.forbidden(guess)) {
+      continue;
+    }
+    const Point displaced = find_min(guess, T);
+    if (hessian_positive_definite(displaced.x, displaced.t)) {
+      LOG(debug) << "Phase ended at a saddle; found minimum along unstable direction at " << displaced;
+      minima.push_back(displaced);
+    }
+  }
+  return minima;
 }
 
 Eigen::VectorXd PhaseFinder::dx_min_dt(const Eigen::VectorXd &X, double T) const {
