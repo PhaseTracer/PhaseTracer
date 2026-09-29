@@ -135,6 +135,8 @@ struct ThermalParameterSet
         // FalseVacuumDecayRate settings
         int action_spline_evaluations_in = 50,
         int warm_start_chunk_size_in = 0,
+        int action_smoothing_window_in = 0,
+        int action_smoothing_order_in = 3,
         // EquationOfState settings
         int eos_spline_evaluations_in = 100,
         double eos_background_dof_in = 0.0,
@@ -496,6 +498,12 @@ private :
 
     /** @brief Number of action evaluations solved as one block. */
     PROPERTY(int, warm_start_chunk_size, 0)
+
+    /** @brief Savitzky-Golay window for smoothing the action and prefactor (odd; 0 disables). */
+    PROPERTY(int, action_smoothing_window, 0)
+
+    /** @brief Polynomial order of the Savitzky-Golay smoothing. */
+    PROPERTY(int, action_smoothing_order, 3)
 
     // unused: t_min, t_max
 
