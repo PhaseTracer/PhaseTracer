@@ -200,8 +200,6 @@ namespace PhaseTracer {
             }
         }
 
-        add_thermal_parameter_values(output.percolation, decay_rate, eos, fe);
-
         if(output.completion.status == PhaseTracer::MilestoneStatus::YES)
         {
             add_reheating_temperature(output.onset, fe);
@@ -209,6 +207,8 @@ namespace PhaseTracer {
             add_reheating_temperature(output.completion, fe);
             add_reheating_temperature(output.percolation, fe);
         }
+
+        add_thermal_parameter_values(output.percolation, decay_rate, eos, fe);
 
         output.nucleation_history = fe.nucleation_history;
         fill_nucleation_history(output.nucleation_history, output.percolation, output.nucleation, decay_rate, fe);
@@ -228,7 +228,7 @@ namespace PhaseTracer {
 
         for(double tt = t_min; tt < t_max; tt += dt)
         {
-            double dtdT, dt, H, action, gamma, vext, pf, nt, n, Rs, Rbar;
+            double dtdT, dt, H, action, gamma, vext, pf, nt, Rs, Rbar;
 
             try {
                 dtdT = fe.get_time_temperature_false(tt);
@@ -239,8 +239,7 @@ namespace PhaseTracer {
                 pf = fe.get_false_vacuum_fraction(tt);
                 vext = -log(pf);
                 nt =  fe.get_nucleation_rate(tt);
-                n = get_n(tt, fe);
-                Rs = std::pow(n, -1./3.) * H;
+                Rs = 1/std::cbrt(nt) * H;
                 Rbar = get_Rbar(tt, fe) * H;
             } catch (const std::exception& e) {
                 LOG(debug) << "Error computing thermal profile values at T = " << tt << ": " << e.what();
@@ -276,6 +275,8 @@ namespace PhaseTracer {
         if(milestone.status == MilestoneStatus::YES)
         {
             const auto temp = milestone.temperature;
+            const auto reh_temp = milestone.reheating_temperature;
+            LOG(debug) << "For milestone, T_ref = " << temp << ", T_reh = " << reh_temp;
 
             auto try_set = [&](const std::string& name, auto&& action) 
             {
@@ -304,11 +305,11 @@ namespace PhaseTracer {
             try_set("n, Rs, or Rbar", [&]{
                 double n = get_n(temp, tm);
                 milestone.n = n;
-                milestone.Rs = std::pow(n, -1./3.) * milestone.H;
+                milestone.Rs = 1./std::cbrt(n) * milestone.H;
                 milestone.Rbar = get_Rbar(temp, tm) * milestone.H;
             });
 
-            try_set("betaH_eff", [&]{ milestone.betaH_eff = get_betaH_eff(vw, milestone.Rs); });
+            try_set("betaH_eff", [&]{ milestone.betaH_eff = get_betaH_eff(vw, milestone.cs_plus, milestone.Rs); });
             try_set("dt", [&]{ milestone.dt = get_dt(temp, tm) * milestone.H; });
         }
     }
@@ -319,7 +320,9 @@ namespace PhaseTracer {
         FriedmannEvolution& tm)
     {
         double T_reh = tm.get_T_true(milestone.temperature);
+        LOG(debug) << "Adding reheating temperature for milestone at T = " << milestone.temperature;
         milestone.reheating_temperature = T_reh;
+        LOG(debug) << "Reheating temperature set to " << milestone.reheating_temperature;
     }
 
     void
@@ -371,9 +374,10 @@ namespace PhaseTracer {
     }
 
     const double
-    ThermoFinder::get_betaH_eff(const double& vw, const double& RsH)
+    ThermoFinder::get_betaH_eff(const double& vw, const double& cs, const double& RsH)
     {
-        return std::pow(8.*M_PI/0.28957, 1./3.) * vw/RsH;
+        return std::pow(8.*M_PI/0.28957, 1./3.) * std::max(vw, cs)/RsH;
+        // return std::pow(8.*M_PI, 1./3.) * vw/RsH;
     }
 
     const double

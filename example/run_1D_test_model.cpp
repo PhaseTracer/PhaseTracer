@@ -34,21 +34,21 @@ int main(int argc, char *argv[]) {
   tf.find_transitions();
   std::cout << tf;
 
-  // Make GravWaveCalculator object
-  PhaseTracer::GravWaveCalculator gc(tf);
-  gc.set_T_threshold_bubble_collision(1e10);
+  // // Make GravWaveCalculator object
+  // PhaseTracer::GravWaveCalculator gc(tf);
+  // gc.set_T_threshold_bubble_collision(1e10);
 
-  const auto sps = gc.calc_spectrums();
-  for (size_t ii = 0; ii < sps.size(); ii++) {
-    std::cout << sps[ii];
-    if (debug_mode) {
-      gc.write_spectrum_to_text(sps[ii], "GW_spectrum_1D_test_model" + std::to_string(ii) + ".txt");
-    }
-  }
+  // const auto sps = gc.calc_spectrums();
+  // for (size_t ii = 0; ii < sps.size(); ii++) {
+  //   std::cout << sps[ii];
+  //   if (debug_mode) {
+  //     gc.write_spectrum_to_text(sps[ii], "GW_spectrum_1D_test_model" + std::to_string(ii) + ".txt");
+  //   }
+  // }
 
-  if (debug_mode) {
-    PhaseTracer::spectrum_plotter(gc, "1D_test");
-  }
+  // if (debug_mode) {
+  //   PhaseTracer::spectrum_plotter(gc, "1D_test");
+  // }
 
   if (debug_mode) {
     // Get actions between the two phases

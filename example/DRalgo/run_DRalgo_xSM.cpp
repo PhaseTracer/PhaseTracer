@@ -130,25 +130,25 @@ int main( int argc, char* argv[]) {
   }
 
   // Make GravWave Object
-  PhaseTracer::GravWaveCalculator gc(tf);
-  gc.set_min_frequency(1e-4);
-  gc.set_max_frequency(1e+1);
-  gc.calc_spectrums();
+  // PhaseTracer::GravWaveCalculator gc(tf);
+  // gc.set_min_frequency(1e-4);
+  // gc.set_max_frequency(1e+1);
+  // gc.calc_spectrums();
 
-  std::cout << gc;
+  // std::cout << gc;
 
-  auto gw = gc.get_spectrums();
+  // auto gw = gc.get_spectrums();
 
-  if ( isnan(gw[0].beta_H) || gw[0].beta_H < 1 || gw[0].beta_H > 1e100){
-    std::vector<double> out = {-5, t[0].TC, t[0].TN, (t[0].TC - t[0].TN)/t[0].TC, gw[0].beta_H, 0, 0, 0};
-    output_file << toString(in, out) << std::endl;
-    output_file.close();
-    return 0;
-  }
+  // if ( isnan(gw[0].beta_H) || gw[0].beta_H < 1 || gw[0].beta_H > 1e100){
+  //   std::vector<double> out = {-5, t[0].TC, t[0].TN, (t[0].TC - t[0].TN)/t[0].TC, gw[0].beta_H, 0, 0, 0};
+  //   output_file << toString(in, out) << std::endl;
+  //   output_file.close();
+  //   return 0;
+  // }
 
-  std::vector<double> out = {(float)t.size(), t[0].TC, t[0].TN, (t[0].TC - t[0].TN)/t[0].TC, gw[0].beta_H, gw[0].peak_amplitude, gw[0].peak_frequency, gw[0].SNR[0]};
-  output_file << toString(in, out) << std::endl;
-  output_file.close();
+  // std::vector<double> out = {(float)t.size(), t[0].TC, t[0].TN, (t[0].TC - t[0].TN)/t[0].TC, gw[0].beta_H, gw[0].peak_amplitude, gw[0].peak_frequency, gw[0].SNR[0]};
+  // output_file << toString(in, out) << std::endl;
+  // output_file.close();
   return 0;
 
 }

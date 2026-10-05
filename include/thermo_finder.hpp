@@ -343,7 +343,7 @@ public :
      *  @param RsH The ratio of the bubble radius to the Hubble radius.
      *  @return The computed effective beta/H value.
      */
-    const double get_betaH_eff(const double& vw, const double& RsH);
+    const double get_betaH_eff(const double& vw, const double& cs, const double& RsH);
 
     /** 
      * @brief Computes the beta_1/H at a given temperature.

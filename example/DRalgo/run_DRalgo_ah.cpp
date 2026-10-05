@@ -118,14 +118,14 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
-  PhaseTracer::GravWaveCalculator gc(tf);
-  gc.set_min_frequency(1e-4);
-  gc.set_max_frequency(1e+1);
-  gc.calc_spectrums();
+  // PhaseTracer::GravWaveCalculator gc(tf);
+  // gc.set_min_frequency(1e-4);
+  // gc.set_max_frequency(1e+1);
+  // gc.calc_spectrums();
 
-  std::cout << gc;
+  // std::cout << gc;
 
-  auto gw = gc.get_spectrums();
+  // auto gw = gc.get_spectrums();
   
   std::vector<double> out = {(float)t.size(), t[0].TC, t[0].true_vacuum[0], t[0].false_vacuum[0]};
 

@@ -36,11 +36,11 @@ int main(int argc, char *argv[]) {
   std::cout << std::setprecision(15) << tf;
 
   // Make GravWaveCalculator object
-  PhaseTracer::GravWaveCalculator gc(tf);
-  const auto sps = gc.calc_spectrums();
-  for (size_t ii = 0; ii < sps.size(); ii++) {
-    std::cout << sps[ii];
-  }
+  // PhaseTracer::GravWaveCalculator gc(tf);
+  // const auto sps = gc.calc_spectrums();
+  // for (size_t ii = 0; ii < sps.size(); ii++) {
+  //   std::cout << sps[ii];
+  // }
 
   if (debug_mode) {
     const auto trans = tf.get_transitions();
