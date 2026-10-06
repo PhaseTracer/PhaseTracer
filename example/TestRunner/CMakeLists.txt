@@ -1,0 +1,1 @@
+add_executable(run_config_test run_config_test.cpp)

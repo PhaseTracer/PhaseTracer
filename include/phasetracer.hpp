@@ -35,5 +35,7 @@
 #include "friedmann_evolution.hpp"
 #include "thermo_finder.hpp"
 #include "scale.hpp"
+#include "run_status.hpp"
+#include "config.hpp"
 
 #endif //  PHASETRACER_PHASETRACER_HPP_
