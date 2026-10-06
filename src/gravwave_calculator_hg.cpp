@@ -41,7 +41,7 @@ GravWaveSpectrum GravWaveCalculator::calc_spectrum_ssm(const ThermalParameterSet
 
     HydroGravBridge::install_logger();
 
-    const auto pt_params = HydroGravBridge::to_hydrograv_pt_params(tps, milestone, vw, dof);
+    const auto pt_params = HydroGravBridge::to_hydrograv_pt_params(tps, milestone);
 
     LOG(debug) << "Calculating sound shell spectrum at T = " << milestone.temperature
               << ", alpha_munu = " << milestone.alpha_munu << ", vw = " << vw;

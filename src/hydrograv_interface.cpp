@@ -84,7 +84,7 @@ to_hydrograv_eos(const PhaseTracer::EquationOfState &eos)
 }
 
 HydroGrav::PhaseTransition::Universe
-to_hydrograv_universe(const TransitionMilestone &milestone, double dof)
+to_hydrograv_universe(const TransitionMilestone &milestone)
 {
     if (milestone.status != MilestoneStatus::YES)
     {
@@ -96,7 +96,7 @@ to_hydrograv_universe(const TransitionMilestone &milestone, double dof)
         throw std::invalid_argument("Invalid thermal parameters for universe creation");
     }
 
-    return HydroGrav::PhaseTransition::Universe(milestone.temperature, dof, milestone.H);
+    return HydroGrav::PhaseTransition::Universe(milestone.temperature, milestone.g_eff, milestone.H);
 }
 
 const char *
@@ -111,18 +111,16 @@ to_hydrograv_nuc_type(NucleationType nucleation_type)
 }
 
 HydroGrav::PhaseTransition::PTParams_Veff
-to_hydrograv_pt_params(const ThermalParameterSet &tps,
-                       const TransitionMilestone &milestone,
-                       double vw, double dof)
+to_hydrograv_pt_params(const ThermalParameterSet &tps, const TransitionMilestone &milestone)
 {
     return HydroGrav::PhaseTransition::PTParams_Veff(
-        vw,
+        milestone.vw,
         milestone.alpha_munu,
         milestone.temperature,
         milestone.betaH_eff * milestone.H,
         milestone.Rs / milestone.H,
         to_hydrograv_nuc_type(milestone.nucleation_type),
-        to_hydrograv_universe(milestone, dof),
+        to_hydrograv_universe(milestone),
         to_hydrograv_eos(tps.get_equation_of_state())
     );
 }

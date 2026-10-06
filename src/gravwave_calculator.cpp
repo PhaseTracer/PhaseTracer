@@ -134,29 +134,29 @@ std::ostream &operator<<(std::ostream &o, const GravWaveCalculator &a)
 // GravWaveCalculator Definitions
 
 double 
-GravWaveCalculator::GW_bubble_collision_legacy(double f, double alpha, double beta_H, double T_ref) const 
+GravWaveCalculator::GW_bubble_collision_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw, double cs) const 
 {
 	double omega_env;
 	double s_env;
 	double kappa = 1 / (1 + 0.715 * alpha) * (0.715 * alpha + 4. / 27 * sqrt(3 * alpha / 2));
 	double f_peak_beta = 0.35 / (1 + 0.069 * vw + 0.69 * pow(vw, 4.));
-	double f_env = 1.65e-5 * f_peak_beta * beta_H * (T_ref / 100) * pow(dof / 100, 1. / 6);
+	double f_env = 1.65e-5 * f_peak_beta * beta_H * (T_ref / 100) * pow(g_eff / 100, 1. / 6);
 	double delta = 0.48 * pow(vw, 3.) / (1 + 5.3 * pow(vw, 2.) + 5 * pow(vw, 4.));
 	s_env = pow(0.064 * pow(f / f_env, -3.) + (1 - 0.064 - 0.48) * pow(f / f_env, -1.) + 0.48 * (f / f_env), -1);
-	omega_env = 1.67e-5 * delta * pow(beta_H, -2.) * pow(kappa * alpha / (1 + alpha), 2.) * pow(100 / dof, 1 / 3.) * s_env;
+	omega_env = 1.67e-5 * delta * pow(beta_H, -2.) * pow(kappa * alpha / (1 + alpha), 2.) * pow(100 / g_eff, 1 / 3.) * s_env;
 	return omega_env;
 }
 
 double 
-GravWaveCalculator::GW_sound_wave_legacy(double f, double alpha, double beta_H, double T_ref) const 
+GravWaveCalculator::GW_sound_wave_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw, double cs) const 
 {
 	double zp = 10.0;
 	double Gamma = 4./3.;
-	double F_gw0 = 3.57e-5 * pow(100/dof, 1./3.);
+	double F_gw0 = 3.57e-5 * pow(100/g_eff, 1./3.);
 	double HRs = pow(8.*M_PI, 1./3.) * vw / beta_H;
-	double f_peak_sw = 2.6e-5 * (zp/10) * (T_ref/100.) * pow(dof/100., 1./6.) / HRs;
+	double f_peak_sw = 2.6e-5 * (zp/10) * (T_ref/100.) * pow(g_eff/100., 1./6.) / HRs;
 	double S_sw = (f/f_peak_sw) * (f/f_peak_sw) * (f/f_peak_sw) * pow(7./(4. + 3.*(f/f_peak_sw)*(f/f_peak_sw)), 7./2.);
-	double K_sw = get_kappa_sw(alpha) * alpha / (1 + alpha);
+	double K_sw = get_kappa_sw(alpha, vw, cs) * alpha / (1 + alpha);
 	double omega_sw_peak = 2.061 * 0.678*0.678 * F_gw0 * K_sw*K_sw * HRs * 0.012;
 	double omega_sw = omega_sw_peak * S_sw;
 	double H_tau = HRs / sqrt(K_sw / Gamma);
@@ -165,22 +165,23 @@ GravWaveCalculator::GW_sound_wave_legacy(double f, double alpha, double beta_H, 
 }
 
 double 
-GravWaveCalculator::GW_turbulence_legacy(double f, double alpha, double beta_H, double T_ref) const 
+GravWaveCalculator::GW_turbulence_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw, double cs) const 
 {
+	double legacy_vw = (vw==0) ? 0.3 : vw;
 	double omega_turb;
-	double hn = 1.65e-5 * (T_ref / 100) * pow(dof / 100, 1. / 6);
-	double f_peak_turb = 2.7e-5 / vw * beta_H * (T_ref / 100) * pow(dof / 100, 1. / 6);
-	double kappa_turb = get_kappa_sw(alpha) * epsilon;
-	omega_turb = 3.35e-4 * pow(beta_H, -1.) * pow(kappa_turb * alpha / (1 + alpha), 3. / 2) * pow(100 / dof, 1. / 3) * vw * pow(f / f_peak_turb, 3) / (pow(1 + f / f_peak_turb, 11. / 3) * (1 + 8 * 3.1415926 * f / hn));
+	double hn = 1.65e-5 * (T_ref / 100) * pow(g_eff / 100, 1. / 6);
+	double f_peak_turb = 2.7e-5 / vw * beta_H * (T_ref / 100) * pow(g_eff / 100, 1. / 6);
+	double kappa_turb = get_kappa_turb(alpha, vw, cs);
+	omega_turb = 3.35e-4 * pow(beta_H, -1.) * pow(kappa_turb * alpha / (1 + alpha), 3. / 2) * pow(100 / g_eff, 1. / 3) * vw * pow(f / f_peak_turb, 3) / (pow(1 + f / f_peak_turb, 11. / 3) * (1 + 8 * 3.1415926 * f / hn));
 	return omega_turb;
 }
 
 double 
-GravWaveCalculator::GW_bubble_collision(double f, double alpha, double beta_H, double T_ref) const
+GravWaveCalculator::GW_bubble_collision(double f, double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const
 {
 	const double RH = get_RH(beta_H);
-	const double prefactor = get_prefactor();
-	const double H0_star = get_Hubble_rate_today(T_ref);
+	const double prefactor = get_prefactor(g_eff, h_eff);
+	const double H0_star = get_Hubble_rate_today(T_reh, g_eff, h_eff);
 	const double kappa_col = get_kappa_col(alpha);
 	const double K_col = get_K(1., kappa_col, alpha);
 
@@ -192,13 +193,12 @@ GravWaveCalculator::GW_bubble_collision(double f, double alpha, double beta_H, d
 }
 
 double 
-GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, double T_ref) const
+GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const
 {
 	const double RH = get_RH(beta_H);
-	const double prefactor = get_prefactor();
-	const double H0_star = get_Hubble_rate_today(T_ref);
-	const double cs = std::sqrt(1./3.);
-	const double kappa_sw = get_kappa_sw(alpha, cs);
+	const double prefactor = get_prefactor(g_eff, h_eff);
+	const double H0_star = get_Hubble_rate_today(T_reh, g_eff, h_eff);
+	const double kappa_sw = get_kappa_sw(alpha, vw, cs);
 	const double K_sw = get_K(0.6, kappa_sw, alpha);
 
 	const auto sound_wave_peaks = get_sound_wave_peaks(H0_star, RH, vw, cs);
@@ -213,13 +213,12 @@ GravWaveCalculator::GW_sound_wave(double f, double alpha, double beta_H, double 
 }
 
 double 
-GravWaveCalculator::GW_turbulence(double f, double alpha, double beta_H, double T_ref) const
+GravWaveCalculator::GW_turbulence(double f, double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const
 {
 	const double RH = get_RH(beta_H);
-	const double prefactor = get_prefactor();
-	const double H0_star = get_Hubble_rate_today(T_ref);
-	const double cs = std::sqrt(1./3.);
-	const double kappa_turb = get_kappa_turb(alpha, cs);
+	const double prefactor = get_prefactor(g_eff, h_eff);
+	const double H0_star = get_Hubble_rate_today(T_reh, g_eff, h_eff);
+	const double kappa_turb = get_kappa_turb(alpha, vw, cs);
 	const double K_turb = get_K(0.6, kappa_turb, alpha);
 
 	const auto turbulence_peaks = get_turbulence_peaks(H0_star, RH, K_turb);
@@ -249,12 +248,34 @@ GravWaveCalculator::calc_spectrum(const TransitionMilestone &milestone)
 		throw std::runtime_error("max_frequency < min_frequency");
 	}
 
+	auto use_custom_check = [this](double input, std::string name) {
+		bool use_custom = input > 0.0;
+		if(use_custom) {LOG(debug) << "Creating GW spectrum with user defined " + name + " = " << input;}
+		return use_custom;
+	};
+
+	bool use_custom_vw = use_custom_check(vw, "vw");
+	bool use_custom_g_eff = use_custom_check(g_eff, "g_eff");
+	bool use_custom_h_eff = use_custom_check(h_eff, "g_eff");
+
 	GravWaveSpectrum sp;
 	sp.Tref = milestone.temperature;
+	sp.Treh = milestone.reheating_temperature;
 	sp.alpha = milestone.alpha;
 	sp.alpha_fit = milestone.alpha;
 	sp.beta_H = milestone.betaH_eff;
 	sp.cs = milestone.cs_plus;
+	sp.vw = use_custom_vw ? vw : milestone.vw;
+	sp.g_eff = use_custom_g_eff ? g_eff : milestone.g_eff;
+	sp.h_eff = use_custom_h_eff ? h_eff : milestone.h_eff;
+	LOG(debug) << "Calculating GW spectrum for milestone: temperature = " << milestone.temperature
+			   << ", reheating_temperature = " << milestone.reheating_temperature
+	           << ", alpha = " << milestone.alpha
+	           << ", betaH_eff = " << milestone.betaH_eff
+	           << ", cs_plus = " << milestone.cs_plus
+	           << ", vw = " << (use_custom_vw ? vw : milestone.vw)
+			   << ", g_eff = " << (use_custom_g_eff ? g_eff : milestone.g_eff)
+			   << ", h_eff = " << (use_custom_h_eff ? h_eff : milestone.h_eff);
 
 	// these can all be precomputed, but only if not using legacy
 	double RH, prefactor, H0_star;
@@ -273,32 +294,24 @@ GravWaveCalculator::calc_spectrum(const TransitionMilestone &milestone)
 
 	if(!use_legacy_gw_methods)
 	{
-		RH = get_RH(milestone.betaH_eff);
-		LOG(debug) << "RH = " << RH << ", milestone.Rs = " << milestone.Rs; 
-		prefactor = get_prefactor();
-		H0_star = get_Hubble_rate_today(milestone.reheating_temperature);
+		RH = get_RH(sp.beta_H);
+		prefactor = get_prefactor(sp.g_eff, sp.h_eff);
+		H0_star = get_Hubble_rate_today(sp.Treh, sp.g_eff, sp.h_eff);
 
-		kappa_col = get_kappa_col(milestone.alpha);
-		K_col = get_K(1., kappa_col, milestone.alpha);
+		kappa_col = get_kappa_col(sp.alpha);
+		K_col = get_K(1., kappa_col, sp.alpha);
 		f_col = get_collision_peaks(H0_star, RH)[0];
 
-		kappa_sw = get_kappa_sw(milestone.alpha, milestone.cs_plus); 
-		K_sw = get_K(0.6, kappa_sw, milestone.alpha);
-		sound_wave_peaks = get_sound_wave_peaks(H0_star, RH, vw, milestone.cs_plus);
+		kappa_sw = get_kappa_sw(sp.alpha, sp.vw, sp.cs); 
+		K_sw = get_K(0.6, kappa_sw, sp.alpha);
+		sound_wave_peaks = get_sound_wave_peaks(H0_star, RH, sp.vw, sp.cs);
+
 		N_sw = get_sound_wave_N(sound_wave_peaks);
 		Y_sw = get_sound_wave_Y(RH, K_sw);
 
-		kappa_turb = get_kappa_turb(milestone.alpha, milestone.cs_plus); 
-		K_turb = get_K(0.6, kappa_turb, milestone.alpha);
+		kappa_turb = get_kappa_turb(sp.alpha, sp.vw, sp.cs); 
+		K_turb = get_K(0.6, kappa_turb, sp.alpha);
 		turb_peaks = get_turbulence_peaks(H0_star, RH, K_turb);
-
-		LOG(debug) << "GW fit inputs: Tref = " << milestone.temperature << ", Treh = " << milestone.reheating_temperature
-			<< ", alpha = " << milestone.alpha << ", alpha_bar = " << milestone.alpha_bar
-			<< ", betaH_eff = " << milestone.betaH_eff << ", Rs = " << milestone.Rs << ", RH = " << RH
-			<< ", cs_plus = " << milestone.cs_plus << ", cs_minus = " << milestone.cs_minus
-			<< ", kappa_sw = " << kappa_sw << ", K_sw = " << K_sw << ", K_turb = " << K_turb
-			<< ", H0_star = " << H0_star << ", f_sw = (" << sound_wave_peaks[0] << ", " << sound_wave_peaks[1] << ")"
-			<< ", N_sw = " << N_sw << ", Y_sw = " << Y_sw;
 	}
 
 	double logMin = std::log10(max_frequency);
@@ -307,21 +320,19 @@ GravWaveCalculator::calc_spectrum(const TransitionMilestone &milestone)
 	double peak_frequency = 0;
 	double peak_amplitude = 0;
 
-
 	for (int i = 0; i < num_frequency; ++i) 
 	{
 		double fq = std::pow(10, logMin + i * logInterval);
 		sp.frequency.push_back(fq);
 
 		double sound_wave, turbulence, bubble_collision;
-		bool include_col =  milestone.temperature < T_threshold_bubble_collision;
+		bool include_col =  sp.Tref < T_threshold_bubble_collision;
 		if(use_legacy_gw_methods) 
 		{
-			sound_wave = GW_sound_wave_legacy(fq, milestone.alpha, milestone.betaH_eff, milestone.temperature);
-			turbulence = GW_turbulence_legacy(fq, milestone.alpha, milestone.betaH_eff, milestone.temperature);
-			bubble_collision = include_col ? GW_bubble_collision_legacy(fq, milestone.alpha, milestone.betaH_eff, milestone.temperature) : 0;
+			sound_wave = GW_sound_wave_legacy(fq, sp.alpha, sp.beta_H, sp.Tref, sp.g_eff, sp.vw, sp.cs);
+			turbulence = GW_turbulence_legacy(fq, sp.alpha, sp.beta_H, sp.Tref, sp.g_eff, sp.vw, sp.cs);
+			bubble_collision = include_col ? GW_bubble_collision_legacy(fq, sp.alpha, sp.beta_H, sp.Tref, sp.g_eff, sp.vw, sp.cs) : 0;
 		} else {
-			// sound_wave = GW_sound_wave(fq, milestone.alpha, milestone.betaH_eff, milestone.temperature);
 			const auto [f_sw_1, f_sw_2] = sound_wave_peaks;
 			const double S_sw = doubly_broken_power_law(fq, f_sw_1, f_sw_1, f_sw_2, 3, -1, -1, 2, 4);
 			sound_wave = prefactor * A_sw * K_sw*K_sw * N_sw * Y_sw * RH * S_sw;
@@ -331,7 +342,6 @@ GravWaveCalculator::calc_spectrum(const TransitionMilestone &milestone)
 			const double mod = fq <= f_turb_3 ? log_factor(f_turb_3) : log_factor(fq);
 			turbulence = prefactor * A_turb * K_turb*K_turb * RH*RH*RH * S_turb * mod;
 
-			// bubble_collision = include_col ? GW_bubble_collision(fq, milestone.alpha, milestone.betaH_eff, milestone.temperature) : 0;
 			const double S_col = include_col ? singly_broken_power_law(fq, f_col, f_col, 2.4, -4, 1.2, 0.5) : 0;
 			bubble_collision = prefactor * A_col * K_col*K_col * RH*RH * S_col;
 		}
@@ -450,57 +460,6 @@ GravWaveCalculator::sum_spectrums(const std::vector<GravWaveSpectrum> &sps) cons
 	return summed_sp;
 }
 
-void 
-GravWaveCalculator::write_spectrum_to_text(const GravWaveSpectrum &sp, const std::string &filename) const 
-{
-	std::ofstream file(filename);
-	file << "frequency,total_amplitude,sound_wave,turbulence,bubble_collision,lisa_noise,taiji_noise" << std::endl;
-
-	for (int ii = 0; ii < sp.frequency.size(); ii++) 
-	{
-		file << sp.frequency[ii] << "," << sp.total_amplitude[ii] << "," 
-		<< sp.sound_wave[ii] << "," << sp.turbulence[ii] << "," 
-		<< sp.bubble_collision[ii] << "," << sp.lisa_noise[ii] << "," << sp.taiji_noise[ii];
-		file << std::endl;
-	}
-
-  	LOG(debug) << "GW spectrum has been written to " << filename;
-}
-
-void 
-GravWaveCalculator::write_spectrum_to_text(int i, const std::string &filename) const 
-{
-  	write_spectrum_to_text(spectrums[i], filename);
-}
-
-void 
-GravWaveCalculator::write_spectrum_to_text(const std::string &filename) const 
-{
-  LOG(debug) << "writing " << spectrums.size() << "spectrums to text at " << filename;
-
-  for (int ii = 0; ii < spectrums.size(); ii++) 
-  {
-    write_spectrum_to_text(spectrums[ii], std::to_string(ii) + "_" + filename);
-  }
-}
-
-double 
-GravWaveCalculator::fit_omega(double f, double alpha, double beta_H, double T_ref) const 
-{
-	if(use_legacy_gw_methods)
-	{
-		double sound_wave = GW_sound_wave_legacy(f, alpha, beta_H, T_ref);
-		double turbulence = GW_turbulence_legacy(f, alpha, beta_H, T_ref);
-		double bubble_collision = T_ref < T_threshold_bubble_collision ? GW_bubble_collision_legacy(f, alpha, beta_H, T_ref) : 0;
-		return sound_wave + turbulence + bubble_collision;
-	} else {
-		double sound_wave = GW_sound_wave(f, alpha, beta_H, T_ref);
-		double turbulence = GW_turbulence(f, alpha, beta_H, T_ref);
-		double bubble_collision = T_ref < T_threshold_bubble_collision ? GW_bubble_collision(f, alpha, beta_H, T_ref) : 0;
-		return sound_wave + turbulence + bubble_collision;
-	}
-}
-
 double 
 GravWaveCalculator::noise_omega_LISA(double f) const 
 {
@@ -509,24 +468,6 @@ GravWaveCalculator::noise_omega_LISA(double f) const
 		return noise_omega_LISA_legacy(f);
 	}
 	return noise_omega_RCL(f, 2.5e9, 19.09e-3, 1.5e-11, 3e-15);
-}
-
-double 
-GravWaveCalculator::noise_omega_RCL(double f, double L, double f_star, double P_oms, double P_acc) const 
-{
-	/* Sky-averaged sensitivity, Robson, Cornish & Liu (arXiv:1803.01944) eqs. 1, 10, 11 */
-	const double S_oms = P_oms * P_oms * (1 + pow(2e-3 / f, 4));
-	const double S_acc = P_acc * P_acc * (1 + pow(0.4e-3 / f, 2)) * (1 + pow(f / 8e-3, 4));
-	const double S_n = 10. / (3 * L * L) * (S_oms + 2 * (1 + pow(std::cos(f / f_star), 2)) * S_acc / pow(2 * M_PI * f, 4)) * (1 + 0.6 * pow(f / f_star, 2));
-	/* Galactic confusion noise, eq. 14 with the 4-yr fit. It is negligible above 10 mHz,
-		where exp(-beta f sin(kappa f)) would otherwise overflow */
-	double S_c = 0.;
-	if (f < 1e-2) {
-		S_c = 9e-45 * pow(f, -7. / 3) * std::exp(-pow(f, 0.138) - 221 * f * std::sin(521 * f)) * (1 + std::tanh(1680 * (1.13e-3 - f)));
-	}
-	/* Omega h^2 = 2 pi^2 f^3 S_h / (3 H_100^2) */
-	const double H_100 = 100. / 3.0857e19;
-	return 2 * M_PI * M_PI / (3 * H_100 * H_100) * pow(f, 3) * (S_n + S_c);
 }
 
 double 
@@ -547,6 +488,22 @@ GravWaveCalculator::noise_omega_Taiji(double f) const
 	return noise_omega_RCL(f, L, c / (2 * M_PI * L), 8e-12, 3e-15);
 }
 
+double 
+GravWaveCalculator::fit_omega(double f, double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const 
+{
+	if(use_legacy_gw_methods)
+	{
+		double sound_wave = GW_sound_wave_legacy(f, alpha, beta_H, T_ref, g_eff, vw, cs);
+		double turbulence = GW_turbulence_legacy(f, alpha, beta_H, T_ref, g_eff, vw, cs);
+		double bubble_collision = T_ref < T_threshold_bubble_collision ? GW_bubble_collision_legacy(f, alpha, beta_H, T_ref, g_eff, vw, cs) : 0;
+		return sound_wave + turbulence + bubble_collision;
+	} else {
+		double sound_wave = GW_sound_wave(f, alpha, beta_H, T_ref, T_reh, vw, cs, g_eff, h_eff);
+		double turbulence = GW_turbulence(f, alpha, beta_H, T_ref, T_reh, vw, cs, g_eff, h_eff);
+		double bubble_collision = T_ref < T_threshold_bubble_collision ? GW_bubble_collision(f, alpha, beta_H, T_ref, T_reh, vw, cs, g_eff, h_eff) : 0;
+		return sound_wave + turbulence + bubble_collision;
+	}
+}
 
 std::vector<double> 
 GravWaveCalculator::get_SNR_tabulated(const std::vector<double> &frequency, const std::vector<double> &omega) const 
@@ -605,24 +562,8 @@ GravWaveCalculator::get_SNR_tabulated(const std::vector<double> &frequency, cons
 	return SNR_from_integrals(snr_sq_LISA, snr_sq_Taiji);
 }
 
-double 
-GravWaveCalculator::intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref) const 
-{
-	double omegahsq = fit_omega(f, alpha, beta_H, T_ref);
-	double omegahsq_lisa = noise_omega_LISA(f);
-	return omegahsq * omegahsq / (omegahsq_lisa * omegahsq_lisa);
-}
-
-double 
-GravWaveCalculator::intergrand_SNR_Taiji(double f, double alpha, double beta_H, double T_ref) const 
-{
-	double omegahsq = fit_omega(f, alpha, beta_H, T_ref);
-	double omegahsq_taiji = noise_omega_Taiji(f);
-	return omegahsq * omegahsq / (omegahsq_taiji * omegahsq_taiji);
-}
-
 std::vector<double> 
-GravWaveCalculator::get_SNR(double alpha, double beta_H, double T_ref) const 
+GravWaveCalculator::get_SNR(double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const 
 {
 	const double log_lo = std::log10(SNR_f_min);
 	const double log_hi = std::log10(SNR_f_max);
@@ -632,9 +573,43 @@ GravWaveCalculator::get_SNR(double alpha, double beta_H, double T_ref) const
 	for (int ii = 0; ii < n; ii++) 
 	{
 		frequency[ii] = std::pow(10., log_lo + ii * (log_hi - log_lo) / (n - 1));
-		omega[ii] = fit_omega(frequency[ii], alpha, beta_H, T_ref);
+		omega[ii] = fit_omega(frequency[ii], alpha, beta_H, T_ref, T_reh, vw, cs, g_eff, h_eff);
 	}
 	return get_SNR_tabulated(frequency, omega);
+}
+
+void 
+GravWaveCalculator::write_spectrum_to_text(const GravWaveSpectrum &sp, const std::string &filename) const 
+{
+	std::ofstream file(filename);
+	file << "frequency,total_amplitude,sound_wave,turbulence,bubble_collision,lisa_noise,taiji_noise" << std::endl;
+
+	for (int ii = 0; ii < sp.frequency.size(); ii++) 
+	{
+		file << sp.frequency[ii] << "," << sp.total_amplitude[ii] << "," 
+		<< sp.sound_wave[ii] << "," << sp.turbulence[ii] << "," 
+		<< sp.bubble_collision[ii] << "," << sp.lisa_noise[ii] << "," << sp.taiji_noise[ii];
+		file << std::endl;
+	}
+
+  	LOG(debug) << "GW spectrum has been written to " << filename;
+}
+
+void 
+GravWaveCalculator::write_spectrum_to_text(int i, const std::string &filename) const 
+{
+  	write_spectrum_to_text(spectrums[i], filename);
+}
+
+void 
+GravWaveCalculator::write_spectrum_to_text(const std::string &filename) const 
+{
+  LOG(debug) << "writing " << spectrums.size() << "spectrums to text at " << filename;
+
+  for (int ii = 0; ii < spectrums.size(); ii++) 
+  {
+    write_spectrum_to_text(spectrums[ii], std::to_string(ii) + "_" + filename);
+  }
 }
 
 const TransitionMilestone 
@@ -691,16 +666,16 @@ GravWaveCalculator::add_fit_contributions(GravWaveSpectrum &sp, double alpha_fit
 		const double f = sp.frequency[ii];
 		if (use_legacy_gw_methods)
 		{
-			sp.turbulence[ii] = GW_turbulence_legacy(f, alpha_fit, sp.beta_H, sp.Tref);
+			sp.turbulence[ii] = GW_turbulence_legacy(f, alpha_fit, sp.beta_H, sp.Tref, sp.g_eff);
 			if (use_collision) 
 			{
-				sp.bubble_collision[ii] = GW_bubble_collision_legacy(f, alpha_fit, sp.beta_H, sp.Tref);
+				sp.bubble_collision[ii] = GW_bubble_collision_legacy(f, alpha_fit, sp.beta_H, sp.Tref, sp.g_eff);
 			}
 		} else {
-			sp.turbulence[ii] = GW_turbulence(f, alpha_fit, sp.beta_H, sp.Tref);
+			sp.turbulence[ii] = GW_turbulence(f, alpha_fit, sp.beta_H, sp.Tref, sp.Treh, sp.vw, sp.cs, sp.g_eff, sp.h_eff);
 			if (use_collision) 
 			{
-				sp.bubble_collision[ii] = GW_bubble_collision(f, alpha_fit, sp.beta_H, sp.Tref);
+				sp.bubble_collision[ii] = GW_bubble_collision(f, alpha_fit, sp.beta_H, sp.Tref, sp.Treh, sp.vw, sp.cs, sp.g_eff, sp.h_eff);
 			}
 		}
 	}
@@ -752,6 +727,24 @@ GravWaveCalculator::add_noise_curves(GravWaveSpectrum &sp) const
 	}
 }
 
+double 
+GravWaveCalculator::noise_omega_RCL(double f, double L, double f_star, double P_oms, double P_acc) const 
+{
+	/* Sky-averaged sensitivity, Robson, Cornish & Liu (arXiv:1803.01944) eqs. 1, 10, 11 */
+	const double S_oms = P_oms * P_oms * (1 + pow(2e-3 / f, 4));
+	const double S_acc = P_acc * P_acc * (1 + pow(0.4e-3 / f, 2)) * (1 + pow(f / 8e-3, 4));
+	const double S_n = 10. / (3 * L * L) * (S_oms + 2 * (1 + pow(std::cos(f / f_star), 2)) * S_acc / pow(2 * M_PI * f, 4)) * (1 + 0.6 * pow(f / f_star, 2));
+	/* Galactic confusion noise, eq. 14 with the 4-yr fit. It is negligible above 10 mHz,
+		where exp(-beta f sin(kappa f)) would otherwise overflow */
+	double S_c = 0.;
+	if (f < 1e-2) {
+		S_c = 9e-45 * pow(f, -7. / 3) * std::exp(-pow(f, 0.138) - 221 * f * std::sin(521 * f)) * (1 + std::tanh(1680 * (1.13e-3 - f)));
+	}
+	/* Omega h^2 = 2 pi^2 f^3 S_h / (3 H_100^2) */
+	const double H_100 = 100. / 3.0857e19;
+	return 2 * M_PI * M_PI / (3 * H_100 * H_100) * pow(f, 3) * (S_n + S_c);
+}
+
 double
 GravWaveCalculator::get_RH(const double& betaH) const
 {
@@ -792,7 +785,7 @@ GravWaveCalculator::get_K(const double& A, const double& kappa, const double& al
 }
 
 double 
-GravWaveCalculator::get_kappa_sw(const double& alpha, const double& cs) const
+GravWaveCalculator::get_kappa_sw(const double& alpha, const double& vw, const double& cs) const
 {
 	double v_cj = 1 / (1 + alpha) * (cs + sqrt(pow(alpha, 2.) + 2. / 3 * alpha));
 	double kappa_a = pow(vw, 6. / 5) * 6.9 * alpha / (1.36 - 0.037 * sqrt(alpha) + alpha);
@@ -812,9 +805,9 @@ GravWaveCalculator::get_kappa_sw(const double& alpha, const double& cs) const
 }
 
 double 
-GravWaveCalculator::get_kappa_turb(const double& alpha, const double& cs) const 
+GravWaveCalculator::get_kappa_turb(const double& alpha, const double& vw, const double& cs) const 
 {
-	return epsilon * get_kappa_sw(alpha, cs);
+	return epsilon * get_kappa_sw(alpha, vw, cs);
 }
 
 double 
@@ -824,7 +817,7 @@ GravWaveCalculator::get_kappa_col(const double& alpha) const
 }
 
 double 
-GravWaveCalculator::get_prefactor() const
+GravWaveCalculator::get_prefactor(const double& g_eff, const double& h_eff) const
 {
 	const double term1 = omega_hsq_neutrino * std::pow(D, -4./3.);
 	const double term2 = std::pow(h_0/h_eff, 4./3.);
@@ -833,10 +826,10 @@ GravWaveCalculator::get_prefactor() const
 }
 
 double 
-GravWaveCalculator::get_Hubble_rate_today(const double& Tref) const
+GravWaveCalculator::get_Hubble_rate_today(const double& T, const double& g_eff, const double& h_eff) const
 {
 	const double term1 = (11.2e-9) * std::pow(D, -1./3.);
-	const double term2 = Tref / (100 * 1e-3);
+	const double term2 = T / (100 * 1e-3);
 	const double term3 = std::pow(g_eff/10, 1./2.);
 	const double term4 = std::pow(10/h_eff, 1./3.);
 

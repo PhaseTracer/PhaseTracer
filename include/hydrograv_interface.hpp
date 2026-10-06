@@ -57,16 +57,13 @@ namespace HydroGravBridge {
 HydroGrav::PhaseTransition::EquationOfState to_hydrograv_eos(const PhaseTracer::EquationOfState &eos);
 
 /** @brief Builds a universe from a TransitionMilestone. */
-HydroGrav::PhaseTransition::Universe to_hydrograv_universe(const TransitionMilestone &milestone, double dof);
+HydroGrav::PhaseTransition::Universe to_hydrograv_universe(const TransitionMilestone &milestone);
 
 /** @brief Translates nucleation type. */
 const char *to_hydrograv_nuc_type(NucleationType nucleation_type);
 
 /** @brief Build PT_params. */
-HydroGrav::PhaseTransition::PTParams_Veff to_hydrograv_pt_params(
-	const ThermalParameterSet &tps, 
-	const TransitionMilestone &milestone, 
-	double vw, double dof);
+HydroGrav::PhaseTransition::PTParams_Veff to_hydrograv_pt_params(const ThermalParameterSet &tps, const TransitionMilestone &milestone);
 
 /** @brief Translates fluid profiles. */
 FluidProfile to_phasetracer_profile(const HydroGrav::Hydrodynamics::FluidProfile &fp);

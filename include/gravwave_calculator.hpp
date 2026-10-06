@@ -104,28 +104,15 @@ struct FluidProfile
 
 struct GravWaveSpectrum 
 {
-	/** @brief Reference temperature at which the spectrum is generated. */
+	/** @brief Thermal parameters used to calculate spectra. */
 	double Tref = std::numeric_limits<double>::quiet_NaN();
-
-	/** @brief Transition strength parameter alpha.
-	 *
-	 * For the SoundShell backend this is alpha_munu, the prescription HydroGrav's
-	 * hydrodynamics uses.
-	 */
+	double Treh = std::numeric_limits<double>::quiet_NaN();
+	double vw = std::numeric_limits<double>::quiet_NaN();
 	double alpha = std::numeric_limits<double>::quiet_NaN();
-
-	/** @brief Transition strength used for any fit-formula contributions.
-	 *
-	 * If fitting formula contributions are added to the SSM spectra, the alpha in
-	 * these contributions is different from alpha_munu. This stores the different
-	 * value whenever the fitting formula contributions are added.
-	 */
 	double alpha_fit = std::numeric_limits<double>::quiet_NaN();
-
-	/** @brief Sound speed in the false vacuum. */
+	double g_eff = std::numeric_limits<double>::quiet_NaN();
+	double h_eff = std::numeric_limits<double>::quiet_NaN();
 	double cs = std::numeric_limits<double>::quiet_NaN();
-
-	/** @brief Inverse duration of the phase transition normalized to the Hubble rate. */
 	double beta_H = std::numeric_limits<double>::quiet_NaN();
 
 	/** @brief Peak frequency of the gravitational wave spectrum. */
@@ -174,6 +161,7 @@ struct GravWaveSpectrum
 	friend std::ostream &operator<<(std::ostream &o, const GravWaveSpectrum &a) {
 		o << "=== gravitational wave spectrum generated at T = " << a.Tref << " ===" << "\n"
 		<< "method = " << to_string(a.method) << "\n"
+		<< "vw = " << a.vw << "\n"
 		<< "alpha = " << a.alpha << "\n";
 		if (a.method == GravWaveMethod::SoundShell && !std::isnan(a.alpha_fit)) {
 		o << "alpha for fit-formula contributions = " << a.alpha_fit << "\n";
@@ -182,10 +170,10 @@ struct GravWaveSpectrum
 		<< "peak frequency = " << a.peak_frequency << "\n"
 		<< "peak amplitude = " << a.peak_amplitude << "\n";
 		if (a.SNR.size() > 1) {
-		o << "signal to noise ratio for LISA = " << a.SNR[0] << "\n"
-			<< "signal to noise ratio for Taiji = " << a.SNR[1] << "\n";
+		o << "SNR for LISA = " << a.SNR[0] << "\n"
+			<< "SNR for Taiji = " << a.SNR[1] << "\n";
 		} else if (!a.SNR.empty()) {
-		o << "signal to noise ratio for LISA = " << a.SNR[0] << "\n";
+		o << "SNR for LISA = " << a.SNR[0] << "\n";
 		}
 		if (!a.profile.empty()) {
 		o << a.profile;
@@ -237,15 +225,9 @@ public:
 	 * the release of PhaseTracer3. They can be enabled using 'use_legacy_gw_methods'.
 	 * They are kept for the purpose of backward replication of results.
 	 */
-	double GW_bubble_collision_legacy(double f, double alpha, double beta_H, double T_ref) const;
-	double GW_sound_wave_legacy(double f, double alpha, double beta_H, double T_ref) const;
-	double GW_turbulence_legacy(double f, double alpha, double beta_H, double T_ref) const;
-
-	/** Calculate GW spectrum for one transition.
-	 * 
-	 * This function calls the legacy spectra methods from PhaseTracer2.
-	 */
-	GravWaveSpectrum calc_spectrum_legacy(double alpha, double beta_H, double Tref);
+	double GW_bubble_collision_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw=0.3, double cs=std::sqrt(1/3)) const;
+	double GW_sound_wave_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw=0.3, double cs=std::sqrt(1/3)) const;
+	double GW_turbulence_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw=0.3, double cs=std::sqrt(1/3)) const;
 
 	/** 
 	 * @brief Functions to calculate the gravitational wave contributions from different sources.
@@ -255,9 +237,9 @@ public:
 	 * @param T_ref The reference temperature for the phase transition.
 	 * @return The gravitational wave contribution from the specified source at the given frequency.
 	 */
-	double GW_bubble_collision(double f, double alpha, double beta_H, double T_ref) const;
-	double GW_sound_wave(double f, double alpha, double beta_H, double T_ref) const;
-	double GW_turbulence(double f, double alpha, double beta_H, double T_ref) const;
+	double GW_bubble_collision(double f, double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const;
+	double GW_sound_wave(double f, double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const;
+	double GW_turbulence(double f, double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const;
 
 	/** Calculate GW spectrum for one transition */
 	GravWaveSpectrum calc_spectrum(const TransitionMilestone &milestone);
@@ -272,45 +254,102 @@ public:
 	/** Return the summed GW spectrum */
 	GravWaveSpectrum get_total_spectrum() const { return total_spectrum; }
 
-	/** Write a GW spectrum to a text file */
-	void write_spectrum_to_text(const GravWaveSpectrum &sp, const std::string &filename) const;
-	void write_spectrum_to_text(int i, const std::string &filename) const;
-	void write_spectrum_to_text(const std::string &filename) const;
-
-	/** Total fit-formula amplitude at one frequency: sound wave + turbulence + collision */
-	double fit_omega(double f, double alpha, double beta_H, double T_ref) const;
-
 	/**
-	 * Noise energy density Omega h^2 of the LISA sensitivity curve at frequency f.
-	 *
-	 * Sky-averaged sensitivity of Robson, Cornish & Liu (arXiv:1803.01944) plus their
-	 * 4-yr galactic confusion-noise fit, or noise_omega_LISA_legacy if
-	 * use_legacy_LISA_noise is set.
+	 * @brief Noise energy density Omega h^2 of the LISA sensitivity curve at frequency f.
+	 * @param f Frequency at which to evaluate the LISA noise curve.
+	 * @return Noise energy density Omega h^2 of the LISA sensitivity curve at frequency f.
 	 */
 	double noise_omega_LISA(double f) const;
-	/** The LISA noise curve used before the switch to Robson, Cornish & Liu */
-	double noise_omega_LISA_legacy(double f) const;
+
 	/**
-	 * Noise energy density Omega h^2 of the Taiji sensitivity curve at frequency f.
-	 *
-	 * The Robson, Cornish & Liu curve with Taiji's arm length (3e9 m), optical-metrology
-	 * noise (8 pm) and acceleration noise (3 fm/s^2), plus the same galactic confusion noise
-	 * as LISA, so the two detectors' SNRs are defined the same way.
+	 * @brief Noise energy density Omega h^2 of the LISA sensitivity curve at frequency f.
+	 * @param f Frequency at which to evaluate the legacy LISA noise curve.
+	 * @return Noise energy density Omega h^2 of the legacy LISA sensitivity curve at frequency f.
+	 * 
+	 * @note This is the version used in PhaseTracer2.
+	 */
+	double noise_omega_LISA_legacy(double f) const;
+
+	/**
+	 * @brief Noise energy density Omega h^2 of the Taiji sensitivity curve at frequency f.
+	 * @param f Frequency at which to evaluate the Taiji noise curve.
+	 * @return Noise energy density Omega h^2 of the Taiji sensitivity curve at frequency f.
 	 */
 	double noise_omega_Taiji(double f) const;
 
+	/** 
+	 * @brief Total fit-formula amplitude at one frequency: sound wave + turbulence + collision
+	 * @param f Frequency at which to evaluate the fit-formula amplitude.
+	 * @param alpha Strength of the phase transition.
+	 * @param beta_H Inverse duration of the phase transition normalized by the Hubble rate.
+	 * @param T_ref Reference temperature of the phase transition.
+	 * @param T_reh Reheating temperature after the phase transition.
+	 * @param vw Bubble wall velocity.
+	 * @param cs Sound speed in the plasma.
+	 * @return Total fit-formula amplitude at the given frequency.
+	 */
+	double fit_omega(double f, double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const;
+
 	/**
-	 * SNR for a tabulated spectrum, as {LISA, Taiji}. Integrates (Omega/N)^2 over the
-	 * grid points inside [SNR_f_min, SNR_f_max] with Simpson's rule in ln f.
+	 * @brief Convenience overload of fit_omega that takes a TransitionMilestone.
+	 * @param f Frequency at which to evaluate the fit-formula amplitude.
+	 * @param m TransitionMilestone containing the phase transition parameters.
+	 * @return Total fit-formula amplitude at the given frequency.
+	 */
+	double fit_omega(double f, TransitionMilestone m) const
+	{
+		return fit_omega(f, m.alpha, m.betaH_eff, m.temperature, m.reheating_temperature, m.vw, m.cs_plus, m.g_eff, m.h_eff);
+	}
+
+	/**
+	 * @brief Signal-to-noise ratio (SNR) for a tabulated spectrum.
+	 * @param frequency Vector of frequencies at which the spectrum is evaluated.
+	 * @param omega Vector of energy densities corresponding to the frequencies.
+	 * @return SNR for the tabulated spectrum as a vector {LISA, Taiji}.
 	 */
 	std::vector<double> get_SNR_tabulated(const std::vector<double> &frequency, const std::vector<double> &omega) const;
 
-	/** Sensitivity for LISA */
-	double intergrand_SNR_LISA(double f, double alpha, double beta_H, double T_ref) const;
-	/** Sensitivity for Taiji */
-	double intergrand_SNR_Taiji(double f, double alpha, double beta_H, double T_ref) const;
-	/** SNR of the fit-formula spectrum over [SNR_f_min, SNR_f_max], as {LISA, Taiji} */
-	std::vector<double> get_SNR(double alpha, double beta_H, double T_ref) const;
+	/** 
+	 * @brief Signal-to-noise ratio (SNR) for the fit-formula spectrum.
+	 * @param alpha Strength of the phase transition.
+	 * @param beta_H Inverse duration of the phase transition normalized by the Hubble rate.
+	 * @param T_ref Reference temperature of the phase transition.
+	 * @param T_reh Reheating temperature after the phase transition.
+	 * @param vw Bubble wall velocity.
+	 * @param cs Sound speed in the plasma.
+	 * @return SNR for the fit-formula spectrum as a vector {LISA, Taiji}.
+	 */
+	std::vector<double> get_SNR(double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const;
+
+	/**
+	 * @brief Convenience overload of get_SNR that takes a TransitionMilestone.
+	 * @param m TransitionMilestone containing the phase transition parameters.
+	 * @return SNR for the fit-formula spectrum as a vector {LISA, Taiji}.
+	 */
+	std::vector<double> get_SNR(TransitionMilestone m) const
+	{
+		return get_SNR(m.alpha, m.betaH_eff, m.temperature, m.reheating_temperature, m.vw, m.cs_plus, m.g_eff, m.h_eff);
+	}
+
+	/** 
+	 * @brief Write a GW spectrum to a text file.
+	 * @param sp The GW spectrum to write.
+	 * @param filename The name of the text file to write to.
+	 */
+	void write_spectrum_to_text(const GravWaveSpectrum &sp, const std::string &filename) const;
+
+	/**
+	 * @brief Write the GW spectrum of the i-th transition to a text file.
+	 * @param i Index of the transition.
+	 * @param filename The name of the text file to write to.
+	 */
+	void write_spectrum_to_text(int i, const std::string &filename) const;
+
+	/**
+	 * @brief Write the total GW spectrum to a text file.
+	 * @param filename The name of the text file to write to.
+	 */
+	void write_spectrum_to_text(const std::string &filename) const;
 
 private:
 
@@ -383,18 +422,20 @@ private:
 	/**
 	 * @brief Helper to calculate the efficiency factor for sound waves.
 	 * @param alpha The strength of the phase transition.
+	 * @param vw The bubble wall velocity.
 	 * @param cs The speed of sound in the plasma (default is 1/sqrt(3)).
 	 * @return The efficiency factor for sound waves based on the given parameters.
 	 */
-	double get_kappa_sw(const double& alpha, const double& cs=std::sqrt(1./3.)) const;
+	double get_kappa_sw(const double& alpha, const double& vw, const double& cs=std::sqrt(1./3.)) const;
 
 	/**
 	 * @brief Helper to calculate the efficiency factor for turbulence.
 	 * @param alpha The strength of the phase transition.
+	 * @param vw The bubble wall velocity.
 	 * @param cs The speed of sound in the plasma (default is 1/sqrt(3)).
 	 * @return The efficiency factor for turbulence based on the given parameters.
 	 */
-	double get_kappa_turb(const double& alpha, const double& cs=std::sqrt(1./3.)) const;
+	double get_kappa_turb(const double& alpha, const double& vw, const double& cs=std::sqrt(1./3.)) const;
 
 	/**
 	 * @brief Helper to calculate the efficiency factor for bubble collisions.
@@ -407,7 +448,7 @@ private:
 	 * @brief Helper to calculate the prefactor used in the gravitational wave spectrum calculations.
 	 * @return The calculated prefactor based on the current cosmological parameters.
 	 */
-	double get_prefactor() const;
+	double get_prefactor(const double& g_eff, const double& h_eff) const;
 
 	/**
 	 * @brief Helper to calculate the Hubble rate today based on the reference temperature.
@@ -415,15 +456,20 @@ private:
 	 * @return The Hubble rate today corresponding to the given reference temperature.
 	 */
 	// Can this be obtained by redshifting Hstar obtained from FE?
-	double get_Hubble_rate_today(const double& Tref) const;
+	double get_Hubble_rate_today(const double& T, const double& g_eff, const double& h_eff) const;
 
 	/**
-	 * 
+	 * @brief Helper to calculate the normalization factor for the sound wave contribution to the gravitational wave spectrum.
+	 * @param peak_freqs An array containing the peak frequencies of the sound wave contribution.
+	 * @return The calculated normalization factor for the sound wave contribution based on the given peak frequencies.
 	 */
 	double get_sound_wave_N(const std::array<double, 2>& peak_freqs) const;
 
 	/**
-	 * 
+	 * @brief Helper to calculate the Y parameter for sound waves.
+	 * @param RH The Hubble radius at the time of the phase transition.
+	 * @param K The efficiency factor for sound waves.
+	 * @return The calculated Y parameter for sound waves based on the given parameters.
 	 */
 	double get_sound_wave_Y(const double& RH, const double& K) const;
 
@@ -463,8 +509,6 @@ private:
 		const double& f, const double& f0, const double& f1, const double& f2,
 		const double& n0, const double& n1, const double& n2, 
 		const double& a1, const double& a2) const;
-
-	// double GW_amplitude(const double& prefactor, const double& A, const double& K, const double& RH, const double S_sw) const;
 
 	/** Amplitude constants for different gravitational wave sources. */
 	constexpr static double A_col = 0.0026;
@@ -508,27 +552,41 @@ private:
 	/** Include collisions and turbulence in SSM spectrum */
 	PROPERTY(bool, include_col_and_turb_in_ssm, false);
 
-	/** Degree of freedom */
-	PROPERTY(double, dof, 106.75);
-	/** Relativistic degrees of freedom TODO */
-	PROPERTY(double, g_eff, 106.75);
+	
 	/** Relativistic degrees of freedom at present */
 	PROPERTY(double, g_0, 2.0);
-	/** Entropy degrees of freedom TODO */
-	PROPERTY(double, h_eff, 106.75);
 	/** Entropy degrees of freedom at present*/
 	PROPERTY(double, h_0, 3.91);
+	
+	/**
+	 * @brief Effective degrees of freedom.
+	 * 
+	 * The effective relativistic degrees of freedom. These overwrite
+	 * the value contained in the transition milestone. If set to zero, the value
+	 * in the milestone is used.
+	 */ 
+	PROPERTY(double, g_eff, 0.0);
+	PROPERTY(double, h_eff, 0.0);
+	
 	/** Neutrino energy density factor */
 	PROPERTY(double, omega_hsq_neutrino, 2.473e-5);
 
 	/** Entropy injection factor */
 	PROPERTY(double, D, 1.0);
 
-	/** Velocity of the bubble wall */
-	PROPERTY(double, vw, 0.3);
+	/** 
+	 * @brief Bubble wall velocity.
+	 * 
+	 * The bubble wall velocity used to calculate the GW spectrum. This overwrites
+	 * the value contained in the transition milestone. If set to zero, the value
+	 * in the milestone is used.
+	 */
+	PROPERTY(double, vw, 0.0);
+
 	/** Ratio of efficiency factor of turbulence to the one of sound wave */
 	PROPERTY(double, epsilon, 0.1);
-	/** Gravitational constant */
+
+	/** Gravitational constant */ // TODO
 	const double G = 6.7088e-39;
 
 	/**Effective observation time in years for LISA, Taiji**/

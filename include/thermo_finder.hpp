@@ -305,6 +305,15 @@ public :
     );
 
     /** 
+     * @brief Computes the bubble wall velocity at a given temperature.
+     *  @param temperature The temperature at which to compute vw.
+     *  @param tm The Friedmann evolution object.
+     *  @param eos The equation of state object.
+     *  @return The computed wall velocity value.
+     */
+    const double get_wall_velocity(const double& temperature, const FriedmannEvolution& tm, const EquationOfState& eos);
+
+    /** 
      * @brief Computes the alpha parameter at a given temperature.
      *  @param temperature The temperature at which to compute alpha.
      *  @param eos The equation of state object.
@@ -324,6 +333,22 @@ public :
      *  vacuum temperature, passing T_true into the equation of state for e_t and p_t.
      */
     const double get_alpha_bar(const double& temperature, const EquationOfState& eos, const FriedmannEvolution& fe);
+
+    /** 
+     * @brief Computes the effective energy density dof at a given temperature.
+     *  @param temperature The temperature at which to compute g_eff.
+     *  @param eos The equation of state object.
+     *  @return The computed g_eff value.
+     */
+    const double get_g_eff(const double& temperature, const EquationOfState& eos);
+
+    /** 
+     * @brief Computes the effective entropy density dof at a given temperature.
+     *  @param temperature The temperature at which to compute h_eff.
+     *  @param eos The equation of state object.
+     *  @return The computed h_eff value.
+     */
+    const double get_h_eff(const double& temperature, const EquationOfState& eos);
 
     /** 
      * @brief Computes the beta/H parameter at a given temperature.
@@ -411,6 +436,18 @@ public :
      */
     const double get_dt(const double& temperature, FriedmannEvolution& tm);
 
+private : 
+
+    /**
+     * @brief Optional TransitionFinder object used for finding phase transitions.
+     * 
+     * This object is used internally by the ThermoFinder to locate phase transitions.
+     */
+    std::optional<TransitionFinder> tf;
+
+    /** @brief Reference to the ActionCalculator object used for computing actions. */
+    const ActionCalculator& ac;
+
     /** 
      * @brief Wrapper function to compute the percolation temperature.
      *  @param vw The bubble wall velocity.
@@ -436,18 +473,6 @@ public :
      *  @param tm The Friedmann evolution object.
      */
     const void revise_percolation_temperature(TransitionMilestone& percolation, const EquationOfState& eos, const FriedmannEvolution& tm);
-
-private : 
-
-    /**
-     * @brief Optional TransitionFinder object used for finding phase transitions.
-     * 
-     * This object is used internally by the ThermoFinder to locate phase transitions.
-     */
-    std::optional<TransitionFinder> tf;
-
-    /** @brief Reference to the ActionCalculator object used for computing actions. */
-    const ActionCalculator& ac;
 
     // ======================= Settings for ThermoFinder =======================
 

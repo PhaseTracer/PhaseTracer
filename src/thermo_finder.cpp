@@ -287,9 +287,12 @@ namespace PhaseTracer {
                 }
             };
 
+            try_set("vw", [&]{ milestone.vw = get_wall_velocity(temp, tm, eos); });
             try_set("alpha", [&]{ milestone.alpha = get_alpha(temp, eos, false); });
             try_set("alpha_munu", [&]{ milestone.alpha_munu = get_alpha(temp, eos, true); });
             try_set("alpha_bar", [&]{ milestone.alpha_bar = get_alpha_bar(temp, eos, tm); });
+            try_set("g_eff", [&]{ milestone.g_eff = get_g_eff(reh_temp, eos); });
+            try_set("h_eff", [&]{ milestone.h_eff = get_h_eff(reh_temp, eos); });
             try_set("betaH", [&]{ milestone.betaH = get_betaH(temp, decay_rate); });
             try_set("beta1H", [&]{ milestone.beta1H = get_betaH_1(temp, decay_rate, tm); });
             try_set("beta2H", [&]{ milestone.beta2H = get_betaH_2(temp, decay_rate, tm); });
@@ -347,6 +350,12 @@ namespace PhaseTracer {
     }
 
     const double 
+    ThermoFinder::get_wall_velocity(const double& temperature, const FriedmannEvolution& tm, const EquationOfState& eos)
+    {
+        return get_vw_wrapper(temperature, tm, eos);
+    }
+
+    const double 
     ThermoFinder::get_alpha(const double& temperature, const EquationOfState& eos, bool use_munu)
     {
         const auto theta = eos.get_theta(temperature, use_munu);
@@ -364,6 +373,20 @@ namespace PhaseTracer {
         const double& theta_t = eos.get_theta_minus(T_true, true);
         const double& w = eos.get_enthalpy_plus(T_false);
         return (theta_f - theta_t)/w * 4./3.;
+    }
+
+    const double 
+    ThermoFinder::get_g_eff(const double& temperature, const EquationOfState& eos)
+    {
+        const double energy = eos.get_energy_minus(temperature);
+        return 30./(M_PI*M_PI) * energy/(temperature*temperature*temperature*temperature);
+    }
+
+    const double 
+    ThermoFinder::get_h_eff(const double& temperature, const EquationOfState& eos)
+    {
+        const double entropy = eos.get_entropy_minus(temperature);
+        return 45./(2.*M_PI*M_PI) * entropy/(temperature*temperature*temperature);
     }
 
     const double
