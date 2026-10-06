@@ -45,6 +45,10 @@ inline constexpr Scale Scale::TEV{1e-3, "TeV"};
 
 inline Scale scale = Scale::GEV;
 
+inline double M_planck() { return scale() * 1.22089e19; }
+
+inline double newton_G() { return 1. / (M_planck() * M_planck()); }
+
 } // namespace PhaseTracer
 
 #endif // PHASETRACER_SCALE_HPP_

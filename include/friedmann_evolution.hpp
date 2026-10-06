@@ -405,10 +405,6 @@ private:
     PROPERTY(bool, use_bag_dtdT, false);
     /** @brief Bubble wall velocity */
     PROPERTY(double, vw, 0.577);
-    /** @brief Planck mass */
-    PROPERTY(double, M_planck, PhaseTracer::scale() * 1.22e19);
-    /** @brief Newton's gravitational constant */
-    PROPERTY(double, newtonG, 1/(M_planck*M_planck));
     /** @brief Percolation target */
     PROPERTY(double, percolation_target, 0.71);
     /** @brief Completion target */
@@ -419,6 +415,17 @@ private:
     PROPERTY(double, nucleation_target, 1.00);
     /** @brief Absolute tolerance for temperature */
     PROPERTY(double, temperature_abs_tol, 1e-8);
+    /** @brief Absolute error tolerance of the adaptive ODE stepper in evolve_friedmann */
+    PROPERTY(double, ode_abs_tol, 1e-10);
+    /** @brief Relative error tolerance of the adaptive ODE stepper in evolve_friedmann */
+    PROPERTY(double, ode_rel_tol, 1e-10);
+    /** @brief Maximum step in ln(t) taken by the ODE stepper (0 disables the limit) */
+    PROPERTY(double, ode_max_step, 1e-2);
+    /** @brief Absolute temperature tolerance when inverting e(T) inside the ODE right-hand side.
+     *  Must be well below T * ode_rel_tol, otherwise root-finding noise sets the precision floor. */
+    PROPERTY(double, root_tol, 1e-12);
+    /** @brief Start the evolution at T = t_max - initial_temperature_offset * (t_max - t_min) */
+    PROPERTY(double, initial_temperature_offset, 1e-5);
 
 };
 

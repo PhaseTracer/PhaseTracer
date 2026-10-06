@@ -152,7 +152,7 @@ namespace PhaseTracer {
             return H;
         }
         const double e_false = abs(eos.get_energy_plus(T_false));
-        const double H_sq = 8. * M_PI * newtonG/3. * e_false;
+        const double H_sq = 8. * M_PI * PhaseTracer::newton_G()/3. * e_false;
         return std::sqrt(H_sq);
     }
 
@@ -612,7 +612,7 @@ namespace PhaseTracer {
     FriedmannEvolution::get_hubble_rate(const double& true_vacuum_fraction, const double& e_false, const double& e_true) const
     {
         const double e_averaged = (1-true_vacuum_fraction)*e_false + true_vacuum_fraction*e_true;
-        const double hubble_sq = 8. * M_PI * newtonG/3. * e_averaged;
+        const double hubble_sq = 8. * M_PI * PhaseTracer::newton_G()/3. * e_averaged;
         return std::sqrt(hubble_sq);
     }
 
@@ -728,8 +728,8 @@ namespace PhaseTracer {
             const double number_density = state[8];
             const double J = std::max(0.0, state[9]);
 
-            const double T_true = match_T_true(e_true);
-            const double T_false = match_T_false(e_false);
+            const double T_true = match_T_true(e_true, root_tol);
+            const double T_false = match_T_false(e_false, root_tol);
 
             const double p_false = eos.get_pressure_plus(T_false);
             const double p_true = eos.get_pressure_minus(T_true);
@@ -759,13 +759,12 @@ namespace PhaseTracer {
             dstate[1] = time * (- 3.0 * hubble * (e_true + p_true)) + reheating; // d(e_true)/d(ln t)
 
             dstate[7] = time * (4.0/3.0 * M_PI * gamma * false_vacuum_fraction / (hubble*hubble*hubble));
-            dstate[8] = time_H * (- 3.0 * hubble_ratio * number_density + gamma * false_vacuum_fraction / H_ref4);// d(n/H_ref^3)/d(ln t)
-            dstate[9] = (number_density < 1e-100) ? 0.0 : time_H * (number_density - 2.0 * hubble_ratio * J);     // d(J/H_ref^2)/d(ln t)
+            dstate[8] = time_H * (- 3.0 * hubble_ratio * number_density + gamma * false_vacuum_fraction / H_ref4); // d(n/H_ref^3)/d(ln t)
+            dstate[9] = (number_density < 1e-100) ? 0.0 : time_H * (number_density - 2.0 * hubble_ratio * J);      // d(J/H_ref^2)/d(ln t)
         };
 
         auto observer = [&](const state_type& state, double tau)
         {
-            // undo the H_ref scaling so that the stored system is dimensionful
             const double e_false = state[0];
             const double e_true  = state[1];
             const double a       = state[2];
@@ -778,8 +777,8 @@ namespace PhaseTracer {
             const double J = std::max(0.0, state[9]) * H_ref2;
             const double mean_bubble_radius = (number_density > 1e-100) ? J / number_density : 0.0;
 
-            const double T_false = match_T_false(e_false);
-            const double T_true  = match_T_true(e_true);
+            const double T_false = match_T_false(e_false, root_tol);
+            const double T_true  = match_T_true(e_true, root_tol);
 
             // Stop if either temperature has reached (or gone below) t_min
             if (T_false <= t_min || T_true <= t_min || e_false <= e_false_min || e_true <= e_true_min)
@@ -801,10 +800,10 @@ namespace PhaseTracer {
 
             const double t = std::exp(tau);
 
-            // LOG(debug) << "Friedmann evolution: tau = " << tau << ", t = " << t << ", T_false = " << T_false << ", T_true = " << T_true
-            //            << ", log(I_3) = " << std::log(I_3)
-            //            << ", true vacuum fraction = " << true_vacuum_fraction
-            //            << ", scale factor a = " << a << "\n";
+            LOG(trace) << "Friedmann evolution: tau = " << tau << ", t = " << t << ", T_false = " << T_false << ", T_true = " << T_true
+                       << ", log(I_3) = " << std::log(I_3)
+                       << ", true vacuum fraction = " << true_vacuum_fraction
+                       << ", scale factor a = " << a << "\n";
 
             system.log_time.push_back(tau);
             system.time.push_back(t);
@@ -836,7 +835,7 @@ namespace PhaseTracer {
 
         // set initial time to be just below critical temp.
         LOG(debug) << "Friedmann evolution temperature bounds: t_min = " << t_min << ", t_max = " << t_max;
-        double d_temp = 1e-3*(t_max - t_min);
+        double d_temp = initial_temperature_offset*(t_max - t_min);
         double T_initial = t_max - d_temp;
         double initial_time = std::log(0 - d_temp*get_time_temperature_false(T_initial));
 
@@ -847,7 +846,9 @@ namespace PhaseTracer {
 
         LOG(debug) << "Starting Friedmann evolution from T_initial = " << T_initial << " Unit at time " << exp(initial_time) << " Unit^-1, with estimated final time " << exp(final_time) << " Unit^-1";
 
-        auto stepper = odeint::make_controlled<odeint::runge_kutta_dopri5<state_type>>(1e-6, 1e-6);
+        LOG(debug) << "ODE tolerances: abs = " << ode_abs_tol << ", rel = " << ode_rel_tol
+                   << ", max step (ln t) = " << ode_max_step << ", root tol = " << root_tol;
+        auto stepper = odeint::make_controlled(ode_abs_tol, ode_rel_tol, ode_max_step, odeint::runge_kutta_dopri5<state_type>());
 
         state_type x = initial_state;
         double t = initial_time;

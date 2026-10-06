@@ -586,9 +586,6 @@ private:
 	/** Ratio of efficiency factor of turbulence to the one of sound wave */
 	PROPERTY(double, epsilon, 0.1);
 
-	/** Gravitational constant */ // TODO
-	const double G = 6.7088e-39;
-
 	/**Effective observation time in years for LISA, Taiji**/
 	PROPERTY(double, run_time_LISA, 4);
 	PROPERTY(double, run_time_Taiji, 3);

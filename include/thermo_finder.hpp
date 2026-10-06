@@ -566,7 +566,7 @@ private :
     /** @brief Absolute tolerance for the temperature. */
     PROPERTY(double, temperature_abs_tol, 1e-6);
 
-    // unused: volume_term_integration_steps, vw, M_planck, newtonG
+    // unused: volume_term_integration_steps, vw
 
 
     std::vector<Transition> default_transition_filter(const std::vector<Transition>& transitions);
