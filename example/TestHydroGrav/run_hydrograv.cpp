@@ -138,9 +138,7 @@ int main(int argc, char* argv[]) {
     */
     bridge::install_logger();
 
-    auto dof = 107.75;
-    HydroGrav::PhaseTransition::Universe universe
-        = bridge::to_hydrograv_universe(percolation, dof);
+    HydroGrav::PhaseTransition::Universe universe = bridge::to_hydrograv_universe(percolation);
 
     HydroGrav::PhaseTransition::EquationOfState
     hydrograv_eos = bridge::to_hydrograv_eos(eos);
@@ -151,12 +149,7 @@ int main(int argc, char* argv[]) {
         this job.
     */
     auto vw = 0.577;
-    auto pt_params = bridge::to_hydrograv_pt_params(
-        thermal_parameters,
-        percolation,
-        vw, 
-        dof
-    );
+    auto pt_params = bridge::to_hydrograv_pt_params(thermal_parameters, percolation);
 
     /*
         With this, we can use HydroGrav to solve for both the fluid profiles
