@@ -26,6 +26,7 @@ build*
 *.pdf
 *.ipynb
 *.sh
+!install_dependencies.sh
 *.py
 *.log
 *.json
