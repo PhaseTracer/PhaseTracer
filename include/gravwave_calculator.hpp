@@ -225,9 +225,9 @@ public:
 	 * the release of PhaseTracer3. They can be enabled using 'use_legacy_gw_methods'.
 	 * They are kept for the purpose of backward replication of results.
 	 */
-	double GW_bubble_collision_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw=0.3, double cs=std::sqrt(1/3)) const;
-	double GW_sound_wave_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw=0.3, double cs=std::sqrt(1/3)) const;
-	double GW_turbulence_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw=0.3, double cs=std::sqrt(1/3)) const;
+	double GW_bubble_collision_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw=0.3, double cs=std::sqrt(1./3.)) const;
+	double GW_sound_wave_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw=0.3, double cs=std::sqrt(1./3.)) const;
+	double GW_turbulence_legacy(double f, double alpha, double beta_H, double T_ref, double g_eff, double vw=0.3, double cs=std::sqrt(1./3.)) const;
 
 	/** 
 	 * @brief Functions to calculate the gravitational wave contributions from different sources.
@@ -247,7 +247,7 @@ public:
 	/** Calculate GW spectrums for all the transitions */
 	std::vector<GravWaveSpectrum> calc_spectrums();
 	/** Return GW spectrums for all the transitions */
-	std::vector<GravWaveSpectrum> get_spectrums() const { return spectrums; }
+	const std::vector<GravWaveSpectrum> &get_spectrums() const { return spectrums; }
 
 	/** Sum GW spectrums */
 	GravWaveSpectrum sum_spectrums(const std::vector<GravWaveSpectrum> &spectrums) const;

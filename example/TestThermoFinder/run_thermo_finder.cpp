@@ -268,8 +268,8 @@ int main(int argc, char* argv[]) {
         calculate the power spectrum.
     */
     PhaseTracer::GravWaveCalculator gw_calculator(thermo_finder);
-    gw_calculator.set_min_frequency(1e-4);
-    gw_calculator.set_max_frequency(1e0);
+    gw_calculator.set_min_frequency(1e-5);
+    gw_calculator.set_max_frequency(1e-1);
     gw_calculator.set_num_frequency(500);
     
     gw_calculator.calc_spectrums();
