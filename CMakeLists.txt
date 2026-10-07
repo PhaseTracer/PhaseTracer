@@ -29,6 +29,19 @@ endif()
 
 # packages
 
+# dependencies built by scripts/install_dependencies.sh --local take precedence over system ones
+set(PT_DEPS_PREFIX "${PROJECT_SOURCE_DIR}/.deps" CACHE PATH
+  "Prefix of dependencies built by scripts/install_dependencies.sh --local")
+if(EXISTS "${PT_DEPS_PREFIX}")
+  message(STATUS "Using local dependencies in ${PT_DEPS_PREFIX}")
+  set(CMAKE_PREFIX_PATH "${PT_DEPS_PREFIX};${CMAKE_PREFIX_PATH}")
+  set(ENV{PKG_CONFIG_PATH} "${PT_DEPS_PREFIX}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+  if(EXISTS "${PT_DEPS_PREFIX}/lib/libboost_log.a")
+    set(Boost_USE_STATIC_LIBS ON)
+    add_definitions(-DPHASETRACER_BOOST_STATIC)
+  endif()
+endif()
+
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 OLD)
 endif()

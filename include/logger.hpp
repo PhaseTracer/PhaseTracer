@@ -21,7 +21,10 @@
    Convenience macros for logging and setting log level
 */
 
+// Boost built by scripts/install_dependencies.sh --local is static
+#ifndef PHASETRACER_BOOST_STATIC
 #define BOOST_LOG_DYN_LINK 1
+#endif
 #include <boost/log/trivial.hpp>
 #define LOG BOOST_LOG_TRIVIAL
 #include <boost/log/expressions.hpp>

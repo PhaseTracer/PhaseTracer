@@ -13,11 +13,21 @@ PhaseTracer
 </div>
 <br>
 
-**PhaseTracer** is a C++14 software package for tracing cosmological phases, finding potential phase transitions, computing the bounce action, and plotting the gravitational wave spectrum for Standard Model extensions with any number of scalar fields.
+**PhaseTracer** is a C++17 software package for tracing cosmological phases, finding potential phase transitions, computing the bounce action, and plotting the gravitational wave spectrum for Standard Model extensions with any number of scalar fields.
 
 ## Dependencies
 
-You need a C++14 compliant compiler and our dependencies. The dependencies can be installed by
+You need a C++17 compliant compiler and our dependencies (Boost, ALGLIB, Eigen3, NLopt and GSL). The easiest way to get them is the install script, which has two modes:
+
+    ./scripts/install_dependencies.sh            # system packages via apt, dnf or brew (needs sudo)
+    ./scripts/install_dependencies.sh --local    # build pinned versions into ./.deps (no sudo)
+
+The local mode builds Boost, NLopt and GSL as static libraries and ALGLIB as a shared one, and
+CMake picks up `./.deps` automatically (keep the directory: the build finds `libalglib.so` there). Use `--download-only` to fetch the sources for a machine
+without internet access, `--python` to also install what the Python interface needs, and `--help`
+for all options.
+
+Alternatively, the dependencies can be installed by hand:
 
 *Ubuntu/Debian*
 

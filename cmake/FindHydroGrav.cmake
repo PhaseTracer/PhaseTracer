@@ -23,7 +23,8 @@ if(NOT EXISTS ${HydroGrav}/lib/libHydroGravLib.a)
   message(STATUS "Making HydroGrav")
   # execute_process(COMMAND git checkout tags/v1.0.0
   #                WORKING_DIRECTORY ${HydroGrav})
-  execute_process(COMMAND cmake -DCMAKE_CXX_FLAGS="-fPIC" -DBUILD_WITH_UNIT_TESTS=OFF -DBUILD_WITH_EXAMPLES=OFF .
+  execute_process(COMMAND cmake -DCMAKE_CXX_FLAGS="-fPIC" -DBUILD_WITH_UNIT_TESTS=OFF -DBUILD_WITH_EXAMPLES=OFF
+                          "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}" .
                   WORKING_DIRECTORY ${HydroGrav})
   execute_process(COMMAND ${CMAKE_MAKE_PROGRAM}
                  WORKING_DIRECTORY ${HydroGrav})
