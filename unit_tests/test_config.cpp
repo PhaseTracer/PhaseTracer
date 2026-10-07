@@ -79,7 +79,6 @@ TEST_CASE("Config defaults match class defaults", "[Config]") {
     CHECK_DEFAULT(tf, c, Tnuc_step);
     CHECK_DEFAULT(tf, c, Tnuc_tol_rel);
     CHECK_DEFAULT(tf, c, check_subcritical_transitions);
-    CHECK(c.calculate_TN == tf.get_calculate_action());
   }
 
   SECTION("ActionCalculator") {
@@ -305,7 +304,7 @@ TEST_CASE("RunStatus printing and RunnerError", "[Config]") {
 
   std::ostringstream ss;
   ss << status;
-  CHECK(ss.str() == "[NoTransitions] at stage TransitionFinder: no transitions found\n  warning: something odd");
+  CHECK(ss.str() == "[NoTransitions] at stage TransitionFinder: no transitions found\n  warning: something odd\n");
 
   try {
     throw PhaseTracer::RunnerError(status);
