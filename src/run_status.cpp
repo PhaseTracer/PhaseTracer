@@ -44,6 +44,7 @@ const char* to_string(StatusCode c)
         case StatusCode::InvalidConfig:          return "InvalidConfig";
         case StatusCode::PhaseFinderFailed:      return "PhaseFinderFailed";
         case StatusCode::NoPhases:               return "NoPhases";
+        case StatusCode::ActionCalculatorFailed: return "ActionCalculatorFailed";
         case StatusCode::TransitionFinderFailed: return "TransitionFinderFailed";
         case StatusCode::NoTransitions:          return "NoTransitions";
         case StatusCode::ThermoFinderFailed:     return "ThermoFinderFailed";

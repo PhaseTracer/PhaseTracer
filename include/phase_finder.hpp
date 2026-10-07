@@ -339,7 +339,12 @@ protected:
   /** The smallest absolute step-size in temperature */
   PROPERTY(double, dt_min_abs, 1.e-10)
   /** Container for the phases */
-  PROTECTED_PROPERTY(std::vector<Phase>, phases, {})
+public:
+  void set_phases(std::vector<Phase> _phases) { phases = std::move(_phases); }
+  const std::vector<Phase> &get_phases() const { return phases; }
+
+protected:
+  std::vector<Phase> phases = {};
   /** Number of scalar fields */
   PROTECTED_PROPERTY_CUSTOM_SETTER(size_t, n_scalars, 0)
   /** Number of scalar fields that could break electroweak symmetry */

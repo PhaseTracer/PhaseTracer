@@ -161,7 +161,7 @@ public:
   void find_transition_paths(const EffectivePotential::Potential &model, bool knownHighTPhase);
 
   /** Retrieve all transitions between all phases */
-  std::vector<Transition> get_transitions() const { return transitions; }
+  const std::vector<Transition> &get_transitions() const { return transitions; }
 
   std::vector<Eigen::VectorXd> get_vacua_at_T(const Phase &phase1, const Phase &phase2, double T, size_t i_unique = 0) const;
 

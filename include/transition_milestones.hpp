@@ -160,14 +160,10 @@ private:
     const std::string format_status_string() const {
         switch (status)
         {
-            case MilestoneStatus::YES:
-                return "YES";
-            case MilestoneStatus::FAST:
-                return "FAST";
-            case MilestoneStatus::NO:
-                return "NO";
-            default:
-                return "ERR";
+            case MilestoneStatus::YES:      return "YES";
+            case MilestoneStatus::FAST:     return "FAST";
+            case MilestoneStatus::NO:       return "NO";
+            default:                        return "ERR";
         }
     }
 

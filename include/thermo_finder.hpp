@@ -21,6 +21,7 @@
 #include <cmath>
 #include <vector>
 #include <optional>
+#include <string>
 #include <stdexcept>
 #include <sstream>
 #include <iomanip>
@@ -236,6 +237,12 @@ public :
 
     /** @brief Container for all transitions between any two phases. */
     std::vector<ThermalParameterSet> thermal_parameters;
+
+    /** @brief Reasons for transitions that passed the filter but whose thermal parameters could not be computed. */
+    std::vector<std::string> failure_messages;
+
+    /** @brief Returns the failure messages collected by find_thermal_parameters(). */
+    const std::vector<std::string>& get_failure_messages() const { return failure_messages; }
 
     /** 
      * @brief Calculates (once) and returns every transition's thermal parameters.

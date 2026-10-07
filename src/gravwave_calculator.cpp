@@ -67,14 +67,10 @@ std::string
 FluidProfile::mode_str() const 
 {
     switch (mode) {
-    case 0:
-        return "deflagration";
-    case 1:
-        return "hybrid";
-    case 2:
-        return "detonation";
-    default:
-        return "none";
+    case 0: 	return "deflagration";
+    case 1: 	return "hybrid";
+    case 2: 	return "detonation";
+    default: 	return "none";
     }
 }
 

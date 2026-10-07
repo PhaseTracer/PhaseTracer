@@ -46,6 +46,7 @@ enum class StatusCode
     InvalidConfig,
     PhaseFinderFailed,
     NoPhases,
+    ActionCalculatorFailed,
     TransitionFinderFailed,
     NoTransitions,
     ThermoFinderFailed,

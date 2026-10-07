@@ -37,5 +37,6 @@
 #include "scale.hpp"
 #include "run_status.hpp"
 #include "config.hpp"
+#include "runner.hpp"
 
 #endif //  PHASETRACER_PHASETRACER_HPP_

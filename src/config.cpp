@@ -87,7 +87,6 @@ void apply(const TransitionFinderConfig& c, TransitionFinder& tf)
     tf.set_Tnuc_step(c.Tnuc_step);
     tf.set_Tnuc_tol_rel(c.Tnuc_tol_rel);
     tf.set_check_subcritical_transitions(c.check_subcritical_transitions);
-    // calculate_TN is not a setter: it selects the TransitionFinder constructor
 }
 
 void apply(const ActionCalculatorConfig& c, ActionCalculator& ac)
@@ -395,7 +394,6 @@ std::ostream& operator<<(std::ostream& o, const TransitionFinderConfig& c)
     PT_CONFIG_PRINT(Tnuc_step);
     PT_CONFIG_PRINT(Tnuc_tol_rel);
     PT_CONFIG_PRINT(check_subcritical_transitions);
-    PT_CONFIG_PRINT(calculate_TN);
     return o;
 }
 
@@ -500,6 +498,7 @@ std::ostream& operator<<(std::ostream& o, const PipelineConfig& c)
     o << "[pipeline]\n";
     o << "  stop_after = " << to_string(c.stop_after) << "\n";
     PT_CONFIG_PRINT(throw_on_error);
+    PT_CONFIG_PRINT(to_print);
     o << "  log_level = ";
     if (c.log_level) { o << *c.log_level; } else { o << "unchanged"; }
     o << "\n";

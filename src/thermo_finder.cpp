@@ -111,8 +111,10 @@ namespace PhaseTracer {
                 thermal_parameters.push_back(get_thermal_parameter_set(t));
             } catch (const std::exception& e) {
                 LOG(debug) << "Error computing thermal parameters for transition @ TC = " << t.TC << ": " << e.what();
+                failure_messages.push_back("TC = " + std::to_string(t.TC) + ": " + e.what());
             } catch (...) {
                 LOG(debug) << "Unknown error computing thermal parameters for transition @ TC = " << t.TC;
+                failure_messages.push_back("TC = " + std::to_string(t.TC) + ": unknown error");
             }
         }
 

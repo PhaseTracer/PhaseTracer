@@ -116,8 +116,6 @@ struct TransitionFinderConfig
     double Tnuc_step = 1.;
     double Tnuc_tol_rel = 1.e-3;
     bool check_subcritical_transitions = false;
-
-    bool calculate_TN = false;
 };
 
 /** @brief Settings for ActionCalculator (include/action_calculator.hpp). */
