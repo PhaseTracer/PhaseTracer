@@ -2,7 +2,6 @@
 #define HELPER_FUNCTIONS_HPP_INCLUDED
 
 #include "phasetracer.hpp"
-#include "hydrograv_interface.hpp"
 
 constexpr double TL_BACKGROUND_DOF = 60.15297440;
 constexpr double PHYSICAL_BACKGROUND_DOF = 66.25;

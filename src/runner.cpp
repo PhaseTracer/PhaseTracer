@@ -172,6 +172,7 @@ RunStatus Runner::finish()
 
 RunStatus Runner::run()
 {
+    ++run_id_;
     reset();
     const auto& pipeline = config_.pipeline;
 

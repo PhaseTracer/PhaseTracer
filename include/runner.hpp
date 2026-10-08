@@ -34,6 +34,7 @@
  * Runner is destroyed.
  */
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
@@ -69,6 +70,12 @@ public:
     /** @brief Status of the last run(). */
     const RunStatus& status() const { return status_; }
 
+    /**
+     * @brief Number of times run() has been called. Changes whenever the stage objects are
+     * rebuilt, so references obtained before then can be recognised as stale.
+     */
+    std::size_t run_id() const { return run_id_; }
+
     /** @brief Settings used by the next run(). */
     Config& config() { return config_; }
     const Config& config() const { return config_; }
@@ -100,6 +107,7 @@ private:
     EffectivePotential::Potential& model_;
     Config config_;
     RunStatus status_;
+    std::size_t run_id_ = 0;
 
     // Declared in construction order, so they are destroyed in reverse: each stage holds
     // references or pointers to the ones before it.
