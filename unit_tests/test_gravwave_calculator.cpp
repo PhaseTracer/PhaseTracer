@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "catch/catch.hpp"
 #include "models/1D_test_model.hpp"
 #include "models/2D_test_model.hpp"
@@ -5,7 +7,9 @@
 #include "phase_finder.hpp"
 #include "transition_finder.hpp"
 #include "action_calculator.hpp"
+#include "thermo_finder.hpp"
 #include "gravwave_calculator.hpp"
+#include "scale.hpp"
 #include "logger.hpp"
 
 TEST_CASE("Compute gravitational wave spectrum for a one-dimensional model", "[1DTestModel]") {
@@ -85,4 +89,42 @@ TEST_CASE("Compute gravitational wave spectrum for a two-dimensional model", "[2
 
   // Catch::StringMaker<double>::precision = 30;
   // REQUIRE(spec[0].peak_amplitude == Approx(1.21499917010577e-16).epsilon(rel_tol));
+}
+TEST_CASE("GW fit formulas do not depend on the energy unit", "[GravWaveCalculator]") {
+
+  LOGGER(fatal);
+
+  struct ScaleGuard {
+    ~ScaleGuard() { PhaseTracer::scale = PhaseTracer::Scale::GEV; }
+  } guard;
+
+  EffectivePotential::OneDimModel model;
+  PhaseTracer::PhaseFinder pf(model);
+  PhaseTracer::ActionCalculator ac(pf);
+  PhaseTracer::TransitionFinder tf(pf);
+  PhaseTracer::ThermoFinder tm(tf, ac);
+  PhaseTracer::GravWaveCalculator gw(tm);
+
+  const double alpha = 0.1;
+  const double beta_H = 100.;
+  const double vw = 0.7;
+  const double cs = 1. / std::sqrt(3.);
+  const double g_eff = 100.;
+  const double h_eff = 100.;
+
+  for (const bool legacy : {true, false}) {
+    gw.set_use_legacy_gw_methods(legacy);
+    // 0.05 GeV is below the 10 GeV bubble-collision threshold and 50 GeV is above it
+    for (const double T_GeV : {0.05, 50.}) {
+      for (const double f : {1e-5, 1e-3, 1e-1}) {
+        PhaseTracer::scale = PhaseTracer::Scale::GEV;
+        const double omega_GeV = gw.fit_omega(f, alpha, beta_H, T_GeV, T_GeV, vw, cs, g_eff, h_eff);
+        PhaseTracer::scale = PhaseTracer::Scale::MEV;
+        const double T_MeV = 1e3 * T_GeV;
+        const double omega_MeV = gw.fit_omega(f, alpha, beta_H, T_MeV, T_MeV, vw, cs, g_eff, h_eff);
+        CHECK(omega_GeV > 0.);
+        CHECK(omega_MeV == Approx(omega_GeV).epsilon(1e-12));
+      }
+    }
+  }
 }

@@ -159,7 +159,7 @@ struct GravWaveSpectrum
 
 	/** @brief Pretty-printer for GravWaveSpectrum */
 	friend std::ostream &operator<<(std::ostream &o, const GravWaveSpectrum &a) {
-		o << "=== gravitational wave spectrum generated at T = " << a.Tref << " ===" << "\n"
+		o << "=== gravitational wave spectrum generated at T = " << a.Tref << " " << PhaseTracer::scale.name() << " ===" << "\n"
 		<< "method = " << to_string(a.method) << "\n"
 		<< "vw = " << a.vw << "\n"
 		<< "alpha = " << a.alpha << "\n";
@@ -533,7 +533,7 @@ private:
 	PROPERTY(int, num_frequency, 500);
 	/** Number of points for  the frequency of the SSM GW spectrum */
 	PROPERTY(int, num_frequency_ssm, 100);
-	/** Temperature threshold for using bubble collision */
+	/** Temperature threshold for using bubble collision in GeV */
 	PROPERTY(double, T_threshold_bubble_collision, 10);
 
 	/** The step-size in numerical derivative for dVdT */

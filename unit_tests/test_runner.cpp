@@ -23,6 +23,11 @@ PhaseTracer::Config one_dim_config()
   config.pipeline.to_print = false;
   return config;
 }
+
+struct ScaleGuard
+{
+  ~ScaleGuard() { PhaseTracer::scale = PhaseTracer::Scale::GEV; }
+};
 } // namespace
 
 TEST_CASE("Runner reproduces the manual pipeline up to TransitionFinder", "[Runner]") {
@@ -109,4 +114,24 @@ TEST_CASE("Runner reports failures", "[Runner]") {
     CHECK(runner.get_thermal_parameters().empty());
     CHECK_FALSE(runner.has(PhaseTracer::Stage::GravWave));
   }
+}
+
+TEST_CASE("Runner sets the energy unit from the config", "[Runner]") {
+
+  LOGGER(fatal);
+  ScaleGuard guard;
+
+  EffectivePotential::OneDimModel model;
+  auto config = one_dim_config();
+  config.pipeline.stop_after = PhaseTracer::Stage::PhaseFinder;
+  config.pipeline.scale = PhaseTracer::Scale::MEV;
+
+  PhaseTracer::Runner runner(model, config);
+  REQUIRE(runner.run().ok());
+  CHECK(PhaseTracer::scale == PhaseTracer::Scale::MEV);
+
+  // Every run applies its own setting, so the default puts the unit back to GeV
+  runner.config().pipeline.scale = PhaseTracer::Scale::GEV;
+  REQUIRE(runner.run().ok());
+  CHECK(PhaseTracer::scale == PhaseTracer::Scale::GEV);
 }

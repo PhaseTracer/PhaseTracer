@@ -43,6 +43,7 @@
 
 #include "logger.hpp"
 #include "run_status.hpp"
+#include "scale.hpp"
 #include "phase_finder.hpp"
 #include "transition_finder.hpp"
 #include "action_calculator.hpp"
@@ -239,6 +240,8 @@ struct PipelineConfig
     std::optional<boost::log::trivial::severity_level> log_level = {};
     /** Whether or not to print classes during evaluation. */
     bool to_print = true;
+    /** Energy unit of the model's fields and temperatures. */
+    Scale scale = Scale::GEV;
 };
 
 /** @brief All settings for a full PhaseTracer run. */

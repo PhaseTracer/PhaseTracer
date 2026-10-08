@@ -84,13 +84,16 @@ are those of the C++ classes:
 | `config.action` | ActionCalculator | `method`, `PD_xtol`, `PD_deformation_npoints` |
 | `config.thermo_finder` | ThermoFinder | `percolation_target`, `action_spline_evaluations`, `transition_filter`, `prefactor_function` |
 | `config.gravwave` | GravWaveCalculator | `gw_method`, `min_frequency`, `max_frequency`, `vw` |
-| `config.pipeline` | the run itself | `stop_after`, `throw_on_error`, `log_level`, `to_print` |
+| `config.pipeline` | the run itself | `stop_after`, `throw_on_error`, `log_level`, `to_print`, `scale` |
 
 - **Editing and checking:**
   - Groups are edited in place: `config.phase_finder.seed = 0`.
   - `print(config)` lists every value.
   - `config.validate()` checks for inconsistent settings before anything runs.
   - `copy.deepcopy(config)` makes an independent copy.
+- **Units:** `config.pipeline.scale` (`pt.Scale.MEV`, `pt.Scale.GEV` (default) or `pt.Scale.TEV`) is the unit of the
+  model's field values and temperatures. It sets the Planck mass used for the Hubble rate and the conversion
+  applied to the GW spectrum, so frequencies always come out in Hz.
 - **List settings** (`lower_bounds`, `upper_bounds`, `guess_points`): assign a whole new list. Calling `.append()` on them does not change the config.
 - **Callbacks:** `transition_filter` and `prefactor_function` take Python callables:
   ```python

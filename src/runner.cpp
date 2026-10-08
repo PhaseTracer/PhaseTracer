@@ -181,6 +181,8 @@ RunStatus Runner::run()
         boost::log::core::get()->set_filter(boost::log::trivial::severity >= *pipeline.log_level);
     }
 
+    PhaseTracer::scale = pipeline.scale;
+
     status_ = config_.validate();
     if (!status_.ok()) { return finish(); }
 

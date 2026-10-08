@@ -499,6 +499,7 @@ std::ostream& operator<<(std::ostream& o, const PipelineConfig& c)
     o << "  stop_after = " << to_string(c.stop_after) << "\n";
     PT_CONFIG_PRINT(throw_on_error);
     PT_CONFIG_PRINT(to_print);
+    o << "  scale = " << c.scale.name() << "\n";
     o << "  log_level = ";
     if (c.log_level) { o << *c.log_level; } else { o << "unchanged"; }
     o << "\n";

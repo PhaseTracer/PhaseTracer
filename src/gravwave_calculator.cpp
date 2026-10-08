@@ -25,10 +25,14 @@
 #include <vector>
 
 #include "gravwave_calculator.hpp"
+#include "scale.hpp"
 
 namespace PhaseTracer {
 
 namespace {
+
+/* The redshift fits below are calibrated in GeV; temperatures arrive in units of PhaseTracer::scale */
+double to_GeV(double T) { return T / scale(); }
 
 /* Composite Simpson's rule for y(x) on an ascending, possibly non-uniform grid. An odd number
 	of intervals is closed with the end-interval correction used by scipy.integrate.simpson */
@@ -136,7 +140,7 @@ GravWaveCalculator::GW_bubble_collision_legacy(double f, double alpha, double be
 	double s_env;
 	double kappa = 1 / (1 + 0.715 * alpha) * (0.715 * alpha + 4. / 27 * sqrt(3 * alpha / 2));
 	double f_peak_beta = 0.35 / (1 + 0.069 * vw + 0.69 * pow(vw, 4.));
-	double f_env = 1.65e-5 * f_peak_beta * beta_H * (T_ref / 100) * pow(g_eff / 100, 1. / 6);
+	double f_env = 1.65e-5 * f_peak_beta * beta_H * (to_GeV(T_ref) / 100) * pow(g_eff / 100, 1. / 6);
 	double delta = 0.48 * pow(vw, 3.) / (1 + 5.3 * pow(vw, 2.) + 5 * pow(vw, 4.));
 	s_env = pow(0.064 * pow(f / f_env, -3.) + (1 - 0.064 - 0.48) * pow(f / f_env, -1.) + 0.48 * (f / f_env), -1);
 	omega_env = 1.67e-5 * delta * pow(beta_H, -2.) * pow(kappa * alpha / (1 + alpha), 2.) * pow(100 / g_eff, 1 / 3.) * s_env;
@@ -150,7 +154,7 @@ GravWaveCalculator::GW_sound_wave_legacy(double f, double alpha, double beta_H, 
 	double Gamma = 4./3.;
 	double F_gw0 = 3.57e-5 * pow(100/g_eff, 1./3.);
 	double HRs = pow(8.*M_PI, 1./3.) * vw / beta_H;
-	double f_peak_sw = 2.6e-5 * (zp/10) * (T_ref/100.) * pow(g_eff/100., 1./6.) / HRs;
+	double f_peak_sw = 2.6e-5 * (zp/10) * (to_GeV(T_ref)/100.) * pow(g_eff/100., 1./6.) / HRs;
 	double S_sw = (f/f_peak_sw) * (f/f_peak_sw) * (f/f_peak_sw) * pow(7./(4. + 3.*(f/f_peak_sw)*(f/f_peak_sw)), 7./2.);
 	double K_sw = get_kappa_sw(alpha, vw, cs) * alpha / (1 + alpha);
 	double omega_sw_peak = 2.061 * 0.678*0.678 * F_gw0 * K_sw*K_sw * HRs * 0.012;
@@ -165,8 +169,8 @@ GravWaveCalculator::GW_turbulence_legacy(double f, double alpha, double beta_H, 
 {
 	double legacy_vw = (vw==0) ? 0.3 : vw;
 	double omega_turb;
-	double hn = 1.65e-5 * (T_ref / 100) * pow(g_eff / 100, 1. / 6);
-	double f_peak_turb = 2.7e-5 / vw * beta_H * (T_ref / 100) * pow(g_eff / 100, 1. / 6);
+	double hn = 1.65e-5 * (to_GeV(T_ref) / 100) * pow(g_eff / 100, 1. / 6);
+	double f_peak_turb = 2.7e-5 / vw * beta_H * (to_GeV(T_ref) / 100) * pow(g_eff / 100, 1. / 6);
 	double kappa_turb = get_kappa_turb(alpha, vw, cs);
 	omega_turb = 3.35e-4 * pow(beta_H, -1.) * pow(kappa_turb * alpha / (1 + alpha), 3. / 2) * pow(100 / g_eff, 1. / 3) * vw * pow(f / f_peak_turb, 3) / (pow(1 + f / f_peak_turb, 11. / 3) * (1 + 8 * 3.1415926 * f / hn));
 	return omega_turb;
@@ -322,7 +326,7 @@ GravWaveCalculator::calc_spectrum(const TransitionMilestone &milestone)
 		sp.frequency.push_back(fq);
 
 		double sound_wave, turbulence, bubble_collision;
-		bool include_col =  sp.Tref < T_threshold_bubble_collision;
+		bool include_col = to_GeV(sp.Tref) < T_threshold_bubble_collision;
 		if(use_legacy_gw_methods) 
 		{
 			sound_wave = GW_sound_wave_legacy(fq, sp.alpha, sp.beta_H, sp.Tref, sp.g_eff, sp.vw, sp.cs);
@@ -491,12 +495,12 @@ GravWaveCalculator::fit_omega(double f, double alpha, double beta_H, double T_re
 	{
 		double sound_wave = GW_sound_wave_legacy(f, alpha, beta_H, T_ref, g_eff, vw, cs);
 		double turbulence = GW_turbulence_legacy(f, alpha, beta_H, T_ref, g_eff, vw, cs);
-		double bubble_collision = T_ref < T_threshold_bubble_collision ? GW_bubble_collision_legacy(f, alpha, beta_H, T_ref, g_eff, vw, cs) : 0;
+		double bubble_collision = to_GeV(T_ref) < T_threshold_bubble_collision ? GW_bubble_collision_legacy(f, alpha, beta_H, T_ref, g_eff, vw, cs) : 0;
 		return sound_wave + turbulence + bubble_collision;
 	} else {
 		double sound_wave = GW_sound_wave(f, alpha, beta_H, T_ref, T_reh, vw, cs, g_eff, h_eff);
 		double turbulence = GW_turbulence(f, alpha, beta_H, T_ref, T_reh, vw, cs, g_eff, h_eff);
-		double bubble_collision = T_ref < T_threshold_bubble_collision ? GW_bubble_collision(f, alpha, beta_H, T_ref, T_reh, vw, cs, g_eff, h_eff) : 0;
+		double bubble_collision = to_GeV(T_ref) < T_threshold_bubble_collision ? GW_bubble_collision(f, alpha, beta_H, T_ref, T_reh, vw, cs, g_eff, h_eff) : 0;
 		return sound_wave + turbulence + bubble_collision;
 	}
 }
@@ -651,7 +655,7 @@ GravWaveCalculator::SNR_from_integrals(double snr_sq_LISA, double snr_sq_Taiji) 
 void 
 GravWaveCalculator::add_fit_contributions(GravWaveSpectrum &sp, double alpha_fit) const 
 {
-	const bool use_collision = sp.Tref < T_threshold_bubble_collision;
+	const bool use_collision = to_GeV(sp.Tref) < T_threshold_bubble_collision;
 
 	sp.alpha_fit = alpha_fit;
 	sp.turbulence.assign(sp.frequency.size(), 0.);
@@ -825,7 +829,7 @@ double
 GravWaveCalculator::get_Hubble_rate_today(const double& T, const double& g_eff, const double& h_eff) const
 {
 	const double term1 = (11.2e-9) * std::pow(D, -1./3.);
-	const double term2 = T / (100 * 1e-3);
+	const double term2 = to_GeV(T) / (100 * 1e-3);
 	const double term3 = std::pow(g_eff/10, 1./2.);
 	const double term4 = std::pow(10/h_eff, 1./3.);
 

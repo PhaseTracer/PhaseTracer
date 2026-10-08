@@ -27,6 +27,7 @@ from ._phasetracer import (
     ThermoFinderConfig,
     GravWaveConfig,
     PipelineConfig,
+    Scale,
     RunStatus,
     RunnerError,
     Stage,

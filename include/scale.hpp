@@ -43,7 +43,7 @@ inline constexpr Scale Scale::MEV{1e3, "MeV"};
 inline constexpr Scale Scale::GEV{1.0, "GeV"};
 inline constexpr Scale Scale::TEV{1e-3, "TeV"};
 
-inline Scale scale = Scale::GEV;
+extern Scale scale;
 
 inline double M_planck() { return scale() * 1.22089e19; }
 

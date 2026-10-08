@@ -25,9 +25,17 @@
 #include <string>
 #include "logger.hpp"
 #include "hydrograv_interface.hpp"
+#include "scale.hpp"
 
 namespace PhaseTracer {
 namespace HydroGravBridge {
+
+namespace {
+
+double to_GeV(double E) { return E / scale(); }
+double to_inv_GeV(double L) { return L * scale(); }
+
+} // namespace
 
 void
 install_logger()
@@ -64,20 +72,22 @@ to_hydrograv_eos(const PhaseTracer::EquationOfState &eos)
     const double dt = (t_max - t_min) / (n_temp - 1);
 
     std::vector<double> t_vals, p_plus_vals, p_minus_vals, e_plus_vals, e_minus_vals;
+    const double s4 = std::pow(scale(), 4);
 
     for (int i = 0; i < n_temp; ++i)
     {
-        double T = t_min + i * dt;
+        // clamp, as rounding can put the last point just above t_max
+        double T = std::min(t_min + i * dt, t_max);
         auto [p_plus, p_minus] = eos.get_pressure(T);
         auto [e_plus, e_minus] = eos.get_energy(T);
 
         if(p_plus < 0 || p_minus < 0 || e_plus < 0 || e_minus < 0) { continue; }
 
-        t_vals.push_back(T);
-        p_plus_vals.push_back(p_plus);
-        p_minus_vals.push_back(p_minus);
-        e_plus_vals.push_back(e_plus);
-        e_minus_vals.push_back(e_minus);
+        t_vals.push_back(to_GeV(T));
+        p_plus_vals.push_back(p_plus / s4);
+        p_minus_vals.push_back(p_minus / s4);
+        e_plus_vals.push_back(e_plus / s4);
+        e_minus_vals.push_back(e_minus / s4);
     }
 
     return HydroGrav::PhaseTransition::EquationOfState(t_vals, p_plus_vals, p_minus_vals, e_plus_vals, e_minus_vals);
@@ -96,7 +106,7 @@ to_hydrograv_universe(const TransitionMilestone &milestone)
         throw std::invalid_argument("Invalid thermal parameters for universe creation");
     }
 
-    return HydroGrav::PhaseTransition::Universe(milestone.temperature, milestone.g_eff, milestone.H);
+    return HydroGrav::PhaseTransition::Universe(to_GeV(milestone.temperature), milestone.g_eff, to_GeV(milestone.H));
 }
 
 const char *
@@ -116,9 +126,9 @@ to_hydrograv_pt_params(const ThermalParameterSet &tps, const TransitionMilestone
     return HydroGrav::PhaseTransition::PTParams_Veff(
         milestone.vw,
         milestone.alpha_munu,
-        milestone.temperature,
-        milestone.betaH_eff * milestone.H,
-        milestone.Rs / milestone.H,
+        to_GeV(milestone.temperature),
+        to_GeV(milestone.betaH_eff * milestone.H),
+        to_inv_GeV(milestone.Rs / milestone.H),
         to_hydrograv_nuc_type(milestone.nucleation_type),
         to_hydrograv_universe(milestone),
         to_hydrograv_eos(tps.get_equation_of_state())
@@ -154,7 +164,7 @@ fill_spectrum(GravWaveSpectrum &sp, const HydroGrav::Spectrum::PowerSpec &spec_i
     sp.frequency = spec_in.freq();
     sp.kRs = spec_in.K();
     sp.sound_wave = spec_in.P();
-    sp.dtau = spec_in.dtau();
+    sp.dtau = spec_in.dtau() / scale();
 
     sp.turbulence = std::vector<double>(sp.frequency.size(), 0.0);
     sp.bubble_collision = std::vector<double>(sp.frequency.size(), 0.0);

@@ -236,12 +236,25 @@ void bind_config(py::module_ &m) {
       .def("__copy__", [](const PhaseTracer::GravWaveConfig &c) { return PhaseTracer::GravWaveConfig(c); })
       .def("__deepcopy__", [](const PhaseTracer::GravWaveConfig &c, py::dict) { return PhaseTracer::GravWaveConfig(c); }, py::arg("memo"));
 
+  py::class_<PhaseTracer::Scale>(m, "Scale", "Energy unit of the model's field values and temperatures: Scale.MEV, Scale.GEV or Scale.TEV")
+      .def_readonly_static("MEV", &PhaseTracer::Scale::MEV)
+      .def_readonly_static("GEV", &PhaseTracer::Scale::GEV)
+      .def_readonly_static("TEV", &PhaseTracer::Scale::TEV)
+      .def_property_readonly("name", &PhaseTracer::Scale::name)
+      .def_property_readonly("factor", &PhaseTracer::Scale::operator(), "Planck mass in this unit divided by the Planck mass in GeV")
+      .def("__eq__", [](const PhaseTracer::Scale &a, const PhaseTracer::Scale &b) { return a == b; }, py::is_operator())
+      .def("__ne__", [](const PhaseTracer::Scale &a, const PhaseTracer::Scale &b) { return a != b; }, py::is_operator())
+      .def("__hash__", [](const PhaseTracer::Scale &s) { return py::hash(py::float_(s())); })
+      .def("__repr__", [](const PhaseTracer::Scale &s) { return std::string("Scale(") + s.name() + ")"; });
+
   py::class_<PhaseTracer::PipelineConfig>(m, "PipelineConfig", "Settings for the pipeline as a whole")
       .def(py::init<>())
       .def_readwrite("stop_after", &PhaseTracer::PipelineConfig::stop_after, "Last stage to run")
       .def_readwrite("throw_on_error", &PhaseTracer::PipelineConfig::throw_on_error, "Raise RunnerError instead of returning a failed RunStatus")
       .def_readwrite("log_level", &PhaseTracer::PipelineConfig::log_level, "If set (a LogLevel), the global log level is changed before running")
       .def_readwrite("to_print", &PhaseTracer::PipelineConfig::to_print, "Print each stage after it is evaluated")
+      .def_readwrite("scale", &PhaseTracer::PipelineConfig::scale,
+                     "Energy unit of the model (a Scale); PhaseTracer's global unit is set to this before running")
       .def("__repr__", &repr_from_stream<PhaseTracer::PipelineConfig>)
       .def("__copy__", [](const PhaseTracer::PipelineConfig &c) { return PhaseTracer::PipelineConfig(c); })
       .def("__deepcopy__", [](const PhaseTracer::PipelineConfig &c, py::dict) { return PhaseTracer::PipelineConfig(c); }, py::arg("memo"));

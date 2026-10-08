@@ -294,6 +294,17 @@ TEST_CASE("Config::validate", "[Config]") {
   }
 }
 
+TEST_CASE("PipelineConfig energy unit", "[Config]") {
+
+  PhaseTracer::Config config;
+  CHECK(config.pipeline.scale == PhaseTracer::Scale::GEV);
+
+  config.pipeline.scale = PhaseTracer::Scale::MEV;
+  std::ostringstream ss;
+  ss << config;
+  CHECK(ss.str().find("scale = MeV") != std::string::npos);
+}
+
 TEST_CASE("RunStatus printing and RunnerError", "[Config]") {
 
   PhaseTracer::RunStatus status;

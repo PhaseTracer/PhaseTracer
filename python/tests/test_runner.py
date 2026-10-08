@@ -90,6 +90,18 @@ def test_config_edits_and_copies():
     assert "min_frequency" in status.message
 
 
+def test_scale():
+    config = pt.Config()
+    assert config.pipeline.scale == pt.Scale.GEV
+    assert pt.Scale.MEV.factor == 1e3 and pt.Scale.TEV.name == "TeV"
+
+    config.pipeline.scale = pt.Scale.MEV
+    assert config.pipeline.scale == pt.Scale.MEV
+    assert config.pipeline.scale != pt.Scale.GEV
+    assert "scale = MeV" in repr(config)
+    assert copy.deepcopy(config).pipeline.scale == pt.Scale.MEV
+
+
 def test_python_potential():
     model = QuarticThermal()
     config = precise_config()
