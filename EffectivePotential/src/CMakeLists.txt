@@ -1,7 +1,12 @@
 # Create the library target
 
 file(GLOB SRC_FILES *.cpp)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+# pip builds (scikit-build-core) keep their output out of the source tree
+if(DEFINED SKBUILD)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/EffectivePotential/lib)
+else()
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+endif()
 link_libraries(${ALGLIB_LIBRARIES} ${Boost_LIBRARIES})
 add_library(effectivepotential SHARED ${SRC_FILES})
 

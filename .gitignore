@@ -28,6 +28,7 @@ build*
 *.sh
 !install_dependencies.sh
 *.py
+!/python/**/*.py
 *.log
 *.json
 Doxyfile
@@ -40,4 +41,3 @@ Doxyfile
 /example/BubbleDetBridge/
 /example/run_bubbledet_prefactor.cpp
 /example/run_scalar_yukawa_bubbledet.cpp
-

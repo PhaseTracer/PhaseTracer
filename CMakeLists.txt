@@ -20,6 +20,12 @@ option(BUILD_WITH_BP "Build example programs including BubbleProfiler" OFF)
 # option for including HydroGrav
 option(BUILD_WITH_HG "Build example programs including HydroGrav" ON)
 
+# option for the Python interface (python/); always on when built by pip (scikit-build-core)
+option(BUILD_PYTHON "Build the Python interface" OFF)
+if(DEFINED SKBUILD)
+  set(BUILD_PYTHON ON)
+endif()
+
 # tunes build to users CPU. Makes binaries non-portable
 option(PHASETRACER_NATIVE_ARCH "Build with -march=native" OFF)
 
@@ -125,5 +131,13 @@ endif(BUILD_WITH_HG)
 # add relevant dirs
 
 add_subdirectory(src)
-add_subdirectory(example)
-add_subdirectory(unit_tests)
+
+# a pip build only needs the libraries and the Python module
+if(NOT DEFINED SKBUILD)
+  add_subdirectory(example)
+  add_subdirectory(unit_tests)
+endif()
+
+if(BUILD_PYTHON)
+  add_subdirectory(python)
+endif()

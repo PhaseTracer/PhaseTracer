@@ -1,5 +1,10 @@
 file(GLOB SRC_FILES *.cpp)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+# pip builds (scikit-build-core) keep their output out of the source tree
+if(DEFINED SKBUILD)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+else()
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+endif()
 
 if(THREADS_HAVE_PTHREAD_ARG)
   target_compile_options(phasetracer "-pthread")

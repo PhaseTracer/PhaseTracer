@@ -1,0 +1,36 @@
+# Python interface to PhaseTracer: `pip install .` from this directory builds the C++ libraries
+# and the extension module with CMake, and installs the `phasetracer` package.
+# Install the C++ dependencies first: ./scripts/install_dependencies.sh [--local] --python
+# See python/README.md.
+
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.13"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "phasetracer"
+version = "2.0.0"
+description = "Mapping cosmological phases and calculating transition properties"
+readme = "python/README.md"
+requires-python = ">=3.8"
+license = { text = "GPL-3.0-or-later" }
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.urls]
+Homepage = "https://github.com/PhaseTracer/PhaseTracer"
+
+[tool.scikit-build]
+minimum-version = "0.10"
+cmake.build-type = "Release"
+# only the libraries and the module; examples and unit tests are skipped (see CMakeLists.txt)
+build.targets = ["_phasetracer"]
+install.components = ["python"]
+wheel.packages = ["python/phasetracer"]
+
+[tool.scikit-build.cmake.define]
+BUILD_PYTHON = "ON"
+# HydroGrav (SoundShell GW backend) is opt-in: pip install . -C cmake.define.BUILD_WITH_HG=ON
+BUILD_WITH_HG = "OFF"

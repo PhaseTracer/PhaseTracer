@@ -13,7 +13,21 @@ PhaseTracer
 </div>
 <br>
 
-**PhaseTracer** is a C++17 software package for tracing cosmological phases, finding potential phase transitions, computing the bounce action, and plotting the gravitational wave spectrum for Standard Model extensions with any number of scalar fields.
+**PhaseTracer** is a C++17 software package for tracing cosmological phases, finding potential phase transitions, computing the bounce action, and plotting the gravitational wave spectrum for Standard Model extensions with any number of scalar fields. The full pipeline can be run from C++ or from Python.
+
+## Quick start
+
+    git clone https://github.com/PhaseTracer/PhaseTracer
+    cd PhaseTracer
+    ./scripts/install_dependencies.sh            # or --local (no sudo); add --python for Python
+
+    # C++
+    cmake -B build && cmake --build build -j 4
+    ./bin/run_1D_test_model
+
+    # Python
+    python3 -m venv ~/.venvs/pt && source ~/.venvs/pt/bin/activate
+    pip install .
 
 ## Dependencies
 
@@ -22,10 +36,11 @@ You need a C++17 compliant compiler and our dependencies (Boost, ALGLIB, Eigen3,
     ./scripts/install_dependencies.sh            # system packages via apt, dnf or brew (needs sudo)
     ./scripts/install_dependencies.sh --local    # build pinned versions into ./.deps (no sudo)
 
-The local mode builds Boost, NLopt and GSL as static libraries and ALGLIB as a shared one, and
-CMake picks up `./.deps` automatically (keep the directory: the build finds `libalglib.so` there). Use `--download-only` to fetch the sources for a machine
-without internet access, `--python` to also install what the Python interface needs, and `--help`
-for all options.
+The local mode builds Boost, NLopt and GSL as static libraries and ALGLIB as a shared one. CMake
+picks up `./.deps` automatically; keep the directory, as the build loads `libalglib.so` from there.
+- `--download-only`: fetch the sources for a machine without internet access.
+- `--python`: also install what the Python interface needs.
+- `--help`: list all options.
 
 Alternatively, the dependencies can be installed by hand:
 
@@ -43,25 +58,36 @@ Alternatively, the dependencies can be installed by hand:
 
 If alglib is not found, see https://github.com/S-Dafarra/alglib-cmake
 
-## Building
+## Installation (C++)
 
-To build the shared library and the examples:
+To build the shared libraries and the examples:
 
     git clone https://github.com/PhaseTracer/PhaseTracer
     cd PhaseTracer
-    mkdir build
-    cd build
-    cmake ..
-    make
+    ./scripts/install_dependencies.sh
+    cmake -B build
+    cmake --build build -j 4
 
-## Running
+This is equivalent to `mkdir build && cd build && cmake .. && make -j 4`. The libraries are written
+to `lib/` and the programs to `bin/`. Raise `-j` if you have more cores and memory (each job can
+need about 1 GB).
+
+**Useful CMake options** (`cmake -B build -D<option>=<value>`):
+- `-DCMAKE_BUILD_TYPE=Release`: optimised build, recommended for timing runs and scans.
+- `-DBUILD_WITH_HG=OFF`: build without HydroGrav, the SoundShell GW backend. It is on by default and is cloned at configure time.
+- `-DBUILD_PYTHON=ON`: also build the Python module, for development (see [python/README.md](python/README.md)).
+- `-DPT_DEPS_PREFIX=<dir>`: dependencies installed with `./scripts/install_dependencies.sh --local --prefix <dir>`.
+
+### Running
 
 If the build was succesful, run the examples and tests with:
 
-    cd ..
     ./bin/run_1D_test_model
     ./bin/run_2D_test_model
     ./bin/scan_Z2_scalar_singlet_model
+    ./bin/run_thermo_finder
+    ./bin/run_hydrograv
+    ./bin/run_runner
     ./bin/unit_tests
     
 If you want to see debugging information or obtain plots of the phases and potential for the first two examples above you can add the -d flag, i.e.
@@ -69,6 +95,49 @@ If you want to see debugging information or obtain plots of the phases and poten
     ./bin/run_1D_test_model -d 
     ./bin/run_2D_test_model -d
 
+## Installation (Python)
+
+***Note the Python installation will ultimately be handled using PyPI once a stable release build is ready. These instructions apply in the meantime.***
+
+The `phasetracer` Python package runs the same pipeline from Python, with the models shipped with
+PhaseTracer or with potentials you write in Python. After installing the dependencies (as above,
+with `--python`), install it into a virtual environment:
+
+    python3 -m venv ~/.venvs/pt
+    source ~/.venvs/pt/bin/activate
+    pip install -U pip
+    pip install .
+    python -c "import phasetracer"
+
+pip runs CMake itself and builds only the libraries and the module, which takes a few minutes.
+After that, `import phasetracer` works from any directory or notebook that uses this environment.
+
+- **SoundShell GW backend:** `pip install . -C cmake.define.BUILD_WITH_HG=ON`.
+- **Update:** `git pull && pip install .`.
+- **Uninstall:** `pip uninstall phasetracer`.
+- **Jupyter:** run `pip install ipykernel && python -m ipykernel install --user --name pt`.
+
+### Running
+
+A minimal run:
+
+    import phasetracer as pt
+    from phasetracer.models import TwoDimModel
+
+    config = pt.Config()
+    config.pipeline.to_print = False
+
+    runner = pt.Runner(TwoDimModel(), config)
+
+    status = runner.run()
+    print(status)
+    
+    for tps in runner.get_thermal_parameters():
+        print(tps.TC, tps.percolation.temperature, tps.percolation.alpha)
+    print(runner.get_spectra()[0].SNR)
+
+See [python/README.md](python/README.md) for the full interface, including how to define a model
+in Python, and `python/examples/` for complete scripts.
 
 ## BubbleProfiler
 <details>
