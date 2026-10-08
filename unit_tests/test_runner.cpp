@@ -31,9 +31,11 @@ TEST_CASE("Runner reproduces the manual pipeline up to TransitionFinder", "[Runn
 
   EffectivePotential::OneDimModel model;
   PhaseTracer::Runner runner(model, one_dim_config());
+  CHECK(runner.run_id() == 0);
 
   const auto status = runner.run();
   REQUIRE(status.ok());
+  CHECK(runner.run_id() == 1);
 
   CHECK_FALSE(runner.get_phases().empty());
   REQUIRE(runner.get_transitions().size() == 1);
@@ -56,6 +58,7 @@ TEST_CASE("Runner reproduces the manual pipeline up to TransitionFinder", "[Runn
     const double TC = runner.get_transitions()[0].TC;
     runner.config().transition_finder.TC_tol_rel = 1e-12;
     REQUIRE(runner.run().ok());
+    CHECK(runner.run_id() == 2);
     REQUIRE(runner.get_transitions().size() == 1);
     CHECK(runner.get_transitions()[0].TC == Approx(TC).epsilon(1.e-8));
   }
