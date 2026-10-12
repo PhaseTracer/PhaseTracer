@@ -15,8 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
-#ifndef POTENTIAL_Z2_SCALAR_SINGLET_MODEL_HPP_INCLUDED
-#define POTENTIAL_Z2_SCALAR_SINGLET_MODEL_HPP_INCLUDED
+#ifndef POTENTIAL_XSM_HT_HPP_INCLUDED
+#define POTENTIAL_XSM_HT_HPP_INCLUDED
 
 /**
    Z2 symmetric real scalar singlet extension of the Standard Model

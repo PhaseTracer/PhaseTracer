@@ -1,86 +1,20 @@
-"""Defining new models in Python and running them through PhaseTracer.
+"""Running models written in Python through PhaseTracer.
 
 1. QuarticThermal: a polynomial thermal potential (subclass of pt.Potential) with an analytic TC.
 2. DarkHiggs: a one-loop model (subclass of pt.OneLoopPotential) of a scalar charged under a dark
    gauge group with a Yukawa fermion. PhaseTracer adds the Coleman-Weinberg and thermal corrections
    to the tree-level potential, and the full pipeline gives a gravitational wave spectrum.
 
+Both are defined in phasetracer/models/ (quartic_thermal.py, dark_higgs.py), which also serve as
+templates for writing your own model. Your model can live in your own script or module: subclass
+pt.Potential or pt.OneLoopPotential and pass an instance to pt.Runner.
+
 Python potentials are evaluated many thousands of times, so they are slower than C++ models;
 supplying analytic derivatives (dV_dx) helps.
 """
 
-import math
-
-import numpy as np
-
 import phasetracer as pt
-
-
-class QuarticThermal(pt.Potential):
-    """V = D (T^2 - T0^2) phi^2 - E T phi^3 + lambda/4 phi^4"""
-
-    def __init__(self, D=0.1, E=0.01, lam=0.1, T0=100.0):
-        super().__init__()  # required: initialises the C++ base class
-        self.D, self.E, self.lam, self.T0 = D, E, lam, T0
-
-    # required
-    def V(self, phi, T):  # phi is a numpy array of length get_n_scalars()
-        x = phi[0]
-        return self.D * (T**2 - self.T0**2) * x**2 - self.E * T * x**3 + 0.25 * self.lam * x**4
-
-    def get_n_scalars(self):
-        return 1
-
-    # optional: analytic gradient (the default is numerical) and a forbidden region
-    def dV_dx(self, phi, T):
-        x = phi[0]
-        return np.array([2 * self.D * (T**2 - self.T0**2) * x - 3 * self.E * T * x**2 + self.lam * x**3])
-
-    def forbidden(self, phi):
-        return phi[0] < -0.1
-
-    def TC(self):
-        """Degenerate minima: E^2 T^2 = lambda D (T^2 - T0^2)"""
-        return self.T0 / math.sqrt(1 - self.E**2 / (self.lam * self.D))
-
-
-class DarkHiggs(pt.OneLoopPotential):
-    """V0 = -mu^2/2 phi^2 + lambda/4 phi^4 with a vector of mass g phi and a fermion of mass y phi / sqrt(2)"""
-
-    def __init__(self, lam=0.05, v=246.0, g=1.0, y=0.5):
-        super().__init__()
-        self.lam, self.v, self.g, self.y = lam, v, g, y
-        self.mu_sq = lam * v**2  # tree-level vev at v
-        self.set_renormalization_scale(v)
-        self.set_daisy_method(pt.DaisyMethod.NoDaisy)
-
-    def V0(self, phi):
-        x = phi[0]
-        return -0.5 * self.mu_sq * x**2 + 0.25 * self.lam * x**4
-
-    def get_n_scalars(self):
-        return 1
-
-    def apply_symmetry(self, phi):  # phi -> -phi
-        return [-phi]
-
-    def get_scalar_masses_sq(self, phi, xi):
-        return [-self.mu_sq + 3 * self.lam * phi[0] ** 2]
-
-    def get_scalar_dofs(self):
-        return [1.0]
-
-    def get_vector_masses_sq(self, phi):
-        return [self.g**2 * phi[0] ** 2]
-
-    def get_vector_dofs(self):
-        return [3.0]
-
-    def get_fermion_masses_sq(self, phi):
-        return [0.5 * self.y**2 * phi[0] ** 2]
-
-    def get_fermion_dofs(self):  # positive; PhaseTracer applies the fermionic sign
-        return [4.0]
+from phasetracer.models import DarkHiggs, QuarticThermal
 
 
 def main():

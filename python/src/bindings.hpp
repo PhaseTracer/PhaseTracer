@@ -36,6 +36,11 @@ namespace py = pybind11;
 
 void bind_potential(py::module_ &m);
 void bind_models(py::module_ &m);
+void bind_models_test(py::module_ &m);
+void bind_models_xsm(py::module_ &m);
+void bind_models_rss(py::module_ &m);
+void bind_models_bsm(py::module_ &m);
+void bind_models_thdm(py::module_ &m);
 void bind_status(py::module_ &m);
 void bind_config(py::module_ &m);
 void bind_results(py::module_ &m);

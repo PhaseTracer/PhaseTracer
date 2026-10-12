@@ -15,6 +15,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
+#ifndef POTENTIAL_SUPERCOOL_MODEL_HPP_INCLUDED
+#define POTENTIAL_SUPERCOOL_MODEL_HPP_INCLUDED
+
 /**
   Toy model with with supercooling.
 */
@@ -41,7 +44,7 @@ private:
 
 public:
   SuperCoolModel(double kappa_, double mu_sq, double lambda_, double mu0_sq_) {
-    init(mu_sq, kappa_, lambda_, mu0_sq_);
+    init(kappa_, mu_sq, lambda_, mu0_sq_);
   }
 
   SuperCoolModel(std::string inputFileName) {
@@ -218,3 +221,5 @@ private:
 };
 
 } // namespace EffectivePotential
+
+#endif // POTENTIAL_SUPERCOOL_MODEL_HPP_INCLUDED

@@ -15,6 +15,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ====================================================================
 
+#ifndef POTENTIAL_1D_TEST_MODEL_HPP_INCLUDED
+#define POTENTIAL_1D_TEST_MODEL_HPP_INCLUDED
+
 /**
   A one dimensional example model with known analytic solution.
 */
@@ -69,3 +72,5 @@ private:
 };
 
 } // namespace EffectivePotential
+
+#endif // POTENTIAL_1D_TEST_MODEL_HPP_INCLUDED

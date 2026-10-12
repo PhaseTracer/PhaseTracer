@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <chrono>
 
-#include "benchmark_models/THDM.hpp"
+#include "models/THDM.hpp"
 #include "phasetracer.hpp"
 #include "helper_functions.hpp"
 

@@ -22,7 +22,7 @@ PhaseTracer
     ./scripts/install_dependencies.sh            # or --local (no sudo); add --python for Python
 
     # C++
-    cmake -B build && cmake --build build -j 4
+    cmake -B build && cmake --build build -j4
     ./bin/run_1D_test_model
 
     # Python

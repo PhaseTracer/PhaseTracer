@@ -128,14 +128,30 @@ are those of the C++ classes:
 
 ### Models
 
-`phasetracer.models` provides the test models:
-- `OneDimModel`, with an analytic TC;
-- `TwoDimModel`, a one-loop model that reaches percolation and gives a GW spectrum;
-- `Z2ScalarSingletModel`, a high-temperature expansion of the singlet extension, with an analytic TC.
+`phasetracer.models` contains the models shipped with PhaseTracer: compiled C++ models, and a few
+written in Python. `help(phasetracer.models.<Name>)` shows each one's constructor arguments.
 
-`OneDimModel` and `Z2ScalarSingletModel` are toy potentials whose transitions are too weak or too low
-for the thermal stage. A full run of them ends with `NoThermalParameters`, and the reason is in
-`status.warnings`.
+| Family | Model | Notes |
+|---|---|---|
+| Test models | `OneDimModel()` | one field, analytic TC (`get_TC_from_expression`) |
+| | `TwoDimModel()` | one-loop, two fields; reaches percolation and gives a GW spectrum |
+| | `Z2ScalarSingletModel()` | high-temperature xSM with analytic TC; `set_m_s`, `set_lambda_hs` |
+| xSM | `xSM_MSbar.from_tadpoles(lambda_hs, lambda_s, ms, Q, xi, ...)` | MS-bar xSM with tadpole conditions applied; also `xSM_MSbar(lambda_hs, lambda_s, ms)` |
+| | `xSM_OSlike(lambda_hs, lambda_s, ms)` | on-shell-like renormalisation |
+| | `xSM_HT(lambda_hs, lambda_s, m_s)` | high-temperature expansion, analytic TC |
+| RSS | `RSS(muh_sq, mus_sq, lh, ls, c1, c2, b3, muh_sq_tree_EWSB, mus_sq_tree_EWSB, vs, ms, theta)` | singlet without Z2 symmetry; `RSS()` + `setParameters(...)` also works |
+| | `RSS_HT(muh_sq, mus_sq, lh, ls, c1, c2, b3, vs, ms, theta)` | its high-temperature expansion |
+| Other BSM | `ConformalDarkU1(g, y, v)` | conformal dark U(1), arXiv:2502.19478 |
+| | `SuperCoolModel(kappa, mu_sq, lambda_, mu0_sq)` | strong supercooling; or `SuperCoolModel(input_file)` |
+| | `ScalarYukawa3D()` | 3d scalar-Yukawa toy model; set `s`, `msq`, `g`, `lam`, `mf`, `y` |
+| 2HDM | `THDM(tan_beta, m12_sq, lambda1, ..., lambda5, yukawa_type=2, RG_scale=-1)` | the TransitionListener2 benchmark 2HDM with counterterms |
+| Python | `QuarticThermal(D, E, lam, T0)` | polynomial thermal potential, analytic `TC()` |
+| | `DarkHiggs(lam, v, g, y)` | one-loop dark Higgs with a dark gauge boson and a Yukawa fermion |
+| | `TL2HDM(...)` | TransitionListener's own 2HDM. Needs a TransitionListener checkout (set `TRANSITIONLISTENER_ROOT`), and is only imported when you first use it |
+
+`OneDimModel`, `Z2ScalarSingletModel` and `QuarticThermal` are toy potentials whose transitions are
+too weak or too low for the thermal stage. A full run of them ends with `NoThermalParameters`, and
+the reason is in `status.warnings`.
 
 ### Writing a model in Python
 
@@ -171,7 +187,14 @@ runner = pt.Runner(QuarticThermal(), config)   # the Runner keeps the model aliv
 PhaseTracer adds the Coleman–Weinberg and thermal corrections. Choose the daisy resummation with
 `set_daisy_method(pt.DaisyMethod.Parwani)`, and the scale with `set_renormalization_scale(Q)`.
 
-`examples/custom_model.py` runs both kinds of model, including a one-loop dark-Higgs model through to its GW spectrum.
+Complete examples of both kinds are in the package: `phasetracer/models/quartic_thermal.py`
+(`pt.Potential`) and `phasetracer/models/dark_higgs.py` (`pt.OneLoopPotential`). Copy one as a
+starting point. `examples/custom_model.py` runs both, the dark-Higgs model through to its GW spectrum.
+
+**Where to put your model**
+- **Anywhere you like.** A model is just a Python class, so define it in your own script or module and pass an instance to `pt.Runner`. This works with any installed PhaseTracer, including one from `pip install`, and needs no rebuild. `phasetracer.models` holds the models *shipped with* PhaseTracer; you don't have to add yours there.
+- **Don't edit an installed copy:** the files in your environment's `site-packages/phasetracer/` are replaced by the next `pip install`.
+- **Contributing a model to PhaseTracer:** in a clone, add a file to `python/phasetracer/models/`, import the class in `python/phasetracer/models/__init__.py` and add it to `__all__`. Then rebuild (`cmake --build build --target _phasetracer`) or re-run `pip install .`. A model with an optional dependency, like `TL2HDM`, is instead returned from the module-level `__getattr__` in that file, so that importing `phasetracer` never needs the dependency.
 
 **Performance:** a Python potential is called many thousands of times, and every call holds the
 Python GIL.
@@ -181,9 +204,16 @@ Python GIL.
 
 ## Examples and tests
 
-- `examples/run_runner.py`: the full pipeline for `TwoDimModel`. Add `--plot` to save the spectrum.
-- `examples/custom_model.py`: models defined in Python.
-- `tests/test_runner.py`: run with `python -m pytest python/tests`. This needs `pytest`, available as `pip install .[test]`.
+The examples in `examples/` only use the package. The models they run live in `phasetracer.models`.
+- `simple_example.py`: the shortest complete run.
+- `run_runner.py`: the full pipeline for `TwoDimModel`. Add `--plot` to save the spectrum.
+- `custom_model.py`: the Python models `QuarticThermal` and `DarkHiggs`.
+- `run_conformal_u1.py`: percolation parameters of `ConformalDarkU1` on the MeV scale, and how to sort status codes into successes, physical null results and errors.
+- `benchmark_THDM.py`: the 2HDM benchmark scan, with either the C++ `THDM` or TransitionListener's potential (`TL2HDM`).
+- `bubbledet_interface.py`: a decay-rate prefactor computed by BubbleDet. Needs BubbleDet and scipy.
+
+The tests in `tests/` (`test_runner.py` for the interface, `test_models.py` for the models) run
+with `python -m pytest python/tests`. They need `pytest`, available as `pip install .[test]`.
 
 ## For Developers
 <details>
@@ -278,16 +308,24 @@ pip install --no-build-isolation -e . -Ceditable.rebuild=true -Cbuild-dir=build/
 
 ### Adding a C++ model to `phasetracer.models`
 
-The models are exposed by `python/src/bind_models.cpp` and re-exported by
-`python/phasetracer/models.py`. Once a model works in C++, these steps make it available as
+The models are bound one family per file, in `python/src/bind_models_<family>.cpp`:
+- `test`: the test models;
+- `xsm`: the xSM family;
+- `rss`: RSS and RSS_HT;
+- `bsm`: other BSM models;
+- `thdm`: the 2HDM.
+
+They are called from `python/src/bind_models.cpp`, and re-exported by
+`python/phasetracer/models/__init__.py`. Once a model works in C++, these steps make it available as
 `from phasetracer.models import MyModel`.
 
 **1. The model header.** Put it in `EffectivePotential/include/models/`, as a header-only class
 deriving from `EffectivePotential::Potential` or `EffectivePotential::OneLoopPotential`, like the
 existing models. That directory is already on the include path, so no CMake change is needed.
-Give the header its own include guard. If you copy an existing model, rename the guard too:
-otherwise the second header included is silently skipped, and the build fails with
-"`MyModel` is not a member of `EffectivePotential`".
+Give the header its own include guard. If you copy an existing model, rename the guard too.
+Otherwise the second header included is silently skipped, and the build fails with
+"`MyModel` is not a member of `EffectivePotential`". `xSM_HT.hpp` once shared its guard with
+`Z2_scalar_singlet_model.hpp`, so the two could not be bound in the same file.
 
 Suppose it looks like this:
 
@@ -314,13 +352,13 @@ private:
 #endif
 ```
 
-**2. Bind it in `python/src/bind_models.cpp`.** Include the header at the top of the file, and add a
-`py::class_` at the end of `bind_models()`:
+**2. Bind it** in the matching `python/src/bind_models_<family>.cpp`. Include the header at the top
+of the file, and add a `py::class_` to that file's `bind_models_<family>()` function:
 
 ```cpp
 #include "models/my_model.hpp"
 ...
-void bind_models(py::module_ &m) {
+void bind_models_bsm(py::module_ &m) {
   ...
   using EffectivePotential::MyModel;
   py::class_<MyModel, OneLoopPotential>(m, "MyModel", "One-line description shown by help()")
@@ -334,7 +372,7 @@ void bind_models(py::module_ &m) {
 
 | C++ | Binding |
 |---|---|
-| Base class | The second template argument must be a class that is already bound: `Potential` or `OneLoopPotential`. A model that derives through an intermediate class (e.g. `xSM_MSbar` through `xSM_base`) can name `OneLoopPotential` directly. Everything the base provides (`V`, `V0`, masses, `set_daisy_method`, ...) is then inherited automatically. |
+| Base class | The second template argument must be a class that is already bound: `Potential`, `OneLoopPotential`, or a bound intermediate class (`xSM_MSbar` and `xSM_OSlike` use `xSM_base`; `RSS_HT` uses `RSS`). An intermediate class does not have to be bound: naming `OneLoopPotential` also works. Everything the base provides (`V`, `V0`, masses, `set_daisy_method`, ...) is then inherited automatically. |
 | Constructors | One `.def(py::init<argument types...>(), py::arg(...)...)` per constructor; `py::init<>()` for a default constructor. A class with pure virtual methods cannot be constructed from Python. |
 | Default arguments | C++ defaults are not visible to pybind, so repeat them: `py::arg("use_daisy") = true`. |
 | Methods | `.def("name", &MyModel::name, py::arg(...))`. Overloaded methods need `py::overload_cast<argument types...>(&MyModel::name)`, adding `py::const_` for const ones. |
@@ -342,15 +380,24 @@ void bind_models(py::module_ &m) {
 | Static factories | `.def_static("from_tadpoles", &MyModel::from_tadpoles, py::arg(...))` |
 | `operator<<` | `.def("__repr__", &repr_from_stream<MyModel>)` |
 
-Arguments and return values of type `Eigen::VectorXd`, `std::vector` and the bound result types
-are converted automatically, to and from numpy arrays and Python lists.
+Arguments and return values of type `Eigen::VectorXd`, `std::vector`, `std::map` and the bound
+result types are converted automatically, to and from numpy arrays, Python lists and dicts.
 
-**3. Export it from `python/phasetracer/models.py`:**
+**A new family file:** for a model that fits no existing family, create
+`python/src/bind_models_<family>.cpp` with a `void bind_models_<family>(py::module_ &m)`:
+- declare that function in `python/src/bindings.hpp`;
+- call it from `bind_models()` in `python/src/bind_models.cpp`;
+- re-run CMake (`cmake build`), because the source list is globbed.
+
+Keep each model header in a single binding file.
+
+**3. Export it from `python/phasetracer/models/__init__.py`.** Assign it with the other compiled
+models, and add its name to `__all__`:
 
 ```python
 MyModel = _models.MyModel
 
-__all__ = ["OneDimModel", "TwoDimModel", "Z2ScalarSingletModel", "MyModel"]
+__all__ = [..., "MyModel"]
 ```
 
 **4. Rebuild and check it** (restart Python first):
@@ -363,14 +410,14 @@ m = MyModel(lambda_s=1.0, ms=60.)
 print(m.get_n_scalars(), m.V([0., 0.], 100.))"
 ```
 
-**5. Add a test** to `python/tests/test_runner.py`. For example, run the model with
-`config.pipeline.stop_after = pt.Stage.TransitionFinder` and compare the critical temperature with a
-value from the C++ code or the literature (see `test_one_dim_model_up_to_transition_finder`).
+**5. Add a test** to `python/tests/test_models.py`:
+- add an instance to `all_models()`, which checks that it constructs, evaluates and is exported;
+- add a physics check, e.g. run it with `config.pipeline.stop_after = pt.Stage.TransitionFinder` and compare the critical temperature with a value from the C++ code or the literature (see `test_xsm_ht_analytic_tc`).
 
 **Things to watch for**
-- **Headers outside `EffectivePotential/include/models/`:** for example `example/Benchmarks/benchmark_models/THDM.hpp`. Either move the header there, or add its directory in `python/CMakeLists.txt` with `target_include_directories(_phasetracer PRIVATE ${PROJECT_SOURCE_DIR}/example/Benchmarks/benchmark_models)`.
+- **Headers outside `EffectivePotential/include/models/`:** move the header into that directory, as was done for `THDM.hpp` and its helpers (which used to live in `example/Benchmarks/benchmark_models/`). Don't point the bindings at `example/`: the Python package should not depend on the examples.
 - **Duplicate class names:** two headers that define a class with the same name cannot both be bound (e.g. the two `THDM` headers, or `RSS.hpp` and `RSS_old.hpp`). Bind one of them.
 - **Optional dependencies:** a model that needs BSMPT or FlexibleSUSY must only be included and bound inside the matching `#ifdef BUILD_WITH_...` block.
-- **Keep namespace imports out of `bindings.hpp`:** a model header that puts `using namespace std;` at global scope (as the THDM headers do) is harmless in `bind_models.cpp`, but don't add such lines to `bindings.hpp`, which every binding file includes.
+- **Keep namespace imports contained:** a model header that puts `using namespace std;` at global scope (as `THDM.hpp` does) should have a binding file of its own (`bind_models_thdm.cpp`), so it doesn't leak into other bindings. Never add such lines to `bindings.hpp`, which every binding file includes.
 - **Subclassing in Python:** binding a C++ model as above is all that is needed to use it. Only if users should *subclass* the model in Python, overriding its methods, does it also need a trampoline class, like `PyOneLoopPotential` in `python/src/bind_potential.cpp`.
 <!-- <details> -->

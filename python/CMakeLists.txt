@@ -76,18 +76,21 @@ else()
   # development build: assemble an importable package in the build tree
   set(PT_PYTHON_PACKAGE_DIR "${CMAKE_BINARY_DIR}/python/phasetracer")
   set_target_properties(_phasetracer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${PT_PYTHON_PACKAGE_DIR}")
-  # the pure-Python files are copied whenever they change, also when no C++ was rebuilt;
-  # a new .py file is picked up when CMake re-runs (the list is globbed)
-  file(GLOB PT_PYTHON_FILES ${CMAKE_CURRENT_SOURCE_DIR}/phasetracer/*.py)
+  # the pure-Python files (including subpackages such as models/) are copied whenever they change,
+  # also when no C++ was rebuilt; a new .py file is picked up when CMake re-runs (the list is globbed)
+  file(GLOB_RECURSE PT_PYTHON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/phasetracer
+       ${CMAKE_CURRENT_SOURCE_DIR}/phasetracer/*.py)
   set(PT_PYTHON_FILES_COPIED "")
   foreach(PT_PYTHON_FILE ${PT_PYTHON_FILES})
-    get_filename_component(PT_PYTHON_FILE_NAME "${PT_PYTHON_FILE}" NAME)
+    get_filename_component(PT_PYTHON_FILE_DIR "${PT_PYTHON_PACKAGE_DIR}/${PT_PYTHON_FILE}" DIRECTORY)
     add_custom_command(
-      OUTPUT "${PT_PYTHON_PACKAGE_DIR}/${PT_PYTHON_FILE_NAME}"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PT_PYTHON_FILE}" "${PT_PYTHON_PACKAGE_DIR}/${PT_PYTHON_FILE_NAME}"
-      DEPENDS "${PT_PYTHON_FILE}"
-      COMMENT "Copying ${PT_PYTHON_FILE_NAME} into ${PT_PYTHON_PACKAGE_DIR}")
-    list(APPEND PT_PYTHON_FILES_COPIED "${PT_PYTHON_PACKAGE_DIR}/${PT_PYTHON_FILE_NAME}")
+      OUTPUT "${PT_PYTHON_PACKAGE_DIR}/${PT_PYTHON_FILE}"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${PT_PYTHON_FILE_DIR}"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/phasetracer/${PT_PYTHON_FILE}"
+              "${PT_PYTHON_PACKAGE_DIR}/${PT_PYTHON_FILE}"
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/phasetracer/${PT_PYTHON_FILE}"
+      COMMENT "Copying ${PT_PYTHON_FILE} into ${PT_PYTHON_PACKAGE_DIR}")
+    list(APPEND PT_PYTHON_FILES_COPIED "${PT_PYTHON_PACKAGE_DIR}/${PT_PYTHON_FILE}")
   endforeach()
   add_custom_target(phasetracer_python_files ALL DEPENDS ${PT_PYTHON_FILES_COPIED})
   add_dependencies(_phasetracer phasetracer_python_files)

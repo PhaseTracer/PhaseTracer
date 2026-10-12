@@ -3,11 +3,10 @@
 import copy
 import math
 
-import numpy as np
 import pytest
 
 import phasetracer as pt
-from phasetracer.models import OneDimModel, TwoDimModel, Z2ScalarSingletModel
+from phasetracer.models import OneDimModel, QuarticThermal, TwoDimModel, Z2ScalarSingletModel
 
 
 def precise_config(stop_after=pt.Stage.TransitionFinder):
@@ -19,31 +18,6 @@ def precise_config(stop_after=pt.Stage.TransitionFinder):
     config.pipeline.stop_after = stop_after
     config.pipeline.to_print = False
     return config
-
-
-class QuarticThermal(pt.Potential):
-    """V = D (T^2 - T0^2) phi^2 - E T phi^3 + lambda/4 phi^4, with analytic TC."""
-
-    def __init__(self, D=0.1, E=0.01, lam=0.1, T0=100.0):
-        super().__init__()
-        self.D, self.E, self.lam, self.T0 = D, E, lam, T0
-
-    def V(self, phi, T):
-        x = phi[0]
-        return self.D * (T**2 - self.T0**2) * x**2 - self.E * T * x**3 + 0.25 * self.lam * x**4
-
-    def get_n_scalars(self):
-        return 1
-
-    def dV_dx(self, phi, T):
-        x = phi[0]
-        return np.array([2 * self.D * (T**2 - self.T0**2) * x - 3 * self.E * T * x**2 + self.lam * x**3])
-
-    def forbidden(self, phi):
-        return phi[0] < -0.1
-
-    def TC(self):
-        return self.T0 / math.sqrt(1 - self.E**2 / (self.lam * self.D))
 
 
 def test_one_dim_model_up_to_transition_finder():
@@ -223,3 +197,19 @@ def test_python_prefactor_function():
     decay_rate = runner.get_thermal_parameters()[0].decay_rate()
     T = 0.5 * (decay_rate.t_min + decay_rate.t_max)
     assert decay_rate.get_prefactor(T) == pytest.approx(T**4, rel=1e-6)
+
+
+def test_raising_prefactor_function_does_not_crash():
+    # The prefactor runs inside an OpenMP region; an exception must drop the knot,
+    # not terminate the process.
+    def prefactor(T, S_over_T, result):
+        raise ValueError("deliberate failure")
+
+    config = pt.Config()
+    config.phase_finder.seed = 1
+    config.pipeline.to_print = False
+    config.pipeline.stop_after = pt.Stage.ThermoFinder
+    config.thermo_finder.prefactor_function = prefactor
+    runner = pt.Runner(TwoDimModel(), config)
+    status = runner.run()
+    assert not status

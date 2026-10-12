@@ -242,6 +242,21 @@ RunStatus Runner::run()
                                  + " transition(s) that passed the filter (see warnings)");
         return finish();
     }
+    
+    // does percolation check
+    bool any_percolation = false;
+    for(auto& tps : tm_->get_thermal_parameters())
+    {
+        auto percolation = tps.percolation;
+        any_percolation = any_percolation || (percolation.status == MilestoneStatus::YES);
+
+    }
+    if (!any_percolation)
+    {
+        fail(Stage::ThermoFinder, StatusCode::NoThermalParameters, "no transition percolated");
+        return finish();
+    }
+
     if (pipeline.to_print) { std::cout << *tm_; }
     if (done(Stage::ThermoFinder)) { return finish(); }
 

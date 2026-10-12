@@ -154,7 +154,18 @@ namespace PhaseTracer {
                 // Only carry a path forward once it has produced a usable action.
                 path_guess = bounce.tunneling_path;
 
-                double prefactor = decay_rate_prefactor(tt, action, bounce);
+                double prefactor;
+                try {
+                    prefactor = decay_rate_prefactor(tt, action, bounce);
+                } catch (const std::exception& e)
+                {
+                    LOG(warning) << "Prefactor evaluation failed at T = " << tt << ": " << e.what();
+                    continue;
+                } catch (...)
+                {
+                    LOG(warning) << "Prefactor evaluation failed at T = " << tt << ": unknown error";
+                    continue;
+                }
                 if (!std::isfinite(prefactor) || prefactor <= 0.0)
                 {
                     LOG(debug) << "Rejected non-physical prefactor " << prefactor
