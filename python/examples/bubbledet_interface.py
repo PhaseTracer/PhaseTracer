@@ -234,34 +234,8 @@ def get_thermal_params(model, config):
         g_eff = milestone.g_eff
         return [alpha, Tp, Rs, vw, g_eff]
     elif output_code in VALID_CODES:
-        # A valid code, I'll leave you to judge how to handle it
         return None
     elif output_code in INVALID_CODES:
-        # An invalid code, I'll leave you to judge how to handle it
-        raise RuntimeError(f"Invalid status code: {output_code}")
-    else:
-        raise RuntimeError(f"Unknown status code: {output_code}")
-
-    
-def get_snr(model, config):
-
-    config.pipeline.stop_after = pt.Stage.GravWave
-
-    runner = pt.Runner(model, config)
-    status = runner.run()
-
-    output_code = status.code
-    print(f"Output code: {output_code}, message: {status.message}")
-
-    if output_code == SUCCESS_CODE:
-        spectra = runner.get_spectra()[0]
-        snr = spectra.peak_amplitude
-        return [snr]
-    elif output_code in VALID_CODES:
-        # A valid code, I'll leave you to judge how to handle it
-        return None
-    elif output_code in INVALID_CODES:
-        # An invalid code, I'll leave you to judge how to handle it
         raise RuntimeError(f"Invalid status code: {output_code}")
     else:
         raise RuntimeError(f"Unknown status code: {output_code}")
@@ -273,10 +247,6 @@ def make_config():
     config.phase_finder.seed = 1
 
     config.thermo_finder.percolation_target = 0.71
-
-    # This corresponds to adding an extra term propto g_eff * T^4 to the EoS,
-    # used to include any contributions from radiation not included in Jb and Jf.
-    # Set accordingly.
     config.thermo_finder.eos_background_dof = 20
 
     config.action.PD_phitol = 1e-10
@@ -305,16 +275,14 @@ def main(argc, argv):
             prefactor = BubbleDetPrefactor(ConformalU1ForBubbleDet(model))
             config.thermo_finder.prefactor_function = prefactor
         print(f"--- {label} prefactor")
-        # results[label] = get_thermal_params(model, config)
-        results[label] = get_snr(model, config)
-        print(results[label])
+        results[label] = get_thermal_params(model, config)
 
     # print(prefactor.summary())
 
-    # for label, thermal_params in results.items():
-    #     if thermal_params is not None:
-    #         alpha, Tp, Rs, vw, g_eff = thermal_params
-    #         print(f"{label:>9}: alpha: {alpha}, Tp: {Tp}, Rs: {Rs}, vw: {vw}, g_eff: {g_eff}")
+    for label, thermal_params in results.items():
+        if thermal_params is not None:
+            alpha, Tp, Rs, vw, g_eff = thermal_params
+            print(f"{label:>9}: alpha: {alpha}, Tp: {Tp}, Rs: {Rs}, vw: {vw}, g_eff: {g_eff}")
 
     return 0
 
