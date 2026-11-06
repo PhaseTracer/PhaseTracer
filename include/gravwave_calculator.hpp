@@ -22,11 +22,13 @@
 #include <fstream>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <random>
 #include <string>
 #include <tuple>
 #include <vector>
 
+#include "detector.hpp"
 #include "transition_finder.hpp"
 #include "thermo_finder.hpp"
 
@@ -136,14 +138,19 @@ struct GravWaveSpectrum
 	/** @brief Total amplitude of the spectrum. */
 	std::vector<double> total_amplitude;
 
-	/** @brief LISA noise curve Omega h^2 on the frequency grid */
-	std::vector<double> lisa_noise;
+	/**
+	 * @brief Signal-to-noise ratio in each detector, in the order of get_detectors().
+	 *
+	 * For FitFormulae spectra the fit formulae are evaluated over each detector's full band,
+	 * independent of the frequency grid. For SoundShell spectra the tabulated spectrum is used.
+	 */
+	std::vector<SNRResult> snr;
 
-	/** @brief Taiji noise curve Omega h^2 on the frequency grid */
-	std::vector<double> taiji_noise;
-
-	/** @brief Signal-to-noise ratio for the spectrum. */
-	std::vector<double> SNR;
+	/**
+	 * @brief SNR result for the named detector.
+	 * @throws std::out_of_range if there is no result for that detector.
+	 */
+	const SNRResult &snr_for(const std::string &name) const;
 
 	/** @brief Backend that produced the spectrum. */
 	GravWaveMethod method = GravWaveMethod::FitFormulae;
@@ -168,12 +175,10 @@ struct GravWaveSpectrum
 		}
 		o << "beta over H = " << a.beta_H << "\n"
 		<< "peak frequency = " << a.peak_frequency << "\n"
-		<< "peak amplitude = " << a.peak_amplitude << "\n";
-		if (a.SNR.size() > 1) {
-		o << "SNR for LISA = " << a.SNR[0] << "\n"
-			<< "SNR for Taiji = " << a.SNR[1] << "\n";
-		} else if (!a.SNR.empty()) {
-		o << "SNR for LISA = " << a.SNR[0] << "\n";
+		<< "peak amplitude = " << a.peak_amplitude << "\n"
+		<< "SNR results:" << "\n";
+		for (const auto &r : a.snr) {
+		o << "  " << r << "\n";
 		}
 		if (!a.profile.empty()) {
 		o << a.profile;
@@ -195,7 +200,11 @@ public:
 
 	explicit GravWaveCalculator(ThermoFinder &tm_) : tm(&tm_) {
 		LOG(debug) << "GravWaveCalculator constructed with ThermoFinder";
+		check_detectors();
 	}
+
+	/** @brief The detectors used for every SNR calculation, in the order of GravWaveSpectrum::snr. */
+	const std::vector<std::shared_ptr<const Detector>> &get_detectors() const { return detector_list; }
 
 	/** Pretty-printer for set of transitions in this object */
 	friend std::ostream &operator<<(std::ostream &o, const GravWaveCalculator &a);
@@ -254,29 +263,6 @@ public:
 	/** Return the summed GW spectrum */
 	GravWaveSpectrum get_total_spectrum() const { return total_spectrum; }
 
-	/**
-	 * @brief Noise energy density Omega h^2 of the LISA sensitivity curve at frequency f.
-	 * @param f Frequency at which to evaluate the LISA noise curve.
-	 * @return Noise energy density Omega h^2 of the LISA sensitivity curve at frequency f.
-	 */
-	double noise_omega_LISA(double f) const;
-
-	/**
-	 * @brief Noise energy density Omega h^2 of the LISA sensitivity curve at frequency f.
-	 * @param f Frequency at which to evaluate the legacy LISA noise curve.
-	 * @return Noise energy density Omega h^2 of the legacy LISA sensitivity curve at frequency f.
-	 * 
-	 * @note This is the version used in PhaseTracer2.
-	 */
-	double noise_omega_LISA_legacy(double f) const;
-
-	/**
-	 * @brief Noise energy density Omega h^2 of the Taiji sensitivity curve at frequency f.
-	 * @param f Frequency at which to evaluate the Taiji noise curve.
-	 * @return Noise energy density Omega h^2 of the Taiji sensitivity curve at frequency f.
-	 */
-	double noise_omega_Taiji(double f) const;
-
 	/** 
 	 * @brief Total fit-formula amplitude at one frequency: sound wave + turbulence + collision
 	 * @param f Frequency at which to evaluate the fit-formula amplitude.
@@ -305,9 +291,9 @@ public:
 	 * @brief Signal-to-noise ratio (SNR) for a tabulated spectrum.
 	 * @param frequency Vector of frequencies at which the spectrum is evaluated.
 	 * @param omega Vector of energy densities corresponding to the frequencies.
-	 * @return SNR for the tabulated spectrum as a vector {LISA, Taiji}.
+	 * @return SNR in each detector, in the order of get_detectors(). The noise curves are left empty.
 	 */
-	std::vector<double> get_SNR_tabulated(const std::vector<double> &frequency, const std::vector<double> &omega) const;
+	std::vector<SNRResult> get_SNR_tabulated(const std::vector<double> &frequency, const std::vector<double> &omega) const;
 
 	/** 
 	 * @brief Signal-to-noise ratio (SNR) for the fit-formula spectrum.
@@ -317,16 +303,16 @@ public:
 	 * @param T_reh Reheating temperature after the phase transition.
 	 * @param vw Bubble wall velocity.
 	 * @param cs Sound speed in the plasma.
-	 * @return SNR for the fit-formula spectrum as a vector {LISA, Taiji}.
+	 * @return SNR in each detector, in the order of get_detectors(). The noise curves are left empty.
 	 */
-	std::vector<double> get_SNR(double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const;
+	std::vector<SNRResult> get_SNR(double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const;
 
 	/**
 	 * @brief Convenience overload of get_SNR that takes a TransitionMilestone.
 	 * @param m TransitionMilestone containing the phase transition parameters.
-	 * @return SNR for the fit-formula spectrum as a vector {LISA, Taiji}.
+	 * @return SNR in each detector, in the order of get_detectors(). The noise curves are left empty.
 	 */
-	std::vector<double> get_SNR(TransitionMilestone m) const
+	std::vector<SNRResult> get_SNR(TransitionMilestone m) const
 	{
 		return get_SNR(m.alpha, m.betaH_eff, m.temperature, m.reheating_temperature, m.vw, m.cs_plus, m.g_eff, m.h_eff);
 	}
@@ -366,11 +352,32 @@ private:
 	/** All transitions with valid TN */
 	std::vector<Transition> trans;
 
+	/** Detectors */
+	std::vector<std::shared_ptr<const Detector>> detector_list = {
+		std::make_shared<RCL>(2.5e9, 19.09e-3, 1.5e-11, 3e-15, 10, 4, "LISA"),
+		std::make_shared<RCL>(3e9, 8e-12, 3e-15, 10, 3, "Taiji"),
+		std::make_shared<BBO>(),
+		std::make_shared<B_DECIGO>(),
+		std::make_shared<DECIGO>(),
+		std::make_shared<PTA>(6,  18, 10, 1e-6, 1.190, "EPTA"),
+		std::make_shared<PTA>(34, 11, 15, 2e-6, 0.697, "NANOGrav_11"),
+		std::make_shared<PTA>(34, 15, 15, 2e-6, 0.697, "NANOGrav_15"),
+		std::make_shared<PTA>(1000,  5, 14, 1e-7, 4, "SKA_5"),
+		std::make_shared<PTA>(1000, 10, 14, 1e-7, 4, "SKA_10"),
+		std::make_shared<PTA>(1000, 20, 14, 1e-7, 4, "SKA_20"),
+	};
+
+	/** Throw if a detector is unphysical or two share a name */
+	void check_detectors() const;
+
+	/** SNR of a spectrum, tabulated on an ascending grid, in one detector */
+	SNRResult SNR_in(const Detector &d, const std::vector<double> &f_asc, const std::vector<double> &o_asc) const;
+
+	/** SNR of a callable spectrum Omega(f) in each detector, tabulated on that detector's own band with SNR_steps_per_decade points per decade */
+	std::vector<SNRResult> SNR_of(const std::function<double(double)> &omega) const;
+
 	/** The milestone of a thermal parameter set selected by default_milestone.*/
 	const TransitionMilestone *milestone_of(const ThermalParameterSet &tps) const;
-
-	/** Turn the noise-weighted integrals into {LISA, Taiji} SNRs using the run times */
-	std::vector<double> SNR_from_integrals(double snr_sq_LISA, double snr_sq_Taiji) const;
 
 #ifdef BUILD_WITH_HG
 	/** Calculate a GW spectrum for one transition with HydroGrav's sound shell model */
@@ -389,15 +396,8 @@ private:
 	 */
 	void finalise_spectrum(GravWaveSpectrum &sp) const;
 
-	/** Fill lisa_noise and taiji_noise on the spectrum's frequency grid */
+	/** Fill the noise curve of each of the spectrum's SNR results on its frequency grid. Call after sp.snr is set. */
 	void add_noise_curves(GravWaveSpectrum &sp) const;
-
-	/**
-	 * Omega h^2 of a Robson, Cornish & Liu (arXiv:1803.01944) sky-averaged sensitivity curve with
-	 * arm length L [m], transfer frequency f_star [Hz], optical-metrology noise P_oms [m/sqrt(Hz)] and
-	 * acceleration noise P_acc [m s^-2/sqrt(Hz)], plus the 4-yr galactic confusion-noise fit.
-	 */
-	double noise_omega_RCL(double f, double L, double f_star, double P_oms, double P_acc) const;
 
 	/**
 	 * @brief Helper to calculate RH from betaH.
@@ -473,16 +473,6 @@ private:
 	 */
 	double get_sound_wave_Y(const double& RH, const double& K) const;
 
-	/** @brief Singly broken power law template function.
-	 * @param f The frequency at which to evaluate the power law.
-	 * @param f0 The first break frequency.
-	 * @param f1 The second break frequency.
-	 * @param n0 The power law index before the first break.
-	 * @param n1 The power law index between the first and second breaks.
-	 * @param a1 The parameter controlling the smoothness of the first break.
-	 * @param b1 Constant appearing in first break.
-	 * @return The value of the singly broken power law at the given frequency.
-	 */
 	double singly_broken_power_law(
 		const double& f, 
 		const double& f0, 
@@ -492,22 +482,20 @@ private:
 		const double& a1, 
 		const double& b1) const;
 
-	/**
-	 * @brief Doubly broken power law template function.
-	 * @param f The frequency at which to evaluate the power law.
-	 * @param f0 The first break frequency.
-	 * @param f1 The second break frequency.
-	 * @param f2 The third break frequency.
-	 * @param n0 The power law index before the first break.
-	 * @param n1 The power law index between the first and second breaks.
-	 * @param n2 The power law index after the second break.
-	 * @param a1 The parameter controlling the smoothness of the first break.
-	 * @param a2 The parameter controlling the smoothness of the second break.
-	 * @return The value of the doubly broken power law at the given frequency.
-	 */
 	double doubly_broken_power_law(
 		const double& f, const double& f0, const double& f1, const double& f2,
 		const double& n0, const double& n1, const double& n2, 
+		const double& a1, const double& a2) const;
+
+	/**
+	 * @brief Doubly broken power law template function, from (2.8) in 2403.03723.
+	 * @note Does not include normalisation prefactor.
+	 * @param f The frequency at which to evaluate the power law.
+	 * @return The value of the doubly broken power law at the given frequency.
+	 */
+	double doubly_broken_power_law_LISA(
+		const double& f, const double& f1, const double& f2,
+		const double& n1, const double& n2, const double& n3, 
 		const double& a1, const double& a2) const;
 
 	/** Amplitude constants for different gravitational wave sources. */
@@ -586,15 +574,6 @@ private:
 	/** Ratio of efficiency factor of turbulence to the one of sound wave */
 	PROPERTY(double, epsilon, 0.1);
 
-	/**Effective observation time in years for LISA, Taiji**/
-	PROPERTY(double, run_time_LISA, 4);
-	PROPERTY(double, run_time_Taiji, 3);
-	/** Use the old LISA noise curve (noise_omega_LISA_legacy) instead of Robson, Cornish & Liu */
-	PROPERTY(bool, use_legacy_LISA_noise, false);
-
-	/**Integrate bound for SNR calculation */
-	PROPERTY(double, SNR_f_min, 1e-5);
-	PROPERTY(double, SNR_f_max, 1e-1);
 	/** Number of ln f grid points per decade used by get_SNR to tabulate the fit-formula spectrum */
 	PROPERTY(double, SNR_steps_per_decade, 200);
 

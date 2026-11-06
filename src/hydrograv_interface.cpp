@@ -121,10 +121,10 @@ to_hydrograv_nuc_type(NucleationType nucleation_type)
 }
 
 HydroGrav::PhaseTransition::PTParams_Veff
-to_hydrograv_pt_params(const ThermalParameterSet &tps, const TransitionMilestone &milestone)
+to_hydrograv_pt_params(const ThermalParameterSet &tps, const TransitionMilestone &milestone, const double &vw)
 {
     return HydroGrav::PhaseTransition::PTParams_Veff(
-        milestone.vw,
+        (vw == -1) ? milestone.vw : vw,
         milestone.alpha_munu,
         to_GeV(milestone.temperature),
         to_GeV(milestone.betaH_eff * milestone.H),

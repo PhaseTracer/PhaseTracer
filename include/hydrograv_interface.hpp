@@ -63,7 +63,7 @@ HydroGrav::PhaseTransition::Universe to_hydrograv_universe(const TransitionMiles
 const char *to_hydrograv_nuc_type(NucleationType nucleation_type);
 
 /** @brief Build PT_params. */
-HydroGrav::PhaseTransition::PTParams_Veff to_hydrograv_pt_params(const ThermalParameterSet &tps, const TransitionMilestone &milestone);
+HydroGrav::PhaseTransition::PTParams_Veff to_hydrograv_pt_params(const ThermalParameterSet &tps, const TransitionMilestone &milestone, const double &vw=-1.0);
 
 /** @brief Translates fluid profiles. */
 FluidProfile to_phasetracer_profile(const HydroGrav::Hydrodynamics::FluidProfile &fp);

@@ -38,7 +38,7 @@ namespace PhaseTracer {
 enum MilestoneStatus
 {
     YES,
-    FAST,
+    FAST, // should be unused
     NO,
     ERR
 }; // enum MilestoneStatus

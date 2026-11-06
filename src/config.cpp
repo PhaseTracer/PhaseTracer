@@ -184,11 +184,6 @@ void apply(const GravWaveConfig& c, GravWaveCalculator& gw)
     gw.set_vw(c.vw);
     gw.set_epsilon(c.epsilon);
 
-    gw.set_run_time_LISA(c.run_time_LISA);
-    gw.set_run_time_Taiji(c.run_time_Taiji);
-    gw.set_use_legacy_LISA_noise(c.use_legacy_LISA_noise);
-    gw.set_SNR_f_min(c.SNR_f_min);
-    gw.set_SNR_f_max(c.SNR_f_max);
     gw.set_SNR_steps_per_decade(c.SNR_steps_per_decade);
 }
 
@@ -248,7 +243,6 @@ RunStatus Config::validate() const
     require(gw.min_kRs_value > 0. && gw.min_kRs_value < gw.max_kRs_value,
             "gravwave.min_kRs_value must be in (0, max_kRs_value)");
     require(gw.n_kRs_value >= 2, "gravwave.n_kRs_value must be >= 2");
-    require(gw.SNR_f_min > 0. && gw.SNR_f_min < gw.SNR_f_max, "gravwave.SNR_f_min must be in (0, SNR_f_max)");
     require(gw.SNR_steps_per_decade > 0., "gravwave.SNR_steps_per_decade must be > 0");
     require(gw.vw >= 0. && gw.vw <= 1., "gravwave.vw must be in [0, 1] (0 = use the milestone's value)");
     require(gw.g_eff >= 0. && gw.h_eff >= 0., "gravwave.g_eff and h_eff must be >= 0 (0 = use the milestone's value)");
@@ -484,11 +478,6 @@ std::ostream& operator<<(std::ostream& o, const GravWaveConfig& c)
     PT_CONFIG_PRINT(D);
     PT_CONFIG_PRINT(vw);
     PT_CONFIG_PRINT(epsilon);
-    PT_CONFIG_PRINT(run_time_LISA);
-    PT_CONFIG_PRINT(run_time_Taiji);
-    PT_CONFIG_PRINT(use_legacy_LISA_noise);
-    PT_CONFIG_PRINT(SNR_f_min);
-    PT_CONFIG_PRINT(SNR_f_max);
     PT_CONFIG_PRINT(SNR_steps_per_decade);
     return o;
 }

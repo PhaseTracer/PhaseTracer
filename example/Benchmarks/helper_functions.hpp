@@ -91,9 +91,7 @@ configure_grav_wave_calculator(PhaseTracer::GravWaveCalculator& gravwave_calcula
     gravwave_calculator.set_gw_method(PhaseTracer::GravWaveMethod::FitFormulae);
     gravwave_calculator.set_default_milestone(PhaseTracer::MilestoneType::PERCOLATION);
     gravwave_calculator.set_vw(1.0);
-    gravwave_calculator.set_SNR_f_max(1e1);
     gravwave_calculator.set_max_frequency(1e1);
-    gravwave_calculator.set_SNR_f_min(1e-5);
     gravwave_calculator.set_min_frequency(1e-5);
     gravwave_calculator.set_num_frequency(500);
     // gravwave_calculator.set_g_eff(68.9);

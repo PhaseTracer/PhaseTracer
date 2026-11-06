@@ -65,6 +65,18 @@ double simpson(const std::vector<double> &x, const std::vector<double> &y)
 
 } // namespace
 
+// GravWaveSpectrum Definitions
+
+const SNRResult &
+GravWaveSpectrum::snr_for(const std::string &name) const
+{
+	for (const auto &r : snr) 
+	{
+		if (r.detector == name) return r;
+	}
+	throw std::out_of_range("No SNR result for detector " + name);
+}
+
 // Fluid Profile Definitions
 
 std::string 
@@ -334,7 +346,7 @@ GravWaveCalculator::calc_spectrum(const TransitionMilestone &milestone)
 			bubble_collision = include_col ? GW_bubble_collision_legacy(fq, sp.alpha, sp.beta_H, sp.Tref, sp.g_eff, sp.vw, sp.cs) : 0;
 		} else {
 			const auto [f_sw_1, f_sw_2] = sound_wave_peaks;
-			const double S_sw = doubly_broken_power_law(fq, f_sw_1, f_sw_1, f_sw_2, 3, -1, -1, 2, 4);
+			const double S_sw = doubly_broken_power_law_LISA(fq, f_sw_1, f_sw_2, 3, 1, -3, 2, 4);
 			sound_wave = prefactor * A_sw * K_sw*K_sw * N_sw * Y_sw * RH * S_sw;
 
 			const auto [f_turb_1, f_turb_2, f_turb_3] = turb_peaks;
@@ -360,10 +372,14 @@ GravWaveCalculator::calc_spectrum(const TransitionMilestone &milestone)
 	}
 	sp.peak_frequency = peak_frequency;
 	sp.peak_amplitude = peak_amplitude;
+	/* Evaluate the fit formulae over each detector's whole band, which the frequency grid need not cover */
+	sp.snr = get_SNR(sp.alpha, sp.beta_H, sp.Tref, sp.Treh, sp.vw, sp.cs, sp.g_eff, sp.h_eff);
 	add_noise_curves(sp);
-	sp.SNR = get_SNR_tabulated(sp.frequency, sp.total_amplitude);
-	LOG(debug) << "GW spectrum: peak f = " << peak_frequency << " Hz, peak h^2 Omega = " << peak_amplitude
-		<< ", SNR (LISA, Taiji) = (" << sp.SNR[0] << ", " << sp.SNR[1] << ")";
+	LOG(debug) << "GW spectrum: peak f = " << peak_frequency << " Hz, peak h^2 Omega = " << peak_amplitude;
+	for (const auto &r : sp.snr) 
+	{
+		LOG(debug) << r;
+	}
 	return sp;
 }
 
@@ -454,38 +470,27 @@ GravWaveCalculator::sum_spectrums(const std::vector<GravWaveSpectrum> &sps) cons
 
 	summed_sp.peak_frequency = peak_frequency;
 	summed_sp.peak_amplitude = peak_amplitude;
+	const bool all_fit = std::all_of(sps.begin(), sps.end(),
+		[](const GravWaveSpectrum &sp) { return sp.method == GravWaveMethod::FitFormulae; });
+	if (sps.size() == 1)
+	{
+		summed_sp.snr = sps[0].snr;
+	} else if (all_fit) {
+		/* SNR is quadratic in Omega, so sum the spectra before integrating */
+		summed_sp.snr = SNR_of([&](double f) {
+			double o = 0.;
+			for (const auto &sp : sps)
+			{
+				o += fit_omega(f, sp.alpha, sp.beta_H, sp.Tref, sp.Treh, sp.vw, sp.cs, sp.g_eff, sp.h_eff);
+			}
+			return o;
+		});
+	} else {
+		summed_sp.snr = get_SNR_tabulated(summed_sp.frequency, summed_sp.total_amplitude);
+	}
 	add_noise_curves(summed_sp);
-	summed_sp.SNR = sps.size() == 1 ? sps[0].SNR : get_SNR_tabulated(summed_sp.frequency, summed_sp.total_amplitude);
 
 	return summed_sp;
-}
-
-double 
-GravWaveCalculator::noise_omega_LISA(double f) const 
-{
-	if (use_legacy_LISA_noise) 
-	{
-		return noise_omega_LISA_legacy(f);
-	}
-	return noise_omega_RCL(f, 2.5e9, 19.09e-3, 1.5e-11, 3e-15);
-}
-
-double 
-GravWaveCalculator::noise_omega_LISA_legacy(double f) const 
-{
-	double P_oms = 3.6e-41;
-	double P_acc = 1.44e-48 / pow(2 * M_PI * f, 4) * (1 + pow(0.4e-3 / f, 2));
-	double S_A = sqrt(2) * 20. / 3 * (P_oms + 4 * P_acc) * (1 + pow(f / (2.54e-2), 2));
-	double H_0 = 67.4 / (3.086e19);
-	return 4 * M_PI * M_PI / (3 * H_0 * H_0) * pow(f, 3) * S_A * 0.674 * 0.674;
-}
-
-double 
-GravWaveCalculator::noise_omega_Taiji(double f) const 
-{
-	const double L = 3e9;
-	const double c = 2.99792458e8;
-	return noise_omega_RCL(f, L, c / (2 * M_PI * L), 8e-12, 3e-15);
 }
 
 double 
@@ -505,7 +510,7 @@ GravWaveCalculator::fit_omega(double f, double alpha, double beta_H, double T_re
 	}
 }
 
-std::vector<double> 
+std::vector<SNRResult> 
 GravWaveCalculator::get_SNR_tabulated(const std::vector<double> &frequency, const std::vector<double> &omega) const 
 {
 	if (frequency.size() != omega.size()) 
@@ -527,68 +532,108 @@ GravWaveCalculator::get_SNR_tabulated(const std::vector<double> &frequency, cons
 		std::reverse(o_asc.begin(), o_asc.end());
 	}
 
-	if (f_asc.front() > SNR_f_min * (1 + 1e-9) || f_asc.back() < SNR_f_max * (1 - 1e-9)) {
+	std::vector<SNRResult> results;
+	for (const auto &d : detector_list) 
+	{
+		results.push_back(SNR_in(*d, f_asc, o_asc));
+	}
+	return results;
+}
+
+SNRResult 
+GravWaveCalculator::SNR_in(const Detector &d, const std::vector<double> &f_asc, const std::vector<double> &o_asc) const 
+{
+	SNRResult r;
+	r.detector = d.name();
+	r.threshold = d.threshold();
+	r.T_obs = d.T_obs();
+	r.f_min = d.f_min();
+	r.f_max = d.f_max();
+	r.band_covered = f_asc.front() <= d.f_min() * (1 + 1e-9) && f_asc.back() >= d.f_max() * (1 - 1e-9);
+
+	if (!r.band_covered) 
+	{
 		LOG(warning) << "Spectrum covers [" << f_asc.front() << ", " << f_asc.back()
-					<< "] Hz but the SNR band is [" << SNR_f_min << ", " << SNR_f_max
+					<< "] Hz but the " << d.name() << " SNR band is [" << d.f_min() << ", " << d.f_max()
 					<< "] Hz. The SNR is integrated over the overlap only, so it is a lower bound.";
 	}
 
 	/* Integrate in u = ln f, where the grid is (usually) uniform: int (Omega/N)^2 df = int f (Omega/N)^2 du */
-	std::vector<double> u, g_L, g_T;
+	std::vector<double> u, g;
 	for (size_t ii = 0; ii < f_asc.size(); ii++) 
 	{
 		const double f = f_asc[ii];
-		if (f <= 0. || f < SNR_f_min * (1 - 1e-9) || f > SNR_f_max * (1 + 1e-9)) 
+		if (f <= 0. || f < d.f_min() * (1 - 1e-9) || f > d.f_max() * (1 + 1e-9)) 
 		{
 			continue;
 		}
 		const double o = o_asc[ii] > 0. ? o_asc[ii] : 0.;
-		const double n_L = noise_omega_LISA(f);
-		const double n_T = noise_omega_Taiji(f);
+		const double n = d.omega_noise(f);
 		u.push_back(std::log(f));
-		g_L.push_back(f * o * o / (n_L * n_L));
-		g_T.push_back(f * o * o / (n_T * n_T));
+		g.push_back(f * o * o / (n * n));
 	}
 
 	if (u.size() < 2) 
 	{
-		LOG(warning) << "Fewer than two spectrum frequencies lie in the SNR band [" << SNR_f_min << ", " 
-					<< SNR_f_max << "] Hz. Setting the SNR to zero.";
-		return {0., 0.};
+		LOG(warning) << "Fewer than two spectrum frequencies lie in the " << d.name() << " SNR band [" 
+					<< d.f_min() << ", " << d.f_max() << "] Hz. Setting the SNR to zero.";
+		r.snr = 0.;
+	} else {
+		const double T_obs_s = d.T_obs() * 365.25 * 86400;
+		r.snr = std::sqrt(d.ndet() * simpson(u, g) * T_obs_s);
 	}
-
-	const double snr_sq_LISA = simpson(u, g_L);
-	const double snr_sq_Taiji = simpson(u, g_T);
-	return SNR_from_integrals(snr_sq_LISA, snr_sq_Taiji);
+	r.detected = r.snr >= r.threshold;
+	return r;
 }
 
-std::vector<double> 
-GravWaveCalculator::get_SNR(double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const 
+std::vector<SNRResult>
+GravWaveCalculator::get_SNR(double alpha, double beta_H, double T_ref, double T_reh, double vw, double cs, double g_eff, double h_eff) const
 {
-	const double log_lo = std::log10(SNR_f_min);
-	const double log_hi = std::log10(SNR_f_max);
-	const int n = std::max(3, static_cast<int>(std::ceil((log_hi - log_lo) * SNR_steps_per_decade)) + 1);
+	return SNR_of([&](double f) { return fit_omega(f, alpha, beta_H, T_ref, T_reh, vw, cs, g_eff, h_eff); });
+}
 
-	std::vector<double> frequency(n), omega(n);
-	for (int ii = 0; ii < n; ii++) 
+std::vector<SNRResult>
+GravWaveCalculator::SNR_of(const std::function<double(double)> &omega_of) const
+{
+	/* Tabulate the spectrum separately on each detector's band, so every band gets the same resolution */
+	std::vector<SNRResult> results;
+	for (const auto &d : detector_list) 
 	{
-		frequency[ii] = std::pow(10., log_lo + ii * (log_hi - log_lo) / (n - 1));
-		omega[ii] = fit_omega(frequency[ii], alpha, beta_H, T_ref, T_reh, vw, cs, g_eff, h_eff);
+		const double log_lo = std::log10(d->f_min());
+		const double log_hi = std::log10(d->f_max());
+		const int n = std::max(3, static_cast<int>(std::ceil((log_hi - log_lo) * SNR_steps_per_decade)) + 1);
+
+		std::vector<double> frequency(n), omega(n);
+		for (int ii = 0; ii < n; ii++) 
+		{
+			frequency[ii] = std::pow(10., log_lo + ii * (log_hi - log_lo) / (n - 1));
+			omega[ii] = omega_of(frequency[ii]);
+		}
+		results.push_back(SNR_in(*d, frequency, omega));
 	}
-	return get_SNR_tabulated(frequency, omega);
+	return results;
 }
 
 void 
 GravWaveCalculator::write_spectrum_to_text(const GravWaveSpectrum &sp, const std::string &filename) const 
 {
 	std::ofstream file(filename);
-	file << "frequency,total_amplitude,sound_wave,turbulence,bubble_collision,lisa_noise,taiji_noise" << std::endl;
+	file << "frequency,total_amplitude,sound_wave,turbulence,bubble_collision";
+	for (const auto &r : sp.snr) 
+	{
+		file << "," << r.detector << "_noise";
+	}
+	file << std::endl;
 
 	for (int ii = 0; ii < sp.frequency.size(); ii++) 
 	{
 		file << sp.frequency[ii] << "," << sp.total_amplitude[ii] << "," 
 		<< sp.sound_wave[ii] << "," << sp.turbulence[ii] << "," 
-		<< sp.bubble_collision[ii] << "," << sp.lisa_noise[ii] << "," << sp.taiji_noise[ii];
+		<< sp.bubble_collision[ii];
+		for (const auto &r : sp.snr) 
+		{
+			file << "," << r.noise[ii];
+		}
 		file << std::endl;
 	}
 
@@ -610,6 +655,22 @@ GravWaveCalculator::write_spectrum_to_text(const std::string &filename) const
   {
     write_spectrum_to_text(spectrums[ii], std::to_string(ii) + "_" + filename);
   }
+}
+
+void 
+GravWaveCalculator::check_detectors() const 
+{
+	for (size_t ii = 0; ii < detector_list.size(); ii++) 
+	{
+		check_detector(*detector_list[ii]);
+		for (size_t jj = 0; jj < ii; jj++) 
+		{
+			if (detector_list[jj]->name() == detector_list[ii]->name()) 
+			{
+				throw std::invalid_argument("Two detectors are named " + detector_list[ii]->name());
+			}
+		}
+	}
 }
 
 const TransitionMilestone 
@@ -642,14 +703,6 @@ const TransitionMilestone
 
 	LOG(debug) << "Found " << static_cast<int>(milestone->type) << " milestone with T = " << milestone->temperature;
 	return milestone;
-}
-
-std::vector<double> 
-GravWaveCalculator::SNR_from_integrals(double snr_sq_LISA, double snr_sq_Taiji) const 
-{
-	const double T_obs_LISA_s = run_time_LISA * 365.25 * 86400;
-	const double T_obs_Taiji_s = run_time_Taiji * 365.25 * 86400;
-	return {std::sqrt(snr_sq_LISA * T_obs_LISA_s), std::sqrt(snr_sq_Taiji * T_obs_Taiji_s)};
 }
 
 void 
@@ -711,38 +764,27 @@ GravWaveCalculator::finalise_spectrum(GravWaveSpectrum &sp) const
 
 	sp.peak_frequency = peak_frequency;
 	sp.peak_amplitude = peak_amplitude;
+	sp.snr = get_SNR_tabulated(sp.frequency, sp.total_amplitude);
 	add_noise_curves(sp);
-	sp.SNR = get_SNR_tabulated(sp.frequency, sp.total_amplitude);
 }
 
 void 
 GravWaveCalculator::add_noise_curves(GravWaveSpectrum &sp) const 
 {
-	sp.lisa_noise.resize(sp.frequency.size());
-	sp.taiji_noise.resize(sp.frequency.size());
-	for (size_t ii = 0; ii < sp.frequency.size(); ii++) 
+	for (auto &r : sp.snr) 
 	{
-		sp.lisa_noise[ii] = noise_omega_LISA(sp.frequency[ii]);
-		sp.taiji_noise[ii] = noise_omega_Taiji(sp.frequency[ii]);
+		const auto d = std::find_if(detector_list.begin(), detector_list.end(),
+			[&r](const std::shared_ptr<const Detector> &det) { return det->name() == r.detector; });
+		if (d == detector_list.end()) 
+		{
+			throw std::runtime_error("SNR result for unknown detector " + r.detector);
+		}
+		r.noise.resize(sp.frequency.size());
+		for (size_t ii = 0; ii < sp.frequency.size(); ii++) 
+		{
+			r.noise[ii] = (*d)->omega_noise(sp.frequency[ii]);
+		}
 	}
-}
-
-double 
-GravWaveCalculator::noise_omega_RCL(double f, double L, double f_star, double P_oms, double P_acc) const 
-{
-	/* Sky-averaged sensitivity, Robson, Cornish & Liu (arXiv:1803.01944) eqs. 1, 10, 11 */
-	const double S_oms = P_oms * P_oms * (1 + pow(2e-3 / f, 4));
-	const double S_acc = P_acc * P_acc * (1 + pow(0.4e-3 / f, 2)) * (1 + pow(f / 8e-3, 4));
-	const double S_n = 10. / (3 * L * L) * (S_oms + 2 * (1 + pow(std::cos(f / f_star), 2)) * S_acc / pow(2 * M_PI * f, 4)) * (1 + 0.6 * pow(f / f_star, 2));
-	/* Galactic confusion noise, eq. 14 with the 4-yr fit. It is negligible above 10 mHz,
-		where exp(-beta f sin(kappa f)) would otherwise overflow */
-	double S_c = 0.;
-	if (f < 1e-2) {
-		S_c = 9e-45 * pow(f, -7. / 3) * std::exp(-pow(f, 0.138) - 221 * f * std::sin(521 * f)) * (1 + std::tanh(1680 * (1.13e-3 - f)));
-	}
-	/* Omega h^2 = 2 pi^2 f^3 S_h / (3 H_100^2) */
-	const double H_100 = 100. / 3.0857e19;
-	return 2 * M_PI * M_PI / (3 * H_100 * H_100) * pow(f, 3) * (S_n + S_c);
 }
 
 double
@@ -873,6 +915,18 @@ GravWaveCalculator::doubly_broken_power_law(
 	const double term0 = std::pow(f/f0, n0);
 	const double term1 = std::pow(1 + std::pow(f/f1, a1), n1);
 	const double term2 = std::pow(1 + std::pow(f/f2, a2), n2);
+	return term0 * term1 * term2;
+}
+
+double 
+GravWaveCalculator::doubly_broken_power_law_LISA(
+	const double& f, const double& f1, const double& f2,
+	const double& n1, const double& n2, const double& n3, 
+	const double& a1, const double& a2) const
+{
+	const double term0 = std::pow(f/f1, n1);
+	const double term1 = std::pow(1 + std::pow(f/f1, a1), (-n1+n2)/a1);
+	const double term2 = std::pow(1 + std::pow(f/f2, a2), (-n2+n3)/a2);
 	return term0 * term1 * term2;
 }
 

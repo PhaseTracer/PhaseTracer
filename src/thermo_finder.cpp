@@ -38,6 +38,7 @@ namespace PhaseTracer {
         double nucleation_target_in,
         bool use_bag_dtdT_in,
         double temperature_abs_tol_in,
+        double vw_in,
         FalseVacuumDecayRate::PrefactorFunction prefactor_in
     ) : ac(ac_in), transition(std::make_unique<Transition>(t_in))
     {
@@ -64,6 +65,7 @@ namespace PhaseTracer {
         friedmann_evolution->set_nucleation_target(nucleation_target_in);
         friedmann_evolution->set_use_bag_dtdT(use_bag_dtdT_in);
         friedmann_evolution->set_temperature_abs_tol(temperature_abs_tol_in);
+        friedmann_evolution->set_vw(vw_in);
         friedmann_evolution->solve();
 
         TC = decay_rate->get_t_max();
@@ -167,6 +169,7 @@ namespace PhaseTracer {
             nucleation_target,
             use_bag_dtdT,
             temperature_abs_tol,
+            vw,
             prefactor_function
         );
 

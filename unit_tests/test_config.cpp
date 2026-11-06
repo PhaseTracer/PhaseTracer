@@ -162,11 +162,6 @@ TEST_CASE("Config defaults match class defaults", "[Config]") {
     CHECK_DEFAULT(gw, c, D);
     CHECK_DEFAULT(gw, c, vw);
     CHECK_DEFAULT(gw, c, epsilon);
-    CHECK_DEFAULT(gw, c, run_time_LISA);
-    CHECK_DEFAULT(gw, c, run_time_Taiji);
-    CHECK_DEFAULT(gw, c, use_legacy_LISA_noise);
-    CHECK_DEFAULT(gw, c, SNR_f_min);
-    CHECK_DEFAULT(gw, c, SNR_f_max);
     CHECK_DEFAULT(gw, c, SNR_steps_per_decade);
   }
 }

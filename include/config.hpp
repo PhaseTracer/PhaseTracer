@@ -221,11 +221,6 @@ struct GravWaveConfig
     double vw = 0.0;
     double epsilon = 0.1;
 
-    double run_time_LISA = 4;
-    double run_time_Taiji = 3;
-    bool use_legacy_LISA_noise = false;
-    double SNR_f_min = 1e-5;
-    double SNR_f_max = 1e-1;
     double SNR_steps_per_decade = 200;
 };
 

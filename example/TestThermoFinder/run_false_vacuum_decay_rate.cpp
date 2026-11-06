@@ -216,6 +216,8 @@ int main(int argc, char* argv[]) {
     */
     decay_rate.set_prefactor_function(custom_prefactor);
     decay_rate.calculate();
+
+    // decay_rate.
     decay_rate.write("example/TestThermoFinder/data/decay_rate_w_prefactor.csv");
 
     return 0;

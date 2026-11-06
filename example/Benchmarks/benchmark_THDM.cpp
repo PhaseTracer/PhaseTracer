@@ -153,7 +153,7 @@ get_results(
     const double Treh = tp.percolation.reheating_temperature;
     const double alpha = tp.percolation.alpha_bar;
     const double betaH = tp.percolation.betaH_eff;
-    const double snrLISA = gws[0].SNR[0];
+    const double snrLISA = gws[0].snr_for("LISA").snr;
 
     auto end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end_time - start_time;

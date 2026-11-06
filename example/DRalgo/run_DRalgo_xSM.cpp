@@ -146,7 +146,7 @@ int main( int argc, char* argv[]) {
   //   return 0;
   // }
 
-  // std::vector<double> out = {(float)t.size(), t[0].TC, t[0].TN, (t[0].TC - t[0].TN)/t[0].TC, gw[0].beta_H, gw[0].peak_amplitude, gw[0].peak_frequency, gw[0].SNR[0]};
+  // std::vector<double> out = {(float)t.size(), t[0].TC, t[0].TN, (t[0].TC - t[0].TN)/t[0].TC, gw[0].beta_H, gw[0].peak_amplitude, gw[0].peak_frequency, gw[0].snr_for("LISA").snr};
   // output_file << toString(in, out) << std::endl;
   // output_file.close();
   return 0;

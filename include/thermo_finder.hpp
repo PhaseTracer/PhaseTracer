@@ -149,6 +149,7 @@ struct ThermalParameterSet
         double nucleation_target_in = 1.00,
         bool use_bag_dtdT_in = false,
         double temperature_abs_tol_in = 1e-8,
+        double vw_in = 1/sqrt(3.0),
         // CustomPrefactor
         FalseVacuumDecayRate::PrefactorFunction prefactor_in = {}
     );
@@ -496,7 +497,7 @@ private :
     PROPERTY(PrintSettings, completion_print_setting, PrintSettings::MINIMAL);
 
     /** @brief Flag indicating whether to update the percolation temperature. */
-    PROPERTY(bool, update_percolation_temperature, false);
+    PROPERTY(bool, update_percolation_temperature, true);
 
     /** @brief Flag indicating whether to compute profiles for the phase transition. */
     PROPERTY(bool, compute_profiles, false);
@@ -504,7 +505,7 @@ private :
     /** @brief Number of temperature evluations for profiles. */
     PROPERTY(double, n_temp_profiles, 250);
 
-    /** @brief Bubble wall velocity. 
+    /** @brief Bubble wall velocity, used for the false vacuum fraction (and so the milestone temperatures).
      * @note This is overwritten by vw at the percolation temp if updated.
     */
     PROPERTY(double, vw, 1/sqrt(3.0));
@@ -573,7 +574,7 @@ private :
     /** @brief Absolute tolerance for the temperature. */
     PROPERTY(double, temperature_abs_tol, 1e-6);
 
-    // unused: volume_term_integration_steps, vw
+    // unused: volume_term_integration_steps
 
 
     std::vector<Transition> default_transition_filter(const std::vector<Transition>& transitions);

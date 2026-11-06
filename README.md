@@ -134,7 +134,7 @@ A minimal run:
     
     for tps in runner.get_thermal_parameters():
         print(tps.TC, tps.percolation.temperature, tps.percolation.alpha)
-    print(runner.get_spectra()[0].SNR)
+    print(runner.get_spectra()[0].snr)
 
 See [python/README.md](python/README.md) for the full interface, including how to define a model
 in Python, and `python/examples/` for complete scripts.
