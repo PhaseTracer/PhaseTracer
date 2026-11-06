@@ -96,9 +96,12 @@ inline void
 configure_action_calculator(PhaseTracer::ActionCalculator& action_calculator)
 {
     action_calculator.set_action_calculator(PhaseTracer::ActionMethod::PathDeformation);
-    action_calculator.set_PD_xtol(1e-4);
-    action_calculator.set_PD_phitol(1e-4);
-    action_calculator.set_PD_deformation_npoints(150);
+    action_calculator.set_PD_xtol(1e-8);
+    action_calculator.set_PD_phitol(1e-8);
+    action_calculator.set_PD_V_spline_samples(100);
+    action_calculator.set_PD_fRatioConv(0.005);
+    action_calculator.set_PD_warm_start_fRatioConv(0.005);
+    action_calculator.set_PD_deformation_npoints(200);
 }
 
 inline void 
@@ -118,6 +121,13 @@ configure_thermo_finder(PhaseTracer::ThermoFinder& thermo_finder)
         return output;
     };
     thermo_finder.set_transition_filter(custom_validation);
+    thermo_finder.set_percolation_print_setting(PhaseTracer::PrintSettings::VERBOSE);
+    thermo_finder.set_warm_start_chunk_size(0);
+    thermo_finder.set_action_spline_evaluations(50);
+    thermo_finder.set_update_percolation_temperature(true);
+    thermo_finder.set_action_smoothing_window(1);
+    thermo_finder.set_action_smoothing_order(3);
+    thermo_finder.set_action_laurent_tail(true);
     thermo_finder.find_thermal_parameters();
 }
 
