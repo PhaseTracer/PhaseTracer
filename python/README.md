@@ -21,8 +21,13 @@ for tps in runner.get_thermal_parameters():
     print(tps.TC, p.temperature, p.alpha, p.betaH)
 
 spectrum = runner.get_spectra()[0]
-spectrum.frequency, spectrum.total_amplitude, spectrum.SNR    # SNR = [LISA, Taiji]
+spectrum.frequency, spectrum.total_amplitude, spectrum.snr    # one SNRResult per runner.gravwave_calculator().get_detectors()
+spectrum.snr_for("LISA").snr, spectrum.snr_for("LISA").detected
 ```
+
+For fit-formula spectra, the SNR comes from evaluating the fit formulae over each detector's whole
+band (`SNR_steps_per_decade` points per decade). It does not depend on the spectrum's frequency grid,
+so PTA bands far below `min_frequency` still get a non-zero SNR.
 
 ## Installation
 
@@ -211,6 +216,7 @@ The examples in `examples/` only use the package. The models they run live in `p
 - `run_conformal_u1.py`: percolation parameters of `ConformalDarkU1` on the MeV scale, and how to sort status codes into successes, physical null results and errors.
 - `benchmark_THDM.py`: the 2HDM benchmark scan, with either the C++ `THDM` or TransitionListener's potential (`TL2HDM`).
 - `bubbledet_interface.py`: a decay-rate prefactor computed by BubbleDet. Needs BubbleDet and scipy.
+- `wallgo_interface.py`: WallGo's Yukawa model, with the LTE wall velocity computed by WallGo and made self-consistent with the percolation temperature. Needs WallGo and a WallGo checkout for the model (`WALLGO_ROOT`).
 
 The tests in `tests/` (`test_runner.py` for the interface, `test_models.py` for the models) run
 with `python -m pytest python/tests`. They need `pytest`, available as `pip install .[test]`.

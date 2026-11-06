@@ -37,7 +37,7 @@ def main():
 
     spectrum = runner.get_spectra()[0]
     print(f"GW peak: f = {spectrum.peak_frequency:.3g} Hz, h^2 Omega = {spectrum.peak_amplitude:.3g}, "
-          f"SNR LISA = {spectrum.SNR[0]:.3g}, Taiji = {spectrum.SNR[1]:.3g}")
+          f"SNR LISA = {spectrum.snr_for('LISA').snr:.3g}, Taiji = {spectrum.snr_for('Taiji').snr:.3g}")
 
     if "--plot" in sys.argv:
         import matplotlib
@@ -46,7 +46,8 @@ def main():
 
         plt.loglog(spectrum.frequency, spectrum.total_amplitude, label="total")
         plt.loglog(spectrum.frequency, spectrum.sound_wave, "--", label="sound waves")
-        plt.loglog(spectrum.frequency, spectrum.lisa_noise, ":", label="LISA noise")
+        for result in spectrum.snr:
+            plt.loglog(spectrum.frequency, result.noise, ":", label=f"{result.detector} noise")
         plt.xlabel("f [Hz]")
         plt.ylabel(r"$h^2\Omega_\mathrm{GW}$")
         plt.legend()

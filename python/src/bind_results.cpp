@@ -164,8 +164,35 @@ void bind_results(py::module_ &m) {
       .def("mode_str", &PhaseTracer::FluidProfile::mode_str)
       .def("__repr__", &repr_from_stream<PhaseTracer::FluidProfile>);
 
+  py::class_<PhaseTracer::Detector, std::shared_ptr<PhaseTracer::Detector>>(
+      m, "Detector",
+      "A gravitational wave detector used in the SNR calculation (read-only; list them with "
+      "GravWaveCalculator.get_detectors())")
+      .def_property_readonly("name", &PhaseTracer::Detector::name)
+      .def_property_readonly("threshold", &PhaseTracer::Detector::threshold, "SNR needed for detection")
+      .def_property_readonly("T_obs", &PhaseTracer::Detector::T_obs, "Observation time in years")
+      .def_property_readonly("f_min", &PhaseTracer::Detector::f_min, "Lower bound of the SNR band in Hz")
+      .def_property_readonly("f_max", &PhaseTracer::Detector::f_max, "Upper bound of the SNR band in Hz")
+      .def("omega_noise", &PhaseTracer::Detector::omega_noise, py::arg("f"),
+           "Noise energy density Omega h^2 at f in Hz")
+      .def("__repr__", &repr_from_stream<PhaseTracer::Detector>);
+
+  py::class_<PhaseTracer::SNRResult>(m, "SNRResult", "Signal-to-noise ratio of a spectrum in one detector")
+      .def_readonly("detector", &PhaseTracer::SNRResult::detector)
+      .def_readonly("snr", &PhaseTracer::SNRResult::snr)
+      .def_readonly("threshold", &PhaseTracer::SNRResult::threshold)
+      .def_readonly("detected", &PhaseTracer::SNRResult::detected, "Whether snr >= threshold")
+      .def_readonly("T_obs", &PhaseTracer::SNRResult::T_obs, "Observation time in years")
+      .def_readonly("f_min", &PhaseTracer::SNRResult::f_min)
+      .def_readonly("f_max", &PhaseTracer::SNRResult::f_max)
+      .def_readonly("band_covered", &PhaseTracer::SNRResult::band_covered,
+                    "Whether the spectrum spans [f_min, f_max]; if not, snr is a lower bound")
+      .def_readonly("noise", &PhaseTracer::SNRResult::noise,
+                    "Noise curve Omega h^2 on the spectrum's frequency grid (empty from get_SNR)")
+      .def("__repr__", &repr_from_stream<PhaseTracer::SNRResult>);
+
   py::class_<PhaseTracer::GravWaveSpectrum>(
-      m, "GravWaveSpectrum", "Gravitational wave spectrum h^2 Omega(f); SNR is [LISA, Taiji]")
+      m, "GravWaveSpectrum", "Gravitational wave spectrum h^2 Omega(f); snr holds one SNRResult per detector")
       .def_readonly("Tref", &PhaseTracer::GravWaveSpectrum::Tref)
       .def_readonly("Treh", &PhaseTracer::GravWaveSpectrum::Treh)
       .def_readonly("vw", &PhaseTracer::GravWaveSpectrum::vw)
@@ -182,9 +209,17 @@ void bind_results(py::module_ &m) {
       .def_readonly("turbulence", &PhaseTracer::GravWaveSpectrum::turbulence)
       .def_readonly("bubble_collision", &PhaseTracer::GravWaveSpectrum::bubble_collision)
       .def_readonly("total_amplitude", &PhaseTracer::GravWaveSpectrum::total_amplitude)
-      .def_readonly("lisa_noise", &PhaseTracer::GravWaveSpectrum::lisa_noise)
-      .def_readonly("taiji_noise", &PhaseTracer::GravWaveSpectrum::taiji_noise)
-      .def_readonly("SNR", &PhaseTracer::GravWaveSpectrum::SNR)
+      .def_readonly("snr", &PhaseTracer::GravWaveSpectrum::snr)
+      .def(
+          "snr_for",
+          [](const PhaseTracer::GravWaveSpectrum &sp, const std::string &name) {
+            try {
+              return sp.snr_for(name);
+            } catch (const std::out_of_range &e) {
+              throw py::key_error(e.what());
+            }
+          },
+          py::arg("name"), "SNRResult for the named detector")
       .def_readonly("method", &PhaseTracer::GravWaveSpectrum::method)
       .def_readonly("kRs", &PhaseTracer::GravWaveSpectrum::kRs)
       .def_readonly("profile", &PhaseTracer::GravWaveSpectrum::profile)

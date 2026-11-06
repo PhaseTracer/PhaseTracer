@@ -59,6 +59,8 @@ from ._phasetracer import (
     NucleationHistory,
     FluidProfile,
     GravWaveSpectrum,
+    Detector,
+    SNRResult,
     # stage objects (obtained from a Runner)
     PhaseFinder,
     ActionCalculator,

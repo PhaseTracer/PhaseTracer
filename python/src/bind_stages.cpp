@@ -145,8 +145,19 @@ void bind_stages(py::module_ &m) {
   py::class_<GW>(m, "GravWaveCalculator", "The Runner's GravWaveCalculator (obtain with Runner.gravwave_calculator())")
       .def("get_spectrums", [](const GW &h) { return std::vector<GravWaveSpectrum>(h.get().get_spectrums()); })
       .def("get_total_spectrum", [](const GW &h) { return h.get().get_total_spectrum(); })
+      .def(
+          "get_detectors",
+          [](const GW &h) {
+            /* pybind11 has no const holders; the bound Detector exposes only const methods */
+            std::vector<std::shared_ptr<PhaseTracer::Detector>> out;
+            for (const auto &d : h.get().get_detectors()) {
+              out.push_back(std::const_pointer_cast<PhaseTracer::Detector>(d));
+            }
+            return out;
+          },
+          "The detectors used for every SNR calculation, in the order of GravWaveSpectrum.snr")
       .def("get_SNR", [](const GW &h, const TransitionMilestone &milestone) { return h.get().get_SNR(milestone); },
-           py::arg("milestone"), "[LISA, Taiji] signal-to-noise ratio for a milestone")
+           py::arg("milestone"), "Fit-formula SNRResult in each detector for a milestone")
       .def("write_spectrum_to_text",
            [](const GW &h, const std::string &filename) { h.get().write_spectrum_to_text(filename); },
            py::arg("filename"), "Write the total spectrum")

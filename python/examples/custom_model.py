@@ -47,7 +47,7 @@ def main():
     spectrum = runner.get_spectra()[0]
     print(f"  TC = {tps.TC:.3f}, percolation at T = {p.temperature:.3f}, alpha = {p.alpha:.4g}, beta/H = {p.betaH:.4g}")
     print(f"  GW peak f = {spectrum.peak_frequency:.3g} Hz, h^2 Omega = {spectrum.peak_amplitude:.3g}, "
-          f"SNR LISA = {spectrum.SNR[0]:.3g}")
+          f"SNR LISA = {spectrum.snr_for('LISA').snr:.3g}")
     return 0
 
 

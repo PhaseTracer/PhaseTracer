@@ -153,10 +153,17 @@ def test_full_pipeline_two_dim_model():
     spectra = runner.get_spectra()
     assert len(spectra) >= 1
     assert len(spectra[0].frequency) == config.gravwave.num_frequency
-    assert len(spectra[0].SNR) == 2
+    names = [d.name for d in runner.gravwave_calculator().get_detectors()]
+    assert [r.detector for r in spectra[0].snr] == names
+    for r in spectra[0].snr:
+        assert len(r.noise) == len(spectra[0].frequency)
+        assert r.detected == (r.snr >= r.threshold)
+    assert spectra[0].snr_for("LISA").detector == "LISA"
+    with pytest.raises(KeyError):
+        spectra[0].snr_for("no such detector")
 
     snr = runner.gravwave_calculator().get_SNR(percolation)
-    assert len(snr) == 2
+    assert [r.detector for r in snr] == names
 
 
 def test_z2_model_reports_thermal_failure():

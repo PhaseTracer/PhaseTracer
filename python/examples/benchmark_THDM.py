@@ -114,9 +114,7 @@ def make_config(action_tol=1e-6, fratio_conv=0.01, deformation_npoints=150, acti
     gw.gw_method = pt.GravWaveMethod.FitFormulae
     gw.default_milestone = pt.MilestoneType.PERCOLATION
     gw.vw = 1.0
-    gw.SNR_f_max = 1e1
     gw.max_frequency = 1e1
-    gw.SNR_f_min = 1e-5
     gw.min_frequency = 1e-5
     gw.num_frequency = 500
 
@@ -166,7 +164,7 @@ def get_results(lambda3, config, potential="tl2", debug=False):
 
     tp = runner.get_thermal_parameters()[0]
     n, p = tp.nucleation, tp.percolation
-    snr_lisa = runner.get_spectra()[0].SNR[0]
+    snr_lisa = runner.get_spectra()[0].snr_for("LISA").snr
     runtime_ms = round((time.perf_counter() - start) * 1e3)
     return [0, lambda3, tp.TC, n.temperature, p.temperature, p.reheating_temperature, p.alpha_bar, p.betaH_eff,
             snr_lisa, runtime_ms]
