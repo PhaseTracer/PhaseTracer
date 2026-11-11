@@ -554,8 +554,8 @@ bool PhaseFinder::hessian_singular(const Eigen::VectorXd &X, double T) const {
 
 bool PhaseFinder::hessian_singular(const Eigen::MatrixXd &hessian, const Eigen::VectorXd &X, double T) const {
   const double t_min = hessian.eigenvalues().cwiseAbs().minCoeff();
-  const double zero_t_min = P.d2V_dx2(X, 0.).eigenvalues().cwiseAbs().minCoeff();
-  return std::abs(t_min) < hessian_singular_rel_tol * std::abs(zero_t_min);
+  const double reference_t_min = P.d2V_dx2(X, t_low).eigenvalues().cwiseAbs().minCoeff();
+  return std::abs(t_min) < hessian_singular_rel_tol * std::abs(reference_t_min);
 }
 
 bool PhaseFinder::hessian_positive_definite(const Eigen::VectorXd &X, double T) const {
