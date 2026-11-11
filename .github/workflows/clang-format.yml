@@ -14,7 +14,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: dependencies
-      run: sudo apt install pipx && pipx install clang-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pipx
+        pipx install clang-format
     - name: check version
       run: clang-format --version
     - name: check phasetracer
