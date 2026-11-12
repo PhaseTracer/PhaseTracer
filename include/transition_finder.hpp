@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <ostream>
 #include <fstream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -59,13 +60,13 @@ struct Transition {
   size_t key;
   size_t id;
 
-  double TN;
+  double TN = std::numeric_limits<double>::quiet_NaN();
   Eigen::VectorXd true_vacuum_TN;
   Eigen::VectorXd false_vacuum_TN;
   bool subcritical = false;
 
   PolynomialFitterEigen action_curve;
-  double TP;
+  double TP = std::numeric_limits<double>::quiet_NaN();
 
   Transition(Message message) : message(message) {};
 

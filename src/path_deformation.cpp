@@ -165,6 +165,10 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
   double fmin;
   optimizer.optimize(xmin, fmin);
 
+  const double local_minimum_bound = 0.25;
+  const double max_unchecked_endpoint_extension = 3. * local_minimum_bound;
+  bool retry_locally = std::abs(xmin[0] - guess) > max_unchecked_endpoint_extension;
+
   if (avoid_symmetric_partner != nullptr) {
     const Eigen::VectorXd candidate = p0 + xmin[0] * dp0;
     PhaseFinder phase_finder(P);
@@ -173,14 +177,15 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
                                     phase_finder.get_x_rel_identical() *
                                         std::max(candidate.norm(), avoid_symmetric_partner->norm());
     const bool same_point = direct_distance < direct_tolerance;
-    if (!phase_finder.identical_within_tol(candidate, *avoid_symmetric_partner) || same_point) {
-      return xmin[0];
+    if (phase_finder.identical_within_tol(candidate, *avoid_symmetric_partner) && !same_point) {
+      retry_locally = true;
     }
-  } else {
+  }
+
+  if (!retry_locally) {
     return xmin[0];
   }
 
-  const double local_minimum_bound = 0.25;
   const double lower_bound = guess - local_minimum_bound;
   const double upper_bound = guess + local_minimum_bound;
   optimizer.set_lower_bounds(std::vector<double>{lower_bound});
@@ -206,10 +211,10 @@ double SplinePath::find_loc_min_w_guess(Eigen::VectorXd p0, Eigen::VectorXd dp0,
     maximum_optimizer.optimize(xmax, fmax_neg);
 
     if (std::abs(xmax[0] - guess) < boundary_tol) {
-      throw std::runtime_error("Endpoint extension minimum is not locally bracketed.");
+      return guess;
     }
     if (std::abs(xmax[0] - boundary) < boundary_tol) {
-      throw std::runtime_error("Endpoint extension barrier is not locally bracketed.");
+      return guess;
     }
 
     optimizer.set_lower_bounds(std::vector<double>{std::min(guess, xmax[0])});
